@@ -9,21 +9,15 @@
     "type": "git",
     "url": "https://github.com/storybookjs/storybook-addon-kit"
   },
-  "type": "module",
   "license": "MIT",
   "author": "package-author",
+  "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
     "./preview": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/preview.js",
-      "require": "./dist/preview.cjs"
+      "default": "./dist/preview.js"
     },
-    "./preset": "./dist/preset.cjs",
+    "./preset": "./dist/preset.js",
     "./manager": "./dist/manager.js",
     "./package.json": "./package.json"
   },
@@ -34,51 +28,47 @@
     "*.d.ts"
   ],
   "scripts": {
-    "postinstall": "node scripts/welcome.js",
+    "prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
     "build": "tsup",
+    "build-storybook": "storybook build",
     "build:watch": "npm run build -- --watch",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "run-p build:watch \"storybook --quiet\"",
+    "eject-ts": "zx scripts/eject-typescript.js",
+    "postinstall": "node scripts/welcome.js",
     "prerelease": "zx scripts/prepublish-checks.js",
     "release": "npm run build && auto shipit",
-    "eject-ts": "zx scripts/eject-typescript.js",
+    "start": "run-p build:watch \"storybook --quiet\"",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
-  },
-  "dependencies": {
-    "@storybook/icons": "^1.4.0"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^9.0.0",
-    "@storybook/react-vite": "^9.0.0",
-    "@types/node": "^22",
+    "@storybook/addon-docs": "0.0.0-pr-31819-sha-5b109949",
+    "@storybook/icons": "^1.4.0",
+    "@storybook/react-vite": "0.0.0-pr-31819-sha-5b109949",
+    "@types/node": "^20",
     "@types/react": "^18.2.65",
     "@types/react-dom": "^18.2.21",
-    "@vitejs/plugin-react": "^4.2.1",
-    "auto": "^11.1.1",
-    "boxen": "^7.1.1",
-    "npm-run-all2": "^6.2.3",
-    "prettier": "^3.3.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "auto": "^11.3.0",
+    "boxen": "^8.0.1",
+    "npm-run-all2": "^8.0.4",
+    "prettier": "^3.6.2",
     "prompts": "^2.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "storybook": "^9.0.0",
+    "storybook": "0.0.0-pr-31819-sha-5b109949",
     "ts-dedent": "^2.2.0",
-    "tsup": "^8.2.4",
-    "typescript": "^5.8.2",
-    "vite": "^5.3.5",
-    "zx": "^8.4.1"
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5",
+    "zx": "^8.7.1"
   },
   "peerDependencies": {
-    "storybook": "^9.0.0"
+    "storybook": "*"
   },
   "publishConfig": {
     "access": "public"
   },
   "bundler": {
-    "exportEntries": [
-      "src/index.ts"
-    ],
     "managerEntries": [
       "src/manager.tsx"
     ],

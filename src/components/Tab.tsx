@@ -7,7 +7,7 @@ import { styled } from "storybook/theming";
 import { KEY } from "../constants";
 
 interface TabProps {
-  active: boolean;
+  active?: boolean;
 }
 
 const TabWrapper = styled.div(({ theme }) => ({

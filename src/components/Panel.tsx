@@ -1,5 +1,5 @@
 import React, { Fragment, memo, useCallback, useState } from "react";
-import { Result } from "src/types";
+import type { Result } from "src/types";
 import { AddonPanel } from "storybook/internal/components";
 import { Button, Placeholder, TabsState } from "storybook/internal/components";
 import { useChannel } from "storybook/manager-api";
@@ -9,7 +9,7 @@ import { EVENTS } from "../constants";
 import { List } from "./List";
 
 interface PanelProps {
-  active: boolean;
+  active?: boolean;
 }
 
 export const RequestDataButton = styled(Button)({
@@ -37,7 +37,7 @@ export const Panel: React.FC<PanelProps> = memo(function MyPanel(props) {
   }, [emit]);
 
   return (
-    <AddonPanel {...props}>
+    <AddonPanel active={props.active ?? false}>
       <TabsState
         initial="overview"
         backgroundColor={theme.background.hoverable}

@@ -7,7 +7,7 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "moduleResolution": "bundler",
-    "module": "preserve",
+    "module": "esnext",
     "jsx": "react",
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
@@ -15,9 +15,9 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitAny": true,
-    "lib": ["es2023", "dom", "dom.iterable"],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "baseUrl": ".",
     "rootDir": "./src"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tsup.config.ts"]
 }
