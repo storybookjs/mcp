@@ -34,6 +34,7 @@
     "build": "tsup",
     "build-storybook": "storybook build",
     "build:watch": "npm run build -- --watch",
+    "inspect": "npx @modelcontextprotocol/inspector http://localhost:6006/mcp --transport http",
     "prerelease": "zx scripts/prepublish-checks.js",
     "release": "npm run build && auto shipit",
     "start": "run-p build:watch \"storybook --quiet\"",
