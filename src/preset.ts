@@ -1,18 +1,13 @@
 import type { Plugin } from "vite";
-// You can use presets to augment the Storybook configuration
-// You rarely want to do this in addons,
-// so often you want to delete this file and remove the reference to it in package.json#exports and package.json#bunder.nodeEntries
-// Read more about presets at https://storybook.js.org/docs/addons/writing-presets
+import { mcpServerHandler } from "./mcp-handler";
 
+// This is a workaround for Storybook not having an API for addons to register server middlewares/handlers
+// We can do it through Vite's plugin API instead, which gets added to Storybook's dev server in the end. 😈
 export const viteFinal = async (config: any) => {
   const mcpHandlerPlugin: Plugin = {
     name: "storybook:mcp-server",
     configureServer(server) {
-      server.middlewares.use("/mcp", (req, res, next) => {
-        console.log("MCP REQUEST!");
-        // Handle requests to the MCP server
-        next();
-      });
+      server.middlewares.use("/mcp", mcpServerHandler);
     },
   };
   return {
