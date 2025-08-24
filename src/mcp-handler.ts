@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { version, name } from "../package.json" with { type: "json" };
+import pkgJson from "../package.json" with { type: "json" };
+import { registerAdditionTool } from "./tools/addition";
 
 function createMcpServer() {
   // New initialization request
@@ -21,9 +22,11 @@ function createMcpServer() {
     }
   };
 
-  const server = new McpServer({ name, version });
-
-  // ... set up server resources, tools, and prompts ...
+  const server = new McpServer({
+    name: pkgJson.name,
+    version: pkgJson.version,
+  });
+  registerAdditionTool(server);
 
   server.connect(transport);
   return transport;
