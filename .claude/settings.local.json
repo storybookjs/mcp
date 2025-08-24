@@ -3,9 +3,14 @@
     "allow": [
       "Bash(git merge:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "mcp__storyboook-mcp__add"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "storyboook-mcp"
+  ]
 }

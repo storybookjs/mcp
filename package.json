@@ -34,11 +34,15 @@
     "build": "tsup",
     "build-storybook": "storybook build",
     "build:watch": "npm run build -- --watch",
+    "inspect": "npx @modelcontextprotocol/inspector http://localhost:6006/mcp --transport http",
     "prerelease": "zx scripts/prepublish-checks.js",
     "release": "npm run build && auto shipit",
     "start": "run-p build:watch \"storybook --quiet\"",
     "storybook": "storybook dev -p 6006",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.3"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^10.0.0-0",
@@ -69,12 +73,6 @@
     "access": "public"
   },
   "bundler": {
-    "managerEntries": [
-      "src/manager.tsx"
-    ],
-    "previewEntries": [
-      "src/preview.ts"
-    ],
     "nodeEntries": [
       "src/preset.ts"
     ]
