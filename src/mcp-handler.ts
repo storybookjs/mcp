@@ -5,6 +5,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import pkgJson from "../package.json" with { type: "json" };
 import { registerAdditionTool } from "./tools/addition";
+import { registerUIBuildingTool } from "./tools/getUIBuildingInstructions";
 
 function createMcpServer() {
   // New initialization request
@@ -27,6 +28,7 @@ function createMcpServer() {
     version: pkgJson.version,
   });
   registerAdditionTool(server);
+  registerUIBuildingTool(server);
 
   server.connect(transport);
   return transport;
