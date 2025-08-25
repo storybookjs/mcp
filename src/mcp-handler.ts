@@ -4,10 +4,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import pkgJson from "../package.json" with { type: "json" };
-import { registerAdditionTool } from "./tools/addition";
-import { registerUIBuildingTool } from "./tools/getUIBuildingInstructions";
+import { registerStoryUrlsTool } from "./tools/get-story-urls";
+import { registerUIBuildingTool } from "./tools/get-ui-building-instructions";
+import type { Options } from "storybook/internal/types";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
-function createMcpServer() {
+function createMcpServer(options: Options) {
   // New initialization request
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
@@ -27,7 +29,8 @@ function createMcpServer() {
     name: pkgJson.name,
     version: pkgJson.version,
   });
-  registerAdditionTool(server);
+
+  registerStoryUrlsTool({ server, options });
   registerUIBuildingTool(server);
 
   server.connect(transport);
@@ -44,7 +47,11 @@ async function getJson(req: Connect.IncomingMessage) {
 }
 
 // Handle POST requests for client-to-server communication
-const handlePostRequest: Connect.SimpleHandleFunction = async (req, res) => {
+const handlePostRequest = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+  options: Options,
+) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   let transport: StreamableHTTPServerTransport;
 
@@ -54,7 +61,7 @@ const handlePostRequest: Connect.SimpleHandleFunction = async (req, res) => {
     // Reuse existing transport
     transport = transports[sessionId];
   } else if (!sessionId && isInitializeRequest(body)) {
-    transport = await createMcpServer();
+    transport = await createMcpServer(options);
   } else {
     // Invalid request
     res.statusCode = 400;
@@ -93,14 +100,15 @@ const handleSessionRequest: Connect.SimpleHandleFunction = async (req, res) => {
   return await transport.handleRequest(req, res);
 };
 
-export const mcpServerHandler: Connect.NextHandleFunction = async (
-  req,
-  res,
-  next,
+export const mcpServerHandler = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: Connect.NextFunction,
+  options: Options,
 ) => {
   switch (req.method) {
     case "POST":
-      return await handlePostRequest(req, res);
+      return await handlePostRequest(req, res, options);
     case "GET":
     case "DELETE":
       return await handleSessionRequest(req, res);

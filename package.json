@@ -38,7 +38,7 @@
     "prerelease": "zx scripts/prepublish-checks.js",
     "release": "npm run build && auto shipit",
     "start": "run-p build:watch \"storybook --quiet\"",
-    "storybook": "storybook dev -p 6006",
+    "storybook": "storybook dev --port 6006 --loglevel debug",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

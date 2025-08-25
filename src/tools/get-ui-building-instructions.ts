@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { GET_STORY_URLS_TOOL_NAME } from "./get-story-urls";
 
 const INSTRUCTIONS = `
   # Writing User Interfaces
@@ -30,12 +31,15 @@ const INSTRUCTIONS = `
   };
   \`\`\`
 
-  After completing each step of the process, provide a link to each story added or modified in the format [Story Name](https://storybook.dev-chromatic.com/?path=/story/<storyId>).
+  ALWAYS provide story links after any modification to stories files, including updates to existing stories.
+  Even later in a session when modifying stories that have already been linked to previously.
+  Use the ${GET_STORY_URLS_TOOL_NAME} tool and provide links in the format \`[Story Name](<story_url_from_tool>)\`
+  whenever you create, modify, or update any story file.
 `;
 
 export function registerUIBuildingTool(server: McpServer) {
   server.registerTool(
-    "getUIBuildingInstructions",
+    "get_ui_building_instructions",
     {
       title: "UI Building Instructions",
       description: `Instructions on how to do UI development. 

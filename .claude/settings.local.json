@@ -4,7 +4,9 @@
       "Bash(git merge:*)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "mcp__storyboook-mcp__add"
+      "mcp__storyboook-mcp__add",
+      "mcp__storyboook-mcp__get_story_urls",
+      "mcp__storyboook-mcp__get_ui_building_instructions"
     ],
     "deny": [],
     "ask": []
