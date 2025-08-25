@@ -31,8 +31,10 @@ const INSTRUCTIONS = `
   };
   \`\`\`
 
-  After completing each step of the process, provide a link to each story added or modified. Use the ${GET_STORY_URLS_TOOL_NAME} tool to get the URLs for the story links.
-  Use the format for sharing the story links with the user: [Story Name](<story_url>).
+  ALWAYS provide story links after any modification to stories files, including updates to existing stories.
+  Even later in a session when modifying stories that have already been linked to previously.
+  Use the ${GET_STORY_URLS_TOOL_NAME} tool and provide links in the format \`[Story Name](<story_url_from_tool>)\`
+  whenever you create, modify, or update any story file.
 `;
 
 export function registerUIBuildingTool(server: McpServer) {
