@@ -4,8 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import pkgJson from "../package.json" with { type: "json" };
-import { registerAdditionTool } from "./tools/addition";
 import { registerStoryUrlsTool } from "./tools/get-story-urls";
+import { registerUIBuildingTool } from "./tools/getUIBuildingInstructions";
 import type { Options } from "storybook/internal/types";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -31,6 +31,7 @@ function createMcpServer(options: Options) {
   });
   registerAdditionTool(server);
   registerStoryUrlsTool({ server, options });
+  registerUIBuildingTool(server);
 
   server.connect(transport);
   return transport;
