@@ -15,6 +15,8 @@ const inputStoriesSchema = z.array(
 
 const outputUrlsSchema = z.array(z.string());
 
+export const GET_STORY_URLS_TOOL_NAME = "get_story_urls";
+
 export function registerStoryUrlsTool({
   server,
   options,
@@ -26,7 +28,7 @@ export function registerStoryUrlsTool({
   logger.debug("MCP server origin:", origin);
 
   server.registerTool(
-    "get_story_urls",
+    GET_STORY_URLS_TOOL_NAME,
     {
       title: "Get stories' URLs",
       description: `Get the URL for one or more stories.`,
