@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "storyboook-mcp": {
-      "type": "http",
+      "type": "streamable-http",
       "url": "http://localhost:6006/mcp"
     }
   }
