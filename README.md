@@ -72,11 +72,12 @@ This addon should work with any MCP-compatible client that supports the `tool` c
 
 For clients not listed above, consult their documentation for MCP server configuration. The server configuration typically requires:
 
-- **Server Type**: `streamable-http`
+- **Server Type**: `http`
 - **URL**: `http://localhost:6006/mcp` (adjust port if your Storybook runs on a different port)
 
 - Make sure your Storybook development server is running before your agent tries to connect.
-+ ⚠️ Make sure your Storybook development server is running before your agent tries to connect.
+
+* ⚠️ Make sure your Storybook development server is running before your agent tries to connect.
 
 ## Usage
 
