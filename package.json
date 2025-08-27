@@ -40,6 +40,7 @@
     "@modelcontextprotocol/sdk": "^1.17.3"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.6",
     "@modelcontextprotocol/inspector": "^0.16.5",
     "@storybook/addon-docs": "^10.0.0-0",
