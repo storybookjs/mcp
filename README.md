@@ -5,11 +5,11 @@ This Storybook addon provides an MCP (Model Context Protocol) server, enabling A
 > [!IMPORTANT]
 > This addon currently only supports Vite-based Storybook setups, such as [`@storybook/react-vite`](https://storybook.js.org/docs/get-started/frameworks/react-vite), [`@storybook/nextjs-vite`](https://storybook.js.org/docs/get-started/frameworks/nextjs#with-vite), and [`@storybook/sveltekit`](https://storybook.js.org/docs/get-started/frameworks/sveltekit).
 
+![Storybook MCP Addon Demo](./addon-mcp-claude-code-showcase.gif)
+
 ## Getting Started
 
 ### Installation and Setup
-
-#### Automatic Installation (Recommended)
 
 Use Storybook's CLI to automatically install and configure the addon:
 
@@ -18,35 +18,6 @@ npx storybook add @storybook/addon-mcp
 ```
 
 This command will install the addon and add it to your Storybook configuration automatically.
-
-#### Manual Installation
-
-Alternatively, you can install and configure the addon manually:
-
-Install the addon as a dev dependency:
-
-```bash
-npm install --save-dev @storybook/addon-mcp
-# or
-yarn add -D @storybook/addon-mcp
-# or
-pnpm add -D @storybook/addon-mcp
-```
-
-Add the addon to your `.storybook/main.ts`:
-
-```typescript
-import type { StorybookConfig } from "@storybook/your-framework";
-
-const config: StorybookConfig = {
-  addons: [
-    // ... other addons
-    "@storybook/addon-mcp",
-  ],
-};
-
-export default config;
-```
 
 Start your Storybook development server:
 
@@ -68,7 +39,7 @@ To use this addon with [Claude Code](https://claude.ai/code), use the built-in M
 1. **Add the MCP server**: Run the following command in your terminal:
 
    ```bash
-   claude mcp add storybook-mcp streamable-http http://localhost:6006/mcp
+   claude mcp add storybook-mcp --transport http http://localhost:6006/mcp --scope project
    ```
 
 2. **Start Storybook**: Make sure your Storybook development server is running:
@@ -78,6 +49,12 @@ To use this addon with [Claude Code](https://claude.ai/code), use the built-in M
    ```
 
 3. **Connect Claude Code**: Claude Code should automatically detect and connect to the MCP server when it's running. You can verify the connection by asking Claude to use Storybook-related tools.
+
+4. **Configure Agent Behavior** (Optional but Recommended): Add the following system or project prompt to ensure your agent uses the Storybook tools when appropriate:
+
+```
+Before doing any UI, frontend or React development, ALWAYS call the storybook MCP server to get further instructions.
+```
 
 #### Other MCP Clients
 
