@@ -74,10 +74,7 @@ For clients not listed above, consult their documentation for MCP server configu
 
 - **Server Type**: `http`
 - **URL**: `http://localhost:6006/mcp` (adjust port if your Storybook runs on a different port)
-
-- Make sure your Storybook development server is running before your agent tries to connect.
-
-* ⚠️ Make sure your Storybook development server is running before your agent tries to connect.
+- ⚠️ Make sure your Storybook development server is running before your agent tries to connect.
 
 ## Usage
 
