@@ -2,9 +2,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { GET_STORY_URLS_TOOL_NAME } from "./get-story-urls";
 
 const INSTRUCTIONS = `
-  # Writing User Interfaces
+  # Writing User Interfaces Components
 
-  When writing UI, prefer breaking larger components up into smaller parts.
+  When writing UI components, prefer breaking larger components up into smaller parts.
 
   ALWAYS write a Storybook story for any component written. If editing a component, ensure appropriate changes have been made to stories for that component.
 
@@ -31,9 +31,12 @@ const INSTRUCTIONS = `
   };
   \`\`\`
 
-  ALWAYS provide story links after any modification to stories files, including updates to existing stories.
-  Even later in a session when modifying stories that have already been linked to previously.
-  Use the ${GET_STORY_URLS_TOOL_NAME} tool and provide links in the format \`[Story Name](<story_url_from_tool>)\`
+  ALWAYS provide story links after any changes to stories files, including changes to existing stories.
+  After changing any UI components, ALWAYS search for related stories that might cover the changes you've made.
+  If you find any, provide the story links to the user. THIS IS VERY IMPORTANT, as it allows the user
+  to visually inspect the modifications you've made.
+  Even later in a session when changing UI components or stories that have already been linked to previously, YOU MUST PROVIDE THE LINKS AGAIN.
+  Use the ${GET_STORY_URLS_TOOL_NAME} tool /and provide links in the format \`[Story Name](<story_url_from_tool>)\`
   whenever you create, modify, or update any story file.
 `;
 
@@ -41,10 +44,10 @@ export function registerUIBuildingTool(server: McpServer) {
   server.registerTool(
     "get_ui_building_instructions",
     {
-      title: "UI Building Instructions",
-      description: `Instructions on how to do UI development. 
+      title: "UI Component Building Instructions",
+      description: `Instructions on how to do UI component development. 
       
-      ALWAYS call this tool before doing any UI/frontend/React development, including but not
+      ALWAYS call this tool before doing any UI/frontend/React/component development, including but not
       limited to adding or updating new components, pages, screens or layouts.`,
       inputSchema: {},
     },
