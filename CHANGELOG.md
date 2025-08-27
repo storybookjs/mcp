@@ -1,5 +1,11 @@
 # @storybook/addon-mcp
 
+## 0.0.2
+
+### Patch Changes
+
+- [#8](https://github.com/storybookjs/addon-mcp/pull/8) [`77d0779`](https://github.com/storybookjs/addon-mcp/commit/77d0779f471537bd72eca42543a559e97d329f6f) Thanks [@JReinhold](https://github.com/JReinhold)! - Add initial readme content
+
 ## 0.0.1
 
 ### Patch Changes
