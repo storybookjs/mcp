@@ -15,12 +15,7 @@
   "author": "Jeppe Reinhold <jeppe@chromatic.com>, Tom Coleman <tom@chromatic.com>",
   "type": "module",
   "exports": {
-    "./preview": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/preview.js"
-    },
     "./preset": "./dist/preset.js",
-    "./manager": "./dist/manager.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -33,11 +28,11 @@
     "prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
     "build": "tsup",
     "build-storybook": "storybook build",
-    "build:watch": "npm run build -- --watch",
-    "inspect": "npx @modelcontextprotocol/inspector http://localhost:6006/mcp --transport http",
-    "prerelease": "zx scripts/prepublish-checks.js",
-    "release": "npm run build && auto shipit",
+    "build:watch": "pnpm run build -- --watch",
+    "inspect": "mcp-inspector --config .mcp.json",
+    "release": "pnpm run build && pnpm changeset publish",
     "start": "run-p build:watch \"storybook --quiet\"",
+    "changeset": "changeset",
     "storybook": "storybook dev --port 6006 --loglevel debug",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -45,6 +40,8 @@
     "@modelcontextprotocol/sdk": "^1.17.3"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.6",
+    "@modelcontextprotocol/inspector": "^0.16.5",
     "@storybook/addon-docs": "^10.0.0-0",
     "@storybook/icons": "^1.4.0",
     "@storybook/react-vite": "^10.0.0-0",
@@ -70,7 +67,8 @@
     "storybook": "*"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "bundler": {
     "nodeEntries": [
@@ -90,5 +88,6 @@
       "react-native"
     ],
     "icon": "https://user-images.githubusercontent.com/321738/63501763-88dbf600-c4cc-11e9-96cd-94adadc2fd72.png"
-  }
+  },
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
 }
