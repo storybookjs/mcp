@@ -84,7 +84,7 @@ To use this addon with [Claude Code](https://claude.ai/code), use the built-in M
 This addon should work with any MCP-compatible client that supports the `tool` capability and the `streamable-http` transport. Here are setup guides for other popular clients:
 
 - [GitHub Copilot](https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp/extend-copilot-chat-with-mcp)
-- [Cursor](https://docs.continue.dev/customize/deep-dives/mcp#how-to-configure-mcp-servers)
+- [Cursor](https://docs.cursor.com/en/context/mcp#installing-mcp-servers)
 - [opencode](https://opencode.ai/docs/mcp-servers/)
 - [Claude Desktop](https://modelcontextprotocol.io/quickstart/user)
 - [Cline](https://docs.cline.bot/mcp/configuring-mcp-servers)
