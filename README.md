@@ -2,6 +2,9 @@
 
 This Storybook addon provides an MCP (Model Context Protocol) server, enabling AI agents to interact with your Storybook instance. The addon currently allows agents to get UI development instructions and retrieve story URLs directly from your running Storybook.
 
+> [!IMPORTANT]
+> This addon currently only supports Vite-based Storybook setups, such as [`@storybook/react-vite`](https://storybook.js.org/docs/get-started/frameworks/react-vite), [`@storybook/nextjs-vite`](https://storybook.js.org/docs/get-started/frameworks/nextjs#with-vite), and [`@storybook/sveltekit`](https://storybook.js.org/docs/get-started/frameworks/sveltekit).
+
 ## Getting Started
 
 ### Installation and Setup
@@ -55,7 +58,8 @@ The MCP server will be available at `<your_storybook_dev_server_origin>/mcp` whe
 
 ### Configuring Your Agent
 
-> **Note**: This addon is primarily tested with Claude Code. While it should work with other MCP clients, Claude Code is our main target for compatibility and testing.
+> [!NOTE]
+> This addon is primarily tested with Claude Code. While it should work with other MCP clients, Claude Code is our main target for compatibility and testing.
 
 #### Claude Code Setup
 
