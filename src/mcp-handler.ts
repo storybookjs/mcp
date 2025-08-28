@@ -6,7 +6,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import pkgJson from "../package.json" with { type: "json" };
 import { registerStoryUrlsTool } from "./tools/get-story-urls";
 import { registerUIBuildingTool } from "./tools/get-ui-building-instructions";
-import type { Options } from "storybook/internal/types";
+import type { Options, CoreConfig } from "storybook/internal/types";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   collectTelemetry,
@@ -21,7 +21,10 @@ async function createMcpServer(options: Options, client: string) {
     onsessioninitialized: async (sessionId) => {
       transports[sessionId] = transport;
 
-      const { disableTelemetry } = await options.presets.apply("core", {});
+      const { disableTelemetry } = await options.presets.apply<CoreConfig>(
+        "core",
+        {},
+      );
       setDisableTelemetry(disableTelemetry);
       setClientForSession(sessionId, client);
 
