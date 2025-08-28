@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { GET_STORY_URLS_TOOL_NAME } from "./get-story-urls";
+import { collectTelemetry } from "../telemetry";
 
 const INSTRUCTIONS = `
   # Writing User Interfaces Components
@@ -51,8 +52,14 @@ export function registerUIBuildingTool(server: McpServer) {
       limited to adding or updating new components, pages, screens or layouts.`,
       inputSchema: {},
     },
-    async () => ({
-      content: [{ type: "text", text: INSTRUCTIONS }],
-    }),
+    async (_, { sessionId }) => {
+      await collectTelemetry({
+        event: "tool:getUIBuildingInstructions",
+        mcpSessionId: sessionId!,
+      });
+      return {
+        content: [{ type: "text", text: INSTRUCTIONS }],
+      };
+    },
   );
 }

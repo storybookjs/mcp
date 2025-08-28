@@ -8,14 +8,27 @@ import { registerStoryUrlsTool } from "./tools/get-story-urls";
 import { registerUIBuildingTool } from "./tools/get-ui-building-instructions";
 import type { Options } from "storybook/internal/types";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import {
+  collectTelemetry,
+  setClientForSession,
+  setDisableTelemetry,
+} from "./telemetry";
 
-function createMcpServer(options: Options) {
+async function createMcpServer(options: Options, client: string) {
   // New initialization request
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
-    onsessioninitialized: (sessionId) => {
-      // Store the transport by session ID
+    onsessioninitialized: async (sessionId) => {
       transports[sessionId] = transport;
+
+      const { disableTelemetry } = await options.presets.apply("core", {});
+      setDisableTelemetry(disableTelemetry);
+      setClientForSession(sessionId, client);
+
+      await collectTelemetry({
+        event: "session:initialized",
+        mcpSessionId: sessionId,
+      });
     },
   });
 
@@ -61,7 +74,7 @@ const handlePostRequest = async (
     // Reuse existing transport
     transport = transports[sessionId];
   } else if (!sessionId && isInitializeRequest(body)) {
-    transport = await createMcpServer(options);
+    transport = await createMcpServer(options, body.params.clientInfo.name);
   } else {
     // Invalid request
     res.statusCode = 400;
