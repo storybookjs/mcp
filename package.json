@@ -30,7 +30,7 @@
     "build-storybook": "storybook build",
     "build:watch": "pnpm run build -- --watch",
     "changeset": "changeset",
-    "inspect": "mcp-inspector --config .mcp.json",
+    "inspect": "mcp-inspector --transport streamable-http --server-url http://localhost:6006/mcp",
     "release": "pnpm run build && pnpm changeset publish",
     "start": "run-p build:watch \"storybook --quiet\"",
     "storybook": "storybook dev --port 6006 --loglevel debug",
