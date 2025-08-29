@@ -4,6 +4,7 @@ import { storyNameFromExport } from "storybook/internal/csf";
 import type { Options, StoryIndex } from "storybook/internal/types";
 import { logger } from "storybook/internal/node-logger";
 import z from "zod";
+import { collectTelemetry } from "../telemetry";
 
 const inputStoriesSchema = z.array(
   z.object({
@@ -39,7 +40,7 @@ export function registerStoryUrlsTool({
         urls: outputUrlsSchema,
       },
     },
-    async ({ stories }) => {
+    async ({ stories }, { sessionId }) => {
       const index: StoryIndex = await (
         await fetch(`${origin}/index.json`)
       ).json();
@@ -48,6 +49,7 @@ export function registerStoryUrlsTool({
       logger.debug("index entries found:", entriesList.length);
 
       const result: z.infer<typeof outputUrlsSchema> = [];
+      let foundStoryCount = 0;
 
       for (const {
         exportName,
@@ -75,6 +77,7 @@ export function registerStoryUrlsTool({
         if (foundStoryId) {
           logger.debug("Found story ID:", foundStoryId);
           result.push(`${origin}/?path=/story/${foundStoryId}`);
+          foundStoryCount++;
         } else {
           logger.debug("No story found");
           let errorMessage = `No story found for export name "${exportName}" with absolute file path "${absoluteStoryPath}"`;
@@ -84,6 +87,13 @@ export function registerStoryUrlsTool({
           result.push(errorMessage);
         }
       }
+
+      await collectTelemetry({
+        event: "tool:getStoryUrls",
+        mcpSessionId: sessionId!,
+        inputStoryCount: stories.length,
+        outputStoryCount: foundStoryCount,
+      });
 
       return {
         content: [
