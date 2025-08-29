@@ -96,12 +96,10 @@ export function registerStoryUrlsTool({
       });
 
       return {
-        content: [
-          {
-            type: "text",
-            text: result.length > 1 ? `- ${result.join("\n- ")}` : result[0]!,
-          },
-        ],
+        content: result.map((text) => ({
+          type: "text",
+          text,
+        })),
         // Note: Claude Code seems to ignore structuredContent at the moment https://github.com/anthropics/claude-code/issues/4427
         structuredContent: { urls: result },
       };
