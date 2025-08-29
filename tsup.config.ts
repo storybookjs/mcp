@@ -78,6 +78,9 @@ export default defineConfig(async (options) => {
       entry: nodeEntries,
       platform: "node",
       target: NODE_TARGET,
+      loader: {
+        ".md": "text",
+      },
     });
   }
 
