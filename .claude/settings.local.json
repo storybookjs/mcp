@@ -5,11 +5,14 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "mcp__storybook-mcp__get_ui_building_instructions",
-      "mcp__storybook-mcp__get_story_urls"
+      "mcp__storybook-mcp__get_story_urls",
+      "mcp__storybook-mcp__run_story_tests"
     ],
     "deny": [],
     "ask": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["storybook-mcp"]
+  "enabledMcpjsonServers": [
+    "storybook-mcp"
+  ]
 }

@@ -5,6 +5,7 @@ import type { Options, StoryIndex } from "storybook/internal/types";
 import { logger } from "storybook/internal/node-logger";
 import z from "zod";
 import { collectTelemetry } from "../telemetry";
+import { getStoryIds } from "../get-story-ids";
 
 const inputStoriesSchema = z.array(
   z.object({
@@ -41,69 +42,39 @@ export function registerStoryUrlsTool({
       },
     },
     async ({ stories }, { sessionId }) => {
-      const index: StoryIndex = await (
-        await fetch(`${origin}/index.json`)
-      ).json();
+      const storyIds = await getStoryIds(stories, origin);
 
-      const entriesList = Object.values(index.entries);
-      logger.debug("index entries found:", entriesList.length);
-
-      const result: z.infer<typeof outputUrlsSchema> = [];
-      let foundStoryCount = 0;
-
-      for (const {
-        exportName,
-        explicitStoryName,
-        absoluteStoryPath,
-      } of stories) {
-        const relativePath = `./${path.relative(process.cwd(), absoluteStoryPath)}`;
-
-        logger.debug("Searching for:");
-        logger.debug({
-          exportName,
-          explicitStoryName,
-          absoluteStoryPath,
-          relativePath,
-        });
-
-        const foundStoryId = entriesList.find(
-          (entry) =>
-            entry.importPath === relativePath &&
-            [explicitStoryName, storyNameFromExport(exportName)].includes(
-              entry.name,
-            ),
-        )?.id;
-
-        if (foundStoryId) {
-          logger.debug("Found story ID:", foundStoryId);
-          result.push(`${origin}/?path=/story/${foundStoryId}`);
-          foundStoryCount++;
-        } else {
-          logger.debug("No story found");
-          let errorMessage = `No story found for export name "${exportName}" with absolute file path "${absoluteStoryPath}"`;
-          if (!explicitStoryName) {
-            errorMessage += ` (did you forget to pass the explicit story name?)`;
-          }
-          result.push(errorMessage);
+      const storyUrls = storyIds.map((storyId, index) => {
+        if (storyId) {
+          return `${origin}/?path=/story/${storyId}`;
         }
-      }
+        const inputStory = stories[index]!;
+        let errorMessage = `No story found for export name "${inputStory.exportName}" with absolute file path "${inputStory.absoluteStoryPath}"`;
+        if (!inputStory.explicitStoryName) {
+          errorMessage += ` (did you forget to pass the explicit story name?)`;
+        }
+        return errorMessage;
+      });
 
       await collectTelemetry({
         event: "tool:getStoryUrls",
         mcpSessionId: sessionId!,
         inputStoryCount: stories.length,
-        outputStoryCount: foundStoryCount,
+        outputStoryCount: storyIds.filter(Boolean).length,
       });
 
       return {
         content: [
           {
             type: "text",
-            text: result.length > 1 ? `- ${result.join("\n- ")}` : result[0]!,
+            text:
+              storyUrls.length > 1
+                ? `- ${storyUrls.join("\n- ")}`
+                : storyUrls[0]!,
           },
         ],
         // Note: Claude Code seems to ignore structuredContent at the moment https://github.com/anthropics/claude-code/issues/4427
-        structuredContent: { urls: result },
+        structuredContent: { urls: storyUrls },
       };
     },
   );

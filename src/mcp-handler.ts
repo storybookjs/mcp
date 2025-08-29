@@ -13,6 +13,7 @@ import {
   setClientForSession,
   setDisableTelemetry,
 } from "./telemetry";
+import { registerRunTestsTool } from "./tools/run-story-tests";
 
 async function createMcpServer(options: Options, client: string) {
   // New initialization request
@@ -48,6 +49,7 @@ async function createMcpServer(options: Options, client: string) {
 
   registerStoryUrlsTool({ server, options });
   registerUIBuildingTool(server);
+  registerRunTestsTool({ server, options });
 
   server.connect(transport);
   return transport;
