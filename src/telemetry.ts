@@ -26,11 +26,7 @@ export async function collectTelemetry({
   }
 }
 
-const mcpSessionIdToClientMap: Record<string, string> = {};
-
-export const setClientForSession = (sessionId: string, client: string) => {
-  mcpSessionIdToClientMap[sessionId] = client;
-};
+export const mcpSessionIdToClientMap: Record<string, string> = {};
 
 let disableTelemetry = false;
 export const setDisableTelemetry = (value = false) => {

@@ -10,7 +10,7 @@ import type { Options, CoreConfig } from "storybook/internal/types";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   collectTelemetry,
-  setClientForSession,
+  mcpSessionIdToClientMap,
   setDisableTelemetry,
 } from "./telemetry";
 
@@ -26,7 +26,7 @@ async function createMcpServer(options: Options, client: string) {
         {},
       );
       setDisableTelemetry(disableTelemetry);
-      setClientForSession(sessionId, client);
+      mcpSessionIdToClientMap[sessionId] = client;
 
       await collectTelemetry({
         event: "session:initialized",
@@ -36,8 +36,13 @@ async function createMcpServer(options: Options, client: string) {
   });
 
   transport.onclose = () => {
-    if (transport.sessionId) {
-      delete transports[transport.sessionId];
+    if (!transport.sessionId) {
+      return;
+    }
+
+    delete transports[transport.sessionId];
+    if (mcpSessionIdToClientMap[transport.sessionId]) {
+      delete mcpSessionIdToClientMap[transport.sessionId];
     }
   };
 
