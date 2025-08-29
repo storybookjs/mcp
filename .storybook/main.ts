@@ -13,6 +13,9 @@ const config = defineMain({
   addons: ["@storybook/addon-docs", import.meta.resolve("../dist/preset.js")],
   framework: "@storybook/react-vite",
   logLevel: "debug",
+  core: {
+    disableTelemetry: true,
+  },
 });
 
 export default config;
