@@ -44,6 +44,7 @@
     "@changesets/cli": "^2.29.6",
     "@modelcontextprotocol/inspector": "^0.16.5",
     "@storybook/addon-docs": "^10.0.0-0",
+    "@storybook/addon-vitest": "file:../storybook/code/addons/vitest",
     "@storybook/icons": "^1.4.0",
     "@storybook/react-vite": "^10.0.0-0",
     "@types/node": "^20",
@@ -64,7 +65,11 @@
     "typescript": "^5.8.3",
     "vite": "^7.0.5",
     "zod": "^3.25.76",
-    "zx": "^8.7.1"
+    "zx": "^8.7.1",
+    "vitest": "^3.2.4",
+    "@vitest/browser": "^3.2.4",
+    "playwright": "^1.55.0",
+    "@vitest/coverage-v8": "^3.2.4"
   },
   "peerDependencies": {
     "storybook": "*"

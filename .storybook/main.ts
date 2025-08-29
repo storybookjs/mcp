@@ -10,7 +10,11 @@ const config = defineMain({
       files: "**/*.stories.@(js|jsx|ts|tsx)",
     },
   ],
-  addons: ["@storybook/addon-docs", import.meta.resolve("../dist/preset.js")],
+  addons: [
+    "@storybook/addon-docs",
+    import.meta.resolve("../dist/preset.js"),
+    "@storybook/addon-vitest"
+  ],
   framework: "@storybook/react-vite",
   logLevel: "debug",
 });
