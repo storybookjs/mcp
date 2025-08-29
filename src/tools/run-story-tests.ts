@@ -12,8 +12,6 @@ const inputStoriesSchema = z.array(
   }),
 );
 
-const outputUrlsSchema = z.array(z.string());
-
 export const RUN_STORY_TESTS_TOOL_NAME = "run_story_tests";
 
 export async function registerRunTestsTool({
@@ -47,9 +45,6 @@ export async function registerRunTestsTool({
       // TODO: what about stories that could not be found?
 
       const testResults = await triggerTestRun("addon-mcp", storyIds);
-
-      logger.debug("Test results:");
-      logger.debug(JSON.stringify(testResults, null, 2));
 
       let textResult = "";
 
@@ -93,19 +88,36 @@ ${status.description}`,
 
 **Error message**: ${unhandledError.message || "No message available"}
 **Path**: ${unhandledError.VITEST_TEST_PATH || "No path available"}
-**Latest test name**: ${unhandledError.VITEST_TEST_NAME || "No test name available"}
+**Test name**: ${unhandledError.VITEST_TEST_NAME || "No test name available"}
 **Stack trace**: ${unhandledError.stack || "No stack trace available"}`,
           )
           .join("\n\n### ")}`;
       }
 
-      logger.debug(textResult);
+      const screenshots: {
+        type: "image";
+        mimeType: "image/png";
+        data: string;
+      }[] = testResults.storyStatuses
+        .map((statusByTypeId) => {
+          const screenshotStatus = statusByTypeId["storybook/screenshot"];
+          if (screenshotStatus?.description?.base64) {
+            return {
+              type: "image",
+              mimeType: "image/png",
+              data: screenshotStatus.description.base64,
+            };
+          }
+        })
+        .filter(Boolean);
+
       return {
         content: [
           {
             type: "text",
             text: textResult,
           },
+          ...screenshots,
         ],
       };
     },

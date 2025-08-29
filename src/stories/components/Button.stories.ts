@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Button } from "./Button";
-import { fn } from "storybook/test";
+import { fn, within } from "storybook/test";
 
 // More on how to set up stories at: https://storybook.js.org/docs/react/writing-stories/introduction#default-export
 const meta: Meta<typeof Button> = {
@@ -39,6 +39,10 @@ export const Primary: Story = {
 export const Secondary: Story = {
   args: {
     label: "Button",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.getByRole("button", { name: /nope nope/i });
   },
 };
 
