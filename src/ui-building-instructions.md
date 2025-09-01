@@ -1,8 +1,14 @@
-# Storybook 9 Essential Changes for Story Writing
+# Writing User Interfaces
 
-## Package Consolidation
+When writing UI, prefer breaking larger components up into smaller parts.
 
-### `Meta` and `StoryObj` imports
+ALWAYS write a Storybook story for any component written. If editing a component, ensure appropriate changes have been made to stories for that component.
+
+## Storybook 9 Essential Changes for Story Writing
+
+### Package Consolidation
+
+#### `Meta` and `StoryObj` imports
 
 Update story imports to use the framework package:
 
@@ -11,7 +17,7 @@ Update story imports to use the framework package:
 + import { Meta, StoryObj } from '{{FRAMEWORK}}';
 ```
 
-### Test utility imports
+#### Test utility imports
 
 Update test imports to use `storybook/test` instead of `@storybook/test`
 
@@ -20,7 +26,7 @@ Update test imports to use `storybook/test` instead of `@storybook/test`
 + import { fn } from 'storybook/test';
 ```
 
-## Global State Changes
+### Global State Changes
 
 The `globals` annotation has be renamed to `initialGlobals`:
 
@@ -32,7 +38,7 @@ export default {
 };
 ```
 
-## Autodocs Configuration
+### Autodocs Configuration
 
 Instead of `parameters.docs.autodocs` in main.js, use tags:
 
@@ -43,7 +49,7 @@ export default {
 };
 ```
 
-## Mocking imports in Storybook
+### Mocking imports in Storybook
 
 To mock imports in Storybook, use Storybook's mocking features. ALWAYS mock external dependencies to ensure stories render consistently.
 
@@ -80,13 +86,13 @@ export const LoggedIn: Story = {
 
 Before doing this ensure you have mocked the import in the preview file.
 
-## Key Requirements
+### Key Requirements
 
 - **Node.js 20+**, **TypeScript 4.9+**, **Vite 5+**
 - React Native uses `.rnstorybook` directory
 - `afterEach` hook is now stable (was `experimental_afterEach`)
 
-# Story Linking Agent Behavior
+## Story Linking Agent Behavior
 
 - ALWAYS provide story links after any changes to stories files, including changes to existing stories.
 - After changing any UI components, ALWAYS search for related stories that might cover the changes you've made. If you find any, provide the story links to the user. THIS IS VERY IMPORTANT, as it allows the user to visually inspect the changes you've made. Even later in a session when changing UI components or stories that have already been linked to previously, YOU MUST PROVIDE THE LINKS AGAIN.
