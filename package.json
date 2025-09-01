@@ -1,6 +1,6 @@
 {
   "name": "@storybook/addon-mcp",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "everything you need to build a Storybook addon",
   "keywords": [
     "storybook-addons",

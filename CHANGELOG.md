@@ -1,5 +1,11 @@
 # @storybook/addon-mcp
 
+## 0.0.4
+
+### Patch Changes
+
+- [#12](https://github.com/storybookjs/addon-mcp/pull/12) [`b448cd4`](https://github.com/storybookjs/addon-mcp/commit/b448cd45093866556cfb1b3edba8e98c0db23a9a) Thanks [@JReinhold](https://github.com/JReinhold)! - Add instructions on when to write stories
+
 ## 0.0.3
 
 ### Patch Changes
