@@ -1,7 +1,7 @@
 {
   "name": "@storybook/addon-mcp",
   "version": "0.0.4",
-  "description": "MCP server to interact with a running Storybook instance",
+  "description": "Help agents automatically write and test stories for your UI components",
   "keywords": [
     "storybook-addon",
     "mcp",
