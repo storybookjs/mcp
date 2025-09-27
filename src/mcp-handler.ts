@@ -13,6 +13,7 @@ import {
   mcpSessionIdToClientMap,
   setDisableTelemetry,
 } from "./telemetry";
+import { loadPrompt } from "./promptLoader";
 
 async function createMcpServer(options: Options, client: string) {
   // New initialization request
@@ -49,6 +50,8 @@ async function createMcpServer(options: Options, client: string) {
   const server = new McpServer({
     name: pkgJson.name,
     version: pkgJson.version,
+  }, {
+    instructions: loadPrompt({ promptFileName: 'server.txt' })
   });
 
   registerStoryUrlsTool({ server, options });
