@@ -3,7 +3,7 @@ import { GET_STORY_URLS_TOOL_NAME } from "./get-story-urls";
 import { collectTelemetry } from "../telemetry";
 import uiInstructionsTemplate from "../ui-building-instructions.md";
 import type { Options } from "storybook/internal/types";
-import { logger } from "storybook/internal/node-logger";
+import { logger } from "./logger";
 
 export function registerUIBuildingTool({
   server,

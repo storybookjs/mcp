@@ -2,9 +2,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import path from "node:path";
 import { storyNameFromExport } from "storybook/internal/csf";
 import type { Options, StoryIndex } from "storybook/internal/types";
-import { logger } from "storybook/internal/node-logger";
 import z from "zod";
 import { collectTelemetry } from "../telemetry";
+import { logger } from "./logger";
 
 const inputStoriesSchema = z.array(
   z.object({

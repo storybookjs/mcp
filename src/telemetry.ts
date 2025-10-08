@@ -1,5 +1,5 @@
-import { logger } from "storybook/internal/node-logger";
 import { telemetry } from "storybook/internal/telemetry";
+import { logger } from "./tools/logger";
 
 export async function collectTelemetry({
   event,
