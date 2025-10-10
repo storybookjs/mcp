@@ -1,5 +1,13 @@
 # @storybook/addon-mcp
 
+## 0.0.5
+
+### Patch Changes
+
+- [#21](https://github.com/storybookjs/addon-mcp/pull/21) [`b91acac`](https://github.com/storybookjs/addon-mcp/commit/b91acac6fcb7d8e3556e07a499432c1779d59680) Thanks [@shilman](https://github.com/shilman)! - Embed demo image from storybook.js.org
+
+- [#16](https://github.com/storybookjs/addon-mcp/pull/16) [`bf41737`](https://github.com/storybookjs/addon-mcp/commit/bf41737f3409ff25a023993bf1475bf9620c085d) Thanks [@shilman](https://github.com/shilman)! - Improve README
+
 ## 0.0.4
 
 ### Patch Changes
