@@ -10,7 +10,7 @@ The server currently exposes two tools: one to provide UI development instructio
 > This addon currently only supports Vite-based Storybook setups, such as [`@storybook/react-vite`](https://storybook.js.org/docs/get-started/frameworks/react-vite), [`@storybook/nextjs-vite`](https://storybook.js.org/docs/get-started/frameworks/nextjs#with-vite), and [`@storybook/sveltekit`](https://storybook.js.org/docs/get-started/frameworks/sveltekit).
 
 <div align="center">
-   <img src="./addon-mcp-claude-code-showcase.gif" alt="Storybook MCP Addon Demo" />
+   <img src="https://storybook.js.org/embed/addon-mcp-claude-code-showcase.gif" alt="Storybook MCP Addon Demo" />
 </div>
 
 ## Getting Started
