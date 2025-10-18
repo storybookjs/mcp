@@ -84,6 +84,8 @@ For clients not listed above, consult their documentation for MCP server configu
 
 This addon provides two main MCP tools that your agent can use. The goal is that the agent uses these tools automatically when doing UI development, but agents are unreliable and unpredictable, so sometimes you might need to explicitly tell it to use the tools.
 
+If you are prompting from an IDE like VSCode or Cursor, make sure to use `Agent` mode and `sonnet-4.5` or better.
+
 ### 1. UI Building Instructions (`get_ui_building_instructions`)
 
 Provides agents with standardized instructions for UI component development within your project. This tool returns guidelines for:
