@@ -56,12 +56,6 @@ To use this addon with [Claude Code](https://claude.ai/code), use the built-in M
 
 3. **Connect Claude Code**: Claude Code should automatically detect and connect to the MCP server when it's running. You can verify the connection by asking Claude to use Storybook-related tools.
 
-4. **Configure Agent Behavior** (Optional but Recommended): Add the following system or project prompt to ensure your agent uses the Storybook tools when appropriate:
-
-```
-Before doing any UI, frontend or React development, ALWAYS call the storybook MCP server to get further instructions.
-```
-
 #### Other MCP Clients
 
 This addon should work with any MCP-compatible client that supports the `tool` capability and the `streamable-http` transport. Here are setup guides for other popular clients:

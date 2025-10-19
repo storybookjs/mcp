@@ -11,5 +11,7 @@
     "ask": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["storybook-mcp"]
+  "enabledMcpjsonServers": [
+    "storybook-mcp"
+  ]
 }
