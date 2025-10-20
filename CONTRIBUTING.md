@@ -20,7 +20,7 @@ addon-mcp/
 ### Prerequisites
 
 - Node.js >= 20.0.0
-- pnpm 10.15.0 (automatically installed via packageManager field)
+- pnpm >= 10.15.0 (automatically installed via packageManager field)
 
 ### Getting Started
 
