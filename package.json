@@ -15,7 +15,6 @@
     "changeset": "changeset",
     "dev": "turbo run dev",
     "inspect": "pnpm --filter @storybook/addon-mcp inspect",
-    "lint": "turbo run lint",
     "release": "turbo run build && pnpm changeset publish",
     "start": "pnpm --filter @storybook/addon-mcp start",
     "storybook": "pnpm --filter @storybook/addon-mcp storybook",
