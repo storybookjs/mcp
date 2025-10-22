@@ -7,5 +7,5 @@
 	"access": "public",
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",
-	"ignore": []
+	"ignore": ["@storybook/mcp-internal-storybook"]
 }
