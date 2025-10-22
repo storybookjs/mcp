@@ -70,6 +70,12 @@ pnpm format
 
 Formats code using Prettier.
 
+To check formatting without applying changes:
+
+```bash
+pnpm format --check
+```
+
 ### Testing
 
 ```bash
