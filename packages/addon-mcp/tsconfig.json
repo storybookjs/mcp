@@ -16,7 +16,9 @@
 		"noImplicitOverride": true,
 		"noImplicitAny": true,
 		"lib": ["esnext", "dom", "dom.iterable"],
-		"baseUrl": "."
+		"baseUrl": ".",
+		"rootDir": "./src",
+		"types": ["./src/types.d.ts"]
 	},
-	"include": ["stories/**/*"]
+	"include": ["src/**/*", "tsup.config.ts"]
 }

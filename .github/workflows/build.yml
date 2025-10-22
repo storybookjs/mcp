@@ -42,4 +42,4 @@ jobs:
         run: pnpm build-storybook
 
       - name: Publish preview release
-        run: pnpm pkg-pr-new publish --no-template
+        run: pnpm pkg-pr-new publish --compact --no-template './packages/*'

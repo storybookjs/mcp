@@ -123,17 +123,24 @@ We welcome contributions to improve Storybook's agent integration, within or out
 
 3. **Development Setup**:
 
+   This repository uses a monorepo structure with [pnpm workspaces](https://pnpm.io/workspaces) and [Turborepo](https://turborepo.com) for task orchestration.
+
    ```bash
    # Clone the repository
    git clone https://github.com/storybookjs/addon-mcp.git
    cd addon-mcp
 
-   # Install dependencies
+   # Install dependencies (installs for all packages in the workspace)
    pnpm install
 
-   # Start development
+   # Build all packages
+   pnpm build
+
+   # Start development (runs the addon-mcp package)
    pnpm start
    ```
+
+   The main addon package is located in `packages/addon-mcp`.
 
 4. **Testing**: Run the MCP inspector to test the server functionality (requires that the Storybook dev server is running):
 
