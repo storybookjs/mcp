@@ -1,11 +1,11 @@
 {
 	"mcpServers": {
 		"storybook-addon-mcp": {
-			"type": "http",
+			"type": "streamable-http",
 			"url": "http://localhost:6006/mcp"
 		},
 		"storybook-mcp": {
-			"type": "http",
+			"type": "streamable-http",
 			"url": "http://localhost:13316"
 		}
 	}
