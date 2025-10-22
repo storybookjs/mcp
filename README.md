@@ -30,7 +30,7 @@ npm install -g pnpm@10.19.0
 
 ```bash
 # Clone the repository
-git clone https://github.com/storybookjs/addon-mcp.git
+git clone https://github.com/storybookjs/mcp.git
 cd addon-mcp
 
 # Install all dependencies (for all packages in the monorepo)
@@ -196,9 +196,9 @@ We welcome contributions! Here's how to get started:
 
 ### Getting Help
 
-- **Ideas & Feature Requests**: [Start a discussion](https://github.com/storybookjs/addon-mcp/discussions/new?category=ideas)
-- **Bug Reports**: [Open an issue](https://github.com/storybookjs/addon-mcp/issues/new)
-- **Questions**: Ask in [GitHub Discussions](https://github.com/storybookjs/addon-mcp/discussions)
+- **Ideas & Feature Requests**: [Start a discussion](https://github.com/storybookjs/mcp/discussions/new?category=ideas)
+- **Bug Reports**: [Open an issue](https://github.com/storybookjs/mcp/issues/new)
+- **Questions**: Ask in [GitHub Discussions](https://github.com/storybookjs/mcp/discussions)
 
 ## 📄 License
 
