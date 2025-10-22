@@ -1,3 +1,7 @@
+---
+applyTo: 'packages/mcp/**'
+---
+
 # Copilot Instructions for @storybook/mcp
 
 ## Project Overview
