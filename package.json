@@ -1,45 +1,46 @@
 {
-  "name": "@storybook/addon-mcp-monorepo",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Monorepo for Storybook MCP addon and related packages",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/storybookjs/addon-mcp"
-  },
-  "license": "MIT",
-  "author": "Jeppe Reinhold <jeppe@chromatic.com>, Tom Coleman <tom@chromatic.com>",
-  "scripts": {
-    "build": "turbo run build",
-    "build-storybook": "turbo run t:build-storybook",
-    "changeset": "changeset",
-    "dev": "turbo run dev",
-    "inspect": "pnpm --filter @storybook/addon-mcp inspect",
-    "release": "turbo run build && pnpm changeset publish",
-    "start": "pnpm --filter @storybook/addon-mcp start",
-    "storybook": "turbo run t:storybook",
-    "t:build-storybook": "storybook build",
-    "t:storybook": "storybook dev --port 6006 --loglevel debug",
-    "test": "turbo run test"
-  },
-  "devDependencies": {
-    "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.29.6",
-    "@storybook/addon-docs": "^10.0.0-0",
-    "@storybook/addon-mcp": "workspace:*",
-    "@storybook/react-vite": "^10.0.0-0",
-    "@types/react": "^18.2.65",
-    "@types/react-dom": "^18.2.21",
-    "@vitejs/plugin-react": "^4.7.0",
-    "pkg-pr-new": "^0.0.57",
-    "prettier": "^3.6.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "storybook": "^10.0.0-0",
-    "turbo": "^2.3.5"
-  },
-  "packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8",
-  "engines": {
-    "node": ">=20.0.0"
-  }
+	"name": "@storybook/mcp-root",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Monorepo for Storybook MCP addon and related packages",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/storybookjs/addon-mcp"
+	},
+	"license": "MIT",
+	"author": "Jeppe Reinhold <jeppe@chromatic.com>, Tom Coleman <tom@chromatic.com>",
+	"scripts": {
+		"build": "turbo run build",
+		"build-storybook": "turbo run t:build-storybook",
+		"changeset": "changeset",
+		"dev": "turbo run dev",
+		"inspect": "pnpm --filter @storybook/addon-mcp inspect",
+		"release": "turbo run build && pnpm changeset publish",
+		"start": "pnpm --filter @storybook/addon-mcp start",
+		"storybook": "turbo run t:storybook",
+		"t:build-storybook": "storybook build",
+		"t:storybook": "storybook dev --port 6006 --loglevel debug",
+		"test": "turbo run test",
+		"format": "prettier --write ."
+	},
+	"devDependencies": {
+		"@changesets/changelog-github": "^0.5.1",
+		"@changesets/cli": "^2.29.6",
+		"@storybook/addon-docs": "^10.0.0-0",
+		"@storybook/addon-mcp": "workspace:*",
+		"@storybook/react-vite": "^10.0.0-0",
+		"@types/react": "^18.2.65",
+		"@types/react-dom": "^18.2.21",
+		"@vitejs/plugin-react": "^4.7.0",
+		"pkg-pr-new": "^0.0.57",
+		"prettier": "^3.6.2",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"storybook": "^10.0.0-0",
+		"turbo": "^2.3.5"
+	},
+	"packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8",
+	"engines": {
+		"node": ">=20.0.0"
+	}
 }
