@@ -29,8 +29,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
@@ -42,4 +42,4 @@ jobs:
         run: pnpm build-storybook
 
       - name: Publish preview release
-        run: pnpm pkg-pr-new publish --no-template
+        run: pnpm pkg-pr-new publish --no-template './packages/*'
