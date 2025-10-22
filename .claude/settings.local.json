@@ -4,12 +4,12 @@
 			"Bash(git merge:*)",
 			"Bash(git checkout:*)",
 			"Bash(git add:*)",
-			"mcp__storybook-mcp__get_ui_building_instructions",
-			"mcp__storybook-mcp__get_story_urls"
+			"mcp__storybook-addon-mcp__get_ui_building_instructions",
+			"mcp__storybook-addon-mcp__get_story_urls"
 		],
 		"deny": [],
 		"ask": []
 	},
 	"enableAllProjectMcpServers": true,
-	"enabledMcpjsonServers": ["storybook-mcp"]
+	"enabledMcpjsonServers": ["storybook-addon-mcp", "storybook-mcp"]
 }

@@ -5,20 +5,21 @@
 			"dependsOn": ["^build"],
 			"outputs": ["dist/**"]
 		},
+		"build-storybook": {
+			"dependsOn": ["^build"],
+			"outputs": ["storybook-static/**"]
+		},
 		"dev": {
-			"cache": false,
 			"persistent": true
+		},
+		"storybook": {
+			"dependsOn": ["^build"],
+			"with": ["@storybook/addon-mcp#dev"],
+			"persistent": true,
+			"interruptible": true
 		},
 		"test": {
 			"dependsOn": ["build"]
-		},
-		"//#t:storybook": {
-			"dependsOn": ["^build"],
-			"persistent": true
-		},
-		"//#t:build-storybook": {
-			"dependsOn": ["^build"],
-			"outputs": ["storybook-static/**"]
 		}
 	}
 }
