@@ -59,9 +59,18 @@ importers:
 
   packages/addon-mcp:
     dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.17.3
-        version: 1.20.1
+      '@tmcp/adapter-valibot':
+        specifier: ^0.1.4
+        version: 0.1.4(tmcp@1.15.2(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
+      '@tmcp/transport-http':
+        specifier: ^0.7.0
+        version: 0.7.0(tmcp@1.15.2(typescript@5.9.3))
+      tmcp:
+        specifier: ^1.15.2
+        version: 1.15.2(typescript@5.9.3)
+      valibot:
+        specifier: ^1.1.0
+        version: 1.1.0(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: ^20
@@ -81,9 +90,6 @@ importers:
       vite:
         specifier: ^7.0.5
         version: 7.1.11(@types/node@20.19.22)(jiti@2.6.1)
-      zod:
-        specifier: ^3.25.76
-        version: 3.25.76
 
   packages/mcp:
     dependencies:

@@ -191,3 +191,16 @@ For detailed package-specific guidance, see:
 
 - `packages/addon-mcp/**` → `.github/instructions/addon-mcp.instructions.md`
 - `packages/mcp/**` → `.github/instructions/mcp.instructions.md`
+
+## Documentation resources
+
+When working with the MCP server/tools related stuff, refer to the following resources:
+
+- https://github.com/paoloricciuti/tmcp/tree/main/packages/tmcp
+- https://github.com/paoloricciuti/tmcp/tree/main/packages/transport-http
+- https://github.com/paoloricciuti/tmcp
+
+When working on data validation, refer to the following resources:
+
+- https://valibot.dev/
+- https://github.com/paoloricciuti/tmcp/tree/main/packages/adapter-valibot

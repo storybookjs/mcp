@@ -12,10 +12,11 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 
 ### Key Components
 
-- **MCP Server**: Built using `@modelcontextprotocol/sdk` with StreamableHTTP transport
+- **MCP Server**: Built using `tmcp` library with HTTP transport
 - **Vite Plugin Middleware**: Workaround to inject `/mcp` endpoint into Storybook's dev server
-- **Tools System**: Extensible tool registration for MCP capabilities
-- **Session Management**: Per-client session tracking with unique session IDs
+- **Tools System**: Extensible tool registration using `server.tool()` method
+- **Context-Based Architecture**: AddonContext passed through to all tools containing Storybook options and runtime info
+- **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **Telemetry**: Usage tracking with opt-out via Storybook's `disableTelemetry` config
 
 ### File Structure
@@ -23,20 +24,25 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 ```
 src/
   preset.ts                        # Storybook preset - injects Vite middleware
-  mcp-handler.ts                   # Main MCP server handler with session management
+  mcp-handler.ts                   # Main MCP server handler factory
   telemetry.ts                     # Telemetry collection and tracking
+  types.ts                         # Valibot schemas and AddonContext type
   ui-building-instructions.md      # Template for agent UI development instructions
   tools/
     get-story-urls.ts              # Tool to retrieve story URLs from Storybook
     get-ui-building-instructions.ts # Tool to provide UI development guidelines
+  utils/
+    errors.ts                      # Error handling utilities
+    fetch-story-index.ts           # Utility to fetch Storybook's index.json
 ```
 
 ### Key Design Patterns
 
 1. **Vite Plugin Workaround**: Uses `viteFinal` preset hook to inject middleware (Storybook has no native addon API for server middleware)
-2. **Session-Based Transport**: Each MCP client gets a `StreamableHTTPServerTransport` instance keyed by session ID
-3. **Tool Registration**: Tools are registered functions that accept `server` and `options` parameters
-4. **Framework Detection**: Uses Storybook's preset system to detect framework and customize instructions
+2. **Factory Pattern**: `createAddonMcpHandler()` creates configured handler instances following the pattern from `@storybook/mcp`
+3. **Context-Based Architecture**: AddonContext provides Storybook options, origin URL, and client info to all tools
+4. **Tool Registration**: Tools are async functions that register with `server.tool()` and receive typed input
+5. **Framework Detection**: Uses Storybook's preset system to detect framework and customize instructions
 
 ## Development Workflow
 
@@ -94,9 +100,9 @@ Launches the MCP inspector for debugging the addon's MCP server using the config
 
 ### TypeScript Configuration
 
-- Uses Storybook's TypeScript conventions
+- Uses `bundler` module resolution with `preserve` module format
 - Module system: ESM with `"type": "module"` in package.json
-- Module resolution: `bundler` mode
+- Allows `.ts` file extensions in imports via `allowImportingTsExtensions`
 - Imports from `storybook/internal/*` for Storybook APIs
 
 ### Code Style
@@ -110,8 +116,8 @@ Launches the MCP inspector for debugging the addon's MCP server using the config
 ### Naming Conventions
 
 - Constants: SCREAMING_SNAKE_CASE (e.g., `GET_STORY_URLS_TOOL_NAME`)
-- Functions: camelCase (e.g., `registerStoryUrlsTool`, `mcpServerHandler`)
-- Types/Interfaces: PascalCase (e.g., `Options`, `StoryIndex`)
+- Functions: camelCase (e.g., `addGetStoryUrlsTool`, `createAddonMcpHandler`)
+- Types/Interfaces: PascalCase (e.g., `AddonContext`, `StoryInput`)
 
 ## Important Files
 
@@ -125,10 +131,13 @@ Launches the MCP inspector for debugging the addon's MCP server using the config
 ### Source Files
 
 - `src/preset.ts` - Storybook preset that injects Vite middleware
-- `src/mcp-handler.ts` - Main MCP server handler with session management
+- `src/mcp-handler.ts` - Main MCP server handler factory using tmcp
 - `src/telemetry.ts` - Telemetry tracking for usage analytics
+- `src/types.ts` - Valibot schemas and AddonContext interface
 - `src/tools/get-story-urls.ts` - Tool to fetch story URLs from index.json
 - `src/tools/get-ui-building-instructions.ts` - Tool to provide framework-specific UI instructions
+- `src/utils/errors.ts` - Error handling utilities
+- `src/utils/fetch-story-index.ts` - Utility to fetch Storybook's story index
 - `src/ui-building-instructions.md` - Template for UI development instructions
 
 ### Build Artifacts
@@ -145,47 +154,58 @@ To add a new MCP tool to the addon:
    ```typescript
    export const MY_TOOL_NAME = 'my_tool';
    ```
-3. Export a registration function:
+3. Define your input schema using Valibot:
 
    ```typescript
-   import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-   import type { Options } from 'storybook/internal/types';
-   import z from 'zod';
+   import type { McpServer } from 'tmcp';
+   import * as v from 'valibot';
+   import type { AddonContext } from '../types.ts';
+   import { errorToMCPContent } from '../utils/errors.ts';
 
-   export function registerMyTool({
-   	server,
-   	options,
-   }: {
-   	server: McpServer;
-   	options: Options;
-   }) {
-   	server.registerTool(
-   		MY_TOOL_NAME,
+   const MyToolInput = v.object({
+   	param: v.string(),
+   });
+
+   type MyToolInput = v.InferOutput<typeof MyToolInput>;
+   ```
+
+4. Export an async registration function:
+
+   ```typescript
+   export async function addMyTool(server: McpServer<any, AddonContext>) {
+   	server.tool(
    		{
+   			name: MY_TOOL_NAME,
    			title: 'My Tool',
    			description: 'What this tool does',
-   			inputSchema: z.object({
-   				param: z.string(),
-   			}),
+   			schema: MyToolInput,
    		},
-   		async ({ param }, { sessionId }) => {
-   			// Tool implementation
-   			return { result: 'value' };
+   		async (input: MyToolInput) => {
+   			try {
+   				const { options, origin, client } = server.ctx.custom ?? {};
+
+   				// Tool implementation
+   				return {
+   					content: [{ type: 'text' as const, text: 'result' }],
+   				};
+   			} catch (error) {
+   				return errorToMCPContent(error);
+   			}
    		},
    	);
    }
    ```
 
-4. Import and register in `src/mcp-handler.ts` within `createMcpServer()`:
+5. Import and register in `src/mcp-handler.ts` within `createAddonMcpHandler()`:
 
    ```typescript
-   import { registerMyTool } from './tools/my-tool';
+   import { addMyTool } from './tools/my-tool.ts';
 
    // After existing tool registrations:
-   registerMyTool({ server, options });
+   await addMyTool(server);
    ```
 
-5. Add telemetry tracking if needed (see existing tools for examples)
+6. Add telemetry tracking if needed (see existing tools for examples)
 
 ## Storybook Integration
 
@@ -317,12 +337,25 @@ The addon follows Storybook's addon conventions:
 
 The `preset.js` file at the root re-exports the compiled preset from `dist/`.
 
+## Dependencies
+
+### Runtime Dependencies
+
+- `tmcp` - Core MCP server implementation
+- `@tmcp/adapter-valibot` - Valibot schema adapter for MCP
+- `@tmcp/transport-http` - HTTP transport for MCP
+- `valibot` - Schema validation library
+
+### Development Dependencies
+
+- `tsup` - Build tool (esbuild-based bundler)
+- `typescript` - TypeScript compiler
+- `vite` - Dev server (peer dependency via Storybook)
+- `storybook` - Storybook core (peer dependency)
+
+**Note**: This addon shares the same MCP architecture as `@storybook/mcp` package but is specifically designed to run within a Storybook dev server environment. The main difference is the integration layer - this addon uses Vite middleware while the standalone package provides a pure HTTP handler.
+
 ## Documentation Resources
-
-When working with the MCP SDK, refer to:
-
-- https://github.com/modelcontextprotocol/typescript-sdk
-- https://modelcontextprotocol.io/
 
 When working with Storybook internals, refer to:
 
