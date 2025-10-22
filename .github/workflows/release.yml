@@ -12,7 +12,7 @@ jobs:
       pull-requests: write # to create pull request (changesets/action)
       id-token: write #  required for provenance and oidc publish
     # prevents this action from running on forks
-    if: github.repository == 'storybookjs/addon-mcp'
+    if: github.repository == 'storybookjs/mcp'
     name: Release
     runs-on: ubuntu-latest
     steps:

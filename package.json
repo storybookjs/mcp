@@ -5,7 +5,7 @@
 	"description": "Monorepo for Storybook MCP addon and related packages",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/storybookjs/addon-mcp"
+		"url": "https://github.com/storybookjs/mcp"
 	},
 	"scripts": {
 		"build": "turbo run build",
