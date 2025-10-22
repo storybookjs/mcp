@@ -47,7 +47,7 @@ pnpm build
 pnpm dev
 
 # Run unit tests
-pnpm storybook
+pnpm test
 
 # Run Storybook with the addon for testing
 pnpm storybook
@@ -189,7 +189,7 @@ We welcome contributions! Here's how to get started:
 ### Before Submitting
 
 - [ ] Code builds without errors (`pnpm build`)
-- [ ] Tests pass (`pnpm build`)
+- [ ] Tests pass (`pnpm test`)
 - [ ] Code is formatted (`pnpm format`)
 - [ ] Changes tested with MCP inspector or internal Storybook
 - [ ] Changeset created if necessary (`pnpm changeset`)
