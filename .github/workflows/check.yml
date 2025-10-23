@@ -113,7 +113,7 @@ jobs:
         run: pnpm build
 
       - name: Publish preview release
-        run: pnpm pkg-pr-new publish --compact --no-template './packages/addon-mcp'
+        run: pnpm pkg-pr-new publish --compact --no-template './packages/*'
 
   format-check:
     name: Check formatting
