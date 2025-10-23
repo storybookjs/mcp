@@ -96,6 +96,77 @@ pnpm inspect
 
 Launches the MCP inspector for debugging the addon's MCP server using the configuration in `.mcp.inspect.json`.
 
+### Testing
+
+The addon has comprehensive unit tests covering all utilities and tools:
+
+```bash
+pnpm test          # Run tests in watch mode
+pnpm test run      # Run tests once
+pnpm test run --coverage  # Run tests with coverage report
+```
+
+**Test Infrastructure:**
+
+- **Framework**: Vitest 3.2.4 with @vitest/coverage-v8
+- **Fixtures**: JSON fixtures in `fixtures/` directory for story index data
+
+**Test Coverage Baseline:**
+
+- **Overall Target**: >70% statement coverage
+- **src/utils**: 100% coverage (errors.ts, fetch-story-index.ts)
+- **src/tools**: >90% coverage (get-story-urls.ts, get-ui-building-instructions.ts)
+- **src**: Integration files (preset.ts, mcp-handler.ts, telemetry.ts) have partial coverage
+
+**Key Testing Patterns:**
+
+1. **Context Passing**: MCP server context must be passed per request, not at initialization:
+
+   ```typescript
+   const testContext = { options, origin, client };
+   await server.receive(request, {
+   	sessionId: 'test-session',
+   	custom: testContext,
+   });
+   ```
+
+2. **Tool Testing**: Mock external dependencies (fetch, logger, telemetry) and test tool logic:
+
+   ```typescript
+   vi.spyOn(global, 'fetch').mockResolvedValue(
+   	new Response(JSON.stringify(fixture)),
+   );
+   const response = await server.receive(toolCallRequest, {
+   	sessionId,
+   	custom: context,
+   });
+   ```
+
+3. **Conversion Utilities**: Test Node.js HTTP conversions with PassThrough streams:
+
+   ```typescript
+   const req = new PassThrough() as unknown as IncomingMessage;
+   req.method = 'POST';
+   req.end(JSON.stringify(body));
+   ```
+
+4. **Fixture-Based Testing**: Use JSON fixtures for consistent story index data across tests
+
+**Adding New Tests:**
+
+When adding new functionality:
+
+1. Create corresponding `.test.ts` file alongside source
+2. Follow existing test patterns (see `src/tools/*.test.ts` for examples)
+3. Mock external dependencies (fetch, logger, telemetry)
+4. Use fixtures for complex data structures
+5. Test both success and error paths
+6. Run `pnpm test run --coverage` to verify coverage
+
+**CI Integration:**
+
+Tests run automatically on PRs and main branch pushes via `.github/workflows/check.yml` as the `test-addon-mcp` job.
+
 ## Code Style and Conventions
 
 ### TypeScript Configuration
@@ -289,14 +360,39 @@ Users can opt out by setting `disableTelemetry: true` in their Storybook config.
 
 ## Testing
 
-The addon is tested manually using `apps/internal-storybook`:
+The addon has comprehensive unit tests for all utilities and tools:
+
+### Running Tests
+
+```bash
+pnpm test           # Run in watch mode
+pnpm test run       # Run once
+pnpm test run --coverage  # With coverage report
+```
+
+### Test Files
+
+- `src/utils/errors.test.ts` - Tests error handling utilities
+- `src/utils/fetch-story-index.test.ts` - Tests story index fetching
+- `src/tools/get-story-urls.test.ts` - Tests story URL resolution tool
+- `src/tools/get-ui-building-instructions.test.ts` - Tests UI instructions tool
+- `src/mcp-handler.test.ts` - Tests HTTP conversion utilities
+
+### Integration Testing
+
+Manual integration testing using `apps/internal-storybook`:
 
 1. Run `pnpm storybook` from root
 2. Storybook starts on port 6006
 3. MCP endpoint available at `http://localhost:6006/mcp`
 4. Use MCP inspector or configure MCP client to connect
 
-Currently no automated tests exist for this package.
+### Coverage Expectations
+
+- **Overall**: >70% statement coverage
+- **Utils**: 100% coverage target
+- **Tools**: >90% coverage target
+- CI enforces test passes (coverage is tracked but not blocking)
 
 ## Release Process
 
