@@ -2,13 +2,13 @@
 
 ## Architecture Overview
 
-This is a **pnpm monorepo** with two distinct MCP implementations:
+This is a **pnpm monorepo** with two MCP implementations:
 
-- **`packages/addon-mcp`**: Storybook addon using `@modelcontextprotocol/sdk`, exposes MCP server at `/mcp` via Vite middleware
+- **`packages/addon-mcp`**: Storybook addon using `tmcp`, exposes MCP server at `/mcp` via Vite middleware
 - **`packages/mcp`**: Standalone MCP library using `tmcp`, reusable outside Storybook
 - **`apps/internal-storybook`**: Test environment for addon integration
 
-**Critical distinction**: The two packages use **different MCP libraries** (`@modelcontextprotocol/sdk` vs `tmcp`). Don't confuse their APIs or patterns.
+**Both packages use `tmcp`** with HTTP transport and Valibot schema validation for consistent APIs.
 
 ### Addon Architecture
 
@@ -16,7 +16,7 @@ The addon uses a **Vite plugin workaround** to inject middleware (see `packages/
 
 - Storybook doesn't expose an API for addons to register server middleware
 - Solution: Inject a Vite plugin via `viteFinal` that adds `/mcp` endpoint
-- Handler in `mcp-handler.ts` creates session-based MCP servers using `StreamableHTTPServerTransport`
+- Handler in `mcp-handler.ts` creates MCP servers using `tmcp` with HTTP transport
 
 ### MCP Library Architecture
 
@@ -39,10 +39,11 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - Run `pnpm dev` at root for parallel development
 - Run `pnpm storybook` to test addon (starts internal-storybook + addon dev mode)
 
-**Build tools differ by package:**
+**Build tools:**
 
-- `packages/mcp`: Uses `tsdown` (rolldown-based, faster builds)
-- `packages/addon-mcp`: Uses `tsup` (esbuild-based)
+- All packages use `tsdown` (rolldown-based bundler)
+- Shared configuration in `tsdown-shared.config.ts` at monorepo root
+- Individual packages extend shared config in their `tsdown.config.ts`
 
 **Testing:**
 
@@ -97,36 +98,37 @@ import pkgJson from '../package.json' with { type: 'json' };
 1. Create `src/tools/my-tool.ts`:
 
 ```typescript
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import z from 'zod';
+import type { McpServer } from 'tmcp';
+import * as v from 'valibot';
+import type { AddonContext } from '../types.ts';
 
 export const MY_TOOL_NAME = 'my_tool';
 
-export function registerMyTool({
-	server,
-	options,
-}: {
-	server: McpServer;
-	options: Options;
-}) {
-	server.registerTool(
-		MY_TOOL_NAME,
+const MyToolInput = v.object({ 
+	param: v.string() 
+});
+
+type MyToolInput = v.InferOutput<typeof MyToolInput>;
+
+export async function addMyTool(server: McpServer<any, AddonContext>) {
+	server.tool(
 		{
+			name: MY_TOOL_NAME,
 			title: 'My Tool',
 			description: 'What it does',
-			inputSchema: z.object({ param: z.string() }),
+			schema: MyToolInput,
 		},
-		async ({ param }, { sessionId }) => {
+		async (input: MyToolInput) => {
 			// Implementation
 			return {
-				/* result */
+				content: [{ type: 'text', text: 'result' }],
 			};
 		},
 	);
 }
 ```
 
-2. Register in `src/mcp-handler.ts` after existing tools
+2. Import and call in `src/mcp-handler.ts` within `createAddonMcpHandler`
 
 ### In mcp package (`packages/mcp`):
 
@@ -165,11 +167,14 @@ export async function addMyTool(server: McpServer<any, StorybookContext>) {
 
 ## Special Build Considerations
 
-**JSON tree-shaking:**
+**Shared tsdown configuration:**
 
-- `packages/mcp/tsdown.config.ts` has custom plugin to work around rolldown bug
+- `tsdown-shared.config.ts` at monorepo root contains shared build settings
+- Targets Node 20.19 (minimum version supported by Storybook 10)
+- Includes custom JSON tree-shaking plugin to work around rolldown bug (see [rolldown#6614](https://github.com/rolldown/rolldown/issues/6614))
 - Only includes specified package.json keys in bundle (name, version, description)
-- If adding new package.json properties to code, update plugin
+- If adding new package.json properties to code, update the `jsonTreeShakePlugin` keys array in shared config
+- Individual packages extend this config and specify their entry points
 
 **Package exports:**
 

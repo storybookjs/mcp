@@ -64,7 +64,7 @@ pnpm install
 pnpm build
 ```
 
-Builds the project using `tsup` (esbuild-based bundler). Output goes to `dist/` directory.
+Builds the project using `tsdown` (rolldown-based bundler) with shared configuration from `../../tsdown-shared.config.ts`. Output goes to `dist/` directory.
 
 ### Development
 
@@ -196,7 +196,7 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 
 - `package.json` - Project metadata, scripts, and Storybook addon configuration
 - `tsconfig.json` - TypeScript configuration
-- `tsup.config.ts` - Build tool configuration
+- `tsdown.config.ts` - Build tool configuration (extends shared config from monorepo root)
 - `preset.js` - Entry point for Storybook preset (points to compiled `dist/preset.js`)
 
 ### Source Files
@@ -318,25 +318,28 @@ const framework =
 
 ## MCP Protocol
 
-This addon implements MCP using the official SDK:
+This addon implements MCP using `tmcp`:
 
-- **Transport**: StreamableHTTP (`@modelcontextprotocol/sdk/server/streamableHttp.js`)
-- **Session Management**: Each client gets a unique session ID via `randomUUID()`
-- **Tool Schema**: Uses Zod for input/output schema validation
-- **Lifecycle Hooks**: `onsessioninitialized` and `onclose` for session tracking
+- **Transport**: HTTP transport via `@tmcp/transport-http`
+- **Schema Validation**: Uses Valibot via `@tmcp/adapter-valibot` for input/output schema validation
+- **Context-Based**: AddonContext passed through to all tools containing Storybook options and runtime info
+- **Tool Registration**: Tools are added using `server.tool()` method with schema definitions
 
 ## Dependencies
 
 ### Runtime (Production)
 
-- `@modelcontextprotocol/sdk` - Official MCP SDK for server implementation
+- `tmcp` - Core MCP server implementation
+- `@tmcp/adapter-valibot` - Valibot schema adapter for MCP
+- `@tmcp/transport-http` - HTTP transport for MCP
+- `valibot` - Schema validation library
 
 ### Development
 
 - `storybook` - Peer dependency (Storybook framework)
-- `zod` - Schema validation for tool inputs/outputs
+- `valibot` - Schema validation for tool inputs/outputs
 - `ts-dedent` - Template string formatting
-- `tsup` - Build tool (esbuild-based)
+- `tsdown` - Build tool (rolldown-based)
 - `vite` - Peer dependency for middleware injection
 
 ## Telemetry
@@ -444,7 +447,7 @@ The `preset.js` file at the root re-exports the compiled preset from `dist/`.
 
 ### Development Dependencies
 
-- `tsup` - Build tool (esbuild-based bundler)
+- `tsdown` - Build tool (rolldown-based bundler, uses shared config from monorepo root)
 - `typescript` - TypeScript compiler
 - `vite` - Dev server (peer dependency via Storybook)
 - `storybook` - Storybook core (peer dependency)

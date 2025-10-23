@@ -72,7 +72,7 @@ pnpm dev
 
 This runs:
 
-- `packages/addon-mcp` in watch mode (using `tsup --watch`)
+- `packages/addon-mcp` in watch mode (using `tsdown --watch`)
 - `packages/mcp` in watch mode (using Node's `--watch` flag)
 
 **Note:** Running `pnpm storybook` automatically starts the addon in dev mode alongside Storybook. In this mode, making changes to `addon-mcp` will automatically restart Storybook. So you typically only need one command:
