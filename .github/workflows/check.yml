@@ -59,6 +59,32 @@ jobs:
       - name: Run tests
         run: pnpm test -- run
 
+  typecheck-mcp:
+    name: Type check @storybook/mcp
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run type checking
+        run: pnpm typecheck --filter @storybook/mcp
+
+  typecheck-addon-mcp:
+    name: Type check @storybook/addon-mcp
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run type checking
+        run: pnpm typecheck --filter @storybook/addon-mcp
+
   release-preview:
     name: Publish preview releases
     runs-on: ubuntu-latest

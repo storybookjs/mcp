@@ -16,7 +16,8 @@
 		"format": "prettier --write .",
 		"inspect": "pnpm run --filter @storybook/addon-mcp inspect",
 		"release": "turbo run build && pnpm changeset publish",
-		"test": "turbo run test"
+		"test": "turbo run test",
+		"typecheck": "turbo run typecheck"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",

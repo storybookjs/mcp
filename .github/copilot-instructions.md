@@ -50,6 +50,14 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - Run `pnpm test run --coverage` in mcp package
 - Prefer TDD when adding new tools
 
+**Type checking:**
+
+- All packages have TypeScript strict mode enabled
+- Run `pnpm typecheck` at root to check all packages
+- Run `pnpm typecheck` in individual packages for focused checking
+- CI enforces type checking on all PRs
+- Type checking uses `tsc --noEmit` (no build artifacts, just validation)
+
 **Debugging MCP servers:**
 
 ```bash
