@@ -83,7 +83,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run type checking
-        run: pnpm typecheck --filter @storybook/mcp
+        run: pnpm --filter @storybook/mcp typecheck
 
   typecheck-addon-mcp:
     name: Type check @storybook/addon-mcp
@@ -96,7 +96,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run type checking
-        run: pnpm typecheck --filter @storybook/addon-mcp
+        run: pnpm --filter @storybook/addon-mcp typecheck
 
   release-preview:
     name: Publish preview releases
