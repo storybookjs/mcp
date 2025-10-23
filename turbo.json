@@ -1,5 +1,10 @@
 {
 	"$schema": "https://turbo.build/schema.json",
+	"globalPassThroughEnv": [
+		"STORYBOOK_TELEMETRY_URL",
+		"STORYBOOK_DISABLE_TELEMETRY",
+		"STORYBOOK_TELEMETRY_DEBUG"
+	],
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],
@@ -20,6 +25,9 @@
 		},
 		"test": {
 			"dependsOn": ["build"]
+		},
+		"typecheck": {
+			"outputs": []
 		}
 	}
 }

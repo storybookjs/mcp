@@ -59,6 +59,45 @@ jobs:
       - name: Run tests
         run: pnpm test -- run
 
+  test-addon-mcp:
+    name: Test @storybook/addon-mcp
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run tests
+        run: pnpm --filter @storybook/addon-mcp test -- run
+
+  typecheck-mcp:
+    name: Type check @storybook/mcp
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run type checking
+        run: pnpm --filter @storybook/mcp typecheck
+
+  typecheck-addon-mcp:
+    name: Type check @storybook/addon-mcp
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run type checking
+        run: pnpm --filter @storybook/addon-mcp typecheck
+
   release-preview:
     name: Publish preview releases
     runs-on: ubuntu-latest
@@ -74,7 +113,7 @@ jobs:
         run: pnpm build
 
       - name: Publish preview release
-        run: pnpm pkg-pr-new publish --compact --no-template './packages/addon-mcp'
+        run: pnpm pkg-pr-new publish --compact --no-template './packages/*'
 
   format-check:
     name: Check formatting

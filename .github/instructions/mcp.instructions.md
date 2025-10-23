@@ -197,19 +197,6 @@ pnpm release          # Build and publish to npm
 
 Releases are automated via GitHub Actions (see `.github/workflows/release.yml`).
 
-## Documentation resources
-
-When working with the MCP server/tools related stuff, refer to the following resources:
-
-- https://github.com/paoloricciuti/tmcp/tree/main/packages/tmcp
-- https://github.com/paoloricciuti/tmcp/tree/main/packages/transport-http
-- https://github.com/paoloricciuti/tmcp
-
-When working on data validation, refer to the following resources:
-
-- https://valibot.dev/
-- https://github.com/paoloricciuti/tmcp/tree/main/packages/adapter-valibot
-
 ## Notes for AI Assistants
 
 - Prefer test-driven development when possible, and continously use test coverage to verify test quality
