@@ -4,6 +4,7 @@ storybook-static/
 build-storybook.log
 .DS_Store
 .env
+coverage/
 
 # Turborepo
 .turbo

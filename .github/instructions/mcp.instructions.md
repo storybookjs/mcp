@@ -88,6 +88,8 @@ Or with coverage enabled:
 pnpm test run --coverage
 ```
 
+**Important**: Vitest automatically clears all mocks between tests, so you should never need to call `vi.clearAllMocks()` in a `beforeEach` hook.
+
 ### Inspector Tool
 
 ```bash
