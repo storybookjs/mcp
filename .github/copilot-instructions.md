@@ -5,7 +5,12 @@
 This is a **pnpm monorepo** with two MCP implementations:
 
 - **`packages/addon-mcp`**: Storybook addon using `tmcp`, exposes MCP server at `/mcp` via Vite middleware
+  - Provides addon-specific tools (story URLs, UI building instructions)
+  - **Imports and reuses tools from `@storybook/mcp` package** for component manifest features
+  - Extends `StorybookContext` with addon-specific configuration (`AddonContext`)
 - **`packages/mcp`**: Standalone MCP library using `tmcp`, reusable outside Storybook
+  - Provides reusable component manifest tools (list components, get documentation)
+  - Exports tools and types for consumption by addon-mcp
 - **`apps/internal-storybook`**: Test environment for addon integration
 
 **Both packages use `tmcp`** with HTTP transport and Valibot schema validation for consistent APIs.
@@ -25,6 +30,7 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - Uses `tmcp` with HTTP transport and Valibot schema validation
 - Factory pattern: `createStorybookMcpHandler()` returns a request handler
 - Context-based: handlers accept `StorybookContext` to override source URLs
+- **Exports tools and types** for reuse by `addon-mcp` and other consumers
 
 ## Development Environment
 
@@ -95,6 +101,8 @@ import pkgJson from '../package.json' with { type: 'json' };
 
 ### In addon package (`packages/addon-mcp`):
 
+**Option 1: Addon-specific tools** (for tools that require Storybook addon context):
+
 1. Create `src/tools/my-tool.ts`:
 
 ```typescript
@@ -104,8 +112,8 @@ import type { AddonContext } from '../types.ts';
 
 export const MY_TOOL_NAME = 'my_tool';
 
-const MyToolInput = v.object({ 
-	param: v.string() 
+const MyToolInput = v.object({
+	param: v.string(),
 });
 
 type MyToolInput = v.InferOutput<typeof MyToolInput>;
@@ -128,23 +136,56 @@ export async function addMyTool(server: McpServer<any, AddonContext>) {
 }
 ```
 
-2. Import and call in `src/mcp-handler.ts` within `createAddonMcpHandler`
+2. Import and call in `src/mcp-handler.ts` within `initializeMCPServer`
+
+**Option 2: Reuse tools from `@storybook/mcp`** (for component manifest features):
+
+1. Import the tool from `@storybook/mcp` in `src/mcp-handler.ts`:
+
+```typescript
+import { addMyTool, MY_TOOL_NAME } from '@storybook/mcp';
+```
+
+2. Call it conditionally based on feature flags (see component manifest tools example)
+3. Ensure `AddonContext` extends `StorybookContext` for compatibility
+4. Pass the `source` URL in context for manifest-based tools
 
 ### In mcp package (`packages/mcp`):
 
 1. Create `src/tools/my-tool.ts`:
 
 ```typescript
+export const MY_TOOL_NAME = 'my-tool';
+
 export async function addMyTool(server: McpServer<any, StorybookContext>) {
-	server.tool({ name: 'my_tool', description: 'What it does' }, async () => ({
-		content: [{ type: 'text', text: 'result' }],
-	}));
+	server.tool(
+		{ name: MY_TOOL_NAME, description: 'What it does' },
+		async () => ({
+			content: [{ type: 'text', text: 'result' }],
+		}),
+	);
 }
 ```
 
 2. Import and call in `src/index.ts` within `createStorybookMcpHandler`
 
+3. **Export for reuse** in `src/index.ts`:
+
+```typescript
+export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
+```
+
 ## Integration Points
+
+**Tool Reuse Between Packages:**
+
+- `addon-mcp` depends on `@storybook/mcp` (workspace dependency)
+- `AddonContext` extends `StorybookContext` to ensure type compatibility
+- Component manifest tools are conditionally registered based on feature flags:
+  - Checks `features.experimentalComponentsManifest` flag
+  - Checks for `experimental_componentManifestGenerator` preset
+  - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
+- Context includes `source` URL pointing to `/manifests/components.json` endpoint
 
 **Storybook internals used:**
 
@@ -152,6 +193,8 @@ export async function addMyTool(server: McpServer<any, StorybookContext>) {
 - `storybook/internal/types` - TypeScript types for Options, StoryIndex
 - `storybook/internal/node-logger` - Logging utilities
 - Framework detection via `options.presets.apply('framework')`
+- Feature flags via `options.presets.apply('features')`
+- Component manifest generator via `options.presets.apply('experimental_componentManifestGenerator')`
 
 **Story URL generation:**
 
