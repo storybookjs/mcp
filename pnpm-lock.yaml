@@ -92,6 +92,9 @@ importers:
 
   packages/addon-mcp:
     dependencies:
+      '@storybook/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
         version: 0.1.4(tmcp@1.15.2(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
