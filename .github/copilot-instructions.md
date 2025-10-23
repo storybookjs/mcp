@@ -104,8 +104,8 @@ import type { AddonContext } from '../types.ts';
 
 export const MY_TOOL_NAME = 'my_tool';
 
-const MyToolInput = v.object({ 
-	param: v.string() 
+const MyToolInput = v.object({
+	param: v.string(),
 });
 
 type MyToolInput = v.InferOutput<typeof MyToolInput>;
