@@ -130,20 +130,8 @@ This uses the configuration in `.mcp.inspect.json` to connect to your local MCP 
 Alternatively, you can also use these `curl` comamnds to check that everything works:
 
 ```bash
-# start package development
-pnpm dev
-```
-
-### Debugging with Storybook
-
-You can start the Storybook with
-
-```bash
-pnpm storybook
-```
-
-```bash
-# test that the server is running
+# test that the mcp server is running
+# use port 6006 to test the addon-mcp server instead
 curl -X POST \
   http://localhost:13316/mcp      \
   -H "Content-Type: application/json" \
@@ -155,7 +143,6 @@ curl -X POST \
   }'
 
 # test a specific tool call
-
 curl -X POST http://localhost:13316/mcp \
   -H "Content-Type: application/json" \
   -d '{
@@ -167,6 +154,14 @@ curl -X POST http://localhost:13316/mcp \
       "arguments": {}
     }
   }'
+```
+
+### Debugging with Storybook
+
+You can start the Storybook with
+
+```bash
+pnpm storybook
 ```
 
 This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` and try it out.
