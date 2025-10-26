@@ -1,17 +1,15 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(git merge:*)",
-      "Bash(git checkout:*)",
-      "Bash(git add:*)",
-      "mcp__storybook-mcp__get_ui_building_instructions",
-      "mcp__storybook-mcp__get_story_urls"
-    ],
-    "deny": [],
-    "ask": []
-  },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "storybook-mcp"
-  ]
+	"permissions": {
+		"allow": [
+			"Bash(git merge:*)",
+			"Bash(git checkout:*)",
+			"Bash(git add:*)",
+			"mcp__storybook-addon-mcp__get-ui-building-instructions",
+			"mcp__storybook-addon-mcp__get-story-urls"
+		],
+		"deny": [],
+		"ask": []
+	},
+	"enableAllProjectMcpServers": true,
+	"enabledMcpjsonServers": ["storybook-addon-mcp", "storybook-mcp"]
 }

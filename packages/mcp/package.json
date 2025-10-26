@@ -1,0 +1,52 @@
+{
+	"name": "@storybook/mcp",
+	"version": "0.0.3",
+	"description": "MCP server that serves knowledge about your components based on your Storybook stories and documentation",
+	"keywords": [
+		"storybook",
+		"mcp"
+	],
+	"homepage": "https://github.com/storybookjs/mcp/blob/main/packages/mcp/README.md",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/storybookjs/mcp.git",
+		"directory": "packages/mcp"
+	},
+	"license": "MIT",
+	"author": "Storybook Core Team",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "node --watch ./serve.ts",
+		"test": "vitest",
+		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-mcp",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@tmcp/adapter-valibot": "catalog:",
+		"@tmcp/transport-http": "catalog:",
+		"tmcp": "catalog:",
+		"valibot": "catalog:"
+	},
+	"devDependencies": {
+		"@tsconfig/node-ts": "^23.6.1",
+		"@tsconfig/node24": "^24.0.1",
+		"@types/node": "catalog:",
+		"@vitest/coverage-v8": "catalog:",
+		"react-docgen": "^8.0.2",
+		"srvx": "^0.8.16",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	}
+}

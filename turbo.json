@@ -1,0 +1,34 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"globalPassThroughEnv": [
+		"STORYBOOK_TELEMETRY_URL",
+		"STORYBOOK_DISABLE_TELEMETRY",
+		"STORYBOOK_TELEMETRY_DEBUG"
+	],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**"]
+		},
+		"build-storybook": {
+			"dependsOn": ["^build"],
+			"outputs": ["storybook-static/**"]
+		},
+		"dev": {
+			"persistent": true
+		},
+		"storybook": {
+			"dependsOn": ["^build"],
+			"with": ["@storybook/addon-mcp#dev"],
+			"persistent": true,
+			"interruptible": true
+		},
+		"test": {
+			"dependsOn": ["^build"]
+		},
+		"typecheck": {
+			"dependsOn": ["^build"],
+			"outputs": []
+		}
+	}
+}

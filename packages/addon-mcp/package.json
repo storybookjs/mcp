@@ -1,0 +1,78 @@
+{
+	"name": "@storybook/addon-mcp",
+	"version": "0.0.9",
+	"description": "Help agents automatically write and test stories for your UI components",
+	"keywords": [
+		"storybook-addon",
+		"mcp",
+		"ai"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/storybookjs/mcp.git",
+		"directory": "packages/addon-mcp"
+	},
+	"license": "MIT",
+	"author": "Storybook Core Team",
+	"type": "module",
+	"exports": {
+		"./preset": "./dist/preset.js",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist/**/*",
+		"README.md",
+		"*.js",
+		"*.d.ts"
+	],
+	"scripts": {
+		"prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
+		"build": "tsdown --config ../../tsdown.config.ts",
+		"dev": "pnpm run build -- --watch",
+		"test": "vitest",
+		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-addon-mcp",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@storybook/mcp": "workspace:*",
+		"@tmcp/adapter-valibot": "catalog:",
+		"@tmcp/transport-http": "catalog:",
+		"tmcp": "catalog:",
+		"valibot": "catalog:"
+	},
+	"devDependencies": {
+		"@types/node": "catalog:",
+		"@vitest/coverage-v8": "catalog:",
+		"storybook": "^10.0.0-0",
+		"ts-dedent": "^2.2.0",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"vite": "^7.0.5",
+		"vitest": "catalog:"
+	},
+	"peerDependencies": {
+		"storybook": ">=9.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"bundler": {
+		"nodeEntries": [
+			"src/preset.ts"
+		]
+	},
+	"storybook": {
+		"displayName": "Addon MCP",
+		"supportedFrameworks": [
+			"react",
+			"vue3",
+			"angular",
+			"web-components",
+			"html",
+			"svelte",
+			"preact",
+			"react-native"
+		],
+		"icon": "https://user-images.githubusercontent.com/321738/63501763-88dbf600-c4cc-11e9-96cd-94adadc2fd72.png"
+	}
+}
