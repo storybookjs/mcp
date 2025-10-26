@@ -1,9 +1,7 @@
 import type { McpServer } from 'tmcp';
-import * as v from 'valibot';
 import { GET_STORY_URLS_TOOL_NAME } from './get-story-urls.ts';
 import { collectTelemetry } from '../telemetry.ts';
 import uiInstructionsTemplate from '../ui-building-instructions.md';
-import { logger } from 'storybook/internal/node-logger';
 import { errorToMCPContent } from '../utils/errors.ts';
 import type { AddonContext } from '../types.ts';
 
