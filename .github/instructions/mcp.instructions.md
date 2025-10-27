@@ -13,7 +13,8 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 ### Key Components
 
 - **MCP Server**: Built using the `tmcp` library with HTTP transport
-- **Tools System**: Extensible tool registration system (currently includes `list_all_components`)
+- **Tools System**: Extensible tool registration system (includes `list_all_components` and `get_component_documentation`)
+- **Component Manifest**: Parses and formats component documentation including React prop information from react-docgen
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
 
@@ -24,7 +25,15 @@ src/
   index.ts          # Main entry point - exports createStorybookMcpHandler
   serve.ts          # Development server setup
   tools/
-    list.ts         # Tool definitions (e.g., list_all_components)
+    list-all-components.ts              # List all components tool
+    get-component-documentation.ts      # Get component documentation tool
+  utils/
+    format-manifest.ts                  # Format component manifest to XML
+    parse-react-docgen.ts              # Parse react-docgen output
+    get-manifest.ts                    # Fetch and validate manifest
+    dedent.ts                          # Template string dedentation
+    error-to-mcp-content.test.ts       # Error formatting utilities
+  types.ts          # TypeScript types and Valibot schemas
 ```
 
 ### Key Design Patterns
@@ -32,6 +41,40 @@ src/
 1. **Factory Pattern**: `createStorybookMcpHandler()` creates configured handler instances
 2. **Tool Registration**: Tools are added to the server using `server.tool()` method
 3. **Async Handler**: Returns a Promise-based request handler compatible with standard HTTP servers
+
+### Component Manifest and ReactDocgen Support
+
+Component manifests can include a `reactDocgen` property containing prop information parsed by [react-docgen](https://github.com/reactjs/react-docgen). This library analyzes React components to extract prop types, descriptions, default values, and other metadata.
+
+**How it works:**
+
+1. **Input**: A component manifest may include a `reactDocgen` field containing the raw output from react-docgen's `Documentation` type
+2. **Parsing**: The `parseReactDocgen()` utility in `src/utils/parse-react-docgen.ts` converts the react-docgen output into a simplified structure:
+   - Extracts prop names
+   - Serializes TypeScript types into readable strings (handles unions, intersections, functions, objects, etc.)
+   - Includes optional fields: `description`, `type`, `defaultValue`, `required`
+3. **Formatting**: The `formatComponentManifest()` function in `src/utils/format-manifest.ts` generates an XML representation of the component including a `<props>` section when `reactDocgen` is present
+4. **Output**: Each prop is formatted as:
+   ```xml
+   <prop>
+     <prop_name>propName</prop_name>
+     <prop_type>string | number</prop_type>
+     <prop_required>false</prop_required>
+     <prop_default>"default"</prop_default>
+     <prop_description>
+       Prop description text
+     </prop_description>
+   </prop>
+   ```
+
+**Type serialization examples:**
+- Unions: `"primary" | "secondary"` 
+- Functions: `(event: MouseEvent) => void`
+- Objects: `{ name: string; age?: number }`
+- Arrays: `string[]`
+- Generics: `Promise<Data>`
+
+All optional fields (`description`, `type`, `defaultValue`, `required`) are only included in the output when they have defined values.
 
 ## Development Workflow
 

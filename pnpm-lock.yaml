@@ -169,6 +169,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))
+      react-docgen:
+        specifier: ^8.0.2
+        version: 8.0.2
       srvx:
         specifier: ^0.8.16
         version: 0.8.16
