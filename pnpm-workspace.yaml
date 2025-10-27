@@ -15,6 +15,6 @@ catalog:
   vitest: ^3.2.4
   '@vitest/coverage-v8': 3.2.4
   '@types/node': 20.19.0
-  'storybook': 0.0.0-pr-32816-sha-28f59f53
-  '@storybook/addon-docs': 0.0.0-pr-32816-sha-28f59f53
-  '@storybook/react-vite': 0.0.0-pr-32816-sha-28f59f53
+  'storybook': 0.0.0-pr-32810-sha-6e759c7e
+  '@storybook/addon-docs': 0.0.0-pr-32810-sha-6e759c7e
+  '@storybook/react-vite': 0.0.0-pr-32810-sha-6e759c7e
