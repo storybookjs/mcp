@@ -6,7 +6,7 @@ const config = defineMain({
 		'../stories/components/**/*.stories.@(js|jsx|ts|tsx)',
 		{
 			titlePrefix: 'Other UI',
-			directory: '../stories/other',
+			directory: '../src/stories/other',
 			files: '**/*.stories.@(js|jsx|ts|tsx)',
 		},
 	],

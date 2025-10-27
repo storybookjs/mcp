@@ -1,11 +1,20 @@
+import type { Plugin } from 'vite';
 import { mcpServerHandler } from './mcp-handler.ts';
-import type { PresetProperty } from 'storybook/internal/types';
+import type { Options } from 'storybook/internal/types';
 
-export const experimental_devServer: PresetProperty<
-	'experimental_devServer'
-> = (app, options) => {
-	app!.use('/mcp', (req, res, next) =>
-		mcpServerHandler(req, res, next, options),
-	);
-	return app;
+// This is a workaround for Storybook not having an API for addons to register server middlewares/handlers
+// We can do it through Vite's plugin API instead, which gets added to Storybook's dev server in the end. 😈
+export const viteFinal = async (config: any, options: Options) => {
+	const mcpHandlerPlugin: Plugin = {
+		name: 'storybook:mcp-server',
+		configureServer(server) {
+			server.middlewares.use('/mcp', (req, res, next) =>
+				mcpServerHandler(req, res, next, options),
+			);
+		},
+	};
+	return {
+		...config,
+		plugins: config.plugins.concat(mcpHandlerPlugin),
+	};
 };

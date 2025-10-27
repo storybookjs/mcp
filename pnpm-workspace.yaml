@@ -6,15 +6,19 @@ onlyBuiltDependencies:
   - esbuild
 
 catalog:
+  # MCP dependencies
   tmcp: ^1.15.2
   '@tmcp/adapter-valibot': ^0.1.4
   '@tmcp/transport-http': ^0.7.0
   valibot: ^1.1.0
+
+  # Build tools
   tsdown: ^0.15.9
   typescript: ^5.9.3
+
+  # Testing
   vitest: ^3.2.4
   '@vitest/coverage-v8': 3.2.4
+
+  # Node types
   '@types/node': 20.19.0
-  'storybook': 0.0.0-pr-32810-sha-6e759c7e
-  '@storybook/addon-docs': 0.0.0-pr-32810-sha-6e759c7e
-  '@storybook/react-vite': 0.0.0-pr-32810-sha-6e759c7e
