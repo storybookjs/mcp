@@ -49,11 +49,23 @@ pnpm dev
 # Run unit tests
 pnpm test
 
-# Run Storybook with the addon for testing
-pnpm storybook
-```
+To use this addon with [Claude Code](https://claude.ai/code), use the built-in MCP configuration command:
 
-The `pnpm storybook` command starts:
+1. **Add the MCP server**: Run the following command in your terminal:
+
+   ```bash
+   claude mcp add storybook-mcp --transport http http://localhost:6006/mcp --scope project
+   ```
+
+2. **Start Storybook**: Make sure your Storybook development server is running:
+
+   ```bash
+   npm run storybook
+   ```
+
+3. **Connect Claude Code**: Claude Code should automatically detect and connect to the MCP server when it's running. You can verify the connection by asking Claude to use Storybook-related tools.
+
+#### Other MCP Clients
 
 - The internal test Storybook instance on `http://localhost:6006`
 - The addon in watch mode, so changes are reflected automatically

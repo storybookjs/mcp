@@ -15,6 +15,7 @@ import { buffer } from 'node:stream/consumers';
 import { collectTelemetry } from './telemetry.ts';
 import type { AddonContext } from './types.ts';
 import { logger } from 'storybook/internal/node-logger';
+import serverPrompt from './prompts/serverPrompt.md'
 
 let transport: HttpTransport<AddonContext> | undefined;
 let origin: string | undefined;
@@ -33,6 +34,7 @@ const initializeMCPServer = async (options: Options) => {
 			capabilities: {
 				tools: { listChanged: true },
 			},
+			instructions: serverPrompt
 		},
 	).withContext<AddonContext>();
 
