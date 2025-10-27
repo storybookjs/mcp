@@ -16,7 +16,7 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 - **Tools System**: Extensible tool registration system with optional handlers for tracking tool usage
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
-- **Context System**: `StorybookContext` allows passing optional handlers (`onListAllComponents`, `onGetComponentDocumentation`) that are called by tools when provided
+- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided
 
 ### File Structure
 
@@ -150,6 +150,7 @@ To add a new MCP tool:
 1. Create a new file in `src/tools/` (e.g., `src/tools/my-tool.ts`)
 2. Export a constant for the tool name
 3. Export an async function that adds the tool to the server:
+
    ```typescript
    export async function addMyTool(server: McpServer<any, StorybookContext>) {
    	server.tool(
@@ -174,6 +175,7 @@ To add a new MCP tool:
    	);
    }
    ```
+
 4. Import and call the function in `src/index.ts` in the `createStorybookMcpHandler` function
 5. If adding an optional handler:
    - Add the handler type to `StorybookContext` in `src/types.ts`

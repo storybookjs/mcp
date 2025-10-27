@@ -31,7 +31,10 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - Factory pattern: `createStorybookMcpHandler()` returns a request handler
 - Context-based: handlers accept `StorybookContext` to override source URLs and provide optional callbacks
 - **Exports tools and types** for reuse by `addon-mcp` and other consumers
-- **Optional handlers**: `StorybookContext` supports optional `onListAllComponents` and `onGetComponentDocumentation` handlers that are called by tools when provided, allowing consumers to track usage or collect telemetry
+- **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
+  - `onSessionInitialize`: Called when an MCP session is initialized
+  - `onListAllComponents`: Called when the list-all-components tool is invoked
+  - `onGetComponentDocumentation`: Called when the get-component-documentation tool is invoked
 
 ## Development Environment
 
@@ -187,12 +190,11 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
   - Checks for `experimental_componentManifestGenerator` preset
   - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
 - Context includes `source` URL pointing to `/manifests/components.json` endpoint
-- **Optional handlers for tool tracking**:
+- **Optional handlers for tracking**:
+  - `onSessionInitialize`: Called when an MCP session is initialized, receives context
   - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
   - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input, found components, and not found IDs
-  - Addon-mcp uses these handlers to collect telemetry on tool usage
-
-**Storybook internals used:**
+  - Addon-mcp uses these handlers to collect telemetry on tool usage**Storybook internals used:**
 
 - `storybook/internal/csf` - `storyNameFromExport()` for story name conversion
 - `storybook/internal/types` - TypeScript types for Options, StoryIndex
