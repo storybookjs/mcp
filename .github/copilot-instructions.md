@@ -29,8 +29,9 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 
 - Uses `tmcp` with HTTP transport and Valibot schema validation
 - Factory pattern: `createStorybookMcpHandler()` returns a request handler
-- Context-based: handlers accept `StorybookContext` to override source URLs
+- Context-based: handlers accept `StorybookContext` to override source URLs and provide optional callbacks
 - **Exports tools and types** for reuse by `addon-mcp` and other consumers
+- **Optional handlers**: `StorybookContext` supports optional `onListAllComponents` and `onGetComponentDocumentation` handlers that are called by tools when provided, allowing consumers to track usage or collect telemetry
 
 ## Development Environment
 
@@ -186,6 +187,10 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
   - Checks for `experimental_componentManifestGenerator` preset
   - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
 - Context includes `source` URL pointing to `/manifests/components.json` endpoint
+- **Optional handlers for tool tracking**:
+  - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
+  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input, found components, and not found IDs
+  - Addon-mcp uses these handlers to collect telemetry on tool usage
 
 **Storybook internals used:**
 

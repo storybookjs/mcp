@@ -13,9 +13,10 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 ### Key Components
 
 - **MCP Server**: Built using the `tmcp` library with HTTP transport
-- **Tools System**: Extensible tool registration system (currently includes `list_all_components`)
+- **Tools System**: Extensible tool registration system with optional handlers for tracking tool usage
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
+- **Context System**: `StorybookContext` allows passing optional handlers (`onListAllComponents`, `onGetComponentDocumentation`) that are called by tools when provided
 
 ### File Structure
 
@@ -150,19 +151,34 @@ To add a new MCP tool:
 2. Export a constant for the tool name
 3. Export an async function that adds the tool to the server:
    ```typescript
-   export async function addMyTool(server: McpServer) {
+   export async function addMyTool(server: McpServer<any, StorybookContext>) {
    	server.tool(
    		{
    			name: 'my_tool_name',
    			description: 'Tool description',
    		},
-   		() => ({
-   			content: [{ type: 'text', text: 'result' }],
-   		}),
+   		async () => {
+   			// Tool implementation
+   			const result = 'result';
+
+   			// Call optional handler if provided
+   			await server.ctx.custom?.onMyTool?.({
+   				context: server.ctx.custom,
+   				// ... any relevant data
+   			});
+
+   			return {
+   				content: [{ type: 'text', text: result }],
+   			};
+   		},
    	);
    }
    ```
-4. Import and call the function in `src/index.ts` after `addListTool(server)`
+4. Import and call the function in `src/index.ts` in the `createStorybookMcpHandler` function
+5. If adding an optional handler:
+   - Add the handler type to `StorybookContext` in `src/types.ts`
+   - Document what parameters the handler receives
+   - Export the handler type from `src/index.ts` if it should be usable by consumers
 
 ## MCP Protocol
 
