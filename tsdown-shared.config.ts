@@ -53,7 +53,7 @@ function jsonTreeShakePlugin(options: { fileName: string; keys: string[] }) {
 		},
 	};
 }
-
+console.log('CI CI CI', process.env.CI, typeof process.env.CI);
 export default (pkgName: string) =>
 	defineConfig({
 		target: 'node20.19', // Minimum Node version supported by Storybook 10

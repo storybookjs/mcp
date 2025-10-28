@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -29,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -161,6 +165,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
       - name: Download @storybook/mcp coverage
         uses: actions/download-artifact@v4
