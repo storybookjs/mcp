@@ -6,10 +6,11 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write # used to upload artifacts to codecov
+
 jobs:
   build-mcp:
-    permissions:
-      id-token: write # used to upload artifacts to codecov
     name: Build @storybook/mcp
     runs-on: ubuntu-latest
     steps:
