@@ -8,6 +8,8 @@ on:
 
 jobs:
   build-mcp:
+    permissions:
+      id-token: write # used to upload artifacts to codecov
     name: Build @storybook/mcp
     runs-on: ubuntu-latest
     steps:
@@ -151,8 +153,6 @@ jobs:
         run: pnpm format --check
 
   collect-coverage:
-    permissions:
-      id-token: write
     name: Collect coverage and test results
     runs-on: ubuntu-latest
     needs: [test-mcp, test-addon-mcp]
