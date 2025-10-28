@@ -13,10 +13,11 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 ### Key Components
 
 - **MCP Server**: Built using the `tmcp` library with HTTP transport
-- **Tools System**: Extensible tool registration system (includes `list_all_components` and `get_component_documentation`)
+- **Tools System**: Extensible tool registration system with optional handlers for tracking tool usage
 - **Component Manifest**: Parses and formats component documentation including React prop information from react-docgen
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
+- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided
 
 ### File Structure
 
@@ -68,7 +69,8 @@ Component manifests can include a `reactDocgen` property containing prop informa
    ```
 
 **Type serialization examples:**
-- Unions: `"primary" | "secondary"` 
+
+- Unions: `"primary" | "secondary"`
 - Functions: `(event: MouseEvent) => void`
 - Objects: `{ name: string; age?: number }`
 - Arrays: `string[]`
@@ -192,20 +194,37 @@ To add a new MCP tool:
 1. Create a new file in `src/tools/` (e.g., `src/tools/my-tool.ts`)
 2. Export a constant for the tool name
 3. Export an async function that adds the tool to the server:
+
    ```typescript
-   export async function addMyTool(server: McpServer) {
+   export async function addMyTool(server: McpServer<any, StorybookContext>) {
    	server.tool(
    		{
    			name: 'my_tool_name',
    			description: 'Tool description',
    		},
-   		() => ({
-   			content: [{ type: 'text', text: 'result' }],
-   		}),
+   		async () => {
+   			// Tool implementation
+   			const result = 'result';
+
+   			// Call optional handler if provided
+   			await server.ctx.custom?.onMyTool?.({
+   				context: server.ctx.custom,
+   				// ... any relevant data
+   			});
+
+   			return {
+   				content: [{ type: 'text', text: result }],
+   			};
+   		},
    	);
    }
    ```
-4. Import and call the function in `src/index.ts` after `addListTool(server)`
+
+4. Import and call the function in `src/index.ts` in the `createStorybookMcpHandler` function
+5. If adding an optional handler:
+   - Add the handler type to `StorybookContext` in `src/types.ts`
+   - Document what parameters the handler receives
+   - Export the handler type from `src/index.ts` if it should be usable by consumers
 
 ## MCP Protocol
 
