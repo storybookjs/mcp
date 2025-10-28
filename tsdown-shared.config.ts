@@ -1,6 +1,7 @@
 import { defineConfig } from 'tsdown';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 /**
  * Plugin to tree-shake JSON file imports
@@ -53,15 +54,24 @@ function jsonTreeShakePlugin(options: { fileName: string; keys: string[] }) {
 	};
 }
 
-export default defineConfig({
-	target: 'node20.19', // Minimum Node version supported by Storybook 10
-	loader: {
-		'.md': 'text',
-	},
-	plugins: [
-		jsonTreeShakePlugin({
-			fileName: 'package.json',
-			keys: ['name', 'version', 'description'],
-		}),
-	],
-});
+export default (pkgName: string) =>
+	defineConfig({
+		target: 'node20.19', // Minimum Node version supported by Storybook 10
+		loader: {
+			'.md': 'text',
+		},
+		plugins: [
+			jsonTreeShakePlugin({
+				fileName: 'package.json',
+				keys: ['name', 'version', 'description'],
+			}),
+			codecovVitePlugin({
+				enableBundleAnalysis: true,
+				bundleName: pkgName,
+				oidc: {
+					useGitHubOIDC: true,
+				},
+				dryRun: process.env.CI !== 'true',
+			}),
+		],
+	});
