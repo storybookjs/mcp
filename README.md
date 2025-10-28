@@ -105,8 +105,6 @@ pnpm --filter @storybook/mcp build
 
 ### Testing
 
-Currently, only the `mcp` package has automated tests:
-
 ```bash
 # Watch tests
 pnpm test
@@ -118,8 +116,6 @@ pnpm test run
 pnpm test run --coverage
 ```
 
-The `addon-mcp` package relies on manual testing via the internal Storybook instance.
-
 ### Debugging MCP Servers
 
 Use the MCP Inspector to debug and test MCP server functionality:
@@ -130,6 +126,45 @@ pnpm inspect
 ```
 
 This uses the configuration in `.mcp.inspect.json` to connect to your local MCP servers.
+
+Alternatively, you can also use these `curl` comamnds to check that everything works:
+
+```bash
+# test that the mcp server is running
+# use port 6006 to test the addon-mcp server instead
+curl -X POST \
+  http://localhost:13316/mcp      \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/list",
+    "params": {}
+  }'
+
+# test a specific tool call
+curl -X POST http://localhost:13316/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "list-all-components",
+      "arguments": {}
+    }
+  }'
+```
+
+### Debugging with Storybook
+
+You can start the Storybook with
+
+```bash
+pnpm storybook
+```
+
+This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` and try it out.
 
 ### Formatting
 
