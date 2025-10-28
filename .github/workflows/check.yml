@@ -23,7 +23,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Build
-        run: pnpm build --filter @storybook/mcp
+        run: pnpm build --env-mode=loose--filter @storybook/mcp
 
   build-addon-mcp:
     name: Build @storybook/addon-mcp
@@ -38,7 +38,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Build
-        run: pnpm build --filter @storybook/addon-mcp
+        run: pnpm build --env-mode=loose --filter @storybook/addon-mcp
 
   build-storybook:
     name: Build internal Storybook
