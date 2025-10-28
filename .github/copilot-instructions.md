@@ -194,7 +194,9 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
   - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
   - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input, found components, and not found IDs
-  - Addon-mcp uses these handlers to collect telemetry on tool usage**Storybook internals used:**
+  - Addon-mcp uses these handlers to collect telemetry on tool usage
+
+**Storybook internals used:**
 
 - `storybook/internal/csf` - `storyNameFromExport()` for story name conversion
 - `storybook/internal/types` - TypeScript types for Options, StoryIndex
