@@ -24,7 +24,7 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 
 The addon supports two toolsets that can be enabled/disabled:
 
-1. **`storiesDevelopment`** (default: true)
+1. **`core`** (default: true)
    - `get-story-urls`: Retrieve story URLs from Storybook
    - `get-ui-building-instructions`: Provide UI development guidelines
 
@@ -42,7 +42,7 @@ The addon supports two toolsets that can be enabled/disabled:
 	name: '@storybook/addon-mcp',
 	options: {
 		toolsets: {
-			storiesDevelopment: true,
+			core: true,
 			componentDocumentation: true,
 		}
 	}
@@ -51,7 +51,7 @@ The addon supports two toolsets that can be enabled/disabled:
 
 2. **Per-Request Header** (`X-MCP-Toolsets`):
    - Comma-separated list of toolset names
-   - Example: `X-MCP-Toolsets: storiesDevelopment,componentDocumentation`
+   - Example: `X-MCP-Toolsets: core,componentDocumentation`
    - When present, overrides addon options (all toolsets default to disabled except those in header)
    - When absent, uses addon options
 
@@ -63,7 +63,7 @@ The addon supports two toolsets that can be enabled/disabled:
   server.tool(
   	{
   		name: 'my-tool',
-  		enabled: () => server.ctx.custom?.toolsets?.storiesDevelopment ?? true,
+  		enabled: () => server.ctx.custom?.toolsets?.core ?? true,
   	},
   	handler,
   );
@@ -302,7 +302,7 @@ To add a new MCP tool to the addon:
    			description: 'What this tool does',
    			schema: MyToolInput,
    			// Optional: Enable/disable based on toolset configuration
-   			enabled: () => server.ctx.custom?.toolsets?.storiesDevelopment ?? true,
+   			enabled: () => server.ctx.custom?.toolsets?.core ?? true,
    		},
    		async (input: MyToolInput) => {
    			try {
@@ -335,12 +335,12 @@ To add a new MCP tool to the addon:
    export const AddonOptions = v.object({
    	toolsets: v.optional(
    		v.object({
-   			storiesDevelopment: v.exactOptional(v.boolean(), true),
+   			core: v.exactOptional(v.boolean(), true),
    			componentDocumentation: v.exactOptional(v.boolean(), true),
    			myNewToolset: v.exactOptional(v.boolean(), true), // Add your toolset
    		}),
    		{
-   			storiesDevelopment: true,
+   			core: true,
    			componentDocumentation: true,
    			myNewToolset: true,
    		},
