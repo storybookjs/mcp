@@ -56,8 +56,14 @@ jobs:
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
 
-      - name: Run tests
-        run: pnpm test -- run
+      - name: Run tests with coverage
+        run: pnpm --filter @storybook/mcp test run --reporter=junit --outputFile=test-report.junit.xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-mcp
+          path: packages/mcp/test-report.junit.xml
 
   test-addon-mcp:
     name: Test @storybook/addon-mcp
@@ -73,7 +79,13 @@ jobs:
         run: pnpm build --filter @storybook/mcp
 
       - name: Run tests
-        run: pnpm --filter @storybook/addon-mcp test -- run
+        run: pnpm --filter @storybook/addon-mcp test run --reporter=junit --outputFile=test-report.junit.xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-addon-mcp
+          path: packages/addon-mcp/test-report.junit.xml
 
   typecheck-mcp:
     name: Type check @storybook/mcp
@@ -133,3 +145,30 @@ jobs:
 
       - name: Check formatting
         run: pnpm format --check
+
+  collect-coverage:
+    permissions:
+      id-token: write
+    name: Collect coverage
+    runs-on: ubuntu-latest
+    needs: [test-mcp, test-addon-mcp]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download @storybook/mcp coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-mcp
+          path: packages/mcp/test-report.junit.xml
+
+      - name: Download @storybook/addon-mcp coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-addon-mcp
+          path: packages/addon-mcp/test-report.junit.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
