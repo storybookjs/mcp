@@ -24,11 +24,11 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 
 The addon supports two toolsets that can be enabled/disabled:
 
-1. **`core`** (default: true)
+1. **`dev`** (default: true)
    - `get-story-urls`: Retrieve story URLs from Storybook
    - `get-ui-building-instructions`: Provide UI development guidelines
 
-2. **`componentDocumentation`** (default: true)
+2. **`docs`** (default: true)
    - `list-all-components`: List all available components from manifest
    - `get-component-documentation`: Get detailed component documentation
    - Requires experimental feature flag `features.experimentalComponentsManifest`
@@ -42,8 +42,8 @@ The addon supports two toolsets that can be enabled/disabled:
 	name: '@storybook/addon-mcp',
 	options: {
 		toolsets: {
-			core: true,
-			componentDocumentation: true,
+			dev: true,
+			docs: true,
 		}
 	}
 }
@@ -51,7 +51,7 @@ The addon supports two toolsets that can be enabled/disabled:
 
 2. **Per-Request Header** (`X-MCP-Toolsets`):
    - Comma-separated list of toolset names
-   - Example: `X-MCP-Toolsets: core,componentDocumentation`
+   - Example: `X-MCP-Toolsets: dev,docs`
    - When present, overrides addon options (all toolsets default to disabled except those in header)
    - When absent, uses addon options
 
@@ -63,7 +63,7 @@ The addon supports two toolsets that can be enabled/disabled:
   server.tool(
   	{
   		name: 'my-tool',
-  		enabled: () => server.ctx.custom?.toolsets?.core ?? true,
+  		enabled: () => server.ctx.custom?.toolsets?.dev ?? true,
   	},
   	handler,
   );
@@ -302,7 +302,7 @@ To add a new MCP tool to the addon:
    			description: 'What this tool does',
    			schema: MyToolInput,
    			// Optional: Enable/disable based on toolset configuration
-   			enabled: () => server.ctx.custom?.toolsets?.core ?? true,
+   			enabled: () => server.ctx.custom?.toolsets?.dev ?? true,
    		},
    		async (input: MyToolInput) => {
    			try {
@@ -335,13 +335,13 @@ To add a new MCP tool to the addon:
    export const AddonOptions = v.object({
    	toolsets: v.optional(
    		v.object({
-   			core: v.exactOptional(v.boolean(), true),
-   			componentDocumentation: v.exactOptional(v.boolean(), true),
+   			dev: v.exactOptional(v.boolean(), true),
+   			docs: v.exactOptional(v.boolean(), true),
    			myNewToolset: v.exactOptional(v.boolean(), true), // Add your toolset
    		}),
    		{
-   			core: true,
-   			componentDocumentation: true,
+   			dev: true,
+   			docs: true,
    			myNewToolset: true,
    		},
    	),
@@ -459,10 +459,7 @@ const addonContext: AddonContext = {
 Telemetry respects Storybook's `disableTelemetry` config:
 
 ```typescript
-const { disableTelemetry } = await options.presets.apply<CoreConfig>(
-	'core',
-	{},
-);
+const { disableTelemetry } = options as CoreConfig;
 ```
 
 Users can opt out by setting `disableTelemetry: true` in their Storybook config.

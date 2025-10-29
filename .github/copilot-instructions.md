@@ -33,14 +33,14 @@ The addon supports configuring which toolsets are enabled:
     name: '@storybook/addon-mcp',
     options: {
       toolsets: {
-        core: true,      // get-story-urls, get-ui-building-instructions
-        componentDocumentation: true,  // list-all-components, get-component-documentation
+        dev: true,      // get-story-urls, get-ui-building-instructions
+        docs: true,  // list-all-components, get-component-documentation
       }
     }
   }
   ```
 - **Per-Request Override**: MCP clients can override toolsets per-request using the `X-MCP-Toolsets` header:
-  - Header format: comma-separated list (e.g., `core,componentDocumentation`)
+  - Header format: comma-separated list (e.g., `dev,docs`)
   - When header is present, only specified toolsets are enabled (others are disabled)
   - When header is absent, addon options are used
 - **Tool Enablement**: Tools use the `enabled` callback to check if their toolset is active:
@@ -48,7 +48,7 @@ The addon supports configuring which toolsets are enabled:
   server.tool(
   	{
   		name: 'my-tool',
-  		enabled: () => server.ctx.custom?.toolsets?.core ?? true,
+  		enabled: () => server.ctx.custom?.toolsets?.dev ?? true,
   	},
   	handler,
   );
