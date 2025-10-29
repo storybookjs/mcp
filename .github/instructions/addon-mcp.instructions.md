@@ -15,9 +15,60 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 - **MCP Server**: Built using `tmcp` library with HTTP transport
 - **Vite Plugin Middleware**: Workaround to inject `/mcp` endpoint into Storybook's dev server
 - **Tools System**: Extensible tool registration using `server.tool()` method
+- **Toolsets Configuration**: Configurable tool groups that can be toggled via addon options or per-request headers
 - **Context-Based Architecture**: AddonContext passed through to all tools containing Storybook options and runtime info
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **Telemetry**: Usage tracking with opt-out via Storybook's `disableTelemetry` config
+
+### Toolsets
+
+The addon supports two toolsets that can be enabled/disabled:
+
+1. **`dev`** (default: true)
+   - `get-story-urls`: Retrieve story URLs from Storybook
+   - `get-ui-building-instructions`: Provide UI development guidelines
+
+2. **`docs`** (default: true)
+   - `list-all-components`: List all available components from manifest
+   - `get-component-documentation`: Get detailed component documentation
+   - Requires experimental feature flag `features.experimentalComponentsManifest`
+
+**Configuration Methods:**
+
+1. **Addon Options** (`.storybook/main.js`):
+
+```typescript
+{
+	name: '@storybook/addon-mcp',
+	options: {
+		toolsets: {
+			dev: true,
+			docs: true,
+		}
+	}
+}
+```
+
+2. **Per-Request Header** (`X-MCP-Toolsets`):
+   - Comma-separated list of toolset names
+   - Example: `X-MCP-Toolsets: dev,docs`
+   - When present, overrides addon options (all toolsets default to disabled except those in header)
+   - When absent, uses addon options
+
+**Implementation:**
+
+- `getToolsets()` function in `mcp-handler.ts` parses the header and merges with addon options
+- Tools use `enabled` callback to check if their toolset is active:
+  ```typescript
+  server.tool(
+  	{
+  		name: 'my-tool',
+  		enabled: () => server.ctx.custom?.toolsets?.dev ?? true,
+  	},
+  	handler,
+  );
+  ```
+- `AddonContext.toolsets` contains the resolved toolset configuration
 
 ### File Structure
 
@@ -250,6 +301,8 @@ To add a new MCP tool to the addon:
    			title: 'My Tool',
    			description: 'What this tool does',
    			schema: MyToolInput,
+   			// Optional: Enable/disable based on toolset configuration
+   			enabled: () => server.ctx.custom?.toolsets?.dev ?? true,
    		},
    		async (input: MyToolInput) => {
    			try {
@@ -267,7 +320,7 @@ To add a new MCP tool to the addon:
    }
    ```
 
-5. Import and register in `src/mcp-handler.ts` within `createAddonMcpHandler()`:
+5. Import and register in `src/mcp-handler.ts` within `initializeMCPServer()`:
 
    ```typescript
    import { addMyTool } from './tools/my-tool.ts';
@@ -276,7 +329,26 @@ To add a new MCP tool to the addon:
    await addMyTool(server);
    ```
 
-6. Add telemetry tracking if needed (see existing tools for examples)
+6. If adding a new toolset, update the `AddonOptions` schema in `src/types.ts` to include the new toolset:
+
+   ```typescript
+   export const AddonOptions = v.object({
+   	toolsets: v.optional(
+   		v.object({
+   			dev: v.exactOptional(v.boolean(), true),
+   			docs: v.exactOptional(v.boolean(), true),
+   			myNewToolset: v.exactOptional(v.boolean(), true), // Add your toolset
+   		}),
+   		{
+   			dev: true,
+   			docs: true,
+   			myNewToolset: true,
+   		},
+   	),
+   });
+   ```
+
+7. Add telemetry tracking if needed (see existing tools for examples)
 
 ## Storybook Integration
 
@@ -366,7 +438,11 @@ const addonContext: AddonContext = {
 			});
 		}
 	},
-	onGetComponentDocumentation: async ({ input, foundComponents, notFoundIds }) => {
+	onGetComponentDocumentation: async ({
+		input,
+		foundComponents,
+		notFoundIds,
+	}) => {
 		if (!disableTelemetry && server) {
 			await collectTelemetry({
 				event: 'tool:getComponentDocumentation',
@@ -383,10 +459,7 @@ const addonContext: AddonContext = {
 Telemetry respects Storybook's `disableTelemetry` config:
 
 ```typescript
-const { disableTelemetry } = await options.presets.apply<CoreConfig>(
-	'core',
-	{},
-);
+const { disableTelemetry } = options as CoreConfig;
 ```
 
 Users can opt out by setting `disableTelemetry: true` in their Storybook config.

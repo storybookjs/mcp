@@ -53,6 +53,9 @@ importers:
       '@changesets/cli':
         specifier: ^2.29.6
         version: 2.29.7(@types/node@24.9.1)
+      '@codecov/rollup-plugin':
+        specifier: ^1.9.1
+        version: 1.9.1(rollup@4.52.5)
       '@codecov/vite-plugin':
         specifier: ^1.9.1
         version: 1.9.1(vite@7.1.11(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
@@ -370,6 +373,12 @@ packages:
   '@codecov/bundler-plugin-core@1.9.1':
     resolution: {integrity: sha512-dt3ic7gMswz4p/qdkYPVJwXlLiLsz55rBBn2I7mr0HTG8pCoLRqnANJIwo5WrqGBZgPyVSMPBqBra6VxLWfDyA==}
     engines: {node: '>=18.0.0'}
+
+  '@codecov/rollup-plugin@1.9.1':
+    resolution: {integrity: sha512-osRI84VBvm8kL0/7w6FLTHsooYGkGbXp1KiVM8d3cH488bvR+E3au+09KxaLQtNNjcZXDGW5m8071EJLN7olAw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      rollup: 3.x || 4.x
 
   '@codecov/vite-plugin@1.9.1':
     resolution: {integrity: sha512-S6Yne7comVulJ1jD3T7rCfYFHPR0zUjAYoLjUDPXNJCUrdzWJdf/ak/UepE7TicqQG+yBa6eb5WusqcPgg+1AQ==}
@@ -3892,6 +3901,12 @@ snapshots:
       semver: 7.7.3
       unplugin: 1.16.1
       zod: 3.25.76
+
+  '@codecov/rollup-plugin@1.9.1(rollup@4.52.5)':
+    dependencies:
+      '@codecov/bundler-plugin-core': 1.9.1
+      rollup: 4.52.5
+      unplugin: 1.16.1
 
   '@codecov/vite-plugin@1.9.1(vite@7.1.11(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))':
     dependencies:

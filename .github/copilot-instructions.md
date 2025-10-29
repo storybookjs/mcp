@@ -23,6 +23,38 @@ The addon uses a **Vite plugin workaround** to inject middleware (see `packages/
 - Solution: Inject a Vite plugin via `viteFinal` that adds `/mcp` endpoint
 - Handler in `mcp-handler.ts` creates MCP servers using `tmcp` with HTTP transport
 
+**Toolset Configuration:**
+
+The addon supports configuring which toolsets are enabled:
+
+- **Addon Options**: Configure default toolsets in `.storybook/main.js`:
+  ```typescript
+  {
+    name: '@storybook/addon-mcp',
+    options: {
+      toolsets: {
+        dev: true,      // get-story-urls, get-ui-building-instructions
+        docs: true,  // list-all-components, get-component-documentation
+      }
+    }
+  }
+  ```
+- **Per-Request Override**: MCP clients can override toolsets per-request using the `X-MCP-Toolsets` header:
+  - Header format: comma-separated list (e.g., `dev,docs`)
+  - When header is present, only specified toolsets are enabled (others are disabled)
+  - When header is absent, addon options are used
+- **Tool Enablement**: Tools use the `enabled` callback to check if their toolset is active:
+  ```typescript
+  server.tool(
+  	{
+  		name: 'my-tool',
+  		enabled: () => server.ctx.custom?.toolsets?.dev ?? true,
+  	},
+  	handler,
+  );
+  ```
+- **Context-Aware**: The `getToolsets()` function in `mcp-handler.ts` parses the header and returns enabled toolsets, which are passed to tools via `AddonContext.toolsets`
+
 ### MCP Library Architecture
 
 The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:

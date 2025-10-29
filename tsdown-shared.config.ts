@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsdown';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { codecovVitePlugin } from '@codecov/vite-plugin';
+import { codecovRollupPlugin } from '@codecov/rollup-plugin';
 
 /**
  * Plugin to tree-shake JSON file imports
@@ -65,13 +65,14 @@ export default (pkgName: string) =>
 				fileName: 'package.json',
 				keys: ['name', 'version', 'description'],
 			}),
-			codecovVitePlugin({
+			codecovRollupPlugin({
 				enableBundleAnalysis: true,
 				bundleName: pkgName,
 				oidc: {
 					useGitHubOIDC: true,
 				},
 				dryRun: process.env.CI !== 'true',
+				debug: true,
 			}),
 		],
 	});
