@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - next
 
 permissions:
   id-token: write # used to upload artifacts to codecov
