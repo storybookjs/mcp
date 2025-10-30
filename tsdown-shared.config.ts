@@ -59,6 +59,7 @@ export default (pkgName: string) =>
 		target: 'node20.19', // Minimum Node version supported by Storybook 10
 		loader: {
 			'.md': 'text',
+			'.html': 'text',
 		},
 		plugins: [
 			jsonTreeShakePlugin({
