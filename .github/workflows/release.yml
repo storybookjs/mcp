@@ -16,6 +16,13 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      # see https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.STORYBOOK_BOT_APP_ID }}
+          private-key: ${{ secrets.STORYBOOK_BOT_APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -32,4 +39,4 @@ jobs:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
