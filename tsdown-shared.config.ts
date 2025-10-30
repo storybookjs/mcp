@@ -19,4 +19,4 @@ export default (pkgName: string) =>
 				debug: true,
 			}),
 		],
-	});
+	}) as any;
