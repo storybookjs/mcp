@@ -63,7 +63,10 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
 
 		expect(response.result).toMatchInlineSnapshot(`
 			{
@@ -102,7 +105,10 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
 
 		expect(response.result).toMatchInlineSnapshot(`
 			{
@@ -184,7 +190,10 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
 
 		expect(response.result).toMatchInlineSnapshot(`
 			{
@@ -212,7 +221,10 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
 		expect(response.result).toMatchInlineSnapshot(`
 			{
 			  "content": [
@@ -285,7 +297,10 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
 
 		expect(response.result).toMatchInlineSnapshot(`
 			{
@@ -315,14 +330,16 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		// Pass the handler in the context for this specific request
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		// Pass the handler and request in the context for this specific request
 		await server.receive(request, {
-			custom: { onGetComponentDocumentation: handler },
+			custom: { request: mockHttpRequest, onGetComponentDocumentation: handler },
 		});
 
 		expect(handler).toHaveBeenCalledTimes(1);
 		expect(handler).toHaveBeenCalledWith({
 			context: expect.objectContaining({
+				request: mockHttpRequest,
 				onGetComponentDocumentation: handler,
 			}),
 			input: { componentIds: ['button', 'card', 'non-existent'] },
@@ -384,7 +401,10 @@ describe('getComponentDocumentationTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
 
 		expect(response.result).toMatchInlineSnapshot(`
 			{

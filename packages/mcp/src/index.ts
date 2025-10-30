@@ -96,7 +96,7 @@ export const createStorybookMcpHandler = async (
 
 	return (async (req, context) => {
 		return await transport.respond(req, {
-			source: context?.source ?? options.source,
+			request: req,
 			manifestProvider: context?.manifestProvider ?? options.manifestProvider,
 			onListAllComponents:
 				context?.onListAllComponents ?? options.onListAllComponents,

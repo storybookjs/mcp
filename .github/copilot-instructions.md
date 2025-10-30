@@ -61,8 +61,10 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 
 - Uses `tmcp` with HTTP transport and Valibot schema validation
 - Factory pattern: `createStorybookMcpHandler()` returns a request handler
-- Context-based: handlers accept `StorybookContext` to override source URLs and provide optional callbacks
+- Context-based: handlers accept `StorybookContext` which includes the HTTP `Request` object and optional callbacks
 - **Exports tools and types** for reuse by `addon-mcp` and other consumers
+- **Request-based manifest loading**: The `request` property in context is passed to tools, which use it to determine the manifest URL (defaults to same origin, replacing `/mcp` with `/manifests/components.json`)
+- **Optional manifestProvider**: Custom function to override default manifest fetching behavior, receives the `Request` object
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllComponents`: Called when the list-all-components tool is invoked
@@ -221,7 +223,8 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
   - Checks `features.experimentalComponentsManifest` flag
   - Checks for `experimental_componentManifestGenerator` preset
   - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
-- Context includes `source` URL pointing to `/manifests/components.json` endpoint
+- Context includes `request` (HTTP Request object) which tools use to determine manifest location
+- Default manifest URL is constructed from request origin, replacing `/mcp` with `/manifests/components.json`
 - **Optional handlers for tracking**:
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
   - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
