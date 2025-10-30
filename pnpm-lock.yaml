@@ -16,8 +16,8 @@ catalogs:
       specifier: ^0.1.4
       version: 0.1.4
     '@tmcp/transport-http':
-      specifier: ^0.7.0
-      version: 0.7.0
+      specifier: ^0.8.0
+      version: 0.8.0
     '@types/node':
       specifier: 20.19.0
       version: 20.19.0
@@ -28,8 +28,8 @@ catalogs:
       specifier: 0.0.0-pr-32810-sha-6e759c7e
       version: 0.0.0-pr-32810-sha-6e759c7e
     tmcp:
-      specifier: ^1.15.2
-      version: 1.15.2
+      specifier: ^1.16.0
+      version: 1.16.0
     tsdown:
       specifier: ^0.15.9
       version: 0.15.9
@@ -115,13 +115,13 @@ importers:
         version: link:../mcp
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
-        version: 0.1.4(tmcp@1.15.2(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
+        version: 0.1.4(tmcp@1.16.0(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
       '@tmcp/transport-http':
         specifier: 'catalog:'
-        version: 0.7.0(tmcp@1.15.2(typescript@5.9.3))
+        version: 0.8.0(tmcp@1.16.0(typescript@5.9.3))
       tmcp:
         specifier: 'catalog:'
-        version: 1.15.2(typescript@5.9.3)
+        version: 1.16.0(typescript@5.9.3)
       valibot:
         specifier: 'catalog:'
         version: 1.1.0(typescript@5.9.3)
@@ -155,13 +155,13 @@ importers:
     dependencies:
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
-        version: 0.1.4(tmcp@1.15.2(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
+        version: 0.1.4(tmcp@1.16.0(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
       '@tmcp/transport-http':
         specifier: 'catalog:'
-        version: 0.7.0(tmcp@1.15.2(typescript@5.9.3))
+        version: 0.8.0(tmcp@1.16.0(typescript@5.9.3))
       tmcp:
         specifier: 'catalog:'
-        version: 1.15.2(typescript@5.9.3)
+        version: 1.16.0(typescript@5.9.3)
       valibot:
         specifier: 'catalog:'
         version: 1.1.0(typescript@5.9.3)
@@ -1498,13 +1498,19 @@ packages:
       tmcp: ^1.10.2
       valibot: ^1.1.0
 
-  '@tmcp/session-manager@0.1.2':
-    resolution: {integrity: sha512-hNkEeMt7/CdD8JdjPXMlIv5OMPTp5LnBqeo1Tb/AXcm31DpgwlNbf4voJ3CeWxWAZPPZ/MgHZ682TtgGhsvXiw==}
-
-  '@tmcp/transport-http@0.7.0':
-    resolution: {integrity: sha512-JvLvi2ZM3xaBIZyxy6ssGtzlhL/5JvOkjWWymxkLi84vMK44pM5zCQVN1KXAfQqHbbDlYNR/BW39cd/eP3hylA==}
+  '@tmcp/session-manager@0.2.0':
+    resolution: {integrity: sha512-/MjEFFvnvrV3DbnwEAXMBKhIFmm7z81EgazBtPhKP9i5pe37/iDkYHOa+SD6aaqT3V7gACQ1nmqoJH3MdrC7gQ==}
     peerDependencies:
-      tmcp: ^1.15.1
+      tmcp: ^1.16.0
+
+  '@tmcp/transport-http@0.8.0':
+    resolution: {integrity: sha512-XkIFDIDr8zzQhJiwI+6He0pIGmEg0SAwHdsv914UtL0zqKuUfFvFLLARkryB95Rhp1ib4nVWAgLcV1FtdWGzIw==}
+    peerDependencies:
+      '@tmcp/auth': ^0.3.3
+      tmcp: ^1.16.0
+    peerDependenciesMeta:
+      '@tmcp/auth':
+        optional: true
 
   '@tsconfig/node-ts@23.6.1':
     resolution: {integrity: sha512-1E5cUp+S65pLKKI9VrGMQPWDHxOEq3dAGM2onG3fLeSRwWbylYFwhIjnzJikjSN7w2nCgwxmv8ifvUKDFkK38Q==}
@@ -3201,8 +3207,8 @@ packages:
     resolution: {integrity: sha512-azl+t0z7pw/z958Gy9svOTuzqIk6xq+NSheJzn5MMWtWTFywIacg2wUlzKFGtt3cthx0r2SxMK0yzJOR0IES7Q==}
     engines: {node: '>=14.0.0'}
 
-  tmcp@1.15.2:
-    resolution: {integrity: sha512-Ws5b7Uz270jQEIzZHuvspJwDuKh0VHUxy/4he+wv8/+peFhqifZOly5ZiHfqw3uwHDRFEm+D0Fl2tPBUPJydJA==}
+  tmcp@1.16.0:
+    resolution: {integrity: sha512-E2ypyH00XoNaliR+gilZAtWGQBkgfrCT2bjEcJsnlVwZfsHYOTMp9Q8K9G5JtDB/UaCP2TJyjp+UG5BumUc/4Q==}
 
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
@@ -4991,20 +4997,22 @@ snapshots:
     dependencies:
       '@testing-library/dom': 10.4.1
 
-  '@tmcp/adapter-valibot@0.1.4(tmcp@1.15.2(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))':
+  '@tmcp/adapter-valibot@0.1.4(tmcp@1.16.0(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@valibot/to-json-schema': 1.3.0(valibot@1.1.0(typescript@5.9.3))
-      tmcp: 1.15.2(typescript@5.9.3)
+      tmcp: 1.16.0(typescript@5.9.3)
       valibot: 1.1.0(typescript@5.9.3)
 
-  '@tmcp/session-manager@0.1.2': {}
-
-  '@tmcp/transport-http@0.7.0(tmcp@1.15.2(typescript@5.9.3))':
+  '@tmcp/session-manager@0.2.0(tmcp@1.16.0(typescript@5.9.3))':
     dependencies:
-      '@tmcp/session-manager': 0.1.2
+      tmcp: 1.16.0(typescript@5.9.3)
+
+  '@tmcp/transport-http@0.8.0(tmcp@1.16.0(typescript@5.9.3))':
+    dependencies:
+      '@tmcp/session-manager': 0.2.0(tmcp@1.16.0(typescript@5.9.3))
       esm-env: 1.2.2
-      tmcp: 1.15.2(typescript@5.9.3)
+      tmcp: 1.16.0(typescript@5.9.3)
 
   '@tsconfig/node-ts@23.6.1': {}
 
@@ -6796,7 +6804,7 @@ snapshots:
 
   tinyspy@4.0.4: {}
 
-  tmcp@1.15.2(typescript@5.9.3):
+  tmcp@1.16.0(typescript@5.9.3):
     dependencies:
       '@standard-schema/spec': 1.0.0
       json-rpc-2.0: 1.7.1
@@ -7060,7 +7068,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.1.11(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/mocker': 3.2.4(vite@7.1.11(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
