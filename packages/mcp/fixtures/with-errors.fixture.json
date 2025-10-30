@@ -1,0 +1,163 @@
+{
+	"v": 1,
+	"components": {
+		"success-component-with-mixed-examples": {
+			"id": "success-component-with-mixed-examples",
+			"path": "src/components/SuccessWithMixedExamples.tsx",
+			"name": "SuccessWithMixedExamples",
+			"description": "A component that loaded successfully but has some examples that failed to generate.",
+			"summary": "Success component with both working and failing examples",
+			"import": "import { SuccessWithMixedExamples } from '@storybook/design-system';",
+			"reactDocgen": {
+				"props": {
+					"text": {
+						"description": "The text to display",
+						"required": true,
+						"tsType": { "name": "string" }
+					},
+					"variant": {
+						"description": "The visual variant",
+						"required": false,
+						"tsType": {
+							"name": "union",
+							"raw": "\"primary\" | \"secondary\"",
+							"elements": [
+								{ "name": "literal", "value": "\"primary\"" },
+								{ "name": "literal", "value": "\"secondary\"" }
+							]
+						},
+						"defaultValue": { "value": "\"primary\"", "computed": false }
+					}
+				}
+			},
+			"examples": [
+				{
+					"id": "success-component-with-mixed-examples--working",
+					"name": "Working",
+					"description": "This example generated successfully.",
+					"summary": "A working example",
+					"import": "import { SuccessWithMixedExamples } from '@storybook/design-system';",
+					"snippet": "const Working = () => <SuccessWithMixedExamples text=\"Hello\" />"
+				},
+				{
+					"id": "success-component-with-mixed-examples--failed",
+					"name": "Failed",
+					"error": {
+						"name": "SyntaxError",
+						"message": "Unexpected token in story code. Unable to generate code snippet."
+					}
+				}
+			]
+		},
+		"error-component-with-success-examples": {
+			"id": "error-component-with-success-examples",
+			"path": "src/components/ErrorWithSuccessExamples.tsx",
+			"name": "ErrorWithSuccessExamples",
+			"error": {
+				"name": "TypeError",
+				"message": "Failed to parse component: Cannot read property 'name' of undefined in react-docgen parser"
+			},
+			"examples": [
+				{
+					"id": "error-component-with-success-examples--basic",
+					"name": "Basic",
+					"description": "Even though the component parsing failed, this example's code snippet was generated.",
+					"summary": "Basic usage example",
+					"snippet": "const Basic = () => <ErrorWithSuccessExamples>Content</ErrorWithSuccessExamples>"
+				},
+				{
+					"id": "error-component-with-success-examples--advanced",
+					"name": "Advanced",
+					"description": "Another successfully generated example despite component-level errors.",
+					"summary": "Advanced usage example",
+					"snippet": "const Advanced = () => (\n  <ErrorWithSuccessExamples disabled>\n    Advanced Content\n  </ErrorWithSuccessExamples>\n)"
+				}
+			]
+		},
+		"error-component-with-error-examples": {
+			"id": "error-component-with-error-examples",
+			"path": "src/components/ErrorWithErrorExamples.tsx",
+			"name": "ErrorWithErrorExamples",
+			"error": {
+				"name": "Error",
+				"message": "Failed to extract component metadata: File not found or contains invalid TypeScript"
+			},
+			"examples": [
+				{
+					"id": "error-component-with-error-examples--broken-example-1",
+					"name": "BrokenExample1",
+					"description": "This example failed to generate.",
+					"error": {
+						"name": "Error",
+						"message": "Story render function is too complex to analyze"
+					}
+				},
+				{
+					"id": "error-component-with-error-examples--broken-example-2",
+					"name": "BrokenExample2",
+					"description": "This example also failed to generate.",
+					"error": {
+						"name": "ReferenceError",
+						"message": "Undefined variable referenced in story: missingImport"
+					}
+				}
+			]
+		},
+		"complete-error-component": {
+			"id": "complete-error-component",
+			"path": "src/components/CompleteError.tsx",
+			"name": "CompleteError",
+			"error": {
+				"name": "ModuleNotFoundError",
+				"message": "Cannot find module './CompleteError' or its corresponding type declarations"
+			}
+		},
+		"partial-success": {
+			"id": "partial-success",
+			"path": "src/components/PartialSuccess.tsx",
+			"name": "PartialSuccess",
+			"description": "A component where everything worked except one example.",
+			"summary": "Mostly working component with one failing example",
+			"import": "import { PartialSuccess } from '@storybook/design-system';",
+			"reactDocgen": {
+				"props": {
+					"title": {
+						"description": "The title text",
+						"required": true,
+						"tsType": { "name": "string" }
+					},
+					"subtitle": {
+						"description": "Optional subtitle",
+						"required": false,
+						"tsType": { "name": "string" }
+					}
+				}
+			},
+			"examples": [
+				{
+					"id": "partial-success--default",
+					"name": "Default",
+					"description": "Default usage of the component.",
+					"import": "import { PartialSuccess } from '@storybook/design-system';",
+					"snippet": "const Default = () => <PartialSuccess title=\"Hello\" />"
+				},
+				{
+					"id": "partial-success--with-subtitle",
+					"name": "WithSubtitle",
+					"description": "Component with both title and subtitle.",
+					"import": "import { PartialSuccess } from '@storybook/design-system';",
+					"snippet": "const WithSubtitle = () => <PartialSuccess title=\"Hello\" subtitle=\"World\" />"
+				},
+				{
+					"id": "partial-success--complex-case",
+					"name": "ComplexCase",
+					"description": "A complex example that failed to generate.",
+					"error": {
+						"name": "Error",
+						"message": "Story uses hooks that cannot be statically analyzed"
+					}
+				}
+			]
+		}
+	}
+}

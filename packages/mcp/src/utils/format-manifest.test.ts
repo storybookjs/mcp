@@ -5,6 +5,7 @@ import {
 } from './format-manifest';
 import type { ComponentManifest, ComponentManifestMap } from '../types';
 import fullManifestFixture from '../../fixtures/full-manifest.fixture.json' with { type: 'json' };
+import withErrorsFixture from '../../fixtures/with-errors.fixture.json' with { type: 'json' };
 
 describe('formatComponentManifest', () => {
 	it('formats all full fixtures', () => {
@@ -869,6 +870,177 @@ describe('formatComponentManifestMapToList', () => {
 				<component>
 				<id>modal</id>
 				<name>Modal</name>
+				</component>
+				</components>"
+			`);
+		});
+	});
+
+	describe('with-errors fixture', () => {
+		it('should format success component with mixed examples (only successful ones)', () => {
+			const component =
+				withErrorsFixture.components['success-component-with-mixed-examples'];
+			const result = formatComponentManifest(component);
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>success-component-with-mixed-examples</id>
+				<name>SuccessWithMixedExamples</name>
+				<description>
+				A component that loaded successfully but has some examples that failed to generate.
+				</description>
+				<example>
+				<example_name>Working</example_name>
+				<example_description>
+				This example generated successfully.
+				</example_description>
+				<example_code>
+				import { SuccessWithMixedExamples } from '@storybook/design-system';
+
+				const Working = () => <SuccessWithMixedExamples text="Hello" />
+				</example_code>
+				</example>
+				<props>
+				<prop>
+				<prop_name>text</prop_name>
+				<prop_description>
+				The text to display
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				<prop>
+				<prop_name>variant</prop_name>
+				<prop_description>
+				The visual variant
+				</prop_description>
+				<prop_type>"primary" | "secondary"</prop_type>
+				<prop_required>false</prop_required>
+				<prop_default>"primary"</prop_default>
+				</prop>
+				</props>
+				</component>"
+			`);
+		});
+
+		it('should format error component with success examples', () => {
+			const component =
+				withErrorsFixture.components['error-component-with-success-examples'];
+			const result = formatComponentManifest(component);
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>error-component-with-success-examples</id>
+				<name>ErrorWithSuccessExamples</name>
+				<example>
+				<example_name>Basic</example_name>
+				<example_description>
+				Even though the component parsing failed, this example's code snippet was generated.
+				</example_description>
+				<example_code>
+				const Basic = () => <ErrorWithSuccessExamples>Content</ErrorWithSuccessExamples>
+				</example_code>
+				</example>
+				<example>
+				<example_name>Advanced</example_name>
+				<example_description>
+				Another successfully generated example despite component-level errors.
+				</example_description>
+				<example_code>
+				const Advanced = () => (
+				  <ErrorWithSuccessExamples disabled>
+				    Advanced Content
+				  </ErrorWithSuccessExamples>
+				)
+				</example_code>
+				</example>
+				</component>"
+			`);
+		});
+
+		it('should format partial success component (skips failed example)', () => {
+			const component = withErrorsFixture.components['partial-success'];
+			const result = formatComponentManifest(component);
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>partial-success</id>
+				<name>PartialSuccess</name>
+				<description>
+				A component where everything worked except one example.
+				</description>
+				<example>
+				<example_name>Default</example_name>
+				<example_description>
+				Default usage of the component.
+				</example_description>
+				<example_code>
+				import { PartialSuccess } from '@storybook/design-system';
+
+				const Default = () => <PartialSuccess title="Hello" />
+				</example_code>
+				</example>
+				<example>
+				<example_name>With Subtitle</example_name>
+				<example_description>
+				Component with both title and subtitle.
+				</example_description>
+				<example_code>
+				import { PartialSuccess } from '@storybook/design-system';
+
+				const WithSubtitle = () => <PartialSuccess title="Hello" subtitle="World" />
+				</example_code>
+				</example>
+				<props>
+				<prop>
+				<prop_name>title</prop_name>
+				<prop_description>
+				The title text
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				<prop>
+				<prop_name>subtitle</prop_name>
+				<prop_description>
+				Optional subtitle
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>false</prop_required>
+				</prop>
+				</props>
+				</component>"
+			`);
+		});
+
+		it('should format list of components with errors', () => {
+			const result = formatComponentManifestMapToList(
+				withErrorsFixture as ComponentManifestMap,
+			);
+			expect(result).toMatchInlineSnapshot(`
+				"<components>
+				<component>
+				<id>success-component-with-mixed-examples</id>
+				<name>SuccessWithMixedExamples</name>
+				<summary>
+				Success component with both working and failing examples
+				</summary>
+				</component>
+				<component>
+				<id>error-component-with-success-examples</id>
+				<name>ErrorWithSuccessExamples</name>
+				</component>
+				<component>
+				<id>error-component-with-error-examples</id>
+				<name>ErrorWithErrorExamples</name>
+				</component>
+				<component>
+				<id>complete-error-component</id>
+				<name>CompleteError</name>
+				</component>
+				<component>
+				<id>partial-success</id>
+				<name>PartialSuccess</name>
+				<summary>
+				Mostly working component with one failing example
+				</summary>
 				</component>
 				</components>"
 			`);
