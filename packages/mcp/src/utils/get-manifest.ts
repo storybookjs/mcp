@@ -68,17 +68,16 @@ export async function getManifest(
 	request?: Request,
 	manifestProvider?: (request: Request) => Promise<string>,
 ): Promise<ComponentManifestMap> {
+	if (!request) {
+		throw new ManifestGetError(
+			'The request is required but was not provided in the context',
+		);
+	}
 	try {
-		if (!request) {
-			throw new ManifestGetError(
-				'The request is required but was not provided in the context',
-			);
-		}
-
 		// Use custom manifestProvider if provided, otherwise fallback to default
-		const manifestString = await (
-			manifestProvider ?? defaultManifestProvider
-		)(request);
+		const manifestString = await (manifestProvider ?? defaultManifestProvider)(
+			request,
+		);
 		const manifestData: unknown = JSON.parse(manifestString);
 
 		const manifest = v.parse(ComponentManifestMap, manifestData);
@@ -95,10 +94,9 @@ export async function getManifest(
 		}
 
 		// Wrap network errors and other unexpected errors
-		const url = request ? getManifestUrlFromRequest(request) : 'unknown';
 		throw new ManifestGetError(
 			`Failed to get manifest: ${error instanceof Error ? error.message : String(error)}`,
-			url,
+			getManifestUrlFromRequest(request),
 			error instanceof Error ? error : undefined,
 		);
 	}
@@ -110,7 +108,10 @@ export async function getManifest(
 function getManifestUrlFromRequest(request: Request): string {
 	const url = new URL(request.url);
 	// Replace /mcp endpoint with /manifests/components.json
-	url.pathname = url.pathname.replace(/\/mcp\/?$/, '/manifests/components.json');
+	url.pathname = url.pathname.replace(
+		/\/mcp\/?$/,
+		'/manifests/components.json',
+	);
 	return url.toString();
 }
 
