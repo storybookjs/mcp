@@ -14,7 +14,7 @@
 		"storybook": "turbo run storybook",
 		"changeset": "changeset",
 		"dev": "turbo run dev",
-		"format": "prettier --write .",
+		"format": "oxfmt",
 		"inspect": "pnpm run --filter @storybook/addon-mcp inspect",
 		"release": "turbo run build && pnpm changeset publish",
 		"test": "turbo run test",
@@ -26,8 +26,8 @@
 		"@codecov/rollup-plugin": "^1.9.1",
 		"@codecov/vite-plugin": "^1.9.1",
 		"@modelcontextprotocol/inspector": "^0.16.5",
+		"oxfmt": "^0.9.0",
 		"pkg-pr-new": "^0.0.57",
-		"prettier": "^3.6.2",
 		"tsdown": "catalog:",
 		"turbo": "^2.3.5",
 		"vitest": "catalog:"
