@@ -3,11 +3,14 @@ import { serve } from 'srvx';
 import fs from 'node:fs/promises';
 
 const storybookMcpHandler = await createStorybookMcpHandler({
-	// Use the local path directly via manifestProvider
-	source: './fixtures/full-manifest.fixture.json',
-	manifestProvider: async (source) => {
+	// Use the local fixture file via manifestProvider
+	manifestProvider: async (request) => {
 		// Read the manifest from the local file system
-		return await fs.readFile(source, 'utf-8');
+		// Ignore the request URL and always use the local fixture
+		return await fs.readFile(
+			'./fixtures/full-manifest.fixture.json',
+			'utf-8',
+		);
 	},
 });
 

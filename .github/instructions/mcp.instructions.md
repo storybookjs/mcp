@@ -42,6 +42,33 @@ src/
 1. **Factory Pattern**: `createStorybookMcpHandler()` creates configured handler instances
 2. **Tool Registration**: Tools are added to the server using `server.tool()` method
 3. **Async Handler**: Returns a Promise-based request handler compatible with standard HTTP servers
+4. **Request-based Context**: The `Request` object is passed through context to tools, which use it to construct the manifest URL
+
+### Manifest Provider API
+
+The handler accepts a `StorybookContext` with the following key properties:
+
+- **`request`**: The HTTP `Request` object being processed (automatically passed by the handler)
+- **`manifestProvider`**: Optional custom function `(request: Request) => Promise<string>` to override default manifest fetching
+  - Default behavior: Constructs URL from request origin, replacing `/mcp` with `/manifests/components.json`
+  - Custom provider receives the `Request` object and can extract URL, headers, etc. to determine manifest location
+  - Return value should be the manifest JSON as a string
+
+**Example with custom manifestProvider:**
+
+```typescript
+import { createStorybookMcpHandler } from '@storybook/mcp';
+import { readFile } from 'node:fs/promises';
+
+const handler = await createStorybookMcpHandler({
+	manifestProvider: async (request) => {
+		// Custom logic: read from local filesystem based on request
+		const url = new URL(request.url);
+		const manifestPath = `/path/to/manifests${url.pathname.replace('/mcp', '/components.json')}`;
+		return await readFile(manifestPath, 'utf-8');
+	},
+});
+```
 
 ### Component Manifest and ReactDocgen Support
 
