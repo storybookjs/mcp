@@ -66,10 +66,11 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run tests with coverage
-        run: pnpm --filter @storybook/mcp test run --coverage --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm --filter @storybook/mcp test run --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml
 
       - name: Upload test and coverage artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: test-mcp
           path: |
@@ -90,9 +91,10 @@ jobs:
         run: pnpm build --filter @storybook/mcp
 
       - name: Run tests with coverage
-        run: pnpm --filter @storybook/addon-mcp test run --coverage --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm --filter @storybook/addon-mcp test run --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml
 
       - name: Upload test and coverage artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-addon-mcp
