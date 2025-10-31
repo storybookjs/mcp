@@ -15,6 +15,7 @@ catalog:
   typescript: ^5.9.3
   valibot: ^1.1.0
   vitest: 3.2.4
+  publint: 0.3.15
 
 onlyBuiltDependencies:
   - '@swc/core'

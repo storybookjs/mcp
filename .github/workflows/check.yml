@@ -127,6 +127,32 @@ jobs:
       - name: Run type checking
         run: pnpm --filter @storybook/addon-mcp typecheck
 
+  publint:
+    name: Publint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run linting
+        run: pnpm publint
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run linting
+        run: pnpm lint
+
   release-preview:
     name: Publish preview releases
     runs-on: ubuntu-latest
