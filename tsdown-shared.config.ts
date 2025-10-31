@@ -54,7 +54,7 @@ function jsonTreeShakePlugin(options: { fileName: string; keys: string[] }) {
 	};
 }
 
-export default (pkgName: string) =>
+export default (pkgName: string): any =>
 	defineConfig({
 		target: 'node20.19', // Minimum Node version supported by Storybook 10
 		loader: {
