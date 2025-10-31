@@ -351,6 +351,48 @@ describe('formatComponentManifest', () => {
 				</component>"
 			`);
 		});
+
+		it('should skip examples without snippets (e.g., when there are errors)', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				import: 'import { Button } from "@/components";',
+				examples: [
+					{
+						name: 'BrokenExample',
+						description: 'This example has an error and no snippet',
+						// No snippet property - should be skipped
+					},
+					{
+						name: 'WorkingExample',
+						description: 'This example works fine',
+						snippet: '<Button>Click me</Button>',
+					},
+				],
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			// Should only include the working example, not the broken one
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<example>
+				<example_name>Working Example</example_name>
+				<example_description>
+				This example works fine
+				</example_description>
+				<example_code>
+				import { Button } from "@/components";
+
+				<Button>Click me</Button>
+				</example_code>
+				</example>
+				</component>"
+			`);
+		});
 	});
 
 	describe('complete component', () => {
