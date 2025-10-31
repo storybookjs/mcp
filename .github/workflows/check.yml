@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - next
+      - changeset-release/**
 
 permissions:
   id-token: write # used to upload artifacts to codecov
