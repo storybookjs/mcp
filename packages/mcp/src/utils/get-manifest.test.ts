@@ -187,6 +187,49 @@ describe('getManifest', () => {
 				'https://example.com/manifest.json',
 			);
 		});
+
+		it('should accept examples with missing snippets', async () => {
+			const manifestWithMissingSnippets: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						path: 'src/components/Button.tsx',
+						name: 'Button',
+						description: 'A button component',
+						examples: [
+							{
+								name: 'Default',
+								description: 'Default button',
+								// snippet is optional and missing here (e.g., when there's an error)
+							},
+							{
+								name: 'Primary',
+								description: 'Primary button',
+								snippet: '<Button variant="primary">Click me</Button>',
+							},
+						],
+					},
+				},
+			};
+
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				headers: {
+					get: vi.fn().mockReturnValue('application/json'),
+				},
+				text: vi
+					.fn()
+					.mockResolvedValue(JSON.stringify(manifestWithMissingSnippets)),
+			});
+
+			const result = await getManifest('https://example.com/manifest.json');
+
+			expect(result).toEqual(manifestWithMissingSnippets);
+			expect(global.fetch).toHaveBeenCalledExactlyOnceWith(
+				'https://example.com/manifest.json',
+			);
+		});
 	});
 
 	describe('manifestProvider', () => {

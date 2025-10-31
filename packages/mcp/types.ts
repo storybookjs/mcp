@@ -25,7 +25,7 @@ const BaseManifest = v.object({
 
 const Example = v.object({
 	...BaseManifest.entries,
-	snippet: v.string(),
+	snippet: v.optional(v.string()),
 });
 
 export const ComponentManifest = v.object({
