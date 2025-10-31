@@ -1,13 +1,10 @@
 {
-  "mode": "pre",
-  "tag": "next",
-  "initialVersions": {
-    "@storybook/mcp-internal-storybook": "0.0.0",
-    "@storybook/addon-mcp": "0.1.3",
-    "@storybook/mcp": "0.0.6"
-  },
-  "changesets": [
-    "dull-impalas-vanish",
-    "strict-boxes-sort"
-  ]
+	"mode": "pre",
+	"tag": "next",
+	"initialVersions": {
+		"@storybook/mcp-internal-storybook": "0.0.0",
+		"@storybook/addon-mcp": "0.1.3",
+		"@storybook/mcp": "0.0.6"
+	},
+	"changesets": ["dull-impalas-vanish", "strict-boxes-sort"]
 }
