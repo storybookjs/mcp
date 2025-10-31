@@ -23,7 +23,7 @@ const BaseManifest = v.object({
 	jsDocTags: v.exactOptional(v.array(JSDocTag)),
 });
 
-const Example = v.object({
+const Story = v.object({
 	...BaseManifest.entries,
 	snippet: v.string(),
 });
@@ -32,7 +32,7 @@ export const ComponentManifest = v.object({
 	...BaseManifest.entries,
 	id: v.string(),
 	summary: v.exactOptional(v.string()),
-	examples: v.exactOptional(v.array(Example)),
+	stories: v.exactOptional(v.array(Story)),
 	props: v.exactOptional(v.any()),
 });
 export type ComponentManifest = v.InferOutput<typeof ComponentManifest>;
