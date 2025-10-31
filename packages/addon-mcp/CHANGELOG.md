@@ -1,5 +1,12 @@
 # @storybook/addon-mcp
 
+## 0.1.4-next.2
+
+### Patch Changes
+
+- Updated dependencies [[`77536a7`](https://github.com/storybookjs/mcp/commit/77536a71812fe111f6b60c84bd2c26cb0eb00bc5), [`cddbf34`](https://github.com/storybookjs/mcp/commit/cddbf34a0c99296856ecfed2c24cf689fcb2fd2a)]:
+  - @storybook/mcp@0.0.7-next.0
+
 ## 0.1.4-next.1
 
 ### Patch Changes
