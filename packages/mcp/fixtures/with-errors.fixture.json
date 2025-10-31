@@ -30,7 +30,7 @@
 					}
 				}
 			},
-			"examples": [
+			"stories": [
 				{
 					"id": "success-component-with-mixed-examples--working",
 					"name": "Working",
@@ -57,7 +57,7 @@
 				"name": "TypeError",
 				"message": "Failed to parse component: Cannot read property 'name' of undefined in react-docgen parser"
 			},
-			"examples": [
+			"stories": [
 				{
 					"id": "error-component-with-success-examples--basic",
 					"name": "Basic",
@@ -82,7 +82,7 @@
 				"name": "Error",
 				"message": "Failed to extract component metadata: File not found or contains invalid TypeScript"
 			},
-			"examples": [
+			"stories": [
 				{
 					"id": "error-component-with-error-examples--broken-example-1",
 					"name": "BrokenExample1",
@@ -133,7 +133,7 @@
 					}
 				}
 			},
-			"examples": [
+			"stories": [
 				{
 					"id": "partial-success--default",
 					"name": "Default",

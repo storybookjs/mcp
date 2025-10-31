@@ -888,17 +888,17 @@ describe('formatComponentManifestMapToList', () => {
 				<description>
 				A component that loaded successfully but has some examples that failed to generate.
 				</description>
-				<example>
-				<example_name>Working</example_name>
-				<example_description>
+				<story>
+				<story_name>Working</story_name>
+				<story_description>
 				This example generated successfully.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				import { SuccessWithMixedExamples } from '@storybook/design-system';
 
 				const Working = () => <SuccessWithMixedExamples text="Hello" />
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				<props>
 				<prop>
 				<prop_name>text</prop_name>
@@ -930,28 +930,28 @@ describe('formatComponentManifestMapToList', () => {
 				"<component>
 				<id>error-component-with-success-examples</id>
 				<name>ErrorWithSuccessExamples</name>
-				<example>
-				<example_name>Basic</example_name>
-				<example_description>
+				<story>
+				<story_name>Basic</story_name>
+				<story_description>
 				Even though the component parsing failed, this example's code snippet was generated.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				const Basic = () => <ErrorWithSuccessExamples>Content</ErrorWithSuccessExamples>
-				</example_code>
-				</example>
-				<example>
-				<example_name>Advanced</example_name>
-				<example_description>
+				</story_code>
+				</story>
+				<story>
+				<story_name>Advanced</story_name>
+				<story_description>
 				Another successfully generated example despite component-level errors.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				const Advanced = () => (
 				  <ErrorWithSuccessExamples disabled>
 				    Advanced Content
 				  </ErrorWithSuccessExamples>
 				)
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
@@ -966,28 +966,28 @@ describe('formatComponentManifestMapToList', () => {
 				<description>
 				A component where everything worked except one example.
 				</description>
-				<example>
-				<example_name>Default</example_name>
-				<example_description>
+				<story>
+				<story_name>Default</story_name>
+				<story_description>
 				Default usage of the component.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				import { PartialSuccess } from '@storybook/design-system';
 
 				const Default = () => <PartialSuccess title="Hello" />
-				</example_code>
-				</example>
-				<example>
-				<example_name>With Subtitle</example_name>
-				<example_description>
+				</story_code>
+				</story>
+				<story>
+				<story_name>With Subtitle</story_name>
+				<story_description>
 				Component with both title and subtitle.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				import { PartialSuccess } from '@storybook/design-system';
 
 				const WithSubtitle = () => <PartialSuccess title="Hello" subtitle="World" />
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				<props>
 				<prop>
 				<prop_name>title</prop_name>
