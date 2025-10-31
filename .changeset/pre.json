@@ -7,6 +7,7 @@
     "@storybook/mcp": "0.0.6"
   },
   "changesets": [
-    "dull-impalas-vanish"
+    "dull-impalas-vanish",
+    "strict-boxes-sort"
   ]
 }
