@@ -877,26 +877,26 @@ describe('formatComponentManifestMapToList', () => {
 	});
 
 	describe('with-errors fixture', () => {
-		it('should format success component with mixed examples (only successful ones)', () => {
+		it('should format success component with mixed stories (only successful ones)', () => {
 			const component =
-				withErrorsFixture.components['success-component-with-mixed-examples'];
+				withErrorsFixture.components['success-component-with-mixed-stories'];
 			const result = formatComponentManifest(component);
 			expect(result).toMatchInlineSnapshot(`
 				"<component>
-				<id>success-component-with-mixed-examples</id>
-				<name>SuccessWithMixedExamples</name>
+				<id>success-component-with-mixed-stories</id>
+				<name>SuccessWithMixedStories</name>
 				<description>
-				A component that loaded successfully but has some examples that failed to generate.
+				A component that loaded successfully but has some stories that failed to generate.
 				</description>
 				<story>
 				<story_name>Working</story_name>
 				<story_description>
-				This example generated successfully.
+				This story generated successfully.
 				</story_description>
 				<story_code>
-				import { SuccessWithMixedExamples } from '@storybook/design-system';
+				import { SuccessWithMixedStories } from '@storybook/design-system';
 
-				const Working = () => <SuccessWithMixedExamples text="Hello" />
+				const Working = () => <SuccessWithMixedStories text="Hello" />
 				</story_code>
 				</story>
 				<props>
@@ -922,33 +922,33 @@ describe('formatComponentManifestMapToList', () => {
 			`);
 		});
 
-		it('should format error component with success examples', () => {
+		it('should format error component with success stories', () => {
 			const component =
-				withErrorsFixture.components['error-component-with-success-examples'];
+				withErrorsFixture.components['error-component-with-success-stories'];
 			const result = formatComponentManifest(component);
 			expect(result).toMatchInlineSnapshot(`
 				"<component>
-				<id>error-component-with-success-examples</id>
-				<name>ErrorWithSuccessExamples</name>
+				<id>error-component-with-success-stories</id>
+				<name>ErrorWithSuccessStories</name>
 				<story>
 				<story_name>Basic</story_name>
 				<story_description>
-				Even though the component parsing failed, this example's code snippet was generated.
+				Even though the component parsing failed, this story's code snippet was generated.
 				</story_description>
 				<story_code>
-				const Basic = () => <ErrorWithSuccessExamples>Content</ErrorWithSuccessExamples>
+				const Basic = () => <ErrorWithSuccessStories>Content</ErrorWithSuccessStories>
 				</story_code>
 				</story>
 				<story>
 				<story_name>Advanced</story_name>
 				<story_description>
-				Another successfully generated example despite component-level errors.
+				Another successfully generated story despite component-level errors.
 				</story_description>
 				<story_code>
 				const Advanced = () => (
-				  <ErrorWithSuccessExamples disabled>
+				  <ErrorWithSuccessStories disabled>
 				    Advanced Content
-				  </ErrorWithSuccessExamples>
+				  </ErrorWithSuccessStories>
 				)
 				</story_code>
 				</story>
@@ -956,7 +956,7 @@ describe('formatComponentManifestMapToList', () => {
 			`);
 		});
 
-		it('should format partial success component (skips failed example)', () => {
+		it('should format partial success component (skips failed story)', () => {
 			const component = withErrorsFixture.components['partial-success'];
 			const result = formatComponentManifest(component);
 			expect(result).toMatchInlineSnapshot(`
@@ -964,7 +964,7 @@ describe('formatComponentManifestMapToList', () => {
 				<id>partial-success</id>
 				<name>PartialSuccess</name>
 				<description>
-				A component where everything worked except one example.
+				A component where everything worked except one story.
 				</description>
 				<story>
 				<story_name>Default</story_name>
@@ -1017,19 +1017,19 @@ describe('formatComponentManifestMapToList', () => {
 			expect(result).toMatchInlineSnapshot(`
 				"<components>
 				<component>
-				<id>success-component-with-mixed-examples</id>
-				<name>SuccessWithMixedExamples</name>
+				<id>success-component-with-mixed-stories</id>
+				<name>SuccessWithMixedStories</name>
 				<summary>
-				Success component with both working and failing examples
+				Success component with both working and failing stories
 				</summary>
 				</component>
 				<component>
-				<id>error-component-with-success-examples</id>
-				<name>ErrorWithSuccessExamples</name>
+				<id>error-component-with-success-stories</id>
+				<name>ErrorWithSuccessStories</name>
 				</component>
 				<component>
-				<id>error-component-with-error-examples</id>
-				<name>ErrorWithErrorExamples</name>
+				<id>error-component-with-error-stories</id>
+				<name>ErrorWithErrorStories</name>
 				</component>
 				<component>
 				<id>complete-error-component</id>
@@ -1039,7 +1039,7 @@ describe('formatComponentManifestMapToList', () => {
 				<id>partial-success</id>
 				<name>PartialSuccess</name>
 				<summary>
-				Mostly working component with one failing example
+				Mostly working component with one failing story
 				</summary>
 				</component>
 				</components>"
