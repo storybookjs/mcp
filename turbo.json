@@ -29,6 +29,10 @@
 		"typecheck": {
 			"dependsOn": ["^build"],
 			"outputs": []
+		},
+		"publint": {
+			"dependsOn": ["build"],
+			"outputs": []
 		}
 	}
 }
