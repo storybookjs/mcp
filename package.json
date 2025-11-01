@@ -16,6 +16,7 @@
 		"format": "oxfmt",
 		"inspect": "pnpm run --filter @storybook/addon-mcp inspect",
 		"lint": "oxlint --type-aware",
+		"check-everything": "pnpm run format --check && pnpm run lint && pnpm run publint && pnpm run build && pnpm run typecheck && pnpm run test -- run",
 		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
 		"storybook": "turbo run storybook",
