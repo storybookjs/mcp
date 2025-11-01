@@ -1,10 +1,11 @@
-name: Check and publish preview releases
+name: Check
 
 on:
   pull_request:
   push:
     branches:
       - main
+      - next
 
 permissions:
   id-token: write # used to upload artifacts to codecov
@@ -165,23 +166,6 @@ jobs:
 
       - name: Check formatting
         run: pnpm format --check
-
-  release-preview:
-    name: Publish preview releases
-    runs-on: ubuntu-latest
-    needs: [build-mcp, build-addon-mcp]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-
-      - name: Setup Node.js and Install Dependencies
-        uses: ./.github/actions/setup-node-and-install
-
-      - name: Build
-        run: pnpm build
-
-      - name: Publish preview release
-        run: pnpm pkg-pr-new publish --pnpm --compact --no-template './packages/*'
 
   collect-coverage:
     name: Collect coverage and test results
