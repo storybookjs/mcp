@@ -153,6 +153,19 @@ jobs:
       - name: Run linting
         run: pnpm lint
 
+  format-check:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Check formatting
+        run: pnpm format --check
+
   release-preview:
     name: Publish preview releases
     runs-on: ubuntu-latest
@@ -169,19 +182,6 @@ jobs:
 
       - name: Publish preview release
         run: pnpm pkg-pr-new publish --pnpm --compact --no-template './packages/*'
-
-  format-check:
-    name: Check formatting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-
-      - name: Setup Node.js and Install Dependencies
-        uses: ./.github/actions/setup-node-and-install
-
-      - name: Check formatting
-        run: pnpm format --check
 
   collect-coverage:
     name: Collect coverage and test results
