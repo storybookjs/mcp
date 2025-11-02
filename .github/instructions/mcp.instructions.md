@@ -113,7 +113,7 @@ Runs the development server with hot reload using Node's `--watch` flag.
 pnpm format
 ```
 
-Formats code using Prettier.
+Formats code using oxfmt.
 
 To check formatting without applying changes:
 
@@ -154,7 +154,7 @@ Launches the MCP inspector for debugging the MCP server using the configuration 
 
 ### Code Style
 
-- Use Prettier for formatting (config: `.prettierignore`)
+- Use oxfmt for formatting (config: `.oxfmtrc.json`)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names
