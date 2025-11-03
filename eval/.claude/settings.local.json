@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "storybook-addon-mcp",
+    "storybook-mcp"
+  ]
+}

@@ -27,7 +27,6 @@
 		"@changesets/changelog-github": "^0.5.1",
 		"@changesets/cli": "^2.29.6",
 		"@codecov/rollup-plugin": "^1.9.1",
-		"@codecov/vite-plugin": "^1.9.1",
 		"@modelcontextprotocol/inspector": "^0.16.5",
 		"oxfmt": "^0.9.0",
 		"oxlint": "^1.25.0",

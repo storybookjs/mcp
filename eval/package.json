@@ -1,0 +1,24 @@
+{
+	"name": "@storybook/mcp-eval",
+	"version": "0.0.0",
+	"private": true,
+	"description": "The project for evaluating UI component development with and without Storybook MCP",
+	"type": "module",
+	"scripts": {
+		"eval": "node eval.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@anthropic-ai/claude-agent-sdk": "^0.1.30",
+		"@tsconfig/node-ts": "^23.6.1",
+		"@tsconfig/node24": "^24.0.1",
+		"@types/eslint": "^9.6.1",
+		"@types/node": "catalog:",
+		"eslint": "^9.36.0",
+		"nypm": "^0.6.2",
+		"tinyexec": "^1.0.1",
+		"ts-dedent": "^2.2.0",
+		"typescript": "catalog:",
+		"valibot": "catalog:"
+	}
+}

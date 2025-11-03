@@ -1,5 +1,6 @@
 {
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "oxc.fmt.experimental": true,
-  "oxc.typeAware": true
+  "oxc.typeAware": true,
+  "oxc.enable": true
 }
