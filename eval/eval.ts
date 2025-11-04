@@ -19,7 +19,9 @@ import { x } from 'tinyexec';
 const Args = v.pipe(
 	v.object({
 		values: v.object({
-			agent: v.optional(v.union([v.literal('claude-code'), v.literal('copilot')])),
+			agent: v.optional(
+				v.union([v.literal('claude-code'), v.literal('copilot')]),
+			),
 			verbose: v.boolean(),
 		}),
 		positionals: v.array(v.string()),
@@ -63,25 +65,25 @@ const promptResults = await p.group(
 			if (parsedArgs.evals.length > 0) {
 				return parsedArgs.evals;
 			}
-			
+
 			const result = await p.multiselect({
 				message: 'Select evaluations to run:',
 				options: evalOptions,
 				required: true,
 			});
-			
+
 			if (p.isCancel(result)) {
 				p.cancel('Operation cancelled.');
 				process.exit(0);
 			}
-			
+
 			return result as string[];
 		},
 		agent: async () => {
 			if (parsedArgs.agent) {
 				return parsedArgs.agent;
 			}
-			
+
 			const result = await p.select({
 				message: 'Select agent to use:',
 				options: [
@@ -89,12 +91,12 @@ const promptResults = await p.group(
 					{ value: 'copilot', label: 'GitHub Copilot', disabled: true },
 				],
 			});
-			
+
 			if (p.isCancel(result)) {
 				p.cancel('Operation cancelled.');
 				process.exit(0);
 			}
-			
+
 			return result as 'claude-code' | 'copilot';
 		},
 		verbose: async () => parsedArgs.verbose,
