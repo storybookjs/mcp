@@ -194,15 +194,32 @@ await Promise.all(
 		await setupEvaluations(experimentArgs);
 		evalSetupSpinner.stop('Evaluations set up');
 
-		p.log.info('Running evaluations...');
-		const [buildSuccess, typeCheckSuccess, lintSuccess, { tests, a11y }] =
-			await Promise.all([
-				build(experimentArgs),
-				checkTypes(experimentArgs),
-				runESLint(experimentArgs),
-				testStories(experimentArgs),
-				saveEnvironment(experimentArgs, args.agent),
-			]);
+		const evaluationResults = await p.tasks([
+			{
+				title: 'Building project',
+				task: async () => await build(experimentArgs),
+			},
+			{
+				title: 'Type checking',
+				task: async () => await checkTypes(experimentArgs),
+			},
+			{
+				title: 'Linting code',
+				task: async () => await runESLint(experimentArgs),
+			},
+			{
+				title: 'Testing stories',
+				task: async () => await testStories(experimentArgs),
+			},
+			{
+				title: 'Saving environment',
+				task: async () => await saveEnvironment(experimentArgs, args.agent),
+			},
+		]);
+
+		const [buildSuccess, typeCheckSuccess, lintSuccess, testsResult] =
+			evaluationResults;
+		const { tests, a11y } = testsResult as { tests: boolean; a11y: boolean };
 
 		const prettierSpinner = p.spinner();
 		prettierSpinner.start('Formatting results');
