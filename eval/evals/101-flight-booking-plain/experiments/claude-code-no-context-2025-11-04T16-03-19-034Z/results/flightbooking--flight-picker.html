@@ -1,0 +1,147 @@
+<div class="flight-booking">
+  <h1>Book a Flight</h1>
+  <form>
+    <div class="form-group">
+      <label>Trip Type</label>
+      <div class="toggle-button">
+        <button
+          type="button"
+          class="toggle-option active"
+          data-testid="one-way"
+        >
+          One Way</button
+        ><button type="button" class="toggle-option" data-testid="return">
+          Return
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>From</label>
+        <div class="autocomplete">
+          <button
+            type="button"
+            class="autocomplete-trigger"
+            data-testid="airport-from"
+          >
+            Select departure airport
+          </button>
+          <div class="autocomplete-dropdown">
+            <input
+              class="autocomplete-search"
+              placeholder="Search airports..."
+              type="text"
+              value=""
+              style=""
+            />
+            <div class="autocomplete-list">
+              <button type="button" class="autocomplete-item" data-testid="SYD">
+                <strong>SYD</strong> - Sydney Airport, Australia</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="MEL"
+              >
+                <strong>MEL</strong> - Melbourne Airport (Tullamarine),
+                Australia</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="LAX"
+              >
+                <strong>LAX</strong> - Los Angeles International Airport, USA</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="JFK"
+              >
+                <strong>JFK</strong> - John F. Kennedy International Airport,
+                New York, USA</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="LHR"
+              >
+                <strong>LHR</strong> - Heathrow Airport, London, UK</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="CDG"
+              >
+                <strong>CDG</strong> - Charles de Gaulle Airport, Paris, France</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="ATL"
+              >
+                <strong>ATL</strong> - Hartsfield–Jackson Atlanta International
+                Airport, USA</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="DXB"
+              >
+                <strong>DXB</strong> - Dubai International Airport, UAE</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="HKG"
+              >
+                <strong>HKG</strong> - Hong Kong International Airport, Hong
+                Kong</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="BNE"
+              >
+                <strong>BNE</strong> - Brisbane Airport, Australia</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="PER"
+              >
+                <strong>PER</strong> - Perth Airport, Australia</button
+              ><button
+                type="button"
+                class="autocomplete-item"
+                data-testid="DFW"
+              >
+                <strong>DFW</strong> - Dallas Fort Worth International Airport,
+                USA
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>To</label>
+        <div class="autocomplete">
+          <button
+            type="button"
+            class="autocomplete-trigger"
+            data-testid="airport-to"
+          >
+            Select destination airport
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Departure Date</label>
+        <div class="datepicker">
+          <button
+            type="button"
+            class="datepicker-trigger"
+            data-testid="datepicker-trigger-departure"
+          >
+            Select departure date
+          </button>
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="submit-button" data-testid="submit">
+      Search Flights
+    </button>
+  </form>
+</div>

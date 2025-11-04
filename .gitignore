@@ -8,3 +8,5 @@ coverage/
 test-report.junit.xml
 # Turborepo
 .turbo
+
+*storybook.log

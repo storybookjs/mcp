@@ -22,10 +22,14 @@ The calendar widget shouldn't allow selecting dates in the past and the return f
 <technical_requirements>
   1. The <FlightBooking /> component MUST be a default export in src/components/FlightBooking.tsx
   2. The <FlightBooking /> component MUST be added to the main.tsx file as the ONLY component being rendered
-  3. The element for the "One Way"-toggle SHOULD have a data-testid="one-way" attribute
-  4. The element for the "Return"-toggle SHOULD have a data-testid="return" attribute
-  5. The button to open the Departure Date datepicker SHOULD have a data-testid="datepicker-trigger-departure" attribute
-  6. The (optional) button to open the Retrun Date datepicker SHOULD have a data-testid="datepicker-trigger-return" attribute
-  7. Each date in the datepickers SHOULD have a data-testid="date-<DATE_NUMBER>" attribute
-  8. The submit button SHOULD have a data-testid="submit" attribute
+  3. The <FlightBooking /> component MUST take an optional onSubmit() prop that is called when the submit button is clicked
+  4. The element for the "One Way"-toggle SHOULD have a data-testid="one-way" attribute
+  5. The element for the "Return"-toggle SHOULD have a data-testid="return" attribute
+  6. The button to open the From airport picker SHOULD have a data-testid="airport-from" attribute
+  7. The button to open the To airport picker SHOULD have a data-testid="airport-to" attribute
+  8. Each element to select an airport in the pickers SHOULD have a data-testid="<SHORT_CODE>" attribute
+  9. The button to open the Departure Date datepicker SHOULD have a data-testid="datepicker-trigger-departure" attribute
+  10. The (optional) button to open the Retrun Date datepicker SHOULD have a data-testid="datepicker-trigger-return" attribute
+  11. Each date in the datepickers SHOULD have a data-testid="date-<DATE_NUMBER>" attribute
+  12. The submit button SHOULD have a data-testid="submit" attribute
 </technical_requirements>

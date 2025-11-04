@@ -1,0 +1,12 @@
+{
+  "cost": 0.1545,
+  "duration": 134,
+  "durationApi": 141,
+  "durationWall": 135,
+  "turns": 22,
+  "buildSuccess": true,
+  "typeCheckSuccess": true,
+  "lintSuccess": true,
+  "testSuccess": true,
+  "a11ySuccess": true
+}
