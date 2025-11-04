@@ -2,6 +2,7 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ExperimentArgs } from '../../types';
+import { spinner, taskLog } from '@clack/prompts';
 
 // Claude Code CLI Stream JSON Output Types
 
@@ -126,20 +127,27 @@ type ClaudeCodeStreamMessage =
 	| UserMessage
 	| ResultMessage;
 
-function logMessage(message: ClaudeCodeStreamMessage, projectPath: string) {
+function formatMessageForLog(
+	message: ClaudeCodeStreamMessage,
+	projectPath: string,
+): string {
 	switch (message.type) {
 		case 'system':
-			console.log(`[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${message.mcp_servers.length}`);
-			break;
+			return `[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${message.mcp_servers.length}`;
 		case 'assistant': {
 			const content = message.message.content;
-			const textContent = content.find((c): c is TextContent => c.type === 'text');
-			const toolUses = content.filter((c): c is ToolUseContent => c.type === 'tool_use');
-			
+			const textContent = content.find(
+				(c): c is TextContent => c.type === 'text',
+			);
+			const toolUses = content.filter(
+				(c): c is ToolUseContent => c.type === 'tool_use',
+			);
+
 			if (toolUses.length > 0) {
 				const todoWrite = toolUses.find((t) => t.name === 'TodoWrite');
 				if (todoWrite && todoWrite.input.todos) {
-					console.log('[ASSISTANT] Todo List:');
+					const lines = [];
+					lines.push('[ASSISTANT] Todo List:');
 					for (const todo of todoWrite.input.todos) {
 						let checkbox: string;
 						switch (todo.status) {
@@ -152,39 +160,93 @@ function logMessage(message: ClaudeCodeStreamMessage, projectPath: string) {
 							default:
 								checkbox = '[ ]';
 						}
-						console.log(`  ${checkbox} ${todo.content}`);
+						lines.push(`  ${checkbox} ${todo.content}`);
 					}
+					return lines.join('\n');
 				} else {
 					const toolDescriptions = toolUses.map((t) => {
-						if ((t.name === 'Read' || t.name === 'Write' || t.name === 'Edit') && t.input.file_path) {
+						if (
+							(t.name === 'Read' || t.name === 'Write' || t.name === 'Edit') &&
+							t.input.file_path
+						) {
 							const relPath = path.relative(projectPath, t.input.file_path);
-							return `${t.name}(${relPath})`;
+							return `${t.name}(./${relPath})`;
 						}
 						if (t.name === 'Bash' && t.input.command) {
-							const cmd = t.input.command.length > 50 ? t.input.command.slice(0, 50) + '...' : t.input.command;
+							const cmd =
+								t.input.command.length > 50
+									? t.input.command.slice(0, 50) + '...'
+									: t.input.command;
 							return `Bash(${cmd})`;
 						}
 						return t.name;
 					});
-					console.log(`[ASSISTANT] Tools: ${toolDescriptions.join(', ')}`);
+					return `[ASSISTANT] Tools: ${toolDescriptions.join(', ')}`;
 				}
 			} else if (textContent) {
 				const preview = textContent.text.slice(0, 80).replace(/\n/g, ' ');
-				console.log(`[ASSISTANT] ${preview}${textContent.text.length > 80 ? '...' : ''}`);
+				return `[ASSISTANT] ${preview}${textContent.text.length > 80 ? '...' : ''}`;
 			}
-			break;
+			return '[ASSISTANT] (no content)';
 		}
 		case 'user': {
-			const toolResults = message.message.content.length;
-			console.log(`[USER] Tool results: ${toolResults}`);
-			break;
+			return `[USER] Tool results: ${message.message.content.length}`;
 		}
 		case 'result':
-			console.log(
-				`[RESULT] ${message.subtype.toUpperCase()} - ${message.num_turns} turns, ${(message.duration_ms / 1000).toFixed(1)}s, $${message.total_cost_usd.toFixed(4)}`,
-			);
-			break;
+			return `[RESULT] ${message.subtype.toUpperCase()} - ${message.num_turns} turns, ${(message.duration_ms / 1000).toFixed(1)}s, $${message.total_cost_usd.toFixed(4)}`;
+		default:
+			return '[UNKNOWN MESSAGE TYPE]';
 	}
+}
+
+interface TodoProgress {
+	current: number;
+	total: number;
+	currentTitle: string;
+}
+
+function getTodoProgress(
+	messages: ClaudeCodeStreamMessage[],
+): TodoProgress | null {
+	// Find the most recent TodoWrite message
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const message = messages[i];
+		if (message.type === 'assistant') {
+			const todoWrite = message.message.content.find(
+				(c): c is ToolUseContent =>
+					c.type === 'tool_use' && c.name === 'TodoWrite',
+			);
+			if (todoWrite?.input.todos) {
+				const todos = todoWrite.input.todos;
+				const total = todos.length;
+				const completed = todos.filter(
+					(t: any) => t.status === 'completed',
+				).length;
+				const inProgress = todos.find((t: any) => t.status === 'in_progress');
+
+				if (inProgress) {
+					return {
+						current: completed + 1,
+						total,
+						currentTitle: inProgress.content || 'Working',
+					};
+				} else if (completed === total && total > 0) {
+					return {
+						current: total,
+						total,
+						currentTitle: 'Finalizing',
+					};
+				} else if (total > 0) {
+					return {
+						current: completed,
+						total,
+						currentTitle: todos[completed]?.content || 'Working',
+					};
+				}
+			}
+		}
+	}
+	return null;
 }
 
 function formatConversationAsMarkdown(
@@ -199,51 +261,64 @@ function formatConversationAsMarkdown(
 				lines.push('## Session Initialized\n');
 				lines.push(`- **Model**: ${message.model}`);
 				lines.push(`- **Tools**: ${message.tools.join(', ')}`);
-				lines.push(`- **MCP Servers**: ${message.mcp_servers.join(', ') || 'None'}`);
+				lines.push(
+					`- **MCP Servers**: ${message.mcp_servers.join(', ') || 'None'}`,
+				);
 				lines.push(`- **Working Directory**: ${message.cwd}\n`);
 				break;
 
 			case 'assistant': {
 				const content = message.message.content;
-				const textContent = content.find((c): c is TextContent => c.type === 'text');
+				const textContent = content.find(
+					(c): c is TextContent => c.type === 'text',
+				);
 				const toolUses = content.filter(
 					(c): c is ToolUseContent => c.type === 'tool_use',
 				);
 
-			if (toolUses.length > 0) {
-				const todoWrite = toolUses.find((t) => t.name === 'TodoWrite');
-				if (todoWrite && todoWrite.input.todos) {
-					lines.push('## Assistant: Todo List Updated\n');
-					for (const todo of todoWrite.input.todos) {
-						let checkbox: string;
-						switch (todo.status) {
-							case 'completed':
-								checkbox = '[x]';
-								break;
-							case 'in_progress':
-								checkbox = '[~]';
-								break;
-							default:
-								checkbox = '[ ]';
+				if (toolUses.length > 0) {
+					const todoWrite = toolUses.find((t) => t.name === 'TodoWrite');
+					if (todoWrite && todoWrite.input.todos) {
+						lines.push('## Assistant: Todo List Updated\n');
+						for (const todo of todoWrite.input.todos) {
+							let checkbox: string;
+							switch (todo.status) {
+								case 'completed':
+									checkbox = '[x]';
+									break;
+								case 'in_progress':
+									checkbox = '[~]';
+									break;
+								default:
+									checkbox = '[ ]';
+							}
+							lines.push(`- ${checkbox} ${todo.content}`);
 						}
-						lines.push(`- ${checkbox} ${todo.content}`);
-					}
-					lines.push('');
-				} else {
-					lines.push('## Assistant: Tool Usage\n');
-					for (const tool of toolUses) {
-						if ((tool.name === 'Read' || tool.name === 'Write' || tool.name === 'Edit') && tool.input.file_path) {
-							const relPath = path.relative(projectPath, tool.input.file_path);
-							lines.push(`- **${tool.name}**: \`${relPath}\``);
-						} else if (tool.name === 'Bash' && tool.input.command) {
-							lines.push(`- **Bash**: \`${tool.input.command}\``);
-						} else {
-							lines.push(`- **${tool.name}**`);
+						lines.push('');
+					} else {
+						lines.push('## Assistant: Tool Usage\n');
+						for (const tool of toolUses) {
+							if (
+								(tool.name === 'Read' ||
+									tool.name === 'Write' ||
+									tool.name === 'Edit') &&
+								tool.input.file_path
+							) {
+								const relPath = path.relative(
+									projectPath,
+									tool.input.file_path,
+								);
+								lines.push(`- **${tool.name}**: \`./${relPath}\``);
+							} else if (tool.name === 'Bash' && tool.input.command) {
+								lines.push(`- **Bash**: \`${tool.input.command}\``);
+							} else {
+								lines.push(`- **${tool.name}**`);
+							}
 						}
+						lines.push('');
 					}
-					lines.push('');
 				}
-			}				if (textContent && textContent.text.trim()) {
+				if (textContent && textContent.text.trim()) {
 					lines.push('## Assistant\n');
 					lines.push(textContent.text.trim());
 					lines.push('');
@@ -262,14 +337,24 @@ function formatConversationAsMarkdown(
 			case 'result':
 				lines.push('---\n');
 				lines.push('## Final Result\n');
-				lines.push(`- **Status**: ${message.subtype === 'success' ? '✅ Success' : '❌ Error'}`);
+				lines.push(
+					`- **Status**: ${message.subtype === 'success' ? '✅ Success' : '❌ Error'}`,
+				);
 				lines.push(`- **Turns**: ${message.num_turns}`);
-				lines.push(`- **Duration**: ${(message.duration_ms / 1000).toFixed(1)}s`);
-				lines.push(`- **API Time**: ${(message.duration_api_ms / 1000).toFixed(1)}s`);
+				lines.push(
+					`- **Duration**: ${(message.duration_ms / 1000).toFixed(1)}s`,
+				);
+				lines.push(
+					`- **API Time**: ${(message.duration_api_ms / 1000).toFixed(1)}s`,
+				);
 				lines.push(`- **Cost**: $${message.total_cost_usd.toFixed(4)}`);
-				lines.push(`- **Tokens**: ${message.usage.input_tokens} in / ${message.usage.output_tokens} out`);
-				lines.push(`- **Cache**: ${message.usage.cache_read_input_tokens} read / ${message.usage.cache_creation_input_tokens} created\n`);
-				
+				lines.push(
+					`- **Tokens**: ${message.usage.input_tokens} in / ${message.usage.output_tokens} out`,
+				);
+				lines.push(
+					`- **Cache**: ${message.usage.cache_read_input_tokens} read / ${message.usage.cache_creation_input_tokens} created\n`,
+				);
+
 				if (message.result) {
 					lines.push('### Summary\n');
 					lines.push(message.result);
@@ -290,6 +375,15 @@ export const claudeCodeCli = {
 		verbose,
 		env,
 	}: { prompt: string; env: NodeJS.ProcessEnv } & ExperimentArgs) {
+		const verboseLog = (verbose &&
+			taskLog({
+				title: `Executing prompt with Claude Code CLI`,
+			})) as ReturnType<typeof taskLog>;
+		const normalLog = (!verbose && spinner()) as ReturnType<typeof spinner>;
+		if (!verbose) {
+			normalLog.start('Agent is working');
+		}
+
 		const args = [
 			'--print',
 			'--dangerously-skip-permissions',
@@ -297,8 +391,6 @@ export const claudeCodeCli = {
 			'--verbose',
 			prompt,
 		];
-
-		const startTime = Date.now();
 
 		const claudeProcess = x('claude', args, {
 			nodeOptions: {
@@ -317,14 +409,27 @@ export const claudeCodeCli = {
 			const parsed = JSON.parse(message) as ClaudeCodeStreamMessage;
 			messages.push(parsed);
 			if (verbose) {
-				logMessage(parsed, projectPath);
+				verboseLog.message(formatMessageForLog(parsed, projectPath));
+			} else {
+				const todoProgress = getTodoProgress(messages);
+				let progressMessage = `Agent is working, turn ${messages.filter(m => m.type === 'assistant').length}`;
+				if (todoProgress) {
+					progressMessage += `, todo ${todoProgress.current} / ${todoProgress.total}: ${todoProgress.currentTitle}`;
+				}
+				normalLog.message(progressMessage);
 			}
 		}
 		const resultMessage = messages.find(
 			(m): m is ResultMessage => m.type === 'result',
 		);
 		if (!resultMessage) {
-			throw new Error('No result message received from Claude Code CLI');
+			const errorMessage = 'No result message received from Claude Code CLI';
+			if(verbose){
+				verboseLog.error(errorMessage);
+			} else {
+				normalLog.stop(errorMessage);
+			}
+			process.exit(1);
 		}
 		await claudeProcess;
 
@@ -339,12 +444,20 @@ export const claudeCodeCli = {
 			),
 		]);
 
-		return {
+
+		const result = {
 			cost: Number(resultMessage.total_cost_usd.toFixed(4)),
 			duration: Math.round(resultMessage.duration_ms / 1000),
 			durationApi: Math.round(resultMessage.duration_api_ms / 1000),
-			durationWall: Math.round((Date.now() - startTime) / 1000),
 			turns: resultMessage.num_turns,
 		};
+		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
+		if(verbose){
+			verboseLog.success(successMessage);
+		} else {
+			normalLog.stop(successMessage);
+		}
+
+		return result;
 	},
 };

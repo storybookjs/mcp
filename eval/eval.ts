@@ -5,7 +5,6 @@ import { claudeCodeCli } from './lib/agents/claude-code-cli.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { dedent } from 'ts-dedent';
-import { installDependencies } from 'nypm';
 import { build } from './lib/evaluations/build.ts';
 import { checkTypes } from './lib/evaluations/typecheck.ts';
 import { runESLint } from './lib/evaluations/lint.ts';
@@ -67,7 +66,7 @@ const promptResults = await p.group(
 			}
 
 			const result = await p.multiselect({
-				message: 'Select evaluations to run:',
+				message: 'Which evals do you want to run?',
 				options: evalOptions,
 				required: true,
 			});
@@ -85,11 +84,8 @@ const promptResults = await p.group(
 			}
 
 			const result = await p.select({
-				message: 'Select agent to use:',
-				options: [
-					{ value: 'claude-code', label: 'Claude Code CLI' },
-					{ value: 'copilot', label: 'GitHub Copilot', disabled: true },
-				],
+				message: 'Which coding agents do you want to use?',
+				options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
 			});
 
 			if (p.isCancel(result)) {
@@ -97,7 +93,7 @@ const promptResults = await p.group(
 				process.exit(0);
 			}
 
-			return result as 'claude-code' | 'copilot';
+			return result;
 		},
 		verbose: async () => parsedArgs.verbose,
 	},
@@ -123,29 +119,22 @@ const evalDirsToPaths = Object.fromEntries(
 );
 
 // Validate that all eval directories exist
-const s = p.spinner();
-s.start('Validating eval directories');
 for (const evalPath of Object.values(evalDirsToPaths)) {
 	const dirExists = await fs
 		.access(evalPath)
 		.then(() => true)
 		.catch(() => false);
 	if (!dirExists) {
-		s.stop('Validation failed');
 		p.log.error(`Eval directory does not exist: ${evalPath}`);
 		process.exit(1);
 	}
 }
-s.stop('All eval directories validated');
 
-let agent;
+const agents = {
+	'claude-code': claudeCodeCli,
+};
 
-switch (args.agent) {
-	case 'claude-code':
-	default: {
-		agent = claudeCodeCli;
-	}
-}
+const agent = agents[args.agent as keyof typeof agents];
 
 p.log.info(`Running ${args.evals.length} evaluation(s) with ${args.agent}`);
 
@@ -168,15 +157,10 @@ await Promise.all(
 			verbose: args.verbose,
 		};
 
-		p.log.step(`\n${evalDir}: Starting evaluation`);
+		p.log.step(`${evalDir}: Starting experiment`);
 
-		const setupSpinner = p.spinner();
-		setupSpinner.start('Setting up experiment');
 		await setupExperiment(experimentArgs);
-		setupSpinner.stop('Experiment set up');
 
-		const agentSpinner = p.spinner();
-		agentSpinner.start(`Executing prompt with ${args.agent}`);
 		const prompt = await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8');
 		const enhancedPrompt = dedent`${prompt}
     <constraints>
@@ -187,73 +171,48 @@ await Promise.all(
 			env: process.env,
 			...experimentArgs,
 		});
-		agentSpinner.stop(
-			`Agent completed (${promptResult.turns} turns, ${promptResult.duration}s, $${promptResult.cost})`,
-		);
 
-		const evalSetupSpinner = p.spinner();
-		evalSetupSpinner.start('Setting up evaluations');
 		await setupEvaluations(experimentArgs);
-		evalSetupSpinner.stop('Evaluations set up');
 
-		const evaluationResults = await p.tasks([
-			{
-				title: 'Building project',
-				task: async () => await build(experimentArgs),
-			},
-			{
-				title: 'Type checking',
-				task: async () => await checkTypes(experimentArgs),
-			},
-			{
-				title: 'Linting code',
-				task: async () => await runESLint(experimentArgs),
-			},
-			{
-				title: 'Testing stories',
-				task: async () => await testStories(experimentArgs),
-			},
-			{
-				title: 'Saving environment',
-				task: async () => await saveEnvironment(experimentArgs, args.agent),
-			},
-		]);
-
-		const [buildSuccess, typeCheckSuccess, lintSuccess, testsResult] =
-			evaluationResults;
-		const { tests, a11y } = testsResult as { tests: boolean; a11y: boolean };
-
-		const prettierSpinner = p.spinner();
-		prettierSpinner.start('Formatting results');
-		await x('pnpm', ['exec', 'prettier', '--write', resultsPath]);
-		prettierSpinner.stop('Results formatted');
+		const [buildSuccess, typeCheckSuccess, lintSuccess, testResults] =
+			await Promise.all([
+				build(experimentArgs),
+				checkTypes(experimentArgs),
+				runESLint(experimentArgs),
+				testStories(experimentArgs),
+			]);
 
 		const summary = {
 			...promptResult,
 			buildSuccess,
 			typeCheckSuccess,
 			lintSuccess,
-			testSuccess: tests,
-			a11ySuccess: a11y,
+			testSuccess: testResults.tests,
+			a11ySuccess: testResults.a11y,
 		};
+
 		await fs.writeFile(
 			path.join(resultsPath, 'summary.json'),
 			JSON.stringify(summary, null, 2),
 		);
 
-		// Log summary with styled output
+		const prettierSpinner = p.spinner();
+		prettierSpinner.start('Formatting results');
+		await x('pnpm', ['exec', 'prettier', '--write', resultsPath]);
+		prettierSpinner.stop('Results formatted');
+
 		p.log.success(`${evalDir}: Evaluation complete`);
 		p.log.info('Summary:');
-		p.log.message(`  Build: ${buildSuccess ? '✅' : '❌'}`);
-		p.log.message(`  Type Check: ${typeCheckSuccess ? '✅' : '❌'}`);
-		p.log.message(`  Lint: ${lintSuccess ? '✅' : '❌'}`);
-		p.log.message(`  Tests: ${tests ? '✅' : '❌'}`);
-		p.log.message(`  A11y: ${a11y ? '✅' : '❌'}`);
+		p.log.message(`🏗️  Build: ${summary.buildSuccess ? '✅' : '❌'}`);
+		p.log.message(`🔍 Type Check: ${summary.typeCheckSuccess ? '✅' : '❌'}`);
+		p.log.message(`✨ Lint: ${summary.lintSuccess ? '✅' : '❌'}`);
+		p.log.message(`🧪 Tests: ${summary.testSuccess ? '✅' : '❌'}`);
+		p.log.message(`🦾 Accessibility: ${summary.a11ySuccess ? '✅' : '❌'}`);
 		p.log.message(
-			`  Duration: ${promptResult.duration}s (API: ${promptResult.durationApi}s, Wall: ${promptResult.durationWall}s)`,
+			`⏱️  Duration: ${promptResult.duration}s (API: ${promptResult.durationApi}s)`,
 		);
-		p.log.message(`  Cost: $${promptResult.cost}`);
-		p.log.message(`  Turns: ${promptResult.turns}`);
+		p.log.message(`💰 Cost: $${promptResult.cost}`);
+		p.log.message(`🔄 Turns: ${promptResult.turns}`);
 	}),
 );
 

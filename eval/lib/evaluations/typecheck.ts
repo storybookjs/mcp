@@ -2,6 +2,7 @@ import ts from 'typescript';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { ExperimentArgs } from '../../types';
+import * as p from '@clack/prompts';
 
 type DiagnosticError = {
   file: string;
@@ -22,6 +23,9 @@ type TypeCheckResults = {
 };
 
 export async function checkTypes({ projectPath, resultsPath }: ExperimentArgs): Promise<boolean> {
+  const spinner = p.spinner();
+  spinner.start('Checking types');
+  
   // Read tsconfig.json
   const configFile = ts.readConfigFile(path.join(projectPath, 'tsconfig.app.json'), ts.sys.readFile);
   const parsedConfig = ts.parseJsonConfigFileContent(
@@ -82,5 +86,6 @@ export async function checkTypes({ projectPath, resultsPath }: ExperimentArgs): 
   });
   await fs.writeFile(path.join(resultsPath, 'typecheck.json'), JSON.stringify(result, null, 2));
 
+  spinner.stop(result.success ? 'Type check succeeded' : 'Type check failed');
   return result.success;
 }

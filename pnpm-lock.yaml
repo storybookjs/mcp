@@ -132,8 +132,8 @@ importers:
         specifier: ^0.1.30
         version: 0.1.30(zod@3.25.76)
       '@clack/prompts':
-        specifier: ^0.11.0
-        version: 0.11.0
+        specifier: 1.0.0-alpha.6
+        version: 1.0.0-alpha.6
       '@storybook/addon-a11y':
         specifier: 'catalog:'
         version: 10.1.0-alpha.3(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0)))
@@ -272,6 +272,525 @@ importers:
         version: 4.0.6(@types/node@24.9.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
 
   eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T16-12-24-407Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@storybook/addon-a11y':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))
+      '@storybook/addon-vitest':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(vitest@4.0.6)
+      '@storybook/react-vite':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(esbuild@0.25.11)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.11))
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(eslint@9.39.0(jiti@2.6.1))(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.6(@types/node@24.9.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T16-38-20-439Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T19-27-06-860Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T19-37-54-442Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T19-38-27-356Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T20-10-02-566Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@storybook/addon-a11y':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))
+      '@storybook/addon-vitest':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(vitest@4.0.6)
+      '@storybook/react-vite':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(esbuild@0.25.11)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.11))
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(eslint@9.39.0(jiti@2.6.1))(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.6(@types/node@24.9.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T20-16-55-477Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@storybook/addon-a11y':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))
+      '@storybook/addon-vitest':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(vitest@4.0.6)
+      '@storybook/react-vite':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(esbuild@0.25.11)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.11))
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(eslint@9.39.0(jiti@2.6.1))(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.6(@types/node@24.9.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T20-20-08-557Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@storybook/addon-a11y':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))
+      '@storybook/addon-vitest':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(vitest@4.0.6)
+      '@storybook/react-vite':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(esbuild@0.25.11)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.11))
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(eslint@9.39.0(jiti@2.6.1))(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.6(@types/node@24.9.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T20-25-22-551Z/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@storybook/addon-a11y':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))
+      '@storybook/addon-vitest':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(vitest@4.0.6)
+      '@storybook/react-vite':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(esbuild@0.25.11)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.11))
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.9.1
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.3(eslint@9.39.0(jiti@2.6.1))(storybook@10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)))(typescript@5.9.3)
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.2(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.3(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(terser@5.44.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.6(@types/node@24.9.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
+
+  eval/evals/101-flight-booking-plain/experiments/claude-code-no-context-2025-11-04T20-31-20-793Z/project:
     dependencies:
       react:
         specifier: ^19.1.1
@@ -625,11 +1144,11 @@ packages:
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
 
-  '@clack/core@0.5.0':
-    resolution: {integrity: sha512-p3y0FIOwaYRUPRcMO7+dlmLh8PSRcrjuTndsiA0WAFbWES0mLZlrjVoBRZ9DzkPFJZG6KGkJmoEAY0ZcVWTkow==}
+  '@clack/core@1.0.0-alpha.6':
+    resolution: {integrity: sha512-eG5P45+oShFG17u9I1DJzLkXYB1hpUgTLi32EfsMjSHLEqJUR8BOBCVFkdbUX2g08eh/HCi6UxNGpPhaac1LAA==}
 
-  '@clack/prompts@0.11.0':
-    resolution: {integrity: sha512-pMN5FcrEw9hUkZA4f+zLlzivQSeQf5dRGJjSUbvVYDLvpKCdQx5OaknvKzgbtXOizhP+SJJJjqEbOe55uKKfAw==}
+  '@clack/prompts@1.0.0-alpha.6':
+    resolution: {integrity: sha512-75NCtYOgDHVBE2nLdKPTDYOaESxO0GLAKC7INREp5VbS988Xua1u+588VaGlcvXiLc/kSwc25Cd+4PeTSpY6QQ==}
 
   '@codecov/bundler-plugin-core@1.9.1':
     resolution: {integrity: sha512-dt3ic7gMswz4p/qdkYPVJwXlLiLsz55rBBn2I7mr0HTG8pCoLRqnANJIwo5WrqGBZgPyVSMPBqBra6VxLWfDyA==}
@@ -4920,14 +5439,14 @@ snapshots:
       human-id: 4.1.2
       prettier: 2.8.8
 
-  '@clack/core@0.5.0':
+  '@clack/core@1.0.0-alpha.6':
     dependencies:
       picocolors: 1.1.1
       sisteransi: 1.0.5
 
-  '@clack/prompts@0.11.0':
+  '@clack/prompts@1.0.0-alpha.6':
     dependencies:
-      '@clack/core': 0.5.0
+      '@clack/core': 1.0.0-alpha.6
       picocolors: 1.1.1
       sisteransi: 1.0.5
 
