@@ -180,6 +180,7 @@ await Promise.all(
 				checkTypes(experimentArgs),
 				runESLint(experimentArgs),
 				testStories(experimentArgs),
+				saveEnvironment(experimentArgs, args.agent),
 			]);
 
 		const summary = {
