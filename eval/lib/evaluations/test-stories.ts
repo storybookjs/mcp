@@ -20,7 +20,7 @@ export async function testStories({
 	const testModules = vitest.state.getTestModules();
 
 	await vitest.close();
-	
+
 	const { default: testResultsRaw } = await import(testResultsPath, {
 		with: { type: 'json' },
 	});
@@ -30,8 +30,10 @@ export async function testStories({
 
 	// Extract a11y violations per story
 	const a11yViolations: Record<string, any[]> = {};
-	
-	for (const suite of Object.values(testResultsRaw.default?.testResults ?? []) as any[]) {
+
+	for (const suite of Object.values(
+		testResultsRaw.default?.testResults ?? [],
+	) as any[]) {
 		for (const assertion of suite.assertionResults ?? []) {
 			const storyId = assertion.meta?.storyId;
 			if (!storyId) {
@@ -49,11 +51,11 @@ export async function testStories({
 	const a11yViolationsPath = path.join(resultsPath, 'a11y-violations.json');
 	await fs.writeFile(
 		a11yViolationsPath,
-		JSON.stringify(a11yViolations, null, 2)
+		JSON.stringify(a11yViolations, null, 2),
 	);
 
 	return {
 		tests: testModules.every((testModule) => testModule.ok()),
-		a11y: Object.keys(a11yViolations).length === 0
+		a11y: Object.keys(a11yViolations).length === 0,
 	};
 }

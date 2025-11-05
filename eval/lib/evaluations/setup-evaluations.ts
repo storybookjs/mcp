@@ -28,9 +28,13 @@ export async function setupEvaluations({
 			!source.includes('node_modules') && !source.includes('dist'),
 	});
 	await fs
-		.cp(path.join(evalPath, 'expected', 'stories'), path.join(projectPath, 'stories'), {
-			recursive: true,
-			force: true,
-		})
+		.cp(
+			path.join(evalPath, 'expected', 'stories'),
+			path.join(projectPath, 'stories'),
+			{
+				recursive: true,
+				force: true,
+			},
+		)
 		.catch(() => {});
 }

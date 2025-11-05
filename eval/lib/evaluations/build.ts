@@ -2,15 +2,20 @@ import { x } from 'tinyexec';
 import type { ExperimentArgs } from '../../types';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {dedent} from 'ts-dedent';
+import { dedent } from 'ts-dedent';
 
-export async function build({projectPath, resultsPath}: ExperimentArgs): Promise<boolean> {
+export async function build({
+	projectPath,
+	resultsPath,
+}: ExperimentArgs): Promise<boolean> {
 	const result = await x('pnpm', ['build'], {
 		nodeOptions: {
 			cwd: projectPath,
 		},
 	});
-	await fs.writeFile(path.join(resultsPath, 'build.md'), dedent`# Build Results
+	await fs.writeFile(
+		path.join(resultsPath, 'build.md'),
+		dedent`# Build Results
 	
 	**Exit Code:** ${result.exitCode}
 
@@ -25,7 +30,8 @@ export async function build({projectPath, resultsPath}: ExperimentArgs): Promise
 	\`\`\`
 	${result.stderr}
 	\`\`\`
-	`);
-	
+	`,
+	);
+
 	return result.exitCode === 0;
 }

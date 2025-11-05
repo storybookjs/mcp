@@ -7,6 +7,7 @@ import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
 import { taskLog, spinner } from '@clack/prompts';
 import { x } from 'tinyexec';
+import * as fs from 'node:fs/promises';
 
 type TaskLogger = {
 	start: (title: string) => void;
