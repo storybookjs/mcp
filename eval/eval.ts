@@ -5,15 +5,8 @@ import { claudeCodeCli } from './lib/agents/claude-code-cli.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { dedent } from 'ts-dedent';
-import { build } from './lib/evaluations/build.ts';
-import { checkTypes } from './lib/evaluations/typecheck.ts';
-import { runESLint } from './lib/evaluations/lint.ts';
-import { setupEvaluations } from './lib/evaluations/setup-evaluations.ts';
-import { testStories } from './lib/evaluations/test-stories.ts';
 import type { ExperimentArgs } from './types.ts';
-import { saveEnvironment } from './lib/evaluations/environment.ts';
 import { prepareExperiment } from './lib/prepare-experiment.ts';
-import { x } from 'tinyexec';
 import { evaluate } from './lib/evaluations/evaluate.ts';
 
 const Args = v.pipe(
@@ -24,11 +17,11 @@ const Args = v.pipe(
 			),
 			verbose: v.boolean(),
 		}),
-		positionals: v.array(v.string()),
+		positionals: v.optional(v.array(v.string())),
 	}),
 	v.transform(({ values, positionals }) => ({
 		...values,
-		evals: positionals,
+		eval: positionals?.[0],
 	})),
 );
 
@@ -46,7 +39,7 @@ const parsedArgs = v.parse(
 );
 
 // Display intro
-p.intro('🧪 Storybook MCP Evaluations');
+p.intro('🧪 Storybook MCP Eval');
 
 // Get available eval directories
 const evalsDir = path.join(process.cwd(), 'evals');
@@ -61,15 +54,14 @@ const evalOptions = availableEvals
 // Prompt for missing arguments
 const promptResults = await p.group(
 	{
-		evals: async () => {
-			if (parsedArgs.evals.length > 0) {
-				return parsedArgs.evals;
+		eval: async () => {
+			if (parsedArgs.eval) {
+				return parsedArgs.eval;
 			}
 
-			const result = await p.multiselect({
-				message: 'Which evals do you want to run?',
+			const result = await p.select({
+				message: 'Which eval do you want to run?',
 				options: evalOptions,
-				required: true,
 			});
 
 			if (p.isCancel(result)) {
@@ -77,7 +69,7 @@ const promptResults = await p.group(
 				process.exit(0);
 			}
 
-			return result as string[];
+			return result as string;
 		},
 		agent: async () => {
 			if (parsedArgs.agent) {
@@ -109,26 +101,19 @@ const promptResults = await p.group(
 const args = {
 	agent: promptResults.agent,
 	verbose: promptResults.verbose,
-	evals: promptResults.evals,
+	eval: promptResults.eval,
 };
 
-const evalDirsToPaths = Object.fromEntries(
-	args.evals.map((evalDir) => [
-		evalDir,
-		path.resolve(path.join('evals', evalDir)),
-	]),
-);
+const evalPath = path.resolve(path.join('evals', args.eval));
 
-// Validate that all eval directories exist
-for (const evalPath of Object.values(evalDirsToPaths)) {
-	const dirExists = await fs
-		.access(evalPath)
-		.then(() => true)
-		.catch(() => false);
-	if (!dirExists) {
-		p.log.error(`Eval directory does not exist: ${evalPath}`);
-		process.exit(1);
-	}
+// Validate that eval directory exists
+const dirExists = await fs
+	.access(evalPath)
+	.then(() => true)
+	.catch(() => false);
+if (!dirExists) {
+	p.log.error(`Eval directory does not exist: ${evalPath}`);
+	process.exit(1);
 }
 
 const agents = {
@@ -137,59 +122,55 @@ const agents = {
 
 const agent = agents[args.agent as keyof typeof agents];
 
-await Promise.all(
-	Object.entries(evalDirsToPaths).map(async ([evalDir, evalPath]) => {
-		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-		const experimentDirName = `${args.agent}-no-context-${timestamp}`;
-		const experimentPath = path.join(
-			evalPath,
-			'experiments',
-			experimentDirName,
-		);
-		const projectPath = path.join(experimentPath, 'project');
-		const resultsPath = path.join(experimentPath, 'results');
-		const experimentArgs: ExperimentArgs = {
-			evalPath,
-			experimentPath,
-			projectPath,
-			resultsPath,
-			verbose: args.verbose,
-		};
+const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+const experimentDirName = `${args.agent}-no-context-${timestamp}`;
+const experimentPath = path.join(evalPath, 'experiments', experimentDirName);
+const projectPath = path.join(experimentPath, 'project');
+const resultsPath = path.join(experimentPath, 'results');
+const experimentArgs: ExperimentArgs = {
+	evalPath,
+	experimentPath,
+	projectPath,
+	resultsPath,
+	verbose: args.verbose,
+};
 
-		p.log.info(`Running experiment '${evalDir}' with agent '${args.agent}'`);
+p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
 
-		await prepareExperiment(experimentArgs);
+await prepareExperiment(experimentArgs);
 
-		const prompt = await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8');
-		const enhancedPrompt = dedent`${prompt}
-    <constraints>
-      IMPORTANT: Do not run npm, pnpm, yarn, or any package manager commands. Dependencies have already been installed. Do not run build, test, or dev server commands. Just write the code files.
-    </constraints>`;
-		const promptSummary = await agent.execute({
-			prompt: enhancedPrompt,
-			env: process.env,
-			...experimentArgs,
-		});
+const prompt = await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8');
+const enhancedPrompt = dedent`${prompt}
+<constraints>
+  IMPORTANT: Do not run npm, pnpm, yarn, or any package manager commands. Dependencies have already been installed. Do not run build, test, or dev server commands. Just write the code files.
+</constraints>`;
+const promptSummary = await agent.execute({
+	prompt: enhancedPrompt,
+	env: process.env,
+	...experimentArgs,
+});
 
-		const evaluationSummary = await evaluate(experimentArgs, args.agent);
+const evaluationSummary = await evaluate(experimentArgs, args.agent);
 
-		await fs.writeFile(
-			path.join(resultsPath, 'summary.json'),
-			JSON.stringify({ ...promptSummary, ...evaluationSummary }, null, 2),
-		);
-
-		p.log.info('Summary:');
-		p.log.message(`🏗️  Build: ${evaluationSummary.buildSuccess ? '✅' : '❌'}`);
-		p.log.message(`🔍 Type Check: ${evaluationSummary.typeCheckSuccess ? '✅' : '❌'}`);
-		p.log.message(`✨ Lint: ${evaluationSummary.lintSuccess ? '✅' : '❌'}`);
-		p.log.message(`🧪 Tests: ${evaluationSummary.testSuccess ? '✅' : '❌'}`);
-		p.log.message(`🦾 Accessibility: ${evaluationSummary.a11ySuccess ? '✅' : '❌'}`);
-		p.log.message(
-			`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
-		);
-		p.log.message(`💰 Cost: $${promptSummary.cost}`);
-		p.log.message(`🔄 Turns: ${promptSummary.turns}`);
-	}),
+await fs.writeFile(
+	path.join(resultsPath, 'summary.json'),
+	JSON.stringify({ ...promptSummary, ...evaluationSummary }, null, 2),
 );
 
-p.outro('✨ All evaluations complete!');
+p.log.info('Summary:');
+p.log.message(`🏗️  Build: ${evaluationSummary.buildSuccess ? '✅' : '❌'}`);
+p.log.message(
+	`🔍 Type Check: ${evaluationSummary.typeCheckSuccess ? '✅' : '❌'}`,
+);
+p.log.message(`✨ Lint: ${evaluationSummary.lintSuccess ? '✅' : '❌'}`);
+p.log.message(`🧪 Tests: ${evaluationSummary.testSuccess ? '✅' : '❌'}`);
+p.log.message(
+	`🦾 Accessibility: ${evaluationSummary.a11ySuccess ? '✅' : '❌'}`,
+);
+p.log.message(
+	`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
+);
+p.log.message(`💰 Cost: $${promptSummary.cost}`);
+p.log.message(`🔄 Turns: ${promptSummary.turns}`);
+
+p.outro('✨ Evaluation complete!');
