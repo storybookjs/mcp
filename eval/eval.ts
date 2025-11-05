@@ -1,111 +1,18 @@
-import { parseArgs } from 'node:util';
-import * as v from 'valibot';
 import * as p from '@clack/prompts';
 import { claudeCodeCli } from './lib/agents/claude-code-cli.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { dedent } from 'ts-dedent';
 import type { ExperimentArgs } from './types.ts';
 import { prepareExperiment } from './lib/prepare-experiment.ts';
 import { evaluate } from './lib/evaluations/evaluate.ts';
+import { collectArgs } from './lib/collect-args.ts';
+import { generatePrompt } from './lib/generate-prompt.ts';
 
-const Args = v.pipe(
-	v.object({
-		values: v.object({
-			agent: v.optional(
-				v.union([v.literal('claude-code'), v.literal('copilot')]),
-			),
-			verbose: v.boolean(),
-		}),
-		positionals: v.optional(v.array(v.string())),
-	}),
-	v.transform(({ values, positionals }) => ({
-		...values,
-		eval: positionals?.[0],
-	})),
-);
-
-const parsedArgs = v.parse(
-	Args,
-	parseArgs({
-		options: {
-			agent: { type: 'string', short: 'a' },
-			verbose: { type: 'boolean', default: false, short: 'v' },
-		},
-		strict: false,
-		allowPositionals: true,
-		allowNegative: true,
-	}),
-);
-
-// Display intro
 p.intro('🧪 Storybook MCP Eval');
 
-// Get available eval directories
-const evalsDir = path.join(process.cwd(), 'evals');
-const availableEvals = await fs.readdir(evalsDir, { withFileTypes: true });
-const evalOptions = availableEvals
-	.filter((dirent) => dirent.isDirectory())
-	.map((dirent) => ({
-		value: dirent.name,
-		label: dirent.name,
-	}));
-
-// Prompt for missing arguments
-const promptResults = await p.group(
-	{
-		eval: async () => {
-			if (parsedArgs.eval) {
-				return parsedArgs.eval;
-			}
-
-			const result = await p.select({
-				message: 'Which eval do you want to run?',
-				options: evalOptions,
-			});
-
-			if (p.isCancel(result)) {
-				p.cancel('Operation cancelled.');
-				process.exit(0);
-			}
-
-			return result as string;
-		},
-		agent: async () => {
-			if (parsedArgs.agent) {
-				return parsedArgs.agent;
-			}
-
-			const result = await p.select({
-				message: 'Which coding agents do you want to use?',
-				options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
-			});
-
-			if (p.isCancel(result)) {
-				p.cancel('Operation cancelled.');
-				process.exit(0);
-			}
-
-			return result;
-		},
-		verbose: async () => parsedArgs.verbose,
-	},
-	{
-		onCancel: () => {
-			p.cancel('Operation cancelled.');
-			process.exit(0);
-		},
-	},
-);
-
-const args = {
-	agent: promptResults.agent,
-	verbose: promptResults.verbose,
-	eval: promptResults.eval,
-};
+const args = await collectArgs();
 
 const evalPath = path.resolve(path.join('evals', args.eval));
-
 // Validate that eval directory exists
 const dirExists = await fs
 	.access(evalPath)
@@ -139,19 +46,13 @@ p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
 
 await prepareExperiment(experimentArgs);
 
-const prompt = await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8');
-const enhancedPrompt = dedent`${prompt}
-<constraints>
-  IMPORTANT: Do not run npm, pnpm, yarn, or any package manager commands. Dependencies have already been installed. Do not run build, test, or dev server commands. Just write the code files.
-</constraints>`;
-const promptSummary = await agent.execute({
-	prompt: enhancedPrompt,
-	env: process.env,
-	...experimentArgs,
-});
+const prompt = await generatePrompt(evalPath, args.context);
+
+const promptSummary = await agent.execute(prompt, experimentArgs, args.context.type === 'mcp-server' ? args.context.mcpServerConfig : undefined);
 
 const evaluationSummary = await evaluate(experimentArgs, args.agent);
 
+await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 await fs.writeFile(
 	path.join(resultsPath, 'summary.json'),
 	JSON.stringify({ ...promptSummary, ...evaluationSummary }, null, 2),

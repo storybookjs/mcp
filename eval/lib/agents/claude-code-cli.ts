@@ -1,14 +1,18 @@
 import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { ExperimentArgs, ExecutionSummary } from '../../types';
+import { styleText, inspect } from 'node:util';
+import type { Agent } from '../../types';
 import { spinner, taskLog } from '@clack/prompts';
-
-// Claude Code CLI Stream JSON Output Types
 
 interface BaseMessage {
 	session_id: string;
 	uuid: string;
+}
+
+interface McpServer {
+	name: string;
+	status: string;
 }
 
 interface SystemInitMessage extends BaseMessage {
@@ -16,7 +20,7 @@ interface SystemInitMessage extends BaseMessage {
 	subtype: 'init';
 	cwd: string;
 	tools: string[];
-	mcp_servers: string[];
+	mcp_servers: McpServer[];
 	model: string;
 	permissionMode: string;
 	slash_commands: string[];
@@ -132,8 +136,12 @@ function formatMessageForLog(
 	projectPath: string,
 ): string {
 	switch (message.type) {
-		case 'system':
-			return `[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${message.mcp_servers.length}`;
+		case 'system': {
+			const mcpInfo = message.mcp_servers.length > 0 
+				? styleText(['cyan'], message.mcp_servers.map(s => `${s.name}:${s.status}`).join(', '))
+				: 'None';
+			return `[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${mcpInfo}`;
+		}
 		case 'assistant': {
 			const content = message.message.content;
 			const textContent = content.find(
@@ -165,21 +173,26 @@ function formatMessageForLog(
 					return lines.join('\n');
 				} else {
 					const toolDescriptions = toolUses.map((t) => {
+						const isMcpTool = t.name.startsWith('mcp__');
+						let toolDesc: string;
+						
 						if (
 							(t.name === 'Read' || t.name === 'Write' || t.name === 'Edit') &&
 							t.input.file_path
 						) {
 							const relPath = path.relative(projectPath, t.input.file_path);
-							return `${t.name}(./${relPath})`;
-						}
-						if (t.name === 'Bash' && t.input.command) {
+							toolDesc = `${t.name}(./${relPath})`;
+						} else if (t.name === 'Bash' && t.input.command) {
 							const cmd =
 								t.input.command.length > 50
 									? t.input.command.slice(0, 50) + '...'
 									: t.input.command;
-							return `Bash(${cmd})`;
+							toolDesc = `Bash(${cmd})`;
+						} else {
+							toolDesc = t.name;
 						}
-						return t.name;
+						
+						return isMcpTool ? styleText('cyan', toolDesc) : toolDesc;
 					});
 					return `[ASSISTANT] Tools: ${toolDescriptions.join(', ')}`;
 				}
@@ -256,18 +269,16 @@ function formatConversationAsMarkdown(
 	const lines: string[] = ['# Conversation Log\n'];
 
 	for (const message of messages) {
-		switch (message.type) {
-			case 'system':
-				lines.push('## Session Initialized\n');
-				lines.push(`- **Model**: ${message.model}`);
-				lines.push(`- **Tools**: ${message.tools.join(', ')}`);
-				lines.push(
-					`- **MCP Servers**: ${message.mcp_servers.join(', ') || 'None'}`,
-				);
-				lines.push(`- **Working Directory**: ${message.cwd}\n`);
-				break;
-
-			case 'assistant': {
+	switch (message.type) {
+		case 'system':
+			lines.push('## Session Initialized\n');
+			lines.push(`- **Model**: ${message.model}`);
+			lines.push(`- **Tools**: ${message.tools.join(', ')}`);
+			lines.push(
+				`- **MCP Servers**: ${message.mcp_servers.length > 0 ? message.mcp_servers.map(s => `🔌 **${s.name}** (${s.status})`).join(', ') : 'None'}`,
+			);
+			lines.push(`- **Working Directory**: ${message.cwd}\n`);
+			break;			case 'assistant': {
 				const content = message.message.content;
 				const textContent = content.find(
 					(c): c is TextContent => c.type === 'text',
@@ -298,6 +309,9 @@ function formatConversationAsMarkdown(
 					} else {
 						lines.push('## Assistant: Tool Usage\n');
 						for (const tool of toolUses) {
+							const isMcpTool = tool.name.startsWith('mcp__');
+							const prefix = isMcpTool ? '🔌 ' : '';
+							
 							if (
 								(tool.name === 'Read' ||
 									tool.name === 'Write' ||
@@ -308,11 +322,11 @@ function formatConversationAsMarkdown(
 									projectPath,
 									tool.input.file_path,
 								);
-								lines.push(`- **${tool.name}**: \`./${relPath}\``);
+								lines.push(`- ${prefix}**${tool.name}**: \`./${relPath}\``);
 							} else if (tool.name === 'Bash' && tool.input.command) {
-								lines.push(`- **Bash**: \`${tool.input.command}\``);
+								lines.push(`- ${prefix}**Bash**: \`${tool.input.command}\``);
 							} else {
-								lines.push(`- **${tool.name}**`);
+								lines.push(`- ${prefix}**${tool.name}**`);
 							}
 						}
 						lines.push('');
@@ -367,14 +381,18 @@ function formatConversationAsMarkdown(
 	return lines.join('\n');
 }
 
-export const claudeCodeCli = {
-	async execute({
+export const claudeCodeCli: Agent = {
+	async execute(
 		prompt,
-		resultsPath,
-		projectPath,
-		verbose,
-		env,
-	}: { prompt: string; env: NodeJS.ProcessEnv } & ExperimentArgs): Promise<ExecutionSummary> {
+		{ resultsPath, projectPath, verbose },
+		mcpServerConfig,
+	) {
+		if (mcpServerConfig) {
+			await fs.writeFile(
+				path.join(projectPath, '.mcp.json'),
+				JSON.stringify({ mcpServers: mcpServerConfig }, null, 2),
+			);
+		}
 		const verboseLog = (verbose &&
 			taskLog({
 				title: `Executing prompt with Claude Code CLI`,
@@ -392,10 +410,13 @@ export const claudeCodeCli = {
 			prompt,
 		];
 
+		if (mcpServerConfig) {
+			args.unshift('--mcp-config=.mcp.json');
+		}
+
 		const claudeProcess = x('claude', args, {
 			nodeOptions: {
 				cwd: projectPath,
-				env,
 				stdio: ['pipe', 'pipe', 'pipe'], // pipe stdin to send "yes" for MCP prompts
 			},
 		});
@@ -412,7 +433,7 @@ export const claudeCodeCli = {
 				verboseLog.message(formatMessageForLog(parsed, projectPath));
 			} else {
 				const todoProgress = getTodoProgress(messages);
-				let progressMessage = `Agent is working, turn ${messages.filter(m => m.type === 'assistant').length}`;
+				let progressMessage = `Agent is working, turn ${messages.filter((m) => m.type === 'assistant').length}`;
 				if (todoProgress) {
 					progressMessage += `, todo ${todoProgress.current} / ${todoProgress.total}: ${todoProgress.currentTitle}`;
 				}
@@ -424,7 +445,7 @@ export const claudeCodeCli = {
 		);
 		if (!resultMessage) {
 			const errorMessage = 'No result message received from Claude Code CLI';
-			if(verbose){
+			if (verbose) {
 				verboseLog.error(errorMessage);
 			} else {
 				normalLog.stop(errorMessage);
@@ -444,7 +465,6 @@ export const claudeCodeCli = {
 			),
 		]);
 
-
 		const result = {
 			cost: Number(resultMessage.total_cost_usd.toFixed(4)),
 			duration: Math.round(resultMessage.duration_ms / 1000),
@@ -452,12 +472,12 @@ export const claudeCodeCli = {
 			turns: resultMessage.num_turns,
 		};
 		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
-		if(verbose){
+		if (verbose) {
 			verboseLog.success(successMessage);
 		} else {
 			normalLog.stop(successMessage);
 		}
 
 		return result;
-	},
+	}
 };

@@ -7,16 +7,16 @@ import { taskLog } from '@clack/prompts';
 export async function prepareExperiment({
 	evalPath,
 	experimentPath,
-  resultsPath,
+	resultsPath,
 	projectPath,
 }: ExperimentArgs) {
 	const log = taskLog({ title: 'Preparing experiment' });
-	
-	log.message('Creating project from template')
+
+	log.message('Creating project from template');
 	await fs.mkdir(path.join(evalPath, 'experiments'), { recursive: true });
 	const projectTemplatePath = path.resolve(path.join('templates', 'project'));
 	await fs.mkdir(experimentPath, { recursive: true });
-  await fs.mkdir(resultsPath, { recursive: true });
+	await fs.mkdir(resultsPath, { recursive: true });
 	await fs.cp(projectTemplatePath, projectPath, {
 		recursive: true,
 		filter: (source) =>
