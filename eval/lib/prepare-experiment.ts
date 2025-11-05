@@ -4,13 +4,13 @@ import * as fs from 'node:fs/promises';
 import { installDependencies } from 'nypm';
 import { taskLog } from '@clack/prompts';
 
-export async function setupExperiment({
+export async function prepareExperiment({
 	evalPath,
 	experimentPath,
   resultsPath,
 	projectPath,
 }: ExperimentArgs) {
-	const log = taskLog({ title: 'Setting up experiment' });
+	const log = taskLog({ title: 'Preparing experiment' });
 	
 	log.message('Creating project from template')
 	await fs.mkdir(path.join(evalPath, 'experiments'), { recursive: true });
@@ -29,5 +29,5 @@ export async function setupExperiment({
 		packageManager: 'pnpm',
 		silent: true,
 	});
-	log.success('Experiment set up!');
+	log.success('Experiment prepared');
 }

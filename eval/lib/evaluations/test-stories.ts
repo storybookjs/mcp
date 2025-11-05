@@ -2,15 +2,11 @@ import { startVitest } from 'vitest/node';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { ExperimentArgs } from '../../types';
-import * as p from '@clack/prompts';
 
 export async function testStories({
 	projectPath,
 	resultsPath,
 }: ExperimentArgs) {
-	const spinner = p.spinner();
-	spinner.start('Testing stories');
-	
 	const testResultsPath = path.join(resultsPath, 'tests.json');
 
 	const vitest = await startVitest('test', undefined, {
@@ -56,14 +52,8 @@ export async function testStories({
 		JSON.stringify(a11yViolations, null, 2)
 	);
 
-	const result = {
+	return {
 		tests: testModules.every((testModule) => testModule.ok()),
 		a11y: Object.keys(a11yViolations).length === 0
 	};
-	
-	spinner.stop(
-		`Tests ${result.tests ? 'passed' : 'failed'}, with${result.a11y ? 'out' : ''} accessibility violations`,
-	);
-	
-	return result;
 }

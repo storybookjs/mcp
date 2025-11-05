@@ -2,12 +2,8 @@ import { ESLint } from 'eslint';
 import type { ExperimentArgs } from '../../types';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as p from '@clack/prompts';
 
 export async function runESLint({projectPath, resultsPath}: ExperimentArgs) {
-  const spinner = p.spinner();
-  spinner.start('Linting');
-  
   // Create ESLint instance
   const eslint = new ESLint({
     cwd: projectPath,
@@ -53,6 +49,5 @@ export async function runESLint({projectPath, resultsPath}: ExperimentArgs) {
   await fs.writeFile(path.join(resultsPath, 'lint.json'), JSON.stringify(structured, null, 2));
   await fs.writeFile(path.join(resultsPath, 'lint.txt'), formatted);
   
-  spinner.stop(structured.success ? 'Linting succeeded' : 'Linting failed');
   return structured.success;
 }

@@ -12,8 +12,9 @@ import { setupEvaluations } from './lib/evaluations/setup-evaluations.ts';
 import { testStories } from './lib/evaluations/test-stories.ts';
 import type { ExperimentArgs } from './types.ts';
 import { saveEnvironment } from './lib/evaluations/environment.ts';
-import { setupExperiment } from './lib/setup-experiment.ts';
+import { prepareExperiment } from './lib/prepare-experiment.ts';
 import { x } from 'tinyexec';
+import { evaluate } from './lib/evaluations/evaluate.ts';
 
 const Args = v.pipe(
 	v.object({
@@ -136,8 +137,6 @@ const agents = {
 
 const agent = agents[args.agent as keyof typeof agents];
 
-p.log.info(`Running ${args.evals.length} evaluation(s) with ${args.agent}`);
-
 await Promise.all(
 	Object.entries(evalDirsToPaths).map(async ([evalDir, evalPath]) => {
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -157,63 +156,39 @@ await Promise.all(
 			verbose: args.verbose,
 		};
 
-		p.log.step(`${evalDir}: Starting experiment`);
+		p.log.info(`Running experiment '${evalDir}' with agent '${args.agent}'`);
 
-		await setupExperiment(experimentArgs);
+		await prepareExperiment(experimentArgs);
 
 		const prompt = await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8');
 		const enhancedPrompt = dedent`${prompt}
     <constraints>
       IMPORTANT: Do not run npm, pnpm, yarn, or any package manager commands. Dependencies have already been installed. Do not run build, test, or dev server commands. Just write the code files.
     </constraints>`;
-		const promptResult = await agent.execute({
+		const promptSummary = await agent.execute({
 			prompt: enhancedPrompt,
 			env: process.env,
 			...experimentArgs,
 		});
 
-		await setupEvaluations(experimentArgs);
-
-		const [buildSuccess, typeCheckSuccess, lintSuccess, testResults] =
-			await Promise.all([
-				build(experimentArgs),
-				checkTypes(experimentArgs),
-				runESLint(experimentArgs),
-				testStories(experimentArgs),
-				saveEnvironment(experimentArgs, args.agent),
-			]);
-
-		const summary = {
-			...promptResult,
-			buildSuccess,
-			typeCheckSuccess,
-			lintSuccess,
-			testSuccess: testResults.tests,
-			a11ySuccess: testResults.a11y,
-		};
+		const evaluationSummary = await evaluate(experimentArgs, args.agent);
 
 		await fs.writeFile(
 			path.join(resultsPath, 'summary.json'),
-			JSON.stringify(summary, null, 2),
+			JSON.stringify({ ...promptSummary, ...evaluationSummary }, null, 2),
 		);
 
-		const prettierSpinner = p.spinner();
-		prettierSpinner.start('Formatting results');
-		await x('pnpm', ['exec', 'prettier', '--write', resultsPath]);
-		prettierSpinner.stop('Results formatted');
-
-		p.log.success(`${evalDir}: Evaluation complete`);
 		p.log.info('Summary:');
-		p.log.message(`🏗️  Build: ${summary.buildSuccess ? '✅' : '❌'}`);
-		p.log.message(`🔍 Type Check: ${summary.typeCheckSuccess ? '✅' : '❌'}`);
-		p.log.message(`✨ Lint: ${summary.lintSuccess ? '✅' : '❌'}`);
-		p.log.message(`🧪 Tests: ${summary.testSuccess ? '✅' : '❌'}`);
-		p.log.message(`🦾 Accessibility: ${summary.a11ySuccess ? '✅' : '❌'}`);
+		p.log.message(`🏗️  Build: ${evaluationSummary.buildSuccess ? '✅' : '❌'}`);
+		p.log.message(`🔍 Type Check: ${evaluationSummary.typeCheckSuccess ? '✅' : '❌'}`);
+		p.log.message(`✨ Lint: ${evaluationSummary.lintSuccess ? '✅' : '❌'}`);
+		p.log.message(`🧪 Tests: ${evaluationSummary.testSuccess ? '✅' : '❌'}`);
+		p.log.message(`🦾 Accessibility: ${evaluationSummary.a11ySuccess ? '✅' : '❌'}`);
 		p.log.message(
-			`⏱️  Duration: ${promptResult.duration}s (API: ${promptResult.durationApi}s)`,
+			`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
 		);
-		p.log.message(`💰 Cost: $${promptResult.cost}`);
-		p.log.message(`🔄 Turns: ${promptResult.turns}`);
+		p.log.message(`💰 Cost: $${promptSummary.cost}`);
+		p.log.message(`🔄 Turns: ${promptSummary.turns}`);
 	}),
 );
 

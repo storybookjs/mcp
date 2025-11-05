@@ -1,7 +1,7 @@
 import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { ExperimentArgs } from '../../types';
+import type { ExperimentArgs, ExecutionSummary } from '../../types';
 import { spinner, taskLog } from '@clack/prompts';
 
 // Claude Code CLI Stream JSON Output Types
@@ -374,7 +374,7 @@ export const claudeCodeCli = {
 		projectPath,
 		verbose,
 		env,
-	}: { prompt: string; env: NodeJS.ProcessEnv } & ExperimentArgs) {
+	}: { prompt: string; env: NodeJS.ProcessEnv } & ExperimentArgs): Promise<ExecutionSummary> {
 		const verboseLog = (verbose &&
 			taskLog({
 				title: `Executing prompt with Claude Code CLI`,
