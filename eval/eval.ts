@@ -24,12 +24,6 @@ if (!dirExists) {
 	process.exit(1);
 }
 
-const agents = {
-	'claude-code': claudeCodeCli,
-};
-
-const agent = agents[args.agent as keyof typeof agents];
-
 const timestamp = new Date().toISOString().split('.')[0].replace(/[:.]/g, '-');
 
 let contextPrefix = '';
@@ -71,6 +65,10 @@ await prepareExperiment(experimentArgs);
 
 const prompt = await generatePrompt(evalPath, args.context);
 
+const agents = {
+	'claude-code': claudeCodeCli,
+};
+const agent = agents[args.agent as keyof typeof agents];
 const promptSummary = await agent.execute(
 	prompt,
 	experimentArgs,
