@@ -30,8 +30,27 @@ const agents = {
 
 const agent = agents[args.agent as keyof typeof agents];
 
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-const experimentDirName = `${args.agent}-no-context-${timestamp}`;
+const timestamp = new Date().toISOString().split('.')[0].replace(/[:.]/g, '-');
+
+let contextPrefix = '';
+switch (args.context.type) {
+	case false:
+		contextPrefix = 'no-context';
+		break;
+	case 'extra-prompts':
+		contextPrefix = args.context.prompts
+			.map((prompt) => path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'))
+			.join('-');
+		break;
+	case 'mcp-server':
+	contextPrefix = Object.keys(args.context.mcpServerConfig)
+		.map((mcpServerName) =>
+			mcpServerName.toLowerCase().replace(/\s+/g, '-'),
+		)
+		.join('-');
+}
+
+const experimentDirName = `${contextPrefix}-${args.agent}-${timestamp}`;
 const experimentPath = path.join(evalPath, 'experiments', experimentDirName);
 const projectPath = path.join(experimentPath, 'project');
 const resultsPath = path.join(experimentPath, 'results');
@@ -81,9 +100,13 @@ p.log.message(
 );
 p.log.message(`💰 Cost: $${promptSummary.cost}`);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
-p.log.message(`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`);
+p.log.message(
+	`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
+);
 
-const startStorybook = await p.confirm({ message: "Would you like to start the experiment's Storybook?" });
+const startStorybook = await p.confirm({
+	message: "Would you like to start the experiment's Storybook?",
+});
 
 p.outro('✨ Evaluation complete!');
 
