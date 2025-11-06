@@ -7,6 +7,7 @@ import { prepareExperiment } from './lib/prepare-experiment.ts';
 import { evaluate } from './lib/evaluations/evaluate.ts';
 import { collectArgs } from './lib/collect-args.ts';
 import { generatePrompt } from './lib/generate-prompt.ts';
+import { x } from 'tinyexec';
 
 p.intro('🧪 Storybook MCP Eval');
 
@@ -46,7 +47,7 @@ const experimentArgs: ExperimentArgs = {
 };
 
 p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
-process.exit(0);
+
 await prepareExperiment(experimentArgs);
 
 const prompt = await generatePrompt(evalPath, args.context);
@@ -81,4 +82,16 @@ p.log.message(
 p.log.message(`💰 Cost: $${promptSummary.cost}`);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
 
+const startStorybook = await p.confirm({ message: "Would you like to start the experiment's Storybook?" });
+
 p.outro('✨ Evaluation complete!');
+
+if (startStorybook) {
+	console.log('');
+	await x('pnpm', ['run', 'storybook'], {
+		nodeOptions: {
+			cwd: projectPath,
+			stdio: 'inherit',
+		},
+	});
+}
