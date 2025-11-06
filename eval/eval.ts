@@ -40,15 +40,22 @@ const experimentArgs: ExperimentArgs = {
 	projectPath,
 	resultsPath,
 	verbose: args.verbose,
+	hooks: await import(path.join(evalPath, 'hooks.ts'))
+		.then((mod) => mod.default)
+		.catch(() => ({})),
 };
 
 p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
-
+process.exit(0);
 await prepareExperiment(experimentArgs);
 
 const prompt = await generatePrompt(evalPath, args.context);
 
-const promptSummary = await agent.execute(prompt, experimentArgs, args.context.type === 'mcp-server' ? args.context.mcpServerConfig : undefined);
+const promptSummary = await agent.execute(
+	prompt,
+	experimentArgs,
+	args.context.type === 'mcp-server' ? args.context.mcpServerConfig : undefined,
+);
 
 const evaluationSummary = await evaluate(experimentArgs, args.agent);
 

@@ -137,9 +137,15 @@ function formatMessageForLog(
 ): string {
 	switch (message.type) {
 		case 'system': {
-			const mcpInfo = message.mcp_servers.length > 0 
-				? styleText(['cyan'], message.mcp_servers.map(s => `${s.name}:${s.status}`).join(', '))
-				: 'None';
+			const mcpInfo =
+				message.mcp_servers.length > 0
+					? styleText(
+							['cyan'],
+							message.mcp_servers
+								.map((s) => `${s.name}:${s.status}`)
+								.join(', '),
+						)
+					: 'None';
 			return `[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${mcpInfo}`;
 		}
 		case 'assistant': {
@@ -175,7 +181,7 @@ function formatMessageForLog(
 					const toolDescriptions = toolUses.map((t) => {
 						const isMcpTool = t.name.startsWith('mcp__');
 						let toolDesc: string;
-						
+
 						if (
 							(t.name === 'Read' || t.name === 'Write' || t.name === 'Edit') &&
 							t.input.file_path
@@ -191,7 +197,7 @@ function formatMessageForLog(
 						} else {
 							toolDesc = t.name;
 						}
-						
+
 						return isMcpTool ? styleText('cyan', toolDesc) : toolDesc;
 					});
 					return `[ASSISTANT] Tools: ${toolDescriptions.join(', ')}`;
@@ -269,16 +275,17 @@ function formatConversationAsMarkdown(
 	const lines: string[] = ['# Conversation Log\n'];
 
 	for (const message of messages) {
-	switch (message.type) {
-		case 'system':
-			lines.push('## Session Initialized\n');
-			lines.push(`- **Model**: ${message.model}`);
-			lines.push(`- **Tools**: ${message.tools.join(', ')}`);
-			lines.push(
-				`- **MCP Servers**: ${message.mcp_servers.length > 0 ? message.mcp_servers.map(s => `🔌 **${s.name}** (${s.status})`).join(', ') : 'None'}`,
-			);
-			lines.push(`- **Working Directory**: ${message.cwd}\n`);
-			break;			case 'assistant': {
+		switch (message.type) {
+			case 'system':
+				lines.push('## Session Initialized\n');
+				lines.push(`- **Model**: ${message.model}`);
+				lines.push(`- **Tools**: ${message.tools.join(', ')}`);
+				lines.push(
+					`- **MCP Servers**: ${message.mcp_servers.length > 0 ? message.mcp_servers.map((s) => `🔌 **${s.name}** (${s.status})`).join(', ') : 'None'}`,
+				);
+				lines.push(`- **Working Directory**: ${message.cwd}\n`);
+				break;
+			case 'assistant': {
 				const content = message.message.content;
 				const textContent = content.find(
 					(c): c is TextContent => c.type === 'text',
@@ -311,7 +318,7 @@ function formatConversationAsMarkdown(
 						for (const tool of toolUses) {
 							const isMcpTool = tool.name.startsWith('mcp__');
 							const prefix = isMcpTool ? '🔌 ' : '';
-							
+
 							if (
 								(tool.name === 'Read' ||
 									tool.name === 'Write' ||
@@ -382,11 +389,8 @@ function formatConversationAsMarkdown(
 }
 
 export const claudeCodeCli: Agent = {
-	async execute(
-		prompt,
-		{ resultsPath, projectPath, verbose },
-		mcpServerConfig,
-	) {
+	async execute(prompt, experimentArgs, mcpServerConfig) {
+		const { projectPath, resultsPath, verbose, hooks } = experimentArgs;
 		if (mcpServerConfig) {
 			await fs.writeFile(
 				path.join(projectPath, '.mcp.json'),
@@ -396,11 +400,13 @@ export const claudeCodeCli: Agent = {
 		const verboseLog = (verbose &&
 			taskLog({
 				title: `Executing prompt with Claude Code CLI`,
+				retainLog: verbose,
 			})) as ReturnType<typeof taskLog>;
 		const normalLog = (!verbose && spinner()) as ReturnType<typeof spinner>;
 		if (!verbose) {
 			normalLog.start('Agent is working');
 		}
+		await hooks.preExecuteAgent?.(experimentArgs, verboseLog ?? normalLog);
 
 		const args = [
 			'--print',
@@ -472,6 +478,7 @@ export const claudeCodeCli: Agent = {
 			turns: resultMessage.num_turns,
 		};
 		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
+		await hooks.postExecuteAgent?.(experimentArgs, verboseLog ?? normalLog);
 		if (verbose) {
 			verboseLog.success(successMessage);
 		} else {
@@ -479,5 +486,5 @@ export const claudeCodeCli: Agent = {
 		}
 
 		return result;
-	}
+	},
 };

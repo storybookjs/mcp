@@ -1,4 +1,6 @@
+import type { taskLog } from '@clack/prompts';
 import * as v from 'valibot';
+import type { TaskLogger } from './lib/evaluations/evaluate';
 
 export type ExperimentArgs = {
 	experimentPath: string;
@@ -6,6 +8,7 @@ export type ExperimentArgs = {
 	projectPath: string;
 	resultsPath: string;
 	verbose: boolean;
+	hooks: Hooks;
 };
 
 export type ExecutionSummary = {
@@ -39,7 +42,7 @@ export const McpServerConfigSchema = v.record(
 		}),
 	]),
 );
-type McpServerConfig = v.InferOutput<typeof McpServerConfigSchema>;
+export type McpServerConfig = v.InferOutput<typeof McpServerConfigSchema>;
 
 export type Context =
 	| {
@@ -47,7 +50,7 @@ export type Context =
 	  }
 	| {
 			type: 'extra-prompts';
-			contents: string[];
+			prompts: string[];
 	  }
 	| {
 			type: 'mcp-server';
@@ -58,6 +61,26 @@ export interface Agent {
 	execute: (
 		prompt: string,
 		experimentArgs: ExperimentArgs,
-    mcpServerConfig?: McpServerConfig,
+		mcpServerConfig?: McpServerConfig,
 	) => Promise<ExecutionSummary>;
 }
+
+export type Hook = (
+	experimentArgs: ExperimentArgs,
+	log: ReturnType<typeof taskLog>,
+) => Promise<void>;
+
+export type Hooks = {
+	prePrepareExperiment?: Hook;
+	postPrepareExperiment?: Hook;
+	preExecuteAgent?: Hook;
+	postExecuteAgent?: Hook;
+	preEvaluate?: (
+		experimentArgs: ExperimentArgs,
+		log: TaskLogger,
+	) => Promise<void>;
+	postEvaluate?: (
+		experimentArgs: ExperimentArgs,
+		log: TaskLogger,
+	) => Promise<void>;
+};

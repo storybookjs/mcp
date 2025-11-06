@@ -1,0 +1,251 @@
+.flight-booking {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.flight-booking h1 {
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.trip-type {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.trip-type button {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.trip-type button:hover {
+  border-color: #0066cc;
+}
+
+.trip-type button.active {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.airport-select,
+.date-select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.airport-select:hover,
+.date-select:hover {
+  border-color: #0066cc;
+}
+
+.airport-picker,
+.date-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 400px;
+  overflow: hidden;
+}
+
+.airport-search {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  font-size: 1rem;
+  outline: none;
+}
+
+.airport-search:focus {
+  border-bottom-color: #0066cc;
+}
+
+.airport-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.airport-option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.airport-option:hover {
+  background-color: #f0f8ff;
+}
+
+.airport-code {
+  font-weight: 600;
+  color: #0066cc;
+  margin-bottom: 0.25rem;
+}
+
+.airport-name {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.date-picker {
+  padding: 1rem;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.month-year {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+}
+
+.nav-button {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: background-color 0.2s;
+}
+
+.nav-button:hover {
+  background-color: #e0e0e0;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-weekdays > div {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  padding: 0.5rem 0;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-day:hover:not(.disabled):not(.empty) {
+  background-color: #f0f8ff;
+  border-color: #0066cc;
+}
+
+.calendar-day.selected {
+  background-color: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.calendar-day.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  background-color: #f9f9f9;
+}
+
+.calendar-day.empty {
+  border: none;
+  cursor: default;
+}
+
+.submit-button {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  background: #0066cc;
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+}
+
+.submit-button:hover {
+  background-color: #0052a3;
+}
+
+.submit-button:active {
+  background-color: #003d7a;
+}

@@ -3,7 +3,11 @@ import * as v from 'valibot';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { McpServerConfigSchema, type Context } from '../types.ts';
+import {
+	McpServerConfigSchema,
+	type Context,
+	type McpServerConfig,
+} from '../types.ts';
 
 export async function collectArgs() {
 	const ArgsSchema = v.pipeAsync(
@@ -45,19 +49,12 @@ export async function collectArgs() {
 							})),
 						),
 						// ... or one or more extra prompts from the eval root
-						v.pipeAsync(
+						v.pipe(
 							v.array(v.pipe(v.string(), v.endsWith('.md'))),
-							v.transformAsync(async (filePaths) => {
-								const contents = await Promise.all(
-									filePaths.map(
-										async (filePath) => await fs.readFile(filePath, 'utf8'),
-									),
-								);
-								return {
-									type: 'extra-prompts' as const,
-									contents,
-								};
-							}),
+							v.transform((prompts) => ({
+								type: 'extra-prompts' as const,
+								prompts,
+							})),
 						),
 					]),
 				),
@@ -74,7 +71,7 @@ export async function collectArgs() {
 		options: {
 			agent: { type: 'string', short: 'a' },
 			verbose: { type: 'boolean', default: false, short: 'v' },
-			context: { type: 'string', short: 'c' },
+			context: { type: 'string', short: 'c', multiple: true },
 		},
 		strict: false,
 		allowPositionals: true,
@@ -82,6 +79,9 @@ export async function collectArgs() {
 	});
 
 	const parsedArgs = await v.parseAsync(ArgsSchema, nodeParsedArgs);
+
+	// Build rerun command incrementally
+	const rerunCommandParts: string[] = ['node', 'eval.ts'];
 
 	// Get available eval directories
 	const evalsDir = path.join(process.cwd(), 'evals');
@@ -107,6 +107,7 @@ export async function collectArgs() {
 		{
 			agent: async () => {
 				if (parsedArgs.agent) {
+					rerunCommandParts.push('--agent', parsedArgs.agent);
 					return parsedArgs.agent;
 				}
 
@@ -120,25 +121,52 @@ export async function collectArgs() {
 					process.exit(0);
 				}
 
+				rerunCommandParts.push('--agent', result.toString());
 				return result;
 			},
 			context: async function (): Promise<Context> {
+				const evalPath = path.resolve(path.join('evals', evalPromptResult));
+
 				if (parsedArgs.context !== undefined) {
+					switch (parsedArgs.context.type) {
+						case 'mcp-server': {
+							rerunCommandParts.push(
+								'--context',
+								`'${JSON.stringify(parsedArgs.context.mcpServerConfig)}'`,
+							);
+							break;
+						}
+						case 'extra-prompts': {
+							for (const name of parsedArgs.context.prompts) {
+								rerunCommandParts.push('--context', name);
+							}
+							break;
+						}
+						case false: {
+							rerunCommandParts.push('--no-context');
+							break;
+						}
+					}
 					return parsedArgs.context;
 				}
-				const evalPath = path.resolve(path.join('evals', evalPromptResult));
-				const extraPromptNames = (
-					await fs.readdir(evalPath, {
-						withFileTypes: true,
-					})
-				)
-					.filter(
-						(dirent) =>
-							dirent.isFile() &&
-							dirent.name.endsWith('.md') &&
-							dirent.name !== 'prompt.md',
-					)
-					.map((dirent) => dirent.name);
+
+				const availableExtraPrompts: Record<string, string> = {};
+				for await (const dirent of await fs.readdir(evalPath, {
+					withFileTypes: true,
+				})) {
+					if (
+						!dirent.isFile() ||
+						!dirent.name.endsWith('.md') ||
+						dirent.name === 'prompt.md'
+					) {
+						continue;
+					}
+					const content = await fs.readFile(
+						path.join(evalPath, dirent.name),
+						'utf8',
+					);
+					availableExtraPrompts[dirent.name] = content;
+				}
 
 				const mainSelection = await p.select<false | string>({
 					message: 'Which additional context should the agent have?',
@@ -156,45 +184,44 @@ export async function collectArgs() {
 						{
 							label: 'Extra prompts',
 							hint:
-								extraPromptNames.length > 0
+								Object.keys(availableExtraPrompts).length > 0
 									? 'Include any of the additional prompts from the eval'
 									: 'No additional prompts available for this eval',
 							value: 'extra-prompts',
-							disabled: extraPromptNames.length === 0,
+							disabled: Object.keys(availableExtraPrompts).length === 0,
 						},
 					],
 				});
 
 				switch (mainSelection) {
 					case false: {
+						rerunCommandParts.push('--no-context');
 						return { type: false };
 					}
 					case 'extra-prompts': {
-						const promptContents = [];
-						for (const promptName of extraPromptNames) {
-							const content = await fs.readFile(
-								path.join(evalPath, promptName),
-								'utf8',
-							);
-							promptContents.push(content);
-						}
-
-						const extraPromptOptions = promptContents.map((content, index) => ({
-							label: extraPromptNames[index],
+						const extraPromptOptions = Object.entries(
+							availableExtraPrompts,
+						).map(([name, content]) => ({
+							label: name,
 							hint:
 								content.slice(0, 100).replace(/\n/g, ' ') +
 								(content.length > 100 ? '...' : ''),
-							value: content,
+							value: name,
 						}));
-						const extraPrompts = await p.multiselect({
+
+						const selectedExtraPromptNames = await p.multiselect({
 							message: 'Which extra prompts should be included as context?',
 							options: extraPromptOptions,
 						});
-						if (p.isCancel(extraPrompts)) {
+						if (p.isCancel(selectedExtraPromptNames)) {
 							p.cancel('Operation cancelled.');
 							process.exit(0);
 						}
-						return { type: mainSelection, contents: extraPrompts };
+
+						for ( const name of selectedExtraPromptNames) {
+							rerunCommandParts.push('--context', name);
+						}
+						return { type: mainSelection, prompts: selectedExtraPromptNames };
 					}
 					case 'mcp-server': {
 						const mcpServerName = await p.text({
@@ -237,11 +264,16 @@ export async function collectArgs() {
 								p.cancel('Operation cancelled.');
 								process.exit(0);
 							}
+							const config: McpServerConfig = {
+								[mcpServerName]: { type: 'http', url: mcpServerUrl },
+							};
+							rerunCommandParts.push(
+								'--context',
+								`'${JSON.stringify(config)}'`,
+							);
 							return {
 								type: mainSelection,
-								mcpServerConfig: {
-									[mcpServerName]: { type: 'http', url: mcpServerUrl },
-								},
+								mcpServerConfig: config,
 							};
 						} else {
 							const mcpServerCommand = await p.text({
@@ -255,16 +287,20 @@ export async function collectArgs() {
 							}
 							const [command, ...argsParts] = mcpServerCommand.split(' ');
 
+							const config: McpServerConfig = {
+								[mcpServerName]: {
+									type: 'stdio',
+									command,
+									args: argsParts.length > 0 ? argsParts.join(' ') : undefined,
+								},
+							};
+							rerunCommandParts.push(
+								'--context',
+								`'${JSON.stringify(config)}'`,
+							);
 							return {
 								type: mainSelection,
-								mcpServerConfig: {
-									[mcpServerName]: {
-										type: 'stdio',
-										command,
-										args:
-											argsParts.length > 0 ? argsParts.join(' ') : undefined,
-									},
-								},
+								mcpServerConfig: config,
 							};
 						}
 					}
@@ -276,7 +312,12 @@ export async function collectArgs() {
 				}
 				throw new Error('Unreachable context selection');
 			},
-			verbose: async () => parsedArgs.verbose,
+			verbose: async () => {
+				if (parsedArgs.verbose) {
+					rerunCommandParts.push('--verbose');
+				}
+				return parsedArgs.verbose;
+			},
 		},
 		{
 			onCancel: () => {
@@ -286,10 +327,15 @@ export async function collectArgs() {
 		},
 	);
 
-	return {
+	const result = {
 		agent: promptResults.agent,
 		verbose: promptResults.verbose,
 		eval: evalPromptResult,
 		context: promptResults.context,
 	};
+
+	rerunCommandParts.push(evalPromptResult);
+	p.log.message(['To re-run this experiment, call:', rerunCommandParts.join(' ')]);
+
+	return result;
 }

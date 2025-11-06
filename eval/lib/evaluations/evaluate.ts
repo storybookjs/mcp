@@ -7,9 +7,8 @@ import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
 import { taskLog, spinner } from '@clack/prompts';
 import { x } from 'tinyexec';
-import * as fs from 'node:fs/promises';
 
-type TaskLogger = {
+export type TaskLogger = {
 	start: (title: string) => void;
 	success: (message: string) => void;
 	error: (message: string) => void;
@@ -24,7 +23,7 @@ type TaskLogger = {
  */
 function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 	if (verbose) {
-		const verboseLog = taskLog({ title });
+		const verboseLog = taskLog({ title, retainLog: verbose });
 		let currentGroup: ReturnType<typeof verboseLog.group> | null = null;
 		return {
 			start: (title: string) => {
@@ -74,6 +73,7 @@ export async function evaluate(
 ): Promise<EvaluationSummary> {
 	const { verbose } = experimentArgs;
 	const log = createTaskLogger(verbose, 'Evaluating');
+	await experimentArgs.hooks.preEvaluate?.(experimentArgs, log);
 
 	log.start('Setting up evaluations');
 	await setupEvaluations(experimentArgs);
@@ -144,6 +144,7 @@ export async function evaluate(
 	await x('pnpm', ['exec', 'prettier', '--write', experimentArgs.resultsPath]);
 	log.success('Results formatted');
 
+	await experimentArgs.hooks.postEvaluate?.(experimentArgs, log);
 	log.complete('Evaluation completed');
 
 	return {
