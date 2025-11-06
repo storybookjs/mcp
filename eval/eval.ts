@@ -81,6 +81,7 @@ p.log.message(
 );
 p.log.message(`💰 Cost: $${promptSummary.cost}`);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
+p.log.message(`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`);
 
 const startStorybook = await p.confirm({ message: "Would you like to start the experiment's Storybook?" });
 
