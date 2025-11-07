@@ -1,5 +1,6 @@
 import FlightBookingComponent from '../src/components/FlightBooking.tsx';
-import { userEvent, fn, expect } from 'storybook/test';
+import { userEvent, fn, expect, screen } from 'storybook/test';
+import React from 'react';
 import { Reshaped } from 'reshaped';
 import 'reshaped/themes/slate/theme.css';
 
@@ -21,57 +22,54 @@ export const Initial = {};
 
 export const FlightPicker = {
 	play: async ({ canvas }) => {
-		await userEvent.click(await canvas.findByTestId('airport-from'));
-		await expect(await canvas.findByTestId('MEL')).toBeInTheDocument();
+		await userEvent.click(await canvas.findByText('From'));
+		await expect(await screen.findByText('MEL', { exact: false })).toBeInTheDocument();
 	},
 };
 
 export const DatePicker = {
 	play: async ({ canvas }) => {
-		await userEvent.click(
-			await canvas.findByTestId('datepicker-trigger-departure'),
-		);
-		await expect(await canvas.findByTestId('date-29')).toBeInTheDocument();
+		await userEvent.click(await canvas.findByRole('button', { name: 'Departure Date' }));
+		await expect(await screen.findByText('27')).toBeInTheDocument();
 	},
 };
 
 export const ReturnDatePickerIsUnavailableWhenOneWaySelected = {
 	play: async ({ canvas }) => {
-		await userEvent.click(await canvas.findByTestId('one-way'));
-		const returnDatepicker = await canvas.queryByTestId(
-			'datepicker-trigger-return',
-		);
+		await userEvent.click(await canvas.findByText('One Way'));
+
+		const returnDatepicker = await canvas.queryByRole('button', { name: 'Return Date' });
+		
+		// If the return datepicker exists, ensure it's disabled by trying to open it
 		if (returnDatepicker) {
 			await userEvent.click(returnDatepicker);
 			await expect(
-				await canvas.findByTestId('date-30'),
+				await canvas.queryByText('28'),
 			).not.toBeInTheDocument();
 		} else {
-			expect(returnDatepicker).toBeNull();
+			await expect(returnDatepicker).toBeNull();
 		}
 	},
 };
 
 export const Submitted = {
-	play: async ({ canvas, args }) => {
-		await userEvent.click(await canvas.findByTestId('airport-from'));
-		await userEvent.click(await canvas.findByTestId('MEL'));
+	play: async ({ canvas, canvasElement, args }) => {
+		await userEvent.click(await canvas.findByRole('button', { name: 'Return' }));
+		await userEvent.click(await canvas.findByText('From'));
+		await userEvent.click(await screen.findByText('MEL', { exact: false }));
 
-		await userEvent.click(await canvas.findByTestId('airport-to'));
-		await userEvent.click(await canvas.findByTestId('LAX'));
+		await userEvent.click(await canvas.findByText('To'));
+		await userEvent.click(await screen.findByText('LAX', { exact: false }));
 
-		await userEvent.click(
-			await canvas.findByTestId('datepicker-trigger-departure'),
-		);
-		await userEvent.click(await canvas.findByTestId('date-29'));
+		await userEvent.click(await canvas.findByRole('button', { name: 'Departure Date' }));
+		await userEvent.click(await screen.findByText('27'));
+		await userEvent.click(canvasElement); // dismiss datepicker popover
 
-		await userEvent.click(
-			await canvas.findByTestId('datepicker-trigger-return'),
-		);
-		await userEvent.click(await canvas.findByTestId('date-30'));
+		await userEvent.click(await canvas.findByRole('button', { name: 'Return Date' }));
+		await userEvent.click(await screen.findByText('28'));
+		await userEvent.click(canvasElement); // dismiss datepicker popover
 
-		await userEvent.click(await canvas.findByTestId('submit'));
-
+		await userEvent.click(await canvas.findByText('Search Flights'));
 		await expect(args.onSubmit).toHaveBeenCalledOnce();
 	},
 };

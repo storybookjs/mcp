@@ -115,12 +115,13 @@ export async function evaluate(
 	const testTask = async () => {
 		log.start('Testing stories');
 		const result = await testStories(experimentArgs);
-		if (result.tests) {
+		const totalTests = result.test.passed + result.test.failed;
+		if (result.test.failed === 0) {
 			log.success(
-				`Tests passed with${result.a11y ? '' : 'out'} accessibility violations`,
+				`${totalTests} tests passed with ${result.a11yViolations} accessibility violations`,
 			);
 		} else {
-			log.error('Tests failed');
+			log.error(`${result.test.passed} of ${totalTests} tests passed.`);
 		}
 		return result;
 	};
@@ -131,7 +132,7 @@ export async function evaluate(
 		log.success('Environment saved');
 	};
 
-	const [buildSuccess, typeCheckSuccess, lintSuccess, testResults] =
+	const [buildSuccess, typeCheckErrors, lintErrors, testResults] =
 		await Promise.all([
 			buildTask(),
 			typeCheckTask(),
@@ -149,9 +150,8 @@ export async function evaluate(
 
 	return {
 		buildSuccess,
-		typeCheckSuccess,
-		lintSuccess,
-		testSuccess: testResults.tests,
-		a11ySuccess: testResults.a11y,
+		typeCheckErrors,
+		lintErrors,
+		...testResults
 	};
 }

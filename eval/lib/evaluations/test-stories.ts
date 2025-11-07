@@ -1,12 +1,15 @@
 import { startVitest } from 'vitest/node';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import type { ExperimentArgs } from '../../types';
+import type { EvaluationSummary, ExperimentArgs } from '../../types';
+import type { JsonTestResults } from 'vitest/reporters';
 
 export async function testStories({
 	projectPath,
 	resultsPath,
-}: ExperimentArgs) {
+}: ExperimentArgs): Promise<
+	Pick<EvaluationSummary, 'test' | 'a11y'>
+> {
 	const testResultsPath = path.join(resultsPath, 'tests.json');
 
 	const vitest = await startVitest('test', undefined, {
@@ -17,30 +20,26 @@ export async function testStories({
 		outputFile: testResultsPath,
 	});
 
-	const testModules = vitest.state.getTestModules();
-
 	await vitest.close();
 
-	const { default: testResultsRaw } = await import(testResultsPath, {
+	const { default: jsonTestResults } = (await import(testResultsPath, {
 		with: { type: 'json' },
-	});
+	})) as { default: JsonTestResults };
 
 	// write the file again to pretty-print it
-	await fs.writeFile(testResultsPath, JSON.stringify(testResultsRaw, null, 2));
+	await fs.writeFile(testResultsPath, JSON.stringify(jsonTestResults, null, 2));
 
 	// Extract a11y violations per story
 	const a11yViolations: Record<string, any[]> = {};
 
-	for (const suite of Object.values(
-		testResultsRaw.default?.testResults ?? [],
-	) as any[]) {
-		for (const assertion of suite.assertionResults ?? []) {
-			const storyId = assertion.meta?.storyId;
+	for (const jsonTestResult of Object.values(jsonTestResults.testResults)) {
+		for (const assertionResult of jsonTestResult.assertionResults ?? []) {
+			const storyId = (assertionResult.meta as any)?.storyId;
 			if (!storyId) {
 				continue;
 			}
 
-			for (const report of assertion.meta?.reports ?? []) {
+			for (const report of (assertionResult.meta as any).reports ?? []) {
 				if (report.type === 'a11y' && report.result?.violations?.length > 0) {
 					a11yViolations[storyId] = report.result.violations;
 				}
@@ -55,7 +54,12 @@ export async function testStories({
 	);
 
 	return {
-		tests: testModules.every((testModule) => testModule.ok()),
-		a11y: Object.keys(a11yViolations).length === 0,
+		test: {
+			passed: jsonTestResults.numPassedTests,
+			failed: jsonTestResults.numFailedTests,
+		},
+		a11y: {
+			violations: Object.keys(a11yViolations).length,
+		},
 	};
 }

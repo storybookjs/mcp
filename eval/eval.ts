@@ -8,6 +8,7 @@ import { evaluate } from './lib/evaluations/evaluate.ts';
 import { collectArgs } from './lib/collect-args.ts';
 import { generatePrompt } from './lib/generate-prompt.ts';
 import { x } from 'tinyexec';
+import { styleText } from 'node:util';
 
 p.intro('🧪 Storybook MCP Eval');
 
@@ -24,7 +25,12 @@ if (!dirExists) {
 	process.exit(1);
 }
 
-const timestamp = new Date().toISOString().split('.')[0].replace(/[:.]/g, '-');
+const localDateTimestamp = new Date(
+	Date.now() - new Date().getTimezoneOffset() * 60000,
+)
+	.toISOString()
+	.slice(0, 19)
+	.replace(/[:.]/g, '-');
 
 let contextPrefix = '';
 switch (args.context.type) {
@@ -33,18 +39,18 @@ switch (args.context.type) {
 		break;
 	case 'extra-prompts':
 		contextPrefix = args.context.prompts
-			.map((prompt) => path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'))
+			.map((prompt) =>
+				path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'),
+			)
 			.join('-');
 		break;
 	case 'mcp-server':
-	contextPrefix = Object.keys(args.context.mcpServerConfig)
-		.map((mcpServerName) =>
-			mcpServerName.toLowerCase().replace(/\s+/g, '-'),
-		)
-		.join('-');
+		contextPrefix = Object.keys(args.context.mcpServerConfig)
+			.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
+			.join('-');
 }
 
-const experimentDirName = `${contextPrefix}-${args.agent}-${timestamp}`;
+const experimentDirName = `${contextPrefix}-${args.agent}-${localDateTimestamp}`;
 const experimentPath = path.join(evalPath, 'experiments', experimentDirName);
 const projectPath = path.join(experimentPath, 'project');
 const resultsPath = path.join(experimentPath, 'results');
@@ -64,6 +70,7 @@ p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
 await prepareExperiment(experimentArgs);
 
 const prompt = await generatePrompt(evalPath, args.context);
+await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 
 const agents = {
 	'claude-code': claudeCodeCli,
@@ -77,7 +84,6 @@ const promptSummary = await agent.execute(
 
 const evaluationSummary = await evaluate(experimentArgs, args.agent);
 
-await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 await fs.writeFile(
 	path.join(resultsPath, 'summary.json'),
 	JSON.stringify({ ...promptSummary, ...evaluationSummary }, null, 2),
@@ -86,13 +92,38 @@ await fs.writeFile(
 p.log.info('Summary:');
 p.log.message(`🏗️  Build: ${evaluationSummary.buildSuccess ? '✅' : '❌'}`);
 p.log.message(
-	`🔍 Type Check: ${evaluationSummary.typeCheckSuccess ? '✅' : '❌'}`,
+	`🔍 Type Check: ${evaluationSummary.typeCheckErrors === 0 ? '✅' : styleText('red', `❌ ${evaluationSummary.typeCheckErrors} errors`)}`,
 );
-p.log.message(`✨ Lint: ${evaluationSummary.lintSuccess ? '✅' : '❌'}`);
-p.log.message(`🧪 Tests: ${evaluationSummary.testSuccess ? '✅' : '❌'}`);
 p.log.message(
-	`🦾 Accessibility: ${evaluationSummary.a11ySuccess ? '✅' : '❌'}`,
+	`✨ Lint: ${evaluationSummary.lintErrors === 0 ? '✅' : styleText('red', `❌ ${evaluationSummary.lintErrors} errors`)}`,
 );
+
+if (
+	evaluationSummary.test.failed === 0 &&
+	evaluationSummary.test.passed === 0
+) {
+	p.log.message(`🧪 Tests: ❌ ${styleText('red', 'Failed to run')}`);
+	p.log.message(`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`);
+} else if (evaluationSummary.test.failed > 0) {
+	p.log.message(
+		`🧪 Tests: ${styleText('red', `❌ ${evaluationSummary.test.failed} failed`) + ' | ' + styleText('green', `${evaluationSummary.test.passed} passed`)}`,
+	);
+	if (evaluationSummary.test.passed > 0) {
+		p.log.message(
+			`🦾 Accessibility: ⚠️  ${styleText('yellow', `${evaluationSummary.a11y.violations} violations from ${evaluationSummary.test.passed}/${evaluationSummary.test.passed + evaluationSummary.test.failed} tests`)}`,
+		);
+	} else {
+		p.log.message(
+			`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`,
+		);
+	}
+} else {
+	p.log.message('🧪 Tests: ✅');
+	p.log.message(
+		`🦾 Accessibility: ${evaluationSummary.a11y.violations === 0 ? '✅' : styleText('yellow', `⚠️  ${evaluationSummary.a11y.violations} violations`)}`,
+	);
+}
+
 p.log.message(
 	`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
 );

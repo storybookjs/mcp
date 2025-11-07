@@ -20,10 +20,15 @@ export type ExecutionSummary = {
 
 export type EvaluationSummary = {
 	buildSuccess: boolean;
-	typeCheckSuccess: boolean;
-	lintSuccess: boolean;
-	testSuccess: boolean;
-	a11ySuccess: boolean;
+	typeCheckErrors: number;
+	lintErrors: number;
+	test: {
+		passed: number;
+		failed: number;
+	};
+	a11y: {
+		violations: number;
+	}
 };
 
 export const McpServerConfigSchema = v.record(

@@ -1,7 +1,7 @@
 import ts from 'typescript';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import type { ExperimentArgs } from '../../types';
+import type { EvaluationSummary, ExperimentArgs } from '../../types';
 
 type DiagnosticError =
 	| {
@@ -26,7 +26,7 @@ type TypeCheckResults = {
 export async function checkTypes({
 	projectPath,
 	resultsPath,
-}: ExperimentArgs): Promise<boolean> {
+}: ExperimentArgs): Promise<EvaluationSummary['typeCheckErrors']> {
 	// Read tsconfig.json
 	const configFile = ts.readConfigFile(
 		path.join(projectPath, 'tsconfig.app.json'),
@@ -93,5 +93,5 @@ export async function checkTypes({
 		JSON.stringify(result, null, 2),
 	);
 
-	return result.success;
+	return result.errors.length;
 }

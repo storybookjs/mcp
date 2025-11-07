@@ -1,9 +1,9 @@
 import { ESLint } from 'eslint';
-import type { ExperimentArgs } from '../../types';
+import type { EvaluationSummary, ExperimentArgs } from '../../types';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-export async function runESLint({ projectPath, resultsPath }: ExperimentArgs) {
+export async function runESLint({ projectPath, resultsPath }: ExperimentArgs): Promise<EvaluationSummary['lintErrors']> {
 	// Create ESLint instance
 	const eslint = new ESLint({
 		cwd: projectPath,
@@ -13,7 +13,7 @@ export async function runESLint({ projectPath, resultsPath }: ExperimentArgs) {
 	const results = await eslint.lintFiles(['./src/**/*.{js,ts,jsx,tsx}']);
 
 	// Get formatter
-	const formatter = await eslint.loadFormatter('stylish');
+	const formatter = await eslint.loadFormatter('html');
 	const formatted = (formatter as any).format(results);
 
 	// Structure the output
@@ -59,5 +59,5 @@ export async function runESLint({ projectPath, resultsPath }: ExperimentArgs) {
 	);
 	await fs.writeFile(path.join(resultsPath, 'lint.txt'), formatted);
 
-	return structured.success;
+	return structured.errorCount;
 }

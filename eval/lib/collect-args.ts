@@ -10,82 +10,98 @@ import {
 } from '../types.ts';
 
 export async function collectArgs() {
-	const ArgsSchema = v.pipeAsync(
-		v.objectAsync({
-			values: v.objectAsync({
-				agent: v.optional(
-					v.union([v.literal('claude-code'), v.literal('copilot')]),
-				),
-				verbose: v.boolean(),
-				context: v.optionalAsync(
-					v.unionAsync([
-						v.pipe(
-							v.literal(false),
-							v.transform(() => ({ type: false as const })),
-						),
-						// the context can be a path to a .json mcp server config
-						v.pipeAsync(
-							v.string(),
-							v.startsWith('.'),
-							v.endsWith('.json'),
-							v.transformAsync(
-								async (filePath) =>
-									(await import(filePath, { with: { type: 'json' } })).default,
-							),
-							McpServerConfigSchema,
-							v.transform((config) => ({
-								type: 'mcp-server' as const,
-								mcpServerConfig: config,
-							})),
-						),
-						// ... or the mcp server config directly inline
-						v.pipe(
-							v.string(),
-							v.parseJson(),
-							McpServerConfigSchema,
-							v.transform((config) => ({
-								type: 'mcp-server' as const,
-								mcpServerConfig: config,
-							})),
-						),
-						// ... or one or more extra prompts from the eval root
-						v.pipe(
-							v.array(v.pipe(v.string(), v.endsWith('.md'))),
-							v.transform((prompts) => ({
-								type: 'extra-prompts' as const,
-								prompts,
-							})),
-						),
-					]),
-				),
-			}),
-			positionals: v.optional(v.array(v.string())),
-		}),
-		v.transform(({ values, positionals }) => ({
-			...values,
-			eval: positionals?.[0],
-		})),
-	);
+	const EVALS_DIR = path.join(process.cwd(), 'evals');
 
 	const nodeParsedArgs = parseArgs({
 		options: {
 			agent: { type: 'string', short: 'a' },
 			verbose: { type: 'boolean', default: false, short: 'v' },
-			context: { type: 'string', short: 'c', multiple: true },
+			context: { type: 'string', short: 'c' },
 		},
 		strict: false,
 		allowPositionals: true,
 		allowNegative: true,
 	});
 
-	const parsedArgs = await v.parseAsync(ArgsSchema, nodeParsedArgs);
+	// We only support one eval at a time currently
+	const ArgPositionalsSchema = v.optional(
+		v.pipe(
+			v.array(v.string()),
+			v.maxLength(1),
+			v.transform((arr) => arr[0]),
+		),
+	);
+
+	const parsedEvalPath = await v.parse(
+		ArgPositionalsSchema,
+		nodeParsedArgs.positionals,
+	);
+
+	const ArgValuesSchema = v.objectAsync({
+		agent: v.optional(
+			v.union([v.literal('claude-code'), v.literal('copilot')]),
+		),
+		verbose: v.boolean(),
+		context: v.optionalAsync(
+			v.unionAsync([
+				v.pipe(
+					v.literal(false),
+					v.transform(() => ({ type: false as const })),
+				),
+				// the context can be a path to a .json mcp server config
+				v.pipeAsync(
+					v.string(),
+					v.endsWith('.json'),
+					v.transformAsync(async (filePath) => {
+						if (!parsedEvalPath) {
+							throw new TypeError(
+								'To set an mcp config file as the context, you must also set the eval as a positional argument',
+							);
+						}
+						return (
+							await import(path.join(EVALS_DIR, parsedEvalPath, filePath), {
+								with: { type: 'json' },
+							})
+						).default;
+					}),
+					McpServerConfigSchema,
+					v.transform((config) => ({
+						type: 'mcp-server' as const,
+						mcpServerConfig: config,
+					})),
+				),
+				// ... or the mcp server config directly inline
+				v.pipe(
+					v.string(),
+					v.parseJson(),
+					McpServerConfigSchema,
+					v.transform((config) => ({
+						type: 'mcp-server' as const,
+						mcpServerConfig: config,
+					})),
+				),
+				// ... or one or more comma-separated extra prompts from the eval root
+				v.pipe(
+					v.pipe(v.string(), v.endsWith('.md')),
+					v.transform((prompts) => ({
+						type: 'extra-prompts' as const,
+						prompts: prompts.split(',').map((p) => p.trim()),
+					})),
+				),
+			]),
+		),
+	});
+
+	const parsedArgValues = await v.parseAsync(
+		ArgValuesSchema,
+		nodeParsedArgs.values,
+	);
 
 	// Build rerun command incrementally
 	const rerunCommandParts: string[] = ['node', 'eval.ts'];
 
 	// Get available eval directories
-	const evalsDir = path.join(process.cwd(), 'evals');
-	const availableEvals = await fs.readdir(evalsDir, { withFileTypes: true });
+	const availableEvals = await fs.readdir(EVALS_DIR, { withFileTypes: true });
 	const evalOptions = availableEvals
 		.filter((dirent) => dirent.isDirectory())
 		.map((dirent) => ({
@@ -94,7 +110,7 @@ export async function collectArgs() {
 		}));
 
 	const evalPromptResult =
-		parsedArgs.eval ??
+		parsedEvalPath ??
 		(
 			await p.select({
 				message: 'Which eval do you want to run?',
@@ -106,9 +122,9 @@ export async function collectArgs() {
 	const promptResults = await p.group(
 		{
 			agent: async () => {
-				if (parsedArgs.agent) {
-					rerunCommandParts.push('--agent', parsedArgs.agent);
-					return parsedArgs.agent;
+				if (parsedArgValues.agent) {
+					rerunCommandParts.push('--agent', parsedArgValues.agent);
+					return parsedArgValues.agent;
 				}
 
 				const result = await p.select({
@@ -127,19 +143,20 @@ export async function collectArgs() {
 			context: async function (): Promise<Context> {
 				const evalPath = path.resolve(path.join('evals', evalPromptResult));
 
-				if (parsedArgs.context !== undefined) {
-					switch (parsedArgs.context.type) {
+				if (parsedArgValues.context !== undefined) {
+					switch (parsedArgValues.context.type) {
 						case 'mcp-server': {
 							rerunCommandParts.push(
 								'--context',
-								`'${JSON.stringify(parsedArgs.context.mcpServerConfig)}'`,
+								`'${JSON.stringify(parsedArgValues.context.mcpServerConfig)}'`,
 							);
 							break;
 						}
 						case 'extra-prompts': {
-							for (const name of parsedArgs.context.prompts) {
-								rerunCommandParts.push('--context', name);
-							}
+							rerunCommandParts.push(
+								'--context',
+								parsedArgValues.context.prompts.join(','),
+							);
 							break;
 						}
 						case false: {
@@ -147,7 +164,7 @@ export async function collectArgs() {
 							break;
 						}
 					}
-					return parsedArgs.context;
+					return parsedArgValues.context;
 				}
 
 				const availableExtraPrompts: Record<string, string> = {};
@@ -218,7 +235,7 @@ export async function collectArgs() {
 							process.exit(0);
 						}
 
-						for ( const name of selectedExtraPromptNames) {
+						for (const name of selectedExtraPromptNames) {
 							rerunCommandParts.push('--context', name);
 						}
 						return { type: mainSelection, prompts: selectedExtraPromptNames };
@@ -313,10 +330,10 @@ export async function collectArgs() {
 				throw new Error('Unreachable context selection');
 			},
 			verbose: async () => {
-				if (parsedArgs.verbose) {
+				if (parsedArgValues.verbose) {
 					rerunCommandParts.push('--verbose');
 				}
-				return parsedArgs.verbose;
+				return parsedArgValues.verbose;
 			},
 		},
 		{
@@ -335,7 +352,10 @@ export async function collectArgs() {
 	};
 
 	rerunCommandParts.push(evalPromptResult);
-	p.log.message(['To re-run this experiment, call:', rerunCommandParts.join(' ')]);
+	p.log.message([
+		'To re-run this experiment, call:',
+		rerunCommandParts.join(' '),
+	]);
 
 	return result;
 }
