@@ -10,6 +10,10 @@ export type ExperimentArgs = {
 	verbose: boolean;
 	description?: string;
 	hooks: Hooks;
+	uploadResults: boolean;
+	evalName: string;
+	context: Context;
+	agent: string;
 };
 
 export type ExecutionSummary = {

@@ -5,8 +5,7 @@ import * as path from 'path';
 import { x } from 'tinyexec';
 
 export async function saveEnvironment(
-	{ resultsPath, description }: ExperimentArgs,
-	agent: string,
+	{ resultsPath, description, agent }: ExperimentArgs,
 ) {
 	const info = JSON.parse(
 		await envinfo.run(
@@ -42,4 +41,6 @@ export async function saveEnvironment(
 			2,
 		),
 	);
+
+	return { branch, commit };
 }

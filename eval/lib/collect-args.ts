@@ -19,6 +19,7 @@ export async function collectArgs() {
 			storybook: { type: 'boolean', short: 's' },
 			description: { type: 'string', short: 'd' },
 			context: { type: 'string', short: 'c' },
+			'upload-results': { type: 'boolean', default: true, short: 'u' },
 		},
 		strict: false,
 		allowPositionals: true,
@@ -46,6 +47,7 @@ export async function collectArgs() {
 		verbose: v.boolean(),
 		description: v.optional(v.string()),
 		storybook: v.optional(v.boolean()),
+		'upload-results': v.boolean(),
 		context: v.optionalAsync(
 			v.unionAsync([
 				v.pipe(
@@ -150,7 +152,7 @@ export async function collectArgs() {
 			},
 			description: async function (): Promise<string | undefined> {
 				if (parsedArgValues.description) {
-					rerunCommandParts.push('--description', parsedArgValues.description);
+					rerunCommandParts.push('--description', `"${parsedArgValues.description}"`);
 					return parsedArgValues.description;
 				}
 
@@ -163,7 +165,7 @@ export async function collectArgs() {
 					process.exit(0);
 				}
 
-				rerunCommandParts.push('--description', result);
+				rerunCommandParts.push('--description', `"${result}"`);
 				return result;
 			},
 			context: async function (): Promise<Context> {
@@ -361,6 +363,12 @@ export async function collectArgs() {
 				}
 				return parsedArgValues.verbose;
 			},
+			uploadResults: async () => {
+				if (!parsedArgValues['upload-results']) {
+					rerunCommandParts.push('--no-upload-results');
+				}
+				return parsedArgValues['upload-results'];
+			},
 		},
 		{
 			onCancel: () => {
@@ -377,6 +385,7 @@ export async function collectArgs() {
 		eval: evalPromptResult,
 		context: promptResults.context,
 		storybook: parsedArgValues.storybook,
+		uploadResults: promptResults.uploadResults,
 	};
 
 	rerunCommandParts.push(evalPromptResult);

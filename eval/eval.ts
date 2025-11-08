@@ -61,6 +61,10 @@ const experimentArgs: ExperimentArgs = {
 	resultsPath,
 	verbose: args.verbose,
 	description: args.description,
+	uploadResults: args.uploadResults,
+	evalName: args.eval,
+	context: args.context,
+	agent: args.agent,
 	hooks: await import(path.join(evalPath, 'hooks.ts'))
 		.then((mod) => mod.default)
 		.catch(() => ({})),
@@ -83,7 +87,7 @@ const promptSummary = await agent.execute(
 	args.context.type === 'mcp-server' ? args.context.mcpServerConfig : undefined,
 );
 
-const evaluationSummary = await evaluate(experimentArgs, args.agent);
+const evaluationSummary = await evaluate(experimentArgs, promptSummary);
 
 await fs.writeFile(
 	path.join(resultsPath, 'summary.json'),
