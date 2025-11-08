@@ -17,6 +17,7 @@ export async function collectArgs() {
 			agent: { type: 'string', short: 'a' },
 			verbose: { type: 'boolean', default: false, short: 'v' },
 			storybook: { type: 'boolean', short: 's' },
+			description: { type: 'string', short: 'd' },
 			context: { type: 'string', short: 'c' },
 		},
 		strict: false,
@@ -43,6 +44,7 @@ export async function collectArgs() {
 			v.union([v.literal('claude-code'), v.literal('copilot')]),
 		),
 		verbose: v.boolean(),
+		description: v.optional(v.string()),
 		storybook: v.optional(v.boolean()),
 		context: v.optionalAsync(
 			v.unionAsync([
@@ -144,6 +146,24 @@ export async function collectArgs() {
 				}
 
 				rerunCommandParts.push('--agent', result.toString());
+				return result;
+			},
+			description: async function (): Promise<string | undefined> {
+				if (parsedArgValues.description) {
+					rerunCommandParts.push('--description', parsedArgValues.description);
+					return parsedArgValues.description;
+				}
+
+				const result = await p.text({
+					message: 'Can you provide a short description for this specific experiment?',
+					placeholder: 'This description is optional and can help provide context for the experiment results.',
+				});
+				if (p.isCancel(result)) {
+					p.cancel('Operation cancelled.');
+					process.exit(0);
+				}
+
+				rerunCommandParts.push('--description', result);
 				return result;
 			},
 			context: async function (): Promise<Context> {
@@ -249,8 +269,8 @@ export async function collectArgs() {
 					case 'mcp-server': {
 						const mcpServerName = await p.text({
 							message:
-								'What name should be used for the MCP server? (storybook-mcp)',
-							defaultValue: 'storybook-mcp',
+								'What name should be used for the MCP server?',
+							initialValue: 'storybook-mcp',
 						});
 						if (p.isCancel(mcpServerName)) {
 							p.cancel('Operation cancelled.');
@@ -281,7 +301,7 @@ export async function collectArgs() {
 							const mcpServerUrl = await p.text({
 								message:
 									'What is the URL for the MCP server? (http://localhost:6006/mcp)',
-								defaultValue: 'http://localhost:6006/mcp',
+								initialValue: 'http://localhost:6006/mcp',
 							});
 							if (p.isCancel(mcpServerUrl)) {
 								p.cancel('Operation cancelled.');
@@ -353,6 +373,7 @@ export async function collectArgs() {
 	const result = {
 		agent: promptResults.agent,
 		verbose: promptResults.verbose,
+		description: promptResults.description,
 		eval: evalPromptResult,
 		context: promptResults.context,
 		storybook: parsedArgValues.storybook,

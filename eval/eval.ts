@@ -60,6 +60,7 @@ const experimentArgs: ExperimentArgs = {
 	projectPath,
 	resultsPath,
 	verbose: args.verbose,
+	description: args.description,
 	hooks: await import(path.join(evalPath, 'hooks.ts'))
 		.then((mod) => mod.default)
 		.catch(() => ({})),

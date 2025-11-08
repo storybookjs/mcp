@@ -8,6 +8,7 @@ export type ExperimentArgs = {
 	projectPath: string;
 	resultsPath: string;
 	verbose: boolean;
+	description?: string;
 	hooks: Hooks;
 };
 

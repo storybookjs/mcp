@@ -55,7 +55,7 @@ function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 				normalLog.message(message);
 			},
 			error: (message: string) => {
-				normalLog.message(message);
+				normalLog.stop(message);
 			},
 			message: (message: string) => {
 				normalLog.message(message);
@@ -118,10 +118,10 @@ export async function evaluate(
 		const totalTests = result.test.passed + result.test.failed;
 		if (result.test.failed === 0) {
 			log.success(
-				`${totalTests} tests passed with ${result.a11yViolations} accessibility violations`,
+				`${result.test.passed} / ${totalTests} tests passed with ${result.a11y.violations} accessibility violations`,
 			);
 		} else {
-			log.error(`${result.test.passed} of ${totalTests} tests passed.`);
+			log.error(`${result.test.passed} / ${totalTests} tests passed.`);
 		}
 		return result;
 	};
