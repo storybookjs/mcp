@@ -133,7 +133,7 @@ p.log.message(
 	`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
 );
 
-const startStorybook = await p.confirm({
+const startStorybook = args.storybook !== undefined ? args.storybook : await p.confirm({
 	message: "Would you like to start the experiment's Storybook?",
 });
 

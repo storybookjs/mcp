@@ -16,6 +16,7 @@ export async function collectArgs() {
 		options: {
 			agent: { type: 'string', short: 'a' },
 			verbose: { type: 'boolean', default: false, short: 'v' },
+			storybook: { type: 'boolean', short: 's' },
 			context: { type: 'string', short: 'c' },
 		},
 		strict: false,
@@ -42,6 +43,7 @@ export async function collectArgs() {
 			v.union([v.literal('claude-code'), v.literal('copilot')]),
 		),
 		verbose: v.boolean(),
+		storybook: v.optional(v.boolean()),
 		context: v.optionalAsync(
 			v.unionAsync([
 				v.pipe(
@@ -117,6 +119,10 @@ export async function collectArgs() {
 				options: evalOptions,
 			})
 		).toString();
+
+	if(parsedArgValues.storybook !== undefined) {
+		rerunCommandParts.push(`--${parsedArgValues.storybook ? '' : 'no-'}storybook`);
+	}
 
 	// Prompt for missing arguments
 	const promptResults = await p.group(
@@ -349,6 +355,7 @@ export async function collectArgs() {
 		verbose: promptResults.verbose,
 		eval: evalPromptResult,
 		context: promptResults.context,
+		storybook: parsedArgValues.storybook,
 	};
 
 	rerunCommandParts.push(evalPromptResult);
