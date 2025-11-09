@@ -60,6 +60,11 @@ const experimentArgs: ExperimentArgs = {
 	projectPath,
 	resultsPath,
 	verbose: args.verbose,
+	description: args.description,
+	uploadResults: args.uploadResults,
+	evalName: args.eval,
+	context: args.context,
+	agent: args.agent,
 	hooks: await import(path.join(evalPath, 'hooks.ts'))
 		.then((mod) => mod.default)
 		.catch(() => ({})),
@@ -82,7 +87,7 @@ const promptSummary = await agent.execute(
 	args.context.type === 'mcp-server' ? args.context.mcpServerConfig : undefined,
 );
 
-const evaluationSummary = await evaluate(experimentArgs, args.agent);
+const evaluationSummary = await evaluate(experimentArgs, promptSummary);
 
 await fs.writeFile(
 	path.join(resultsPath, 'summary.json'),
@@ -133,7 +138,7 @@ p.log.message(
 	`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
 );
 
-const startStorybook = await p.confirm({
+const startStorybook = args.storybook !== undefined ? args.storybook : await p.confirm({
 	message: "Would you like to start the experiment's Storybook?",
 });
 

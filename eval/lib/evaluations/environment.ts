@@ -5,8 +5,7 @@ import * as path from 'path';
 import { x } from 'tinyexec';
 
 export async function saveEnvironment(
-	{ resultsPath }: ExperimentArgs,
-	agent: string,
+	{ resultsPath, description, agent }: ExperimentArgs,
 ) {
 	const info = JSON.parse(
 		await envinfo.run(
@@ -23,6 +22,9 @@ export async function saveEnvironment(
 
 	const commit =
 		(await x('git', ['rev-parse', 'HEAD'])).stdout.trim() ?? 'unknown';
+	const branch =
+		(await x('git', ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout.trim() ??
+		'unknown';
 
 	await fs.writeFile(
 		path.join(resultsPath, 'environment.json'),
@@ -30,6 +32,8 @@ export async function saveEnvironment(
 			{
 				agent,
 				date: new Date().toISOString(),
+				description,
+				branch,
 				commit,
 				...info,
 			},
@@ -37,4 +41,6 @@ export async function saveEnvironment(
 			2,
 		),
 	);
+
+	return { branch, commit };
 }

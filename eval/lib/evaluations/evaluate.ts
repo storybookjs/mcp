@@ -1,10 +1,11 @@
-import type { EvaluationSummary, ExperimentArgs } from '../../types';
+import type { EvaluationSummary, ExperimentArgs, ExecutionSummary } from '../../types';
 import { saveEnvironment } from './environment.ts';
 import { runESLint } from './lint.ts';
 import { setupEvaluations } from './setup-evaluations.ts';
 import { testStories } from './test-stories.ts';
 import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
+import { saveToSheets } from './save-to-sheets.ts';
 import { taskLog, spinner } from '@clack/prompts';
 import { x } from 'tinyexec';
 
@@ -55,7 +56,7 @@ function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 				normalLog.message(message);
 			},
 			error: (message: string) => {
-				normalLog.message(message);
+				normalLog.stop(message);
 			},
 			message: (message: string) => {
 				normalLog.message(message);
@@ -69,10 +70,9 @@ function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 
 export async function evaluate(
 	experimentArgs: ExperimentArgs,
-	agent: string,
+	executionSummary: ExecutionSummary,
 ): Promise<EvaluationSummary> {
-	const { verbose } = experimentArgs;
-	const log = createTaskLogger(verbose, 'Evaluating');
+	const log = createTaskLogger(experimentArgs.verbose, 'Evaluating');
 	await experimentArgs.hooks.preEvaluate?.(experimentArgs, log);
 
 	log.start('Setting up evaluations');
@@ -118,21 +118,45 @@ export async function evaluate(
 		const totalTests = result.test.passed + result.test.failed;
 		if (result.test.failed === 0) {
 			log.success(
-				`${totalTests} tests passed with ${result.a11yViolations} accessibility violations`,
+				`${result.test.passed} / ${totalTests} tests passed with ${result.a11y.violations} accessibility violations`,
 			);
 		} else {
-			log.error(`${result.test.passed} of ${totalTests} tests passed.`);
+			log.error(`${result.test.passed} / ${totalTests} tests passed.`);
 		}
 		return result;
 	};
 
 	const saveEnvTask = async () => {
 		log.start('Saving environment');
-		await saveEnvironment(experimentArgs, agent);
+		const env = await saveEnvironment(experimentArgs);
 		log.success('Environment saved');
+		return env;
 	};
 
-	const [buildSuccess, typeCheckErrors, lintErrors, testResults] =
+	const saveSheetsTask = async (
+		evaluationSummary: EvaluationSummary,
+		environment: { branch: string; commit: string },
+	) => {
+		if (!experimentArgs.uploadResults) {
+			return;
+		}
+		log.start('Uploading results');
+		try {
+			await saveToSheets(
+				experimentArgs,
+				evaluationSummary,
+				executionSummary,
+				environment,
+			);
+			log.success('Results uploaded');
+		} catch (error) {
+			log.error(
+				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	};
+
+	const [buildSuccess, typeCheckErrors, lintErrors, testResults, environment] =
 		await Promise.all([
 			buildTask(),
 			typeCheckTask(),
@@ -145,13 +169,17 @@ export async function evaluate(
 	await x('pnpm', ['exec', 'prettier', '--write', experimentArgs.resultsPath]);
 	log.success('Results formatted');
 
-	await experimentArgs.hooks.postEvaluate?.(experimentArgs, log);
-	log.complete('Evaluation completed');
-
-	return {
+	const evaluationSummary = {
 		buildSuccess,
 		typeCheckErrors,
 		lintErrors,
-		...testResults
+		...testResults,
 	};
+
+	await saveSheetsTask(evaluationSummary, environment);
+
+	await experimentArgs.hooks.postEvaluate?.(experimentArgs, log);
+	log.complete('Evaluation completed');
+
+	return evaluationSummary;
 }

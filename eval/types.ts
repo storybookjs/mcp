@@ -8,7 +8,12 @@ export type ExperimentArgs = {
 	projectPath: string;
 	resultsPath: string;
 	verbose: boolean;
+	description?: string;
 	hooks: Hooks;
+	uploadResults: boolean;
+	evalName: string;
+	context: Context;
+	agent: string;
 };
 
 export type ExecutionSummary = {

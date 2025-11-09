@@ -7859,10 +7859,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/browser-playwright@4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)':
+  '@vitest/browser-playwright@4.0.6(playwright@1.56.1)(vite@7.1.11(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)':
     dependencies:
-      '@vitest/browser': 4.0.6(vite@7.1.12(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
-      '@vitest/mocker': 4.0.6(vite@7.1.12(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))
+      '@vitest/browser': 4.0.6(vite@7.1.11(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      '@vitest/mocker': 4.0.6(vite@7.1.11(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))
       playwright: 1.56.1
       tinyrainbow: 3.0.3
       vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(terser@5.44.0)
@@ -10442,7 +10442,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.0
-      '@vitest/browser-playwright': 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
+      '@vitest/browser-playwright': 4.0.6(playwright@1.56.1)(vite@7.1.11(@types/node@20.19.0)(jiti@2.6.1)(terser@5.44.0))(vitest@4.0.6)
     transitivePeerDependencies:
       - jiti
       - less
