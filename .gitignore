@@ -10,3 +10,4 @@ test-report.junit.xml
 .turbo
 
 *storybook.log
+experiments/
