@@ -19,7 +19,7 @@ export async function collectArgs() {
 			storybook: { type: 'boolean', short: 's' },
 			description: { type: 'string', short: 'd' },
 			context: { type: 'string', short: 'c' },
-			'upload-results': { type: 'boolean', default: true, short: 'u' },
+			upload: { type: 'boolean', short: 'u' },
 		},
 		strict: false,
 		allowPositionals: true,
@@ -47,7 +47,7 @@ export async function collectArgs() {
 		verbose: v.boolean(),
 		description: v.optional(v.string()),
 		storybook: v.optional(v.boolean()),
-		'upload-results': v.boolean(),
+		upload: v.optional(v.boolean()),
 		context: v.optionalAsync(
 			v.unionAsync([
 				v.pipe(
@@ -363,11 +363,23 @@ export async function collectArgs() {
 				}
 				return parsedArgValues.verbose;
 			},
-			uploadResults: async () => {
-				if (!parsedArgValues['upload-results']) {
-					rerunCommandParts.push('--no-upload-results');
+			upload: async () => {
+				if (parsedArgValues.upload !== undefined) {
+					rerunCommandParts.push(`--${parsedArgValues.upload ? '' : 'no-'}upload`);
+					return parsedArgValues.upload;
 				}
-				return parsedArgValues['upload-results'];
+
+				const result = await p.confirm({
+					message: 'Do you want to upload the results to the public results-table at the end of the run?',
+					initialValue: true,
+				});
+				if (p.isCancel(result)) {
+					p.cancel('Operation cancelled.');
+					process.exit(0);
+				}
+
+				rerunCommandParts.push(`--${result ? '' : 'no-'}upload`);
+				return result;
 			},
 		},
 		{
@@ -385,7 +397,7 @@ export async function collectArgs() {
 		eval: evalPromptResult,
 		context: promptResults.context,
 		storybook: parsedArgValues.storybook,
-		uploadResults: promptResults.uploadResults,
+		upload: promptResults.upload,
 	};
 
 	rerunCommandParts.push(evalPromptResult);

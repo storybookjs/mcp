@@ -61,7 +61,7 @@ const experimentArgs: ExperimentArgs = {
 	resultsPath,
 	verbose: args.verbose,
 	description: args.description,
-	uploadResults: args.uploadResults,
+	upload: args.upload,
 	evalName: args.eval,
 	context: args.context,
 	agent: args.agent,

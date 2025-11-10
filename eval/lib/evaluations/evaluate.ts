@@ -137,7 +137,7 @@ export async function evaluate(
 		evaluationSummary: EvaluationSummary,
 		environment: { branch: string; commit: string },
 	) => {
-		if (!experimentArgs.uploadResults) {
+		if (!experimentArgs.upload) {
 			return;
 		}
 		log.start('Uploading results');
