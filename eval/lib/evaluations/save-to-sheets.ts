@@ -7,7 +7,7 @@ import type {
 } from '../../types.ts';
 import * as path from 'path';
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwHa1fbMaGmSZc22yxMZrbFgG4VBKVmcsRivQohoHKX7O9AoDpFB1rL5mhiyj-oCJfEcg/exec';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxuDlcJeyNXh1zsgoCBBbvMzwJWEXoYWxPrf1CA-G_dfii-DaIhFk2ixKrBHeAhvCRFxg/exec';
 
 type SheetsData = {
 	timestamp: string;

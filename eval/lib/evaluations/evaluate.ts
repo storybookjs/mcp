@@ -56,7 +56,7 @@ function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 				normalLog.message(message);
 			},
 			error: (message: string) => {
-				normalLog.stop(message);
+				normalLog.stop(message, 1);
 			},
 			message: (message: string) => {
 				normalLog.message(message);
@@ -140,7 +140,8 @@ export async function evaluate(
 		if (!experimentArgs.upload) {
 			return;
 		}
-		log.start('Uploading results');
+		const uploadSpinner = spinner();
+		uploadSpinner.start('Uploading results');
 		try {
 			await saveToSheets(
 				experimentArgs,
@@ -148,10 +149,10 @@ export async function evaluate(
 				executionSummary,
 				environment,
 			);
-			log.success('Results uploaded');
+			uploadSpinner.stop('Uploaded results to Google Sheets');
 		} catch (error) {
-			log.error(
-				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`,
+			uploadSpinner.stop(
+				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`, 1,
 			);
 		}
 	};
