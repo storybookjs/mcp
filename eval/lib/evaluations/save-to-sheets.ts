@@ -7,7 +7,8 @@ import type {
 } from '../../types.ts';
 import * as path from 'path';
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxuDlcJeyNXh1zsgoCBBbvMzwJWEXoYWxPrf1CA-G_dfii-DaIhFk2ixKrBHeAhvCRFxg/exec';
+const GOOGLE_SHEETS_URL =
+	'https://script.google.com/macros/s/AKfycbxuDlcJeyNXh1zsgoCBBbvMzwJWEXoYWxPrf1CA-G_dfii-DaIhFk2ixKrBHeAhvCRFxg/exec';
 
 type SheetsData = {
 	timestamp: string;
@@ -42,9 +43,7 @@ function getContextDetails(context: Context): string {
 	}
 }
 
-async function saveToGoogleSheets(
-	data: SheetsData,
-): Promise<void> {
+async function saveToGoogleSheets(data: SheetsData): Promise<void> {
 	try {
 		const response = await fetch(GOOGLE_SHEETS_URL, {
 			method: 'POST',
@@ -54,7 +53,7 @@ async function saveToGoogleSheets(
 			body: JSON.stringify(data),
 			redirect: 'manual',
 		});
-    log.info(response.status.toString());
+		log.info(response.status.toString());
 
 		// Google Apps Script may return HTML on redirect, so check content type
 		const contentType = response.headers.get('content-type');
@@ -64,19 +63,19 @@ async function saveToGoogleSheets(
 		}
 
 		const result = (await response.json()) as {
-      success: boolean;
+			success: boolean;
 			error?: string;
 		};
-    log.info(JSON.stringify(result, null, 2));
-    
+		log.info(JSON.stringify(result, null, 2));
+
 		if (!result.success) {
-      log.error(JSON.stringify(result, null, 2));
+			log.error(JSON.stringify(result, null, 2));
 			throw new Error(
 				`Google Sheets API error: ${result.error || 'Unknown error'}`,
 			);
 		}
 	} catch (error) {
-      console.error(error);
+		console.error(error);
 		throw new Error(
 			`Failed to save to Google Sheets: ${error instanceof Error ? error.message : String(error)}`,
 		);

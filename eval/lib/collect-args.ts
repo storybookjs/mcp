@@ -50,13 +50,15 @@ export async function collectArgs() {
 		upload: v.optional(v.boolean()),
 		context: v.optionalAsync(
 			v.unionAsync([
+				// no context
 				v.pipe(
 					v.literal(false),
 					v.transform(() => ({ type: false as const })),
 				),
-				// the context can be a path to a .json mcp server config
+				// the context can be a path to a .json mcp server config if the string includes "mcp"
 				v.pipeAsync(
 					v.string(),
+					v.includes('mcp'),
 					v.endsWith('.json'),
 					v.transformAsync(async (filePath) => {
 						if (!parsedEvalPath) {
@@ -84,6 +86,14 @@ export async function collectArgs() {
 					v.transform((config) => ({
 						type: 'mcp-server' as const,
 						mcpServerConfig: config,
+					})),
+				),
+				// ... or a component manifest to be used with @storybook/mcp
+				v.pipe(
+					v.pipe(v.string(), v.endsWith('.json')),
+					v.transform((manifestPath) => ({
+						type: 'components-manifest' as const,
+						manifestPath,
 					})),
 				),
 				// ... or one or more comma-separated extra prompts from the eval root
@@ -124,8 +134,10 @@ export async function collectArgs() {
 			})
 		).toString();
 
-	if(parsedArgValues.storybook !== undefined) {
-		rerunCommandParts.push(`--${parsedArgValues.storybook ? '' : 'no-'}storybook`);
+	if (parsedArgValues.storybook !== undefined) {
+		rerunCommandParts.push(
+			`--${parsedArgValues.storybook ? '' : 'no-'}storybook`,
+		);
 	}
 
 	// Prompt for missing arguments
@@ -152,13 +164,18 @@ export async function collectArgs() {
 			},
 			description: async function (): Promise<string | undefined> {
 				if (parsedArgValues.description) {
-					rerunCommandParts.push('--description', `"${parsedArgValues.description}"`);
+					rerunCommandParts.push(
+						'--description',
+						`"${parsedArgValues.description}"`,
+					);
 					return parsedArgValues.description;
 				}
 
 				const result = await p.text({
-					message: 'Can you provide a short description for this specific experiment?',
-					placeholder: 'This description is optional and can help provide context for the experiment results.',
+					message:
+						'Can you provide a short description for this specific experiment?',
+					placeholder:
+						'This description is optional and can help provide context for the experiment results.',
 				});
 				if (p.isCancel(result)) {
 					p.cancel('Operation cancelled.');
@@ -187,6 +204,18 @@ export async function collectArgs() {
 							);
 							break;
 						}
+						case 'components-manifest': {
+							rerunCommandParts.push(
+								'--context',
+								`'${JSON.stringify(parsedArgValues.context.manifestPath)}'`,
+							);
+							return {
+								type: 'components-manifest',
+								mcpServerConfig: manifestPathToMcpServerConfig(
+									path.join(evalPath, parsedArgValues.context.manifestPath),
+								),
+							};
+						}
 						case false: {
 							rerunCommandParts.push('--no-context');
 							break;
@@ -196,21 +225,33 @@ export async function collectArgs() {
 				}
 
 				const availableExtraPrompts: Record<string, string> = {};
+				const availableManifests: Record<string, string[]> = {};
 				for await (const dirent of await fs.readdir(evalPath, {
 					withFileTypes: true,
 				})) {
-					if (
-						!dirent.isFile() ||
-						!dirent.name.endsWith('.md') ||
-						dirent.name === 'prompt.md'
-					) {
+					if (!dirent.isFile()) {
 						continue;
 					}
-					const content = await fs.readFile(
-						path.join(evalPath, dirent.name),
-						'utf8',
-					);
-					availableExtraPrompts[dirent.name] = content;
+					if (dirent.name.endsWith('.json') && !dirent.name.includes('mcp')) {
+						const { default: manifestContent } = await import(
+							path.join(evalPath, dirent.name),
+							{
+								with: { type: 'json' },
+							}
+						);
+						availableManifests[dirent.name] = Object.keys(
+							manifestContent.components || {},
+						);
+					} else if (
+						dirent.name.endsWith('.md') &&
+						dirent.name !== 'prompt.md'
+					) {
+						const content = await fs.readFile(
+							path.join(evalPath, dirent.name),
+							'utf8',
+						);
+						availableExtraPrompts[dirent.name] = content;
+					}
 				}
 
 				const mainSelection = await p.select<false | string>({
@@ -222,7 +263,16 @@ export async function collectArgs() {
 							value: false,
 						},
 						{
-							label: 'MCP server',
+							label: 'Storybook MCP server',
+							hint:
+								Object.keys(availableManifests).length > 0
+									? 'Add a Storybook MCP server based on a components manifest file'
+									: 'No component manifest files available for this eval',
+							value: 'components-manifest',
+							disabled: Object.keys(availableManifests).length === 0,
+						},
+						{
+							label: 'Generic MCP server',
 							hint: 'Add an MCP server to the agent',
 							value: 'mcp-server',
 						},
@@ -243,35 +293,37 @@ export async function collectArgs() {
 						rerunCommandParts.push('--no-context');
 						return { type: false };
 					}
-					case 'extra-prompts': {
-						const extraPromptOptions = Object.entries(
-							availableExtraPrompts,
-						).map(([name, content]) => ({
-							label: name,
-							hint:
-								content.slice(0, 100).replace(/\n/g, ' ') +
-								(content.length > 100 ? '...' : ''),
-							value: name,
-						}));
+					case 'components-manifest': {
+						const manifestOptions = Object.entries(availableManifests).map(
+							([manifestPath, componentNames]) => ({
+								label: manifestPath,
+								hint: `${componentNames.length} components: ${componentNames.slice(0, 5).join(', ')}...`,
+								value: manifestPath,
+							}),
+						);
 
-						const selectedExtraPromptNames = await p.multiselect({
-							message: 'Which extra prompts should be included as context?',
-							options: extraPromptOptions,
+						const selectedManifestPath = await p.select({
+							message:
+								'Which components manifest should be used for the Storybook MCP?',
+							options: manifestOptions,
 						});
-						if (p.isCancel(selectedExtraPromptNames)) {
+						if (p.isCancel(selectedManifestPath)) {
 							p.cancel('Operation cancelled.');
 							process.exit(0);
 						}
 
-						for (const name of selectedExtraPromptNames) {
-							rerunCommandParts.push('--context', name);
-						}
-						return { type: mainSelection, prompts: selectedExtraPromptNames };
+						rerunCommandParts.push('--context', selectedManifestPath);
+						return {
+							type: mainSelection,
+							mcpServerConfig: manifestPathToMcpServerConfig(
+								path.join(evalPath, selectedManifestPath),
+							),
+						};
 					}
+
 					case 'mcp-server': {
 						const mcpServerName = await p.text({
-							message:
-								'What name should be used for the MCP server?',
+							message: 'What name should be used for the MCP server?',
 							initialValue: 'storybook-mcp',
 						});
 						if (p.isCancel(mcpServerName)) {
@@ -336,7 +388,7 @@ export async function collectArgs() {
 								[mcpServerName]: {
 									type: 'stdio',
 									command,
-									args: argsParts.length > 0 ? argsParts.join(' ') : undefined,
+									args: argsParts.length > 0 ? argsParts : undefined,
 								},
 							};
 							rerunCommandParts.push(
@@ -348,6 +400,31 @@ export async function collectArgs() {
 								mcpServerConfig: config,
 							};
 						}
+					}
+					case 'extra-prompts': {
+						const extraPromptOptions = Object.entries(
+							availableExtraPrompts,
+						).map(([name, content]) => ({
+							label: name,
+							hint:
+								content.slice(0, 100).replace(/\n/g, ' ') +
+								(content.length > 100 ? '...' : ''),
+							value: name,
+						}));
+
+						const selectedExtraPromptNames = await p.multiselect({
+							message: 'Which extra prompts should be included as context?',
+							options: extraPromptOptions,
+						});
+						if (p.isCancel(selectedExtraPromptNames)) {
+							p.cancel('Operation cancelled.');
+							process.exit(0);
+						}
+
+						for (const name of selectedExtraPromptNames) {
+							rerunCommandParts.push('--context', name);
+						}
+						return { type: mainSelection, prompts: selectedExtraPromptNames };
 					}
 				}
 
@@ -365,12 +442,15 @@ export async function collectArgs() {
 			},
 			upload: async () => {
 				if (parsedArgValues.upload !== undefined) {
-					rerunCommandParts.push(`--${parsedArgValues.upload ? '' : 'no-'}upload`);
+					rerunCommandParts.push(
+						`--${parsedArgValues.upload ? '' : 'no-'}upload`,
+					);
 					return parsedArgValues.upload;
 				}
 
 				const result = await p.confirm({
-					message: 'Do you want to upload the results to the public results-table at the end of the run?',
+					message:
+						'Do you want to upload the results to the public results-table at the end of the run?',
 					initialValue: true,
 				});
 				if (p.isCancel(result)) {
@@ -407,4 +487,18 @@ export async function collectArgs() {
 	]);
 
 	return result;
+}
+
+function manifestPathToMcpServerConfig(manifestPath: string): McpServerConfig {
+	return {
+		'storybook-mcp': {
+			type: 'stdio',
+			command: 'node',
+			args: [
+				path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
+				'--manifestPath',
+				manifestPath,
+			],
+		},
+	};
 }

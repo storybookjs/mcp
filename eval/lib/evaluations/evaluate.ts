@@ -1,4 +1,8 @@
-import type { EvaluationSummary, ExperimentArgs, ExecutionSummary } from '../../types';
+import type {
+	EvaluationSummary,
+	ExperimentArgs,
+	ExecutionSummary,
+} from '../../types';
 import { saveEnvironment } from './environment.ts';
 import { runESLint } from './lint.ts';
 import { setupEvaluations } from './setup-evaluations.ts';
@@ -152,7 +156,8 @@ export async function evaluate(
 			uploadSpinner.stop('Uploaded results to Google Sheets');
 		} catch (error) {
 			uploadSpinner.stop(
-				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`, 1,
+				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`,
+				1,
 			);
 		}
 	};

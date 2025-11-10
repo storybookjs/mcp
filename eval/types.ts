@@ -33,7 +33,7 @@ export type EvaluationSummary = {
 	};
 	a11y: {
 		violations: number;
-	}
+	};
 };
 
 export const McpServerConfigSchema = v.record(
@@ -47,7 +47,7 @@ export const McpServerConfigSchema = v.record(
 		v.object({
 			type: v.literal('stdio'),
 			command: v.string(),
-			args: v.optional(v.string()),
+			args: v.optional(v.array(v.string())),
 			env: v.optional(v.string()),
 		}),
 	]),
@@ -64,6 +64,10 @@ export type Context =
 	  }
 	| {
 			type: 'mcp-server';
+			mcpServerConfig: McpServerConfig;
+	  }
+	| {
+			type: 'components-manifest';
 			mcpServerConfig: McpServerConfig;
 	  };
 

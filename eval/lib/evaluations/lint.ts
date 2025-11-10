@@ -3,7 +3,10 @@ import type { EvaluationSummary, ExperimentArgs } from '../../types';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-export async function runESLint({ projectPath, resultsPath }: ExperimentArgs): Promise<EvaluationSummary['lintErrors']> {
+export async function runESLint({
+	projectPath,
+	resultsPath,
+}: ExperimentArgs): Promise<EvaluationSummary['lintErrors']> {
 	// Create ESLint instance
 	const eslint = new ESLint({
 		cwd: projectPath,

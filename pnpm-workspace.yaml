@@ -12,7 +12,8 @@ catalog:
   '@storybook/react-vite': 10.1.0-alpha.2
   '@tmcp/adapter-valibot': ^0.1.4
   '@tmcp/transport-http': ^0.8.0
-  '@types/node': 20.19.0
+  '@tmcp/transport-stdio': ^0.4.1
+  '@types/node': 24.10.0
   '@vitest/browser-playwright': 4.0.6
   '@vitest/coverage-v8': 4.0.6
   eslint-plugin-storybook: 10.1.0-alpha.3
