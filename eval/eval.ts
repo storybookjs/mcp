@@ -48,6 +48,9 @@ switch (args.context.type) {
 		contextPrefix = Object.keys(args.context.mcpServerConfig)
 			.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
 			.join('-');
+	case 'components-manifest':
+		('components-manifest');
+		break;
 }
 
 const experimentDirName = `${contextPrefix}-${args.agent}-${localDateTimestamp}`;
@@ -61,7 +64,7 @@ const experimentArgs: ExperimentArgs = {
 	resultsPath,
 	verbose: args.verbose,
 	description: args.description,
-	uploadResults: args.uploadResults,
+	upload: args.upload,
 	evalName: args.eval,
 	context: args.context,
 	agent: args.agent,
@@ -84,7 +87,10 @@ const agent = agents[args.agent as keyof typeof agents];
 const promptSummary = await agent.execute(
 	prompt,
 	experimentArgs,
-	args.context.type === 'mcp-server' ? args.context.mcpServerConfig : undefined,
+	args.context.type === 'mcp-server' ||
+		args.context.type === 'components-manifest'
+		? args.context.mcpServerConfig
+		: undefined,
 );
 
 const evaluationSummary = await evaluate(experimentArgs, promptSummary);
@@ -138,9 +144,12 @@ p.log.message(
 	`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
 );
 
-const startStorybook = args.storybook !== undefined ? args.storybook : await p.confirm({
-	message: "Would you like to start the experiment's Storybook?",
-});
+const startStorybook =
+	args.storybook !== undefined
+		? args.storybook
+		: await p.confirm({
+				message: "Would you like to start the experiment's Storybook?",
+			});
 
 p.outro('✨ Evaluation complete!');
 

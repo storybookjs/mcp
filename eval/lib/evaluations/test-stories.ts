@@ -7,9 +7,7 @@ import type { JsonTestResults } from 'vitest/reporters';
 export async function testStories({
 	projectPath,
 	resultsPath,
-}: ExperimentArgs): Promise<
-	Pick<EvaluationSummary, 'test' | 'a11y'>
-> {
+}: ExperimentArgs): Promise<Pick<EvaluationSummary, 'test' | 'a11y'>> {
 	const testResultsPath = path.join(resultsPath, 'tests.json');
 
 	const vitest = await startVitest('test', undefined, {

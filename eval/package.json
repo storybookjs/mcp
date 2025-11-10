@@ -14,6 +14,7 @@
 		"@anthropic-ai/claude-agent-sdk": "^0.1.30",
 		"@clack/prompts": "1.0.0-alpha.6",
 		"@storybook/addon-a11y": "catalog:",
+		"@storybook/mcp": "workspace:*",
 		"@storybook/react-vite": "catalog:",
 		"@tsconfig/node-ts": "^23.6.1",
 		"@tsconfig/node24": "^24.0.1",

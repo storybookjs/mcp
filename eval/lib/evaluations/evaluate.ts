@@ -1,4 +1,8 @@
-import type { EvaluationSummary, ExperimentArgs, ExecutionSummary } from '../../types';
+import type {
+	EvaluationSummary,
+	ExperimentArgs,
+	ExecutionSummary,
+} from '../../types';
 import { saveEnvironment } from './environment.ts';
 import { runESLint } from './lint.ts';
 import { setupEvaluations } from './setup-evaluations.ts';
@@ -56,7 +60,7 @@ function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 				normalLog.message(message);
 			},
 			error: (message: string) => {
-				normalLog.stop(message);
+				normalLog.stop(message, 1);
 			},
 			message: (message: string) => {
 				normalLog.message(message);
@@ -137,10 +141,11 @@ export async function evaluate(
 		evaluationSummary: EvaluationSummary,
 		environment: { branch: string; commit: string },
 	) => {
-		if (!experimentArgs.uploadResults) {
+		if (!experimentArgs.upload) {
 			return;
 		}
-		log.start('Uploading results');
+		const uploadSpinner = spinner();
+		uploadSpinner.start('Uploading results');
 		try {
 			await saveToSheets(
 				experimentArgs,
@@ -148,10 +153,11 @@ export async function evaluate(
 				executionSummary,
 				environment,
 			);
-			log.success('Results uploaded');
+			uploadSpinner.stop('Uploaded results to Google Sheets');
 		} catch (error) {
-			log.error(
+			uploadSpinner.stop(
 				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`,
+				1,
 			);
 		}
 	};

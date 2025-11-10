@@ -5,7 +5,10 @@ import { installDependencies } from 'nypm';
 import { taskLog } from '@clack/prompts';
 
 export async function prepareExperiment(experimentArgs: ExperimentArgs) {
-	const log = taskLog({ title: 'Preparing experiment', retainLog: experimentArgs.verbose });
+	const log = taskLog({
+		title: 'Preparing experiment',
+		retainLog: experimentArgs.verbose,
+	});
 	await experimentArgs.hooks.prePrepareExperiment?.(experimentArgs, log);
 
 	log.message('Creating project from template');
@@ -27,6 +30,7 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 		packageManager: 'pnpm',
 		silent: true,
 	});
+
 	await experimentArgs.hooks.postPrepareExperiment?.(experimentArgs, log);
 	log.success('Experiment prepared');
 }
