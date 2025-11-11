@@ -1,5 +1,4 @@
 {
-  "editor.defaultFormatter": "oxc.oxc-vscode",
-  "oxc.fmt.experimental": true,
-  "oxc.typeAware": true
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"oxc.typeAware": true
 }
