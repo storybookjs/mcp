@@ -9,6 +9,12 @@ import { collectArgs } from './lib/collect-args.ts';
 import { generatePrompt } from './lib/generate-prompt.ts';
 import { x } from 'tinyexec';
 import { styleText } from 'node:util';
+import { showHelp } from './lib/show-help.ts';
+
+// Check for --help flag before any processing
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+	showHelp();
+}
 
 p.intro('🧪 Storybook MCP Eval');
 
@@ -48,6 +54,7 @@ switch (args.context.type) {
 		contextPrefix = Object.keys(args.context.mcpServerConfig)
 			.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
 			.join('-');
+		break;
 	case 'components-manifest':
 		contextPrefix = 'components-manifest';
 		break;

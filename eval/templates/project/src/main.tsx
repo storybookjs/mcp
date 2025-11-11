@@ -6,5 +6,3 @@ createRoot(document.getElementById('root')!).render(
 		<div>Hello World</div>
 	</StrictMode>,
 );
-
-const foo: string = 2;

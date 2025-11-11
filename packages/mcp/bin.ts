@@ -1,3 +1,17 @@
+/**
+ * This is a way to start the @storybook/mcp server as a stdio MCP server, which is sometimes easier for testing.
+ * You can run it like this:
+ *   node bin.ts --manifestPath ./path/to/manifest.json
+ *
+ * Or when configuring it as an MCP server:
+ * {
+ *   "storybook-mcp": {
+ *     "type": "stdio",
+ *     "command": "node",
+ *     "args": ["bin.ts", "--manifestPath", "./path/to/manifest.json"]
+ *   }
+ * }
+ */
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { StdioTransport } from '@tmcp/transport-stdio';
