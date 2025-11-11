@@ -35,7 +35,7 @@ export async function checkTypes({
 	const parsedConfig = ts.parseJsonConfigFileContent(
 		configFile.config,
 		ts.sys,
-		path.dirname(projectPath),
+		projectPath,
 	);
 
 	// Create program
@@ -94,4 +94,23 @@ export async function checkTypes({
 	);
 
 	return result.errors.length;
+}
+
+/**
+ * This allows running the type checker directly from the command line for testing.
+ * use it like:
+ * node ./lib/evaluations/typecheck.ts <relative_path_to_experiment>
+ */
+if (import.meta.main) {
+	const experimentPath = process.argv.slice(2);
+	if (!experimentPath || experimentPath.length === 0) {
+		console.error('You must pass the path to the experiment as an argument.');
+		process.exit(1);
+	}
+	console.log({
+		typeErrors: await checkTypes({
+			projectPath: path.join(experimentPath[0], 'project'),
+			resultsPath: path.join(experimentPath[0], 'results'),
+		} as ExperimentArgs),
+	});
 }
