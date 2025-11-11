@@ -154,7 +154,7 @@ Launches the MCP inspector for debugging the MCP server using the configuration 
 
 ### Code Style
 
-- Use prettier for formatting (config: `.prettierrc.json`)
+- Use prettier for formatting (config: `.prettierrc`)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names
