@@ -1,13 +1,18 @@
 import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { styleText, inspect } from 'node:util';
+import { styleText } from 'node:util';
 import type { Agent } from '../../types';
 import { spinner, taskLog } from '@clack/prompts';
+import { dedent } from 'ts-dedent';
+import Tokenizer, { models, type Model } from 'ai-tokenizer';
 
 interface BaseMessage {
 	session_id: string;
 	uuid: string;
+	ms: number;
+	tokenCount?: number;
+	costUSD?: number;
 }
 
 interface McpServer {
@@ -134,7 +139,12 @@ type ClaudeCodeStreamMessage =
 function formatMessageForLog(
 	message: ClaudeCodeStreamMessage,
 	projectPath: string,
+	deltaSeconds?: number,
 ): string {
+	const timePrefix =
+		deltaSeconds !== undefined ? `[+${deltaSeconds.toFixed(1)}s] ` : '';
+	const tokenSuffix =
+		message.tokenCount !== undefined ? ` (${message.tokenCount} tokens)` : '';
 	switch (message.type) {
 		case 'system': {
 			const mcpInfo =
@@ -146,7 +156,7 @@ function formatMessageForLog(
 								.join(', '),
 						)
 					: 'None';
-			return `[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${mcpInfo}`;
+			return `${timePrefix}[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${mcpInfo}${tokenSuffix}`;
 		}
 		case 'assistant': {
 			const content = message.message.content;
@@ -161,7 +171,7 @@ function formatMessageForLog(
 				const todoWrite = toolUses.find((t) => t.name === 'TodoWrite');
 				if (todoWrite && todoWrite.input.todos) {
 					const lines = [];
-					lines.push('[ASSISTANT] Todo List:');
+					lines.push(`${timePrefix}[ASSISTANT] Todo List:`);
 					for (const todo of todoWrite.input.todos) {
 						let checkbox: string;
 						switch (todo.status) {
@@ -200,21 +210,21 @@ function formatMessageForLog(
 
 						return isMcpTool ? styleText('cyan', toolDesc) : toolDesc;
 					});
-					return `[ASSISTANT] Tools: ${toolDescriptions.join(', ')}`;
+					return `${timePrefix}[ASSISTANT] Tools: ${toolDescriptions.join(', ')}${tokenSuffix}`;
 				}
 			} else if (textContent) {
 				const preview = textContent.text.slice(0, 80).replace(/\n/g, ' ');
-				return `[ASSISTANT] ${preview}${textContent.text.length > 80 ? '...' : ''}`;
+				return `${timePrefix}[ASSISTANT] ${preview}${textContent.text.length > 80 ? '...' : ''}${tokenSuffix}`;
 			}
-			return '[ASSISTANT] (no content)';
+			return `${timePrefix}[ASSISTANT] (no content)${tokenSuffix}`;
 		}
 		case 'user': {
-			return `[USER] Tool results: ${message.message.content.length}`;
+			return `${timePrefix}[USER] Tool results: ${message.message.content.length}${tokenSuffix}`;
 		}
 		case 'result':
-			return `[RESULT] ${message.subtype.toUpperCase()} - ${message.num_turns} turns, ${(message.duration_ms / 1000).toFixed(1)}s, $${message.total_cost_usd.toFixed(4)}`;
+			return `${timePrefix}[RESULT] ${message.subtype.toUpperCase()} - ${message.num_turns} turns, ${(message.duration_ms / 1000).toFixed(1)}s, $${message.total_cost_usd.toFixed(4)}${tokenSuffix}`;
 		default:
-			return '[UNKNOWN MESSAGE TYPE]';
+			return `${timePrefix}[UNKNOWN MESSAGE TYPE]${tokenSuffix}`;
 	}
 }
 
@@ -222,6 +232,54 @@ interface TodoProgress {
 	current: number;
 	total: number;
 	currentTitle: string;
+}
+
+function calculateMessageTokenCount(
+	message: ClaudeCodeStreamMessage,
+	tokenizer: Tokenizer,
+	model: Model,
+): {
+	tokens: number;
+	cost: number;
+} {
+	if (message.type === 'assistant') {
+		const content = message.message.content.map((c) => {
+			if (c.type === 'text') {
+				return { type: c.type, text: c.text };
+			} else if (c.type === 'tool_use') {
+				return { type: c.type, id: c.id, name: c.name, input: c.input };
+			}
+			return c;
+		});
+
+		try {
+			const tokens = tokenizer.count(
+				JSON.stringify({ role: 'assistant', content }),
+			);
+			const cost = tokens * model.pricing.input;
+			return { tokens, cost };
+		} catch (error) {
+			console.warn('Failed to count tokens:', error);
+			return { tokens: 0, cost: 0 };
+		}
+	} else if (message.type === 'user') {
+		const content = message.message.content.map((c) => ({
+			type: c.type,
+			tool_use_id: c.tool_use_id,
+			content: c.content,
+		}));
+
+		try {
+			const tokens = tokenizer.count(JSON.stringify({ role: 'user', content }));
+			const cost = tokens * model.pricing.input;
+			return { tokens, cost };
+		} catch (error) {
+			console.warn('Failed to count tokens:', error);
+			return { tokens: 0, cost: 0 };
+		}
+	}
+
+	return { tokens: 0, cost: 0 };
 }
 
 function getTodoProgress(
@@ -268,126 +326,6 @@ function getTodoProgress(
 	return null;
 }
 
-function formatConversationAsMarkdown(
-	messages: ClaudeCodeStreamMessage[],
-	projectPath: string,
-): string {
-	const lines: string[] = ['# Conversation Log\n'];
-
-	for (const message of messages) {
-		switch (message.type) {
-			case 'system':
-				lines.push('## Session Initialized\n');
-				lines.push(`- **Model**: ${message.model}`);
-				lines.push(`- **Tools**: ${message.tools.join(', ')}`);
-				lines.push(
-					`- **MCP Servers**: ${message.mcp_servers.length > 0 ? message.mcp_servers.map((s) => `🔌 **${s.name}** (${s.status})`).join(', ') : 'None'}`,
-				);
-				lines.push(`- **Working Directory**: ${message.cwd}\n`);
-				break;
-			case 'assistant': {
-				const content = message.message.content;
-				const textContent = content.find(
-					(c): c is TextContent => c.type === 'text',
-				);
-				const toolUses = content.filter(
-					(c): c is ToolUseContent => c.type === 'tool_use',
-				);
-
-				if (toolUses.length > 0) {
-					const todoWrite = toolUses.find((t) => t.name === 'TodoWrite');
-					if (todoWrite && todoWrite.input.todos) {
-						lines.push('## Assistant: Todo List Updated\n');
-						for (const todo of todoWrite.input.todos) {
-							let checkbox: string;
-							switch (todo.status) {
-								case 'completed':
-									checkbox = '[x]';
-									break;
-								case 'in_progress':
-									checkbox = '[~]';
-									break;
-								default:
-									checkbox = '[ ]';
-							}
-							lines.push(`- ${checkbox} ${todo.content}`);
-						}
-						lines.push('');
-					} else {
-						lines.push('## Assistant: Tool Usage\n');
-						for (const tool of toolUses) {
-							const isMcpTool = tool.name.startsWith('mcp__');
-							const prefix = isMcpTool ? '🔌 ' : '';
-
-							if (
-								(tool.name === 'Read' ||
-									tool.name === 'Write' ||
-									tool.name === 'Edit') &&
-								tool.input.file_path
-							) {
-								const relPath = path.relative(
-									projectPath,
-									tool.input.file_path,
-								);
-								lines.push(`- ${prefix}**${tool.name}**: \`./${relPath}\``);
-							} else if (tool.name === 'Bash' && tool.input.command) {
-								lines.push(`- ${prefix}**Bash**: \`${tool.input.command}\``);
-							} else {
-								lines.push(`- ${prefix}**${tool.name}**`);
-							}
-						}
-						lines.push('');
-					}
-				}
-				if (textContent && textContent.text.trim()) {
-					lines.push('## Assistant\n');
-					lines.push(textContent.text.trim());
-					lines.push('');
-				}
-				break;
-			}
-
-			case 'user': {
-				const toolResults = message.message.content;
-				if (toolResults.length > 0) {
-					lines.push(`## User: Tool Results (${toolResults.length})\n`);
-				}
-				break;
-			}
-
-			case 'result':
-				lines.push('---\n');
-				lines.push('## Final Result\n');
-				lines.push(
-					`- **Status**: ${message.subtype === 'success' ? '✅ Success' : '❌ Error'}`,
-				);
-				lines.push(`- **Turns**: ${message.num_turns}`);
-				lines.push(
-					`- **Duration**: ${(message.duration_ms / 1000).toFixed(1)}s`,
-				);
-				lines.push(
-					`- **API Time**: ${(message.duration_api_ms / 1000).toFixed(1)}s`,
-				);
-				lines.push(`- **Cost**: $${message.total_cost_usd.toFixed(4)}`);
-				lines.push(
-					`- **Tokens**: ${message.usage.input_tokens} in / ${message.usage.output_tokens} out`,
-				);
-				lines.push(
-					`- **Cache**: ${message.usage.cache_read_input_tokens} read / ${message.usage.cache_creation_input_tokens} created\n`,
-				);
-
-				if (message.result) {
-					lines.push('### Summary\n');
-					lines.push(message.result);
-					lines.push('');
-				}
-				break;
-		}
-	}
-
-	return lines.join('\n');
-}
-
 export const claudeCodeCli: Agent = {
 	async execute(prompt, experimentArgs, mcpServerConfig) {
 		const { projectPath, resultsPath, verbose, hooks } = experimentArgs;
@@ -407,6 +345,10 @@ export const claudeCodeCli: Agent = {
 			normalLog.start('Agent is working');
 		}
 		await hooks.preExecuteAgent?.(experimentArgs, verboseLog ?? normalLog);
+
+		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
+		const model = models['anthropic/claude-sonnet-4.5'];
+		const tokenizer = new Tokenizer(claudeEncoding);
 
 		const args = [
 			'--print',
@@ -432,11 +374,23 @@ export const claudeCodeCli: Agent = {
 			claudeProcess.process?.stdin.end();
 		}
 		const messages: ClaudeCodeStreamMessage[] = [];
+		let previousMs = Date.now();
 		for await (const message of claudeProcess) {
 			const parsed = JSON.parse(message) as ClaudeCodeStreamMessage;
+			// Set startTime on first message and calculate elapsed time
+
+			const deltaMs = Date.now() - previousMs;
+			previousMs = Date.now();
+
+			parsed.ms = deltaMs;
+			const tokenData = calculateMessageTokenCount(parsed, tokenizer, model);
+			parsed.tokenCount = tokenData.tokens;
+			parsed.costUSD = tokenData.cost;
 			messages.push(parsed);
 			if (verbose) {
-				verboseLog.message(formatMessageForLog(parsed, projectPath));
+				verboseLog.message(
+					formatMessageForLog(parsed, projectPath, deltaMs / 1000),
+				);
 			} else {
 				const todoProgress = getTodoProgress(messages);
 				let progressMessage = `Agent is working, turn ${messages.filter((m) => m.type === 'assistant').length}`;
@@ -460,14 +414,22 @@ export const claudeCodeCli: Agent = {
 		}
 		await claudeProcess;
 
+		const promptTokenCount = tokenizer.count(
+			JSON.stringify({
+				role: 'user',
+				content: [{ type: 'text', text: prompt }],
+			}),
+		);
+		const promptCost = promptTokenCount * model.pricing.input;
+
 		await Promise.all([
 			fs.writeFile(
-				path.join(resultsPath, 'full-conversation.json'),
-				JSON.stringify(messages, null, 2),
-			),
-			fs.writeFile(
-				path.join(resultsPath, 'full-conversation.md'),
-				formatConversationAsMarkdown(messages, projectPath),
+				path.join(resultsPath, 'full-conversation.js'),
+				dedent`const prompt = \`${prompt}\`;
+				const promptTokenCount = ${promptTokenCount};
+				const promptCost = ${promptCost};
+				const messages = ${JSON.stringify(messages, null, 2)};	
+				globalThis.loadConversation?.({ prompt, promptTokenCount, promptCost, messages });`,
 			),
 		]);
 

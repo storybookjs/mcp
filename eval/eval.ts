@@ -49,7 +49,7 @@ switch (args.context.type) {
 			.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
 			.join('-');
 	case 'components-manifest':
-		('components-manifest');
+		contextPrefix = 'components-manifest';
 		break;
 }
 
@@ -141,7 +141,12 @@ p.log.message(
 p.log.message(`💰 Cost: $${promptSummary.cost}`);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
 p.log.message(
-	`You can inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
+	`Inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
+);
+
+const conversationViewerUrl = `file://${path.resolve('conversation-viewer.html')}?path=${path.relative(process.cwd(), path.join(resultsPath, 'full-conversation.js'))}`;
+p.log.message(
+	`View the conversation log at:\n\u001b]8;;${conversationViewerUrl}\u0007${conversationViewerUrl}\u001b]8;;\u0007`,
 );
 
 const startStorybook =
