@@ -35,7 +35,7 @@ export async function collectArgs() {
 		),
 	);
 
-	const parsedEvalPath = await v.parse(
+	const parsedEvalPath = v.parse(
 		ArgPositionalsSchema,
 		nodeParsedArgs.positionals,
 	);
@@ -226,7 +226,7 @@ export async function collectArgs() {
 
 				const availableExtraPrompts: Record<string, string> = {};
 				const availableManifests: Record<string, string[]> = {};
-				for await (const dirent of await fs.readdir(evalPath, {
+				for (const dirent of await fs.readdir(evalPath, {
 					withFileTypes: true,
 				})) {
 					if (!dirent.isFile()) {
