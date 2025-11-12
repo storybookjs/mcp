@@ -25,7 +25,7 @@ export const experimental_devServer: PresetProperty<
 
 	const shouldRedirect = await isManifestAvailable(options);
 
-	app!.get('/mcp', async (req, res) => {
+	app!.get('/mcp', async (req, res, next) => {
 		const acceptHeader = req.headers['accept'] || '';
 
 		if (acceptHeader.includes('text/html')) {
@@ -133,11 +133,14 @@ export const experimental_devServer: PresetProperty<
         </html>
       `);
 		} else {
-			// Non-browser request (API, curl, etc.) - send plain text
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end(
-				'Storybook MCP server successfully running via @storybook/addon-mcp',
-			);
+			// Non-browser request - forward to MCP server
+			return await mcpServerHandler({
+				req,
+				res,
+				next,
+				options,
+				addonOptions,
+			});
 		}
 	});
 	return app;

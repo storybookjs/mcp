@@ -65,6 +65,8 @@ export type { ComponentManifest, ComponentManifestMap } from './types.ts';
 
 type Handler = (req: Request, context?: StorybookContext) => Promise<Response>;
 
+// Why is this a separate package?
+// Who is using this?
 export const createStorybookMcpHandler = async (
 	options: StorybookMcpHandlerOptions = {},
 ): Promise<Handler> => {
