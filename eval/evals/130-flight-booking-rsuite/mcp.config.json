@@ -1,6 +1,6 @@
 {
-  "reshaped-mcp": {
-    "type": "http",
-    "url": "http://localhost:6006/mcp"
-  }
+	"reshaped-mcp": {
+		"type": "http",
+		"url": "http://localhost:6006/mcp"
+	}
 }
