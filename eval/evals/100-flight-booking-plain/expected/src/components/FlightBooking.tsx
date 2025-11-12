@@ -13,10 +13,7 @@ const AIRPORTS: Airport[] = [
 	{ code: 'JFK', name: 'John F. Kennedy International Airport, New York, USA' },
 	{ code: 'LHR', name: 'Heathrow Airport, London, UK' },
 	{ code: 'CDG', name: 'Charles de Gaulle Airport, Paris, France' },
-	{
-		code: 'ATL',
-		name: 'Hartsfield–Jackson Atlanta International Airport, USA',
-	},
+	{ code: 'ATL', name: 'Hartsfield–Jackson Atlanta International Airport, USA' },
 	{ code: 'DXB', name: 'Dubai International Airport, UAE' },
 	{ code: 'HKG', name: 'Hong Kong International Airport, Hong Kong' },
 	{ code: 'BNE', name: 'Brisbane Airport, Australia' },
@@ -24,303 +21,272 @@ const AIRPORTS: Airport[] = [
 	{ code: 'DFW', name: 'Dallas Fort Worth International Airport, USA' },
 ];
 
-const FlightBooking = () => {
-	const [isReturn, setIsReturn] = useState(true);
+interface FlightBookingProps {
+	onSubmit?: () => void;
+}
+
+export default function FlightBooking({ onSubmit }: FlightBookingProps) {
+	const [tripType, setTripType] = useState<'oneway' | 'return'>('return');
 	const [fromAirport, setFromAirport] = useState<Airport | null>(null);
 	const [toAirport, setToAirport] = useState<Airport | null>(null);
 	const [departureDate, setDepartureDate] = useState<Date | null>(null);
 	const [returnDate, setReturnDate] = useState<Date | null>(null);
 
-	const [showFromPicker, setShowFromPicker] = useState(false);
-	const [showToPicker, setShowToPicker] = useState(false);
+	const [fromSearch, setFromSearch] = useState('');
+	const [toSearch, setToSearch] = useState('');
+	const [showFromDropdown, setShowFromDropdown] = useState(false);
+	const [showToDropdown, setShowToDropdown] = useState(false);
 	const [showDeparturePicker, setShowDeparturePicker] = useState(false);
 	const [showReturnPicker, setShowReturnPicker] = useState(false);
 
-	const [fromSearch, setFromSearch] = useState('');
-	const [toSearch, setToSearch] = useState('');
+	const fromRef = useRef<HTMLDivElement>(null);
+	const toRef = useRef<HTMLDivElement>(null);
+	const departureRef = useRef<HTMLDivElement>(null);
+	const returnRef = useRef<HTMLDivElement>(null);
 
-	const fromPickerRef = useRef<HTMLDivElement>(null);
-	const toPickerRef = useRef<HTMLDivElement>(null);
-	const departurePickerRef = useRef<HTMLDivElement>(null);
-	const returnPickerRef = useRef<HTMLDivElement>(null);
-
+	// Close dropdowns when clicking outside
 	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				fromPickerRef.current &&
-				!fromPickerRef.current.contains(event.target as Node)
-			) {
-				setShowFromPicker(false);
+		function handleClickOutside(event: MouseEvent) {
+			if (fromRef.current && !fromRef.current.contains(event.target as Node)) {
+				setShowFromDropdown(false);
+			}
+			if (toRef.current && !toRef.current.contains(event.target as Node)) {
+				setShowToDropdown(false);
 			}
 			if (
-				toPickerRef.current &&
-				!toPickerRef.current.contains(event.target as Node)
-			) {
-				setShowToPicker(false);
-			}
-			if (
-				departurePickerRef.current &&
-				!departurePickerRef.current.contains(event.target as Node)
+				departureRef.current &&
+				!departureRef.current.contains(event.target as Node)
 			) {
 				setShowDeparturePicker(false);
 			}
-			if (
-				returnPickerRef.current &&
-				!returnPickerRef.current.contains(event.target as Node)
-			) {
+			if (returnRef.current && !returnRef.current.contains(event.target as Node)) {
 				setShowReturnPicker(false);
 			}
-		};
+		}
 
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, []);
 
-	const filterAirports = (search: string) => {
-		if (!search) return AIRPORTS;
-		const searchLower = search.toLowerCase();
-		return AIRPORTS.filter(
-			(airport) =>
-				airport.code.toLowerCase().includes(searchLower) ||
-				airport.name.toLowerCase().includes(searchLower),
-		);
+	const filteredFromAirports = AIRPORTS.filter(
+		(airport) =>
+			airport.code.toLowerCase().includes(fromSearch.toLowerCase()) ||
+			airport.name.toLowerCase().includes(fromSearch.toLowerCase())
+	);
+
+	const filteredToAirports = AIRPORTS.filter(
+		(airport) =>
+			airport.code.toLowerCase().includes(toSearch.toLowerCase()) ||
+			airport.name.toLowerCase().includes(toSearch.toLowerCase())
+	);
+
+	const handleFromSelect = (airport: Airport) => {
+		setFromAirport(airport);
+		setFromSearch('');
+		setShowFromDropdown(false);
 	};
 
-	const formatDate = (date: Date | null) => {
-		if (!date) return 'Select date';
-		return date.toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-		});
+	const handleToSelect = (airport: Airport) => {
+		setToAirport(airport);
+		setToSearch('');
+		setShowToDropdown(false);
 	};
 
 	const handleSubmit = () => {
-		console.log({
-			type: isReturn ? 'return' : 'one-way',
-			from: fromAirport,
-			to: toAirport,
-			departureDate,
-			returnDate: isReturn ? returnDate : null,
+		if (onSubmit) {
+			onSubmit();
+		}
+	};
+
+	const formatDate = (date: Date) => {
+		return date.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
 		});
 	};
 
 	return (
 		<div className="flight-booking">
-			<h1>Flight Booking</h1>
-
-			<div className="trip-type">
+			<div className="trip-type-toggle">
 				<button
+					className={tripType === 'oneway' ? 'active' : ''}
+					onClick={() => setTripType('oneway')}
 					data-testid="one-way"
-					className={!isReturn ? 'active' : ''}
-					onClick={() => {
-						setIsReturn(false);
-						setReturnDate(null);
-					}}
 				>
 					One Way
 				</button>
 				<button
+					className={tripType === 'return' ? 'active' : ''}
+					onClick={() => setTripType('return')}
 					data-testid="return"
-					className={isReturn ? 'active' : ''}
-					onClick={() => setIsReturn(true)}
 				>
 					Return
 				</button>
 			</div>
 
-			<div className="booking-form">
-				<div className="form-row">
-					<div className="form-field" ref={fromPickerRef}>
-						<label>From</label>
-						<button
-							data-testid="airport-from"
-							className="airport-select"
-							onClick={() => {
-								setShowFromPicker(!showFromPicker);
-								setShowToPicker(false);
-							}}
-						>
-							{fromAirport
-								? `${fromAirport.code} - ${fromAirport.name}`
-								: 'Select airport'}
-						</button>
-						{showFromPicker && (
-							<div className="airport-picker">
-								<input
-									type="text"
-									placeholder="Search airports..."
-									value={fromSearch}
-									onChange={(e) => setFromSearch(e.target.value)}
-									className="airport-search"
-									autoFocus
-								/>
-								<div className="airport-list">
-									{filterAirports(fromSearch).map((airport) => (
-										<button
-											key={airport.code}
-											data-testid={airport.code}
-											className="airport-option"
-											onClick={() => {
-												setFromAirport(airport);
-												setShowFromPicker(false);
-												setFromSearch('');
-											}}
-										>
-											<span className="airport-code">{airport.code}</span>
-											<span className="airport-name">{airport.name}</span>
-										</button>
-									))}
+			<div className="flight-inputs">
+				<div className="autocomplete-wrapper" ref={fromRef}>
+					<input
+						type="text"
+						placeholder="From"
+						value={fromAirport ? `${fromAirport.code} - ${fromAirport.name}` : fromSearch}
+						onChange={(e) => {
+							setFromSearch(e.target.value);
+							setFromAirport(null);
+							setShowFromDropdown(true);
+						}}
+						onFocus={() => setShowFromDropdown(true)}
+						data-testid="flight-trigger-from"
+						className="autocomplete-input"
+					/>
+					{showFromDropdown && (
+						<div className="autocomplete-dropdown">
+							{filteredFromAirports.map((airport) => (
+								<div
+									key={airport.code}
+									className="autocomplete-item"
+									onClick={() => handleFromSelect(airport)}
+									data-testid={`airport-${airport.code}`}
+								>
+									{airport.code} - {airport.name}
 								</div>
-							</div>
-						)}
-					</div>
-
-					<div className="form-field" ref={toPickerRef}>
-						<label>To</label>
-						<button
-							data-testid="airport-to"
-							className="airport-select"
-							onClick={() => {
-								setShowToPicker(!showToPicker);
-								setShowFromPicker(false);
-							}}
-						>
-							{toAirport
-								? `${toAirport.code} - ${toAirport.name}`
-								: 'Select airport'}
-						</button>
-						{showToPicker && (
-							<div className="airport-picker">
-								<input
-									type="text"
-									placeholder="Search airports..."
-									value={toSearch}
-									onChange={(e) => setToSearch(e.target.value)}
-									className="airport-search"
-									autoFocus
-								/>
-								<div className="airport-list">
-									{filterAirports(toSearch).map((airport) => (
-										<button
-											key={airport.code}
-											data-testid={airport.code}
-											className="airport-option"
-											onClick={() => {
-												setToAirport(airport);
-												setShowToPicker(false);
-												setToSearch('');
-											}}
-										>
-											<span className="airport-code">{airport.code}</span>
-											<span className="airport-name">{airport.name}</span>
-										</button>
-									))}
-								</div>
-							</div>
-						)}
-					</div>
-				</div>
-
-				<div className="form-row">
-					<div className="form-field" ref={departurePickerRef}>
-						<label>Departure Date</label>
-						<button
-							data-testid="datepicker-trigger-departure"
-							className="date-select"
-							onClick={() => {
-								setShowDeparturePicker(!showDeparturePicker);
-								setShowReturnPicker(false);
-							}}
-						>
-							{formatDate(departureDate)}
-						</button>
-						{showDeparturePicker && (
-							<DatePicker
-								selectedDate={departureDate}
-								minDate={new Date()}
-								onSelect={(date) => {
-									setDepartureDate(date);
-									setShowDeparturePicker(false);
-									if (returnDate && date > returnDate) {
-										setReturnDate(null);
-									}
-								}}
-							/>
-						)}
-					</div>
-
-					{isReturn && (
-						<div className="form-field" ref={returnPickerRef}>
-							<label>Return Date</label>
-							<button
-								data-testid="datepicker-trigger-return"
-								className="date-select"
-								onClick={() => {
-									setShowReturnPicker(!showReturnPicker);
-									setShowDeparturePicker(false);
-								}}
-							>
-								{formatDate(returnDate)}
-							</button>
-							{showReturnPicker && (
-								<DatePicker
-									selectedDate={returnDate}
-									minDate={departureDate || new Date()}
-									onSelect={(date) => {
-										setReturnDate(date);
-										setShowReturnPicker(false);
-									}}
-								/>
-							)}
+							))}
 						</div>
 					)}
 				</div>
 
-				<button
-					data-testid="submit"
-					className="submit-button"
-					onClick={handleSubmit}
-				>
-					Search Flights
-				</button>
+				<div className="autocomplete-wrapper" ref={toRef}>
+					<input
+						type="text"
+						placeholder="To"
+						value={toAirport ? `${toAirport.code} - ${toAirport.name}` : toSearch}
+						onChange={(e) => {
+							setToSearch(e.target.value);
+							setToAirport(null);
+							setShowToDropdown(true);
+						}}
+						onFocus={() => setShowToDropdown(true)}
+						data-testid="flight-trigger-to"
+						className="autocomplete-input"
+					/>
+					{showToDropdown && (
+						<div className="autocomplete-dropdown">
+							{filteredToAirports.map((airport) => (
+								<div
+									key={airport.code}
+									className="autocomplete-item"
+									onClick={() => handleToSelect(airport)}
+									data-testid={`airport-${airport.code}`}
+								>
+									{airport.code} - {airport.name}
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+
+				<div className="date-picker-wrapper" ref={departureRef}>
+					<button
+						className="date-trigger"
+						onClick={() => setShowDeparturePicker(!showDeparturePicker)}
+						data-testid="date-trigger-departure"
+					>
+						{departureDate ? formatDate(departureDate) : 'Departure Date'}
+					</button>
+					{showDeparturePicker && (
+						<Calendar
+							selectedDate={departureDate}
+							onSelectDate={(date) => {
+								setDepartureDate(date);
+								setShowDeparturePicker(false);
+								// Reset return date if it's before the new departure date
+								if (returnDate && date > returnDate) {
+									setReturnDate(null);
+								}
+							}}
+							minDate={new Date()}
+						/>
+					)}
+				</div>
+
+				{tripType === 'return' && (
+					<div className="date-picker-wrapper" ref={returnRef}>
+						<button
+							className="date-trigger"
+							onClick={() => setShowReturnPicker(!showReturnPicker)}
+							data-testid="date-trigger-return"
+						>
+							{returnDate ? formatDate(returnDate) : 'Return Date'}
+						</button>
+						{showReturnPicker && (
+							<Calendar
+								selectedDate={returnDate}
+								onSelectDate={(date) => {
+									setReturnDate(date);
+									setShowReturnPicker(false);
+								}}
+								minDate={departureDate || new Date()}
+							/>
+						)}
+					</div>
+				)}
 			</div>
+
+			<button
+				className="search-button"
+				onClick={handleSubmit}
+				data-testid="search-flights"
+			>
+				Search Flights
+			</button>
 		</div>
 	);
-};
-
-interface DatePickerProps {
-	selectedDate: Date | null;
-	minDate: Date;
-	onSelect: (date: Date) => void;
 }
 
-const DatePicker = ({ selectedDate, minDate, onSelect }: DatePickerProps) => {
-	const [currentMonth, setCurrentMonth] = useState(selectedDate || new Date());
+interface CalendarProps {
+	selectedDate: Date | null;
+	onSelectDate: (date: Date) => void;
+	minDate?: Date;
+}
 
-	const getDaysInMonth = (date: Date) => {
-		const year = date.getFullYear();
-		const month = date.getMonth();
-		const firstDay = new Date(year, month, 1);
-		const lastDay = new Date(year, month + 1, 0);
-		const daysInMonth = lastDay.getDate();
-		const startingDayOfWeek = firstDay.getDay();
+function Calendar({ selectedDate, onSelectDate, minDate }: CalendarProps) {
+	const today = new Date();
+	const [currentMonth, setCurrentMonth] = useState(
+		selectedDate || minDate || today
+	);
 
-		return { daysInMonth, startingDayOfWeek, year, month };
-	};
+	const startOfMonth = new Date(
+		currentMonth.getFullYear(),
+		currentMonth.getMonth(),
+		1
+	);
+	const endOfMonth = new Date(
+		currentMonth.getFullYear(),
+		currentMonth.getMonth() + 1,
+		0
+	);
 
-	const { daysInMonth, startingDayOfWeek, year, month } =
-		getDaysInMonth(currentMonth);
+	const startDay = startOfMonth.getDay();
+	const daysInMonth = endOfMonth.getDate();
+
+	const days: (Date | null)[] = [];
+
+	// Add empty slots for days before the month starts
+	for (let i = 0; i < startDay; i++) {
+		days.push(null);
+	}
+
+	// Add all days in the month
+	for (let i = 1; i <= daysInMonth; i++) {
+		days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i));
+	}
 
 	const isDateDisabled = (date: Date) => {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const compareDate = new Date(date);
-		compareDate.setHours(0, 0, 0, 0);
-		const minDateCompare = new Date(minDate);
-		minDateCompare.setHours(0, 0, 0, 0);
-
-		return compareDate < minDateCompare;
+		if (!minDate) return false;
+		const dateWithoutTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+		const minDateWithoutTime = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+		return dateWithoutTime < minDateWithoutTime;
 	};
 
 	const isDateSelected = (date: Date) => {
@@ -333,76 +299,58 @@ const DatePicker = ({ selectedDate, minDate, onSelect }: DatePickerProps) => {
 	};
 
 	const goToPreviousMonth = () => {
-		setCurrentMonth(new Date(year, month - 1, 1));
+		setCurrentMonth(
+			new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+		);
 	};
 
 	const goToNextMonth = () => {
-		setCurrentMonth(new Date(year, month + 1, 1));
+		setCurrentMonth(
+			new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+		);
 	};
 
-	const monthNames = [
-		'January',
-		'February',
-		'March',
-		'April',
-		'May',
-		'June',
-		'July',
-		'August',
-		'September',
-		'October',
-		'November',
-		'December',
-	];
-
-	const days = [];
-	for (let i = 0; i < startingDayOfWeek; i++) {
-		days.push(<div key={`empty-${i}`} className="calendar-day empty" />);
-	}
-
-	for (let day = 1; day <= daysInMonth; day++) {
-		const date = new Date(year, month, day);
-		const disabled = isDateDisabled(date);
-		const selected = isDateSelected(date);
-
-		days.push(
-			<button
-				key={day}
-				data-testid={`date-${day}`}
-				className={`calendar-day ${disabled ? 'disabled' : ''} ${selected ? 'selected' : ''}`}
-				onClick={() => !disabled && onSelect(date)}
-				disabled={disabled}
-			>
-				{day}
-			</button>,
-		);
-	}
+	const monthYear = currentMonth.toLocaleDateString('en-US', {
+		month: 'long',
+		year: 'numeric',
+	});
 
 	return (
-		<div className="date-picker">
+		<div className="calendar-popover">
 			<div className="calendar-header">
-				<button onClick={goToPreviousMonth} className="nav-button">
-					‹
-				</button>
-				<span className="month-year">
-					{monthNames[month]} {year}
-				</span>
-				<button onClick={goToNextMonth} className="nav-button">
-					›
-				</button>
+				<button onClick={goToPreviousMonth}>&lt;</button>
+				<span>{monthYear}</span>
+				<button onClick={goToNextMonth}>&gt;</button>
 			</div>
-			<div className="calendar-weekdays">
-				<div>Sun</div>
-				<div>Mon</div>
-				<div>Tue</div>
-				<div>Wed</div>
-				<div>Thu</div>
-				<div>Fri</div>
-				<div>Sat</div>
+			<div className="calendar-grid">
+				<div className="calendar-day-header">Sun</div>
+				<div className="calendar-day-header">Mon</div>
+				<div className="calendar-day-header">Tue</div>
+				<div className="calendar-day-header">Wed</div>
+				<div className="calendar-day-header">Thu</div>
+				<div className="calendar-day-header">Fri</div>
+				<div className="calendar-day-header">Sat</div>
+				{days.map((day, index) => {
+					if (!day) {
+						return <div key={`empty-${index}`} className="calendar-day empty" />;
+					}
+
+					const disabled = isDateDisabled(day);
+					const selected = isDateSelected(day);
+
+					return (
+						<button
+							key={index}
+							className={`calendar-day ${disabled ? 'disabled' : ''} ${selected ? 'selected' : ''}`}
+							onClick={() => !disabled && onSelectDate(day)}
+							disabled={disabled}
+							data-testid={`date-${day.getDate()}`}
+						>
+							{day.getDate()}
+						</button>
+					);
+				})}
 			</div>
-			<div className="calendar-grid">{days}</div>
 		</div>
 	);
-};
-
-export default FlightBooking;
+}
