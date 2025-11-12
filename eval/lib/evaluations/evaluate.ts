@@ -97,7 +97,7 @@ export async function evaluate(
 	const typeCheckTask = async () => {
 		log.start('Checking types');
 		const result = await checkTypes(experimentArgs);
-		if (result) {
+		if (result === 0) {
 			log.success('Type check succeeded');
 		} else {
 			log.error('Type check failed');
@@ -108,7 +108,7 @@ export async function evaluate(
 	const lintTask = async () => {
 		log.start('Linting');
 		const result = await runESLint(experimentArgs);
-		if (result) {
+		if (result === 0) {
 			log.success('Linting succeeded');
 		} else {
 			log.error('Linting failed');
