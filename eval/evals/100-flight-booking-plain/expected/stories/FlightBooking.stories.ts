@@ -14,25 +14,25 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-async function looseGetInteractiveElement(
+async function looseGetInteractiveElements(
 	testId: string,
 	label: string,
 	step: StepFunction,
 ) {
-	let element: HTMLElement | null = null;
+	let elements: HTMLElement[] = [];
 	await step(
 		`Get element by test ID '${testId}' or label '${label}'`,
 		async () => {
-			element = await waitFor(function getElement() {
+			elements = await waitFor(function getElement() {
 				const candidates = [
-					screen.queryByTestId(testId),
+					...screen.queryAllByTestId(testId),
 					...screen.queryAllByLabelText(label, { exact: false }),
 					...screen.queryAllByPlaceholderText(label, { exact: false }),
 					...screen.queryAllByText(label, { exact: false }),
 				];
 
-				// Return the first interactive element
-				const interactive = candidates.find((el) => {
+				// Return all interactive elements
+				const interactive = candidates.filter((el) => {
 					if (!el) {
 						return false;
 					}
@@ -94,27 +94,33 @@ async function looseGetInteractiveElement(
 					return false;
 				});
 
-				return interactive ?? null;
+				return interactive ?? [];
 			});
 		},
 	);
-	return element!;
+	return elements!;
 }
 
 export const Initial: Story = {};
 
 export const FlightPicker: Story = {
 	play: async ({ step }) => {
-		const fromFlightTrigger = await looseGetInteractiveElement(
-			'flight-trigger-from',
-			'From',
-			step,
-		);
+		const fromFlightTrigger = (
+			await looseGetInteractiveElements('flight-trigger-from', 'From', step)
+		)[0];
 		await expect(fromFlightTrigger).toBeInTheDocument();
 
-		await userEvent.click(fromFlightTrigger);
+		if (
+			fromFlightTrigger.tagName.toLowerCase() === 'input' &&
+			(fromFlightTrigger as HTMLInputElement).type === 'text'
+		) {
+			await userEvent.type(fromFlightTrigger, 'M');
+		} else {
+			await userEvent.click(fromFlightTrigger);
+		}
+
 		await expect(
-			await looseGetInteractiveElement('MEL', 'MEL', step),
+			await looseGetInteractiveElements('airport-MEL', 'MEL', step),
 		).toBeInTheDocument();
 	},
 };
@@ -122,14 +128,16 @@ export const FlightPicker: Story = {
 export const DatePicker: Story = {
 	play: async ({ step }) => {
 		await userEvent.click(
-			await looseGetInteractiveElement(
-				'date-trigger-departure',
-				'Departure Date',
-				step,
-			),
+			(
+				await looseGetInteractiveElements(
+					'date-trigger-departure',
+					'Departure Date',
+					step,
+				)
+			)[0],
 		);
 		await expect(
-			await looseGetInteractiveElement('date-27', '27', step),
+			await looseGetInteractiveElements('date-27', '27', step),
 		).toBeInTheDocument();
 	},
 };
@@ -137,19 +145,23 @@ export const DatePicker: Story = {
 export const ReturnDatePickerIsUnavailableWhenOneWaySelected: Story = {
 	play: async ({ step }) => {
 		await userEvent.click(
-			await looseGetInteractiveElement('one-way', 'One Way', step),
+			(await looseGetInteractiveElements('one-way', 'One Way', step))[0],
 		);
 
-		const returnDatePicker = await looseGetInteractiveElement(
-			'date-trigger-return',
-			'Return Date',
-			step,
-		);
+		const returnDatePicker = (
+			await looseGetInteractiveElements(
+				'date-trigger-return',
+				'Return Date',
+				step,
+			)
+		)[0];
 
 		// If the return datepicker exists, ensure it's disabled by trying to open it
 		if (returnDatePicker) {
 			await userEvent.click(returnDatePicker);
-			const date15 = await looseGetInteractiveElement('date-15', '15', step);
+			const date15 = (
+				await looseGetInteractiveElements('date-15', '15', step)
+			)[0];
 			await expect(date15).toBeNull();
 		} else {
 			await expect(returnDatePicker).toBeNull();
@@ -160,59 +172,66 @@ export const ReturnDatePickerIsUnavailableWhenOneWaySelected: Story = {
 export const Submitted: Story = {
 	play: async ({ canvasElement, args, step }) => {
 		await step('Enable return flight', async () => {
-			const returnToggle = await looseGetInteractiveElement(
-				'return',
-				'Return',
-				step,
-			);
+			const returnToggle = (
+				await looseGetInteractiveElements('return', 'Return', step)
+			)[0];
 			await userEvent.click(returnToggle);
 		});
 
 		await step('Select fromt flight', async () => {
-			const fromFlightTrigger = await looseGetInteractiveElement(
-				'flight-trigger-from',
-				'From',
-				step,
-			);
+			const fromFlightTrigger = (
+				await looseGetInteractiveElements('flight-trigger-from', 'From', step)
+			)[0];
 			await expect(fromFlightTrigger).toBeInTheDocument();
 
-			await userEvent.click(fromFlightTrigger);
+			if (
+				fromFlightTrigger.tagName.toLowerCase() === 'input' &&
+				(fromFlightTrigger as HTMLInputElement).type === 'text'
+			) {
+				await userEvent.type(fromFlightTrigger, 'M');
+			} else {
+				await userEvent.click(fromFlightTrigger);
+			}
 
-			const melbourneAirport = await looseGetInteractiveElement(
-				'airport-MEL',
-				'MEL',
-				step,
-			);
+			const melbourneAirport = (
+				await looseGetInteractiveElements('airport-MEL', 'MEL', step)
+			)[0];
 			await userEvent.click(melbourneAirport);
 		});
 
 		await step('Select to flight', async () => {
-			const toFlightTrigger = await looseGetInteractiveElement(
-				'flight-trigger-to',
-				'To',
-				step,
-			);
+			const toFlightTrigger = (
+				await looseGetInteractiveElements('flight-trigger-to', 'To', step)
+			)[0];
 			await expect(toFlightTrigger).toBeInTheDocument();
 
-			await userEvent.click(toFlightTrigger);
-
-			const laxAirport = await looseGetInteractiveElement(
-				'airport-LAX',
-				'LAX',
-				step,
-			);
+			if (
+				toFlightTrigger.tagName.toLowerCase() === 'input' &&
+				(toFlightTrigger as HTMLInputElement).type === 'text'
+			) {
+				await userEvent.type(toFlightTrigger, 'L');
+			} else {
+				await userEvent.click(toFlightTrigger);
+			}
+			const laxAirport = (
+				await looseGetInteractiveElements('airport-LAX', 'LAX', step)
+			)[0];
 			await userEvent.click(laxAirport);
 		});
 
 		await step('Select departure date', async () => {
 			await userEvent.click(
-				await looseGetInteractiveElement(
-					'date-trigger-departure',
-					'Departure Date',
-					step,
-				),
+				(
+					await looseGetInteractiveElements(
+						'date-trigger-departure',
+						'Departure Date',
+						step,
+					)
+				)[0],
 			);
-			const date = await looseGetInteractiveElement('date-27', '27', step);
+			const date = (
+				await looseGetInteractiveElements('date-27', '27', step)
+			).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
@@ -220,24 +239,30 @@ export const Submitted: Story = {
 
 		await step('Select return date', async () => {
 			await userEvent.click(
-				await looseGetInteractiveElement(
-					'date-trigger-return',
-					'Return Date',
-					step,
-				),
+				(
+					await looseGetInteractiveElements(
+						'date-trigger-return',
+						'Return Date',
+						step,
+					)
+				)[0],
 			);
-			const date = await looseGetInteractiveElement('date-28', '28', step);
+			const date = (
+				await looseGetInteractiveElements('date-28', '28', step)
+			).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
 		});
 
 		await userEvent.click(
-			await looseGetInteractiveElement(
-				'search-flights',
-				'Search Flights',
-				step,
-			),
+			(
+				await looseGetInteractiveElements(
+					'search-flights',
+					'Search Flights',
+					step,
+				)
+			)[0],
 		);
 		await expect(args.onSubmit).toHaveBeenCalledOnce();
 	},

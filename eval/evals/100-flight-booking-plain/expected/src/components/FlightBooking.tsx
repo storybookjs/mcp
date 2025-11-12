@@ -13,7 +13,10 @@ const AIRPORTS: Airport[] = [
 	{ code: 'JFK', name: 'John F. Kennedy International Airport, New York, USA' },
 	{ code: 'LHR', name: 'Heathrow Airport, London, UK' },
 	{ code: 'CDG', name: 'Charles de Gaulle Airport, Paris, France' },
-	{ code: 'ATL', name: 'Hartsfield–Jackson Atlanta International Airport, USA' },
+	{
+		code: 'ATL',
+		name: 'Hartsfield–Jackson Atlanta International Airport, USA',
+	},
 	{ code: 'DXB', name: 'Dubai International Airport, UAE' },
 	{ code: 'HKG', name: 'Hong Kong International Airport, Hong Kong' },
 	{ code: 'BNE', name: 'Brisbane Airport, Australia' },
@@ -59,7 +62,10 @@ export default function FlightBooking({ onSubmit }: FlightBookingProps) {
 			) {
 				setShowDeparturePicker(false);
 			}
-			if (returnRef.current && !returnRef.current.contains(event.target as Node)) {
+			if (
+				returnRef.current &&
+				!returnRef.current.contains(event.target as Node)
+			) {
 				setShowReturnPicker(false);
 			}
 		}
@@ -71,13 +77,13 @@ export default function FlightBooking({ onSubmit }: FlightBookingProps) {
 	const filteredFromAirports = AIRPORTS.filter(
 		(airport) =>
 			airport.code.toLowerCase().includes(fromSearch.toLowerCase()) ||
-			airport.name.toLowerCase().includes(fromSearch.toLowerCase())
+			airport.name.toLowerCase().includes(fromSearch.toLowerCase()),
 	);
 
 	const filteredToAirports = AIRPORTS.filter(
 		(airport) =>
 			airport.code.toLowerCase().includes(toSearch.toLowerCase()) ||
-			airport.name.toLowerCase().includes(toSearch.toLowerCase())
+			airport.name.toLowerCase().includes(toSearch.toLowerCase()),
 	);
 
 	const handleFromSelect = (airport: Airport) => {
@@ -130,7 +136,11 @@ export default function FlightBooking({ onSubmit }: FlightBookingProps) {
 					<input
 						type="text"
 						placeholder="From"
-						value={fromAirport ? `${fromAirport.code} - ${fromAirport.name}` : fromSearch}
+						value={
+							fromAirport
+								? `${fromAirport.code} - ${fromAirport.name}`
+								: fromSearch
+						}
 						onChange={(e) => {
 							setFromSearch(e.target.value);
 							setFromAirport(null);
@@ -160,7 +170,9 @@ export default function FlightBooking({ onSubmit }: FlightBookingProps) {
 					<input
 						type="text"
 						placeholder="To"
-						value={toAirport ? `${toAirport.code} - ${toAirport.name}` : toSearch}
+						value={
+							toAirport ? `${toAirport.code} - ${toAirport.name}` : toSearch
+						}
 						onChange={(e) => {
 							setToSearch(e.target.value);
 							setToAirport(null);
@@ -253,18 +265,18 @@ interface CalendarProps {
 function Calendar({ selectedDate, onSelectDate, minDate }: CalendarProps) {
 	const today = new Date();
 	const [currentMonth, setCurrentMonth] = useState(
-		selectedDate || minDate || today
+		selectedDate || minDate || today,
 	);
 
 	const startOfMonth = new Date(
 		currentMonth.getFullYear(),
 		currentMonth.getMonth(),
-		1
+		1,
 	);
 	const endOfMonth = new Date(
 		currentMonth.getFullYear(),
 		currentMonth.getMonth() + 1,
-		0
+		0,
 	);
 
 	const startDay = startOfMonth.getDay();
@@ -284,8 +296,16 @@ function Calendar({ selectedDate, onSelectDate, minDate }: CalendarProps) {
 
 	const isDateDisabled = (date: Date) => {
 		if (!minDate) return false;
-		const dateWithoutTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-		const minDateWithoutTime = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+		const dateWithoutTime = new Date(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate(),
+		);
+		const minDateWithoutTime = new Date(
+			minDate.getFullYear(),
+			minDate.getMonth(),
+			minDate.getDate(),
+		);
 		return dateWithoutTime < minDateWithoutTime;
 	};
 
@@ -300,13 +320,13 @@ function Calendar({ selectedDate, onSelectDate, minDate }: CalendarProps) {
 
 	const goToPreviousMonth = () => {
 		setCurrentMonth(
-			new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+			new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
 		);
 	};
 
 	const goToNextMonth = () => {
 		setCurrentMonth(
-			new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+			new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
 		);
 	};
 
@@ -332,7 +352,9 @@ function Calendar({ selectedDate, onSelectDate, minDate }: CalendarProps) {
 				<div className="calendar-day-header">Sat</div>
 				{days.map((day, index) => {
 					if (!day) {
-						return <div key={`empty-${index}`} className="calendar-day empty" />;
+						return (
+							<div key={`empty-${index}`} className="calendar-day empty" />
+						);
 					}
 
 					const disabled = isDateDisabled(day);

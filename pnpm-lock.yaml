@@ -468,6 +468,76 @@ importers:
         specifier: 'catalog:'
         version: 4.0.6(@types/node@24.10.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
 
+  eval/evals/130-flight-booking-rsuite/experiments/components-manifest-claude-code-2025-11-12T11-20-12/project:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+      rsuite:
+        specifier: ^5.83.4
+        version: 5.83.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.36.0
+        version: 9.39.0
+      '@storybook/addon-a11y':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.8(storybook@10.1.0-alpha.8(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)))
+      '@storybook/addon-vitest':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.8(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.1.0-alpha.8(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)))(vitest@4.0.6)
+      '@storybook/react-vite':
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.8(esbuild@0.25.11)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.1.0-alpha.8(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)))(typescript@5.9.3)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.11))
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.10.0
+      '@types/react':
+        specifier: ^19.1.16
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      '@vitejs/plugin-react-swc':
+        specifier: ^4.1.0
+        version: 4.2.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.6(playwright@1.56.1)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
+      eslint:
+        specifier: ^9.36.0
+        version: 9.39.0(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.22
+        version: 0.4.24(eslint@9.39.0(jiti@2.6.1))
+      eslint-plugin-storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.8(eslint@9.39.0(jiti@2.6.1))(storybook@10.1.0-alpha.8(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)))(typescript@5.9.3)
+      globals:
+        specifier: ^16.4.0
+        version: 16.5.0
+      storybook:
+        specifier: 'catalog:'
+        version: 10.1.0-alpha.8(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.45.0
+        version: 8.46.4(eslint@9.39.0(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^7.1.12
+        version: 7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.6(@types/node@24.10.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
+
   packages/addon-mcp:
     dependencies:
       '@storybook/mcp':

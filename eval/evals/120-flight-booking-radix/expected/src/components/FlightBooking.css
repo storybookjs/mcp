@@ -1,250 +1,255 @@
 .flight-booking {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 2rem;
+	font-family:
+		-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+		'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 .flight-booking h1 {
-  font-size: 1.75rem;
-  margin-bottom: 1.5rem;
-  color: #1a1a1a;
+	font-size: 1.75rem;
+	margin-bottom: 1.5rem;
+	color: #1a1a1a;
 }
 
 .trip-type {
-  margin-bottom: 1.5rem;
+	margin-bottom: 1.5rem;
 }
 
 .toggle-group {
-  display: inline-flex;
-  background-color: #f3f4f6;
-  border-radius: 0.5rem;
-  padding: 0.25rem;
+	display: inline-flex;
+	background-color: #f3f4f6;
+	border-radius: 0.5rem;
+	padding: 0.25rem;
 }
 
 .toggle-item {
-  padding: 0.5rem 1.5rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #6b7280;
+	padding: 0.5rem 1.5rem;
+	border: none;
+	background: transparent;
+	border-radius: 0.375rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s;
+	color: #6b7280;
 }
 
 .toggle-item:hover {
-  background-color: rgba(255, 255, 255, 0.5);
+	background-color: rgba(255, 255, 255, 0.5);
 }
 
 .toggle-item[data-state='on'] {
-  background-color: white;
-  color: #1a1a1a;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	background-color: white;
+	color: #1a1a1a;
+	box-shadow:
+		0 1px 3px 0 rgba(0, 0, 0, 0.1),
+		0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+	margin-bottom: 1rem;
 }
 
 .form-field {
-  display: flex;
-  flex-direction: column;
+	display: flex;
+	flex-direction: column;
 }
 
 .form-field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: #374151;
+	font-size: 0.875rem;
+	font-weight: 500;
+	margin-bottom: 0.5rem;
+	color: #374151;
 }
 
 .input-trigger {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  background: white;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-  color: #1a1a1a;
+	padding: 0.75rem 1rem;
+	border: 1px solid #d1d5db;
+	border-radius: 0.5rem;
+	background: white;
+	cursor: pointer;
+	text-align: left;
+	font-size: 0.875rem;
+	transition: all 0.2s;
+	color: #1a1a1a;
 }
 
 .input-trigger:hover {
-  border-color: #9ca3af;
+	border-color: #9ca3af;
 }
 
 .input-trigger:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .popover-content {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  padding: 0.5rem;
-  z-index: 50;
-  min-width: 300px;
-  max-height: 400px;
-  overflow: auto;
+	background: white;
+	border-radius: 0.5rem;
+	box-shadow:
+		0 10px 15px -3px rgba(0, 0, 0, 0.1),
+		0 4px 6px -2px rgba(0, 0, 0, 0.05);
+	padding: 0.5rem;
+	z-index: 50;
+	min-width: 300px;
+	max-height: 400px;
+	overflow: auto;
 }
 
 .autocomplete-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
 }
 
 .search-input {
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  width: 100%;
+	padding: 0.5rem;
+	border: 1px solid #d1d5db;
+	border-radius: 0.375rem;
+	font-size: 0.875rem;
+	width: 100%;
 }
 
 .search-input:focus {
-  outline: none;
-  border-color: #3b82f6;
+	outline: none;
+	border-color: #3b82f6;
 }
 
 .airport-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-height: 300px;
-  overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	max-height: 300px;
+	overflow-y: auto;
 }
 
 .airport-item {
-  padding: 0.5rem;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  color: #1a1a1a;
-  transition: background-color 0.15s;
+	padding: 0.5rem;
+	border: none;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+	border-radius: 0.375rem;
+	font-size: 0.875rem;
+	color: #1a1a1a;
+	transition: background-color 0.15s;
 }
 
 .airport-item:hover {
-  background-color: #f3f4f6;
+	background-color: #f3f4f6;
 }
 
 .airport-item:focus {
-  outline: none;
-  background-color: #e5e7eb;
+	outline: none;
+	background-color: #e5e7eb;
 }
 
 .calendar-popover {
-  padding: 1rem;
+	padding: 1rem;
 }
 
 .calendar {
-  width: 280px;
+	width: 280px;
 }
 
 .calendar-header {
-  text-align: center;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #1a1a1a;
+	text-align: center;
+	font-weight: 600;
+	margin-bottom: 1rem;
+	color: #1a1a1a;
 }
 
 .calendar-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 0.25rem;
+	margin-bottom: 0.5rem;
 }
 
 .calendar-weekday {
-  text-align: center;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #6b7280;
-  padding: 0.25rem;
+	text-align: center;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: #6b7280;
+	padding: 0.25rem;
 }
 
 .calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.25rem;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 0.25rem;
 }
 
 .calendar-day {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: all 0.15s;
-  color: #1a1a1a;
+	aspect-ratio: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: transparent;
+	border-radius: 0.375rem;
+	cursor: pointer;
+	font-size: 0.875rem;
+	transition: all 0.15s;
+	color: #1a1a1a;
 }
 
 .calendar-day.empty {
-  cursor: default;
+	cursor: default;
 }
 
 .calendar-day:not(.empty):not(.disabled):hover {
-  background-color: #f3f4f6;
+	background-color: #f3f4f6;
 }
 
 .calendar-day.disabled {
-  color: #d1d5db;
-  cursor: not-allowed;
+	color: #d1d5db;
+	cursor: not-allowed;
 }
 
 .calendar-day.selected {
-  background-color: #3b82f6;
-  color: white;
-  font-weight: 600;
+	background-color: #3b82f6;
+	color: white;
+	font-weight: 600;
 }
 
 .calendar-day:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #3b82f6;
+	outline: none;
+	box-shadow: 0 0 0 2px #3b82f6;
 }
 
 .form-actions {
-  margin-top: 1.5rem;
+	margin-top: 1.5rem;
 }
 
 .submit-button {
-  width: 100%;
-  padding: 0.875rem;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
+	width: 100%;
+	padding: 0.875rem;
+	background-color: #3b82f6;
+	color: white;
+	border: none;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s;
 }
 
 .submit-button:hover {
-  background-color: #2563eb;
+	background-color: #2563eb;
 }
 
 .submit-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
 .submit-button:active {
-  background-color: #1d4ed8;
+	background-color: #1d4ed8;
 }
