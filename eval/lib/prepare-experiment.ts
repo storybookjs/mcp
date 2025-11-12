@@ -24,6 +24,15 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 			!source.includes('node_modules') && !source.includes('dist'),
 	});
 
+	const packageJsonPath = path.join(experimentArgs.projectPath, 'package.json');
+	const { default: packageJson } = await import(packageJsonPath, {
+		with: { type: 'json' },
+	});
+	packageJson.name =
+		`@storybook/mcp-eval--${experimentArgs.evalName}--${path.basename(experimentArgs.experimentPath)}`.toLowerCase();
+
+	await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
 	log.message('Installing dependencies in project');
 	await installDependencies({
 		cwd: experimentArgs.projectPath,
