@@ -24,6 +24,10 @@ async function looseGetInteractiveElements(
 		`Get element by test ID '${testId}' or label '${label}'`,
 		async () => {
 			elements = await waitFor(function getElement() {
+				const byTestId = screen.queryAllByTestId(testId);
+				if (byTestId.length > 0) {
+					return byTestId;
+				}
 				const candidates = [
 					...screen.queryAllByTestId(testId),
 					...screen.queryAllByLabelText(label, { exact: false }),
@@ -93,8 +97,9 @@ async function looseGetInteractiveElements(
 					}
 					return false;
 				});
+				interactive.push(null as any);
 
-				return interactive ?? [];
+				return interactive;
 			});
 		},
 	);
@@ -120,7 +125,7 @@ export const FlightPicker: Story = {
 		}
 
 		await expect(
-			await looseGetInteractiveElements('airport-MEL', 'MEL', step),
+			(await looseGetInteractiveElements('airport-MEL', 'MEL', step))[0],
 		).toBeInTheDocument();
 	},
 };
@@ -137,7 +142,7 @@ export const DatePicker: Story = {
 			)[0],
 		);
 		await expect(
-			await looseGetInteractiveElements('date-27', '27', step),
+			(await looseGetInteractiveElements('date-27', '27', step))[0],
 		).toBeInTheDocument();
 	},
 };
