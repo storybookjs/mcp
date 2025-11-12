@@ -281,6 +281,9 @@
 				font-family: 'Monaco', 'Courier New', monospace;
 				white-space: nowrap;
 				margin-left: 1rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
 			}
 
 			.elapsed-time {
@@ -290,6 +293,33 @@
 				font-family: 'Monaco', 'Courier New', monospace;
 				padding: 0;
 				margin: 0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.5rem;
+			}
+
+			.percentage-badge {
+				font-size: 0.75rem;
+				padding: 0.25rem 0.5rem;
+				border-radius: 4px;
+				font-weight: 600;
+				font-family: 'Monaco', 'Courier New', monospace;
+			}
+
+			.percentage-badge.low {
+				background: #d4edda;
+				color: #155724;
+			}
+
+			.percentage-badge.medium {
+				background: #fff3cd;
+				color: #856404;
+			}
+
+			.percentage-badge.high {
+				background: #f8d7da;
+				color: #721c24;
 			}
 
 			.todo-list {
@@ -486,7 +516,6 @@
 				align-items: center;
 				justify-content: center;
 				z-index: 9999;
-				pointer-events: none;
 			}
 
 			.drop-overlay.visible {
@@ -574,7 +603,8 @@
 					const file = files[0];
 					if (file.name.endsWith('.js')) {
 						const reader = new FileReader();
-						reader.onload = (e) => loadConversationData(e.target.result, false);
+						reader.onload = (readerEvent) =>
+							loadConversationData(readerEvent.target.result, false);
 						reader.readAsText(file);
 					} else {
 						showError('Please drop a .js file');
@@ -625,7 +655,8 @@
 				if (!file) return;
 
 				const reader = new FileReader();
-				reader.onload = (e) => loadConversationData(e.target.result, false);
+				reader.onload = (readerEvent) =>
+					loadConversationData(readerEvent.target.result, false);
 				reader.readAsText(file);
 			});
 
@@ -656,6 +687,16 @@
 				const resultTurn = conversationData.find((t) => t.type === 'result');
 
 				if (!systemTurn && !resultTurn) return;
+
+				// Calculate total message tokens and cost
+				const messageTokens = conversationData.reduce(
+					(sum, turn) => sum + (turn.tokenCount || 0),
+					0,
+				);
+				const messageCost = conversationData.reduce(
+					(sum, turn) => sum + (turn.costUSD || 0),
+					0,
+				);
 
 				const cards = [];
 
@@ -710,10 +751,32 @@
 						});
 					}
 
+					// Add total tokens card with split
+					if (resultTurn.usage) {
+						const totalTokens =
+							(resultTurn.usage.input_tokens ?? 0) +
+							(resultTurn.usage.cache_read_input_tokens ?? 0) +
+							(resultTurn.usage.cache_creation_input_tokens ?? 0) +
+							(resultTurn.usage.output_tokens ?? 0);
+						const systemTokens = totalTokens - messageTokens;
+						cards.push({
+							title: 'Total Tokens',
+							html: `
+								<div class="value">${totalTokens.toLocaleString()}</div>
+								<div class="subvalue">System: ${systemTokens.toLocaleString()}</div>
+								<div class="subvalue">Messages: ${messageTokens.toLocaleString()}</div>
+							`,
+						});
+					} // Update total cost card with split
 					if (resultTurn.total_cost_usd !== undefined) {
+						const systemCost = resultTurn.total_cost_usd - messageCost;
 						cards.push({
 							title: 'Total Cost',
-							value: `$${resultTurn.total_cost_usd.toFixed(4)}`,
+							html: `
+								<div class="value">$${resultTurn.total_cost_usd.toFixed(4)}</div>
+								<div class="subvalue">System: $${systemCost.toFixed(4)}</div>
+								<div class="subvalue">Messages: $${messageCost.toFixed(4)}</div>
+							`,
 						});
 					}
 				}
@@ -764,6 +827,15 @@
 					['assistant', 'user', 'system', 'result'].includes(t.type),
 				);
 
+				// Calculate total time
+				const totalTime = turns.reduce((sum, turn) => sum + (turn.ms || 0), 0);
+
+				// Calculate total message tokens
+				const totalMessageTokens = conversationData.reduce(
+					(sum, turn) => sum + (turn.tokenCount || 0),
+					0,
+				);
+
 				const groupedTurns = groupToolCallsWithResults(turns);
 				const html = groupedTurns
 					.map((group, index) => {
@@ -782,13 +854,19 @@
 							const currentTurn = group.toolCall || group.turn;
 							const elapsedMs = currentTurn.ms;
 							if (elapsedMs >= 50) {
-								turnHtml += `<div class="elapsed-time">${(elapsedMs / 1000).toFixed(1)}s</div>`;
+								const percentage = (elapsedMs / totalTime) * 100;
+								turnHtml += formatElapsedTime(elapsedMs, percentage);
 							}
 						}
 
 						turnHtml += group.toolCall
-							? renderToolCallGroup(group.toolCall, group.toolResult, index)
-							: renderTurn(group.turn, index);
+							? renderToolCallGroup(
+									group.toolCall,
+									group.toolResult,
+									index,
+									totalMessageTokens,
+								)
+							: renderTurn(group.turn, index, totalMessageTokens);
 
 						return turnHtml;
 					})
@@ -822,6 +900,20 @@
 						btn.textContent = isExpanded ? 'Show more' : 'Show less';
 					});
 				});
+			}
+
+			function formatElapsedTime(elapsedMs, percentage) {
+				const percentClass = getPercentageClass(percentage);
+				return `<div class="elapsed-time">
+					<span>${(elapsedMs / 1000).toFixed(1)}s</span>
+					<span class="percentage-badge ${percentClass}">${percentage.toFixed(1)}%</span>
+				</div>`;
+			}
+
+			function getPercentageClass(percentage) {
+				if (percentage < 10) return 'low';
+				if (percentage < 20) return 'medium';
+				return 'high';
 			}
 
 			function groupToolCallsWithResults(turns) {
@@ -883,7 +975,12 @@
 					.join('')}</div>`;
 			}
 
-			function renderToolCallGroup(toolCall, toolResult, index) {
+			function renderToolCallGroup(
+				toolCall,
+				toolResult,
+				index,
+				totalMessageTokens,
+			) {
 				const toolUse = toolCall.message.content.find(
 					(c) => c.type === 'tool_use',
 				);
@@ -893,7 +990,11 @@
 				const additionalInfo = extractToolAdditionalInfo(toolUse, toolName);
 				const inputHtml = renderToolInput(toolUse, toolName);
 				const outputHtml = renderToolOutput(toolResult, isMCP);
-				const tokenCostHtml = formatToolTokenCost(toolCall, toolResult);
+				const tokenCostHtml = formatToolTokenCost(
+					toolCall,
+					toolResult,
+					totalMessageTokens,
+				);
 
 				return `
         <div class="turn ${isMCP ? 'mcp-tool' : ''}" data-index="${index}">
@@ -1056,10 +1157,12 @@ ${newString
 				return renderContentSection('Output', toolResultContent.content);
 			}
 
-			function formatToolTokenCost(toolCall, toolResult) {
+			function formatToolTokenCost(toolCall, toolResult, totalMessageTokens) {
 				const parts = [];
+				let totalTokens = 0;
 
 				if (toolCall.tokenCount !== undefined) {
+					totalTokens += toolCall.tokenCount;
 					const cost =
 						toolCall.costUSD !== undefined
 							? ` ($${toolCall.costUSD.toFixed(4)})`
@@ -1068,6 +1171,7 @@ ${newString
 				}
 
 				if (toolResult?.tokenCount !== undefined) {
+					totalTokens += toolResult.tokenCount;
 					const cost =
 						toolResult.costUSD !== undefined
 							? ` ($${toolResult.costUSD.toFixed(4)})`
@@ -1075,12 +1179,19 @@ ${newString
 					parts.push(`${toolResult.tokenCount.toLocaleString()} tokens${cost}`);
 				}
 
-				return parts.length > 0
-					? `<span class="turn-spacer"></span><span class="token-count">${parts.join(' + ')}</span>`
-					: '';
+				if (parts.length === 0) return '';
+
+				const percentage =
+					totalMessageTokens > 0 ? (totalTokens / totalMessageTokens) * 100 : 0;
+				const percentClass = getPercentageClass(percentage);
+
+				return `<span class="turn-spacer"></span><span class="token-count">
+					<span>${parts.join(' + ')}</span>
+					<span class="percentage-badge ${percentClass}">${percentage.toFixed(1)}%</span>
+				</span>`;
 			}
 
-			function renderTurn(turn, index) {
+			function renderTurn(turn, index, totalMessageTokens) {
 				const isMCP =
 					turn.type === 'assistant' &&
 					turn.message?.content?.some(
@@ -1093,7 +1204,11 @@ ${newString
 					: turn.type === 'system' || turn.type === 'result'
 						? renderSystemOrResult(turn)
 						: '';
-				const tokenCostHtml = formatTokenCost(turn.tokenCount, turn.costUSD);
+				const tokenCostHtml = formatTokenCost(
+					turn.tokenCount,
+					turn.costUSD,
+					totalMessageTokens,
+				);
 
 				return `
         <div class="turn ${isMCP ? 'mcp-tool' : ''}" data-index="${index}">
@@ -1193,10 +1308,16 @@ ${newString
       `;
 			}
 
-			function formatTokenCost(tokens, cost) {
+			function formatTokenCost(tokens, cost, totalMessageTokens) {
 				if (tokens === undefined) return '';
 				const costStr = cost !== undefined ? ` ($${cost.toFixed(4)})` : '';
-				return `<span class="turn-spacer"></span><span class="token-count">${tokens.toLocaleString()} tokens${costStr}</span>`;
+				const percentage =
+					totalMessageTokens > 0 ? (tokens / totalMessageTokens) * 100 : 0;
+				const percentClass = getPercentageClass(percentage);
+				return `<span class="turn-spacer"></span><span class="token-count">
+					<span>${tokens.toLocaleString()} tokens${costStr}</span>
+					<span class="percentage-badge ${percentClass}">${percentage.toFixed(1)}%</span>
+				</span>`;
 			}
 
 			function truncateText(text, maxLength) {
