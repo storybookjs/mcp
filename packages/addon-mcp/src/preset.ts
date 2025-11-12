@@ -7,8 +7,10 @@ import { isManifestAvailable } from './tools/is-manifest-available.ts';
 export const experimental_devServer: PresetProperty<
 	'experimental_devServer'
 > = async (app, options) => {
+	// There is error handling here. The can make the whole storybook app crash with.
+	// ValiError: Invalid type: Expected boolean but received "false"
 	const addonOptions = v.parse(AddonOptions, {
-		toolsets: (options as AddonOptionsInput).toolsets ?? {},
+		toolsets: 'toolsets' in options ? options.toolsets : {},
 	});
 
 	app!.post('/mcp', (req, res, next) =>
