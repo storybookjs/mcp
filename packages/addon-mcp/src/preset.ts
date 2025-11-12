@@ -1,6 +1,6 @@
 import { mcpServerHandler } from './mcp-handler.ts';
 import type { PresetProperty } from 'storybook/internal/types';
-import { AddonOptions, type AddonOptionsInput } from './types.ts';
+import { AddonOptions } from './types.ts';
 import * as v from 'valibot';
 import { isManifestAvailable } from './tools/is-manifest-available.ts';
 
@@ -33,7 +33,7 @@ export const experimental_devServer: PresetProperty<
 			res.writeHead(200, { 'Content-Type': 'text/html' });
 			res.end(`
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
 					<head>
 						${shouldRedirect ? '<meta http-equiv="refresh" content="10;url=/manifests/components.html" />' : ''}
 						<style>
