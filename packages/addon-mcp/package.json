@@ -41,7 +41,6 @@
 		"valibot": "catalog:"
 	},
 	"devDependencies": {
-		"publint": "catalog:",
 		"storybook": "catalog:",
 		"ts-dedent": "^2.2.0"
 	},
