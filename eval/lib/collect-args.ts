@@ -163,7 +163,7 @@ export async function collectArgs() {
 				return result;
 			},
 			description: async function (): Promise<string | undefined> {
-				if (parsedArgValues.description) {
+				if (parsedArgValues.description !== undefined) {
 					rerunCommandParts.push(
 						'--description',
 						`"${parsedArgValues.description}"`,

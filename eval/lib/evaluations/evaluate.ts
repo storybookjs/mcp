@@ -5,7 +5,7 @@ import type {
 } from '../../types';
 import { saveEnvironment } from './environment.ts';
 import { runESLint } from './lint.ts';
-import { setupEvaluations } from './setup-evaluations.ts';
+import { prepareEvaluations } from './prepare-evaluations.ts';
 import { testStories } from './test-stories.ts';
 import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
@@ -79,9 +79,9 @@ export async function evaluate(
 	const log = createTaskLogger(experimentArgs.verbose, 'Evaluating');
 	await experimentArgs.hooks.preEvaluate?.(experimentArgs, log);
 
-	log.start('Setting up evaluations');
-	await setupEvaluations(experimentArgs);
-	log.success('Evaluations set up completed');
+	log.start('Preparing evaluations');
+	await prepareEvaluations(experimentArgs);
+	log.success('Evaluations prepared');
 
 	const buildTask = async () => {
 		log.start('Building project');

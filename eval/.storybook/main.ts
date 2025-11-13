@@ -16,6 +16,7 @@ const config: StorybookConfig = {
 	stories: [
 		'../evals/*/experiments/*/project/stories/*.stories.@(js|jsx|mjs|ts|tsx)',
 		'../evals/*/expected/stories/*.stories.@(js|jsx|mjs|ts|tsx)',
+		'../templates/result-docs/*.stories.@(js|jsx|mjs|ts|tsx)',
 	],
 	addons: [
 		getAbsolutePath('@storybook/addon-a11y'),

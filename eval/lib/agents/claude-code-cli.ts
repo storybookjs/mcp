@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import { styleText } from 'node:util';
 import type { Agent } from '../../types';
 import { spinner, taskLog } from '@clack/prompts';
-import { dedent } from 'ts-dedent';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 
 interface BaseMessage {
@@ -420,19 +419,11 @@ export const claudeCodeCli: Agent = {
 				content: [{ type: 'text', text: prompt }],
 			}),
 		);
-		const promptCost = promptTokenCount * model.pricing.input;
 
-		await Promise.all([
-			fs.writeFile(
-				path.join(resultsPath, 'full-conversation.js'),
-				dedent`const prompt = \`${prompt}\`;
-				const promptTokenCount = ${promptTokenCount};
-				const promptCost = ${promptCost};
-				const messages = ${JSON.stringify(messages, null, 2)};	
-				globalThis.loadConversation?.({ prompt, promptTokenCount, promptCost, messages });`,
-			),
-		]);
-
+		await fs.writeFile(
+			path.join(resultsPath, 'conversation.json'),
+			JSON.stringify({ prompt, promptTokenCount, messages }, null, 2),
+		);
 		const result = {
 			cost: Number(resultMessage.total_cost_usd.toFixed(4)),
 			duration: Math.round(resultMessage.duration_ms / 1000),

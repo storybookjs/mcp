@@ -151,11 +151,6 @@ p.log.message(
 	`Inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
 );
 
-const conversationViewerUrl = `file://${path.resolve('conversation-viewer.html')}?path=${path.relative(process.cwd(), path.join(resultsPath, 'full-conversation.js'))}`;
-p.log.message(
-	`View the conversation log at:\n\u001b]8;;${conversationViewerUrl}\u0007${conversationViewerUrl}\u001b]8;;\u0007`,
-);
-
 const startStorybook =
 	args.storybook !== undefined
 		? args.storybook

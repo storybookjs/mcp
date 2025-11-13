@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import { addDevDependency } from 'nypm';
 import type { ExperimentArgs } from '../../types';
 
-export async function setupEvaluations({
+export async function prepareEvaluations({
 	projectPath,
 	evalPath,
 }: ExperimentArgs) {
@@ -12,9 +12,10 @@ export async function setupEvaluations({
 			'vitest@catalog:',
 			'@vitest/browser-playwright@catalog:',
 			'storybook@catalog:',
-			'@storybook/react-vite@catalog:',
-			'@storybook/addon-vitest@catalog:',
+			'@storybook/addon-docs@catalog:',
 			'@storybook/addon-a11y@catalog:',
+			'@storybook/addon-vitest@catalog:',
+			'@storybook/react-vite@catalog:',
 			'eslint-plugin-storybook@catalog:',
 		],
 		{ cwd: projectPath, silent: true },

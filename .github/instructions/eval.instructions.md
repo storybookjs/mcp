@@ -44,7 +44,7 @@ eval/
 │   │   └── claude-code-cli.ts       # Claude Code CLI agent implementation
 │   └── evaluations/
 │       ├── evaluate.ts              # Main evaluation orchestrator
-│       ├── setup-evaluations.ts     # Install test dependencies
+│       ├── prepare-evaluations.ts   # Install test dependencies
 │       ├── build.ts                 # Vite build check
 │       ├── typecheck.ts             # TypeScript checking
 │       ├── lint.ts                  # ESLint execution
@@ -241,7 +241,7 @@ const result = await p.group({
   - Runs checks in parallel: build, typecheck, lint, test, environment
   - Creates unified logging interface (verbose vs. normal)
   - Formats results and optionally uploads
-- `lib/evaluations/setup-evaluations.ts` - Installs test dependencies
+- `lib/evaluations/prepare-evaluations.ts` - Installs test dependencies
 - `lib/evaluations/build.ts` - Vite build verification
 - `lib/evaluations/typecheck.ts` - TypeScript compilation check
 - `lib/evaluations/lint.ts` - ESLint execution
