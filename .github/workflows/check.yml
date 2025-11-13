@@ -50,7 +50,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run tests with coverage
-        run: pnpm test --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm turbo run test --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml
 
       - name: Upload test and coverage artifact
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
