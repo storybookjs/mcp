@@ -1,6 +1,6 @@
 {
 	"name": "@storybook/mcp",
-	"version": "0.0.6",
+	"version": "0.0.7-next.0",
 	"description": "MCP server that serves knowledge about your components based on your Storybook stories and documentation",
 	"keywords": [
 		"storybook",
@@ -8,8 +8,7 @@
 	],
 	"homepage": "https://github.com/storybookjs/mcp/blob/main/packages/mcp/README.md",
 	"repository": {
-		"type": "git",
-		"url": "https://github.com/storybookjs/mcp.git",
+		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/mcp"
 	},
 	"license": "MIT",
@@ -28,8 +27,9 @@
 	"scripts": {
 		"build": "tsdown",
 		"dev": "node --watch ./serve.ts",
-		"test": "vitest",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-mcp",
+		"publint": "publint",
+		"test": "vitest",
 		"typecheck": "tsc"
 	},
 	"dependencies": {

@@ -18,7 +18,6 @@
 		"dev": {
 			"persistent": true
 		},
-
 		"storybook": {
 			"dependsOn": ["^build"],
 			"persistent": true,
@@ -28,6 +27,10 @@
 			"outputs": ["coverage/**"]
 		},
 		"typecheck": {},
-		"//#typecheck": {}
+		"//#typecheck": {},
+		"publint": {
+			"dependsOn": ["build"],
+			"outputs": []
+		}
 	}
 }
