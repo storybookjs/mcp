@@ -25,7 +25,7 @@ export const experimental_devServer: PresetProperty<
 
 	const shouldRedirect = await isManifestAvailable(options);
 
-	app!.get('/mcp', async (req, res, next) => {
+	app!.get('/mcp', async (req, res) => {
 		const acceptHeader = req.headers['accept'] || '';
 
 		if (acceptHeader.includes('text/html')) {
