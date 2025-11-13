@@ -305,23 +305,8 @@
 				border-radius: 4px;
 				font-weight: 600;
 				font-family: 'Monaco', 'Courier New', monospace;
+				border: 1px solid #ddd;
 			}
-
-			.percentage-badge.low {
-				background: #d4edda;
-				color: #155724;
-			}
-
-			.percentage-badge.medium {
-				background: #fff3cd;
-				color: #856404;
-			}
-
-			.percentage-badge.high {
-				background: #f8d7da;
-				color: #721c24;
-			}
-
 			.todo-list {
 				color: #333;
 				font-size: 0.875rem;
@@ -721,16 +706,19 @@
 						});
 					}
 
-					if (systemTurn.mcp_servers?.length > 0) {
-						cards.push({
-							title: 'MCP Servers',
-							html: `<div class="mcp-servers">${systemTurn.mcp_servers
-								.map(
-									(s) => `<div class="mcp-server ${s.status}">${s.name}</div>`,
-								)
-								.join('')}</div>`,
-						});
-					}
+					const mcpServersHtml =
+						systemTurn.mcp_servers?.length > 0
+							? `<div class="mcp-servers">${systemTurn.mcp_servers
+									.map(
+										(s) =>
+											`<div class="mcp-server ${s.status}">${s.name}</div>`,
+									)
+									.join('')}</div>`
+							: '<div class="value">None</div>';
+					cards.push({
+						title: 'MCP Servers',
+						html: mcpServersHtml,
+					});
 				}
 
 				if (resultTurn) {
@@ -751,32 +739,18 @@
 						});
 					}
 
-					// Add total tokens card with split
-					if (resultTurn.usage) {
-						const totalTokens =
-							(resultTurn.usage.input_tokens ?? 0) +
-							(resultTurn.usage.cache_read_input_tokens ?? 0) +
-							(resultTurn.usage.cache_creation_input_tokens ?? 0) +
-							(resultTurn.usage.output_tokens ?? 0);
-						const systemTokens = totalTokens - messageTokens;
+					// Add total message tokens card
+					if (messageTokens > 0) {
 						cards.push({
-							title: 'Total Tokens',
-							html: `
-								<div class="value">${totalTokens.toLocaleString()}</div>
-								<div class="subvalue">System: ${systemTokens.toLocaleString()}</div>
-								<div class="subvalue">Messages: ${messageTokens.toLocaleString()}</div>
-							`,
+							title: 'Total Message Tokens',
+							value: messageTokens.toLocaleString(),
 						});
-					} // Update total cost card with split
+					}
+
 					if (resultTurn.total_cost_usd !== undefined) {
-						const systemCost = resultTurn.total_cost_usd - messageCost;
 						cards.push({
 							title: 'Total Cost',
-							html: `
-								<div class="value">$${resultTurn.total_cost_usd.toFixed(4)}</div>
-								<div class="subvalue">System: $${systemCost.toFixed(4)}</div>
-								<div class="subvalue">Messages: $${messageCost.toFixed(4)}</div>
-							`,
+							value: `$${resultTurn.total_cost_usd.toFixed(4)}`,
 						});
 					}
 				}
@@ -903,19 +877,26 @@
 			}
 
 			function formatElapsedTime(elapsedMs, percentage) {
-				const percentClass = getPercentageClass(percentage);
+				const percentStyle = getPercentageClass(percentage);
 				return `<div class="elapsed-time">
 					<span>${(elapsedMs / 1000).toFixed(1)}s</span>
-					<span class="percentage-badge ${percentClass}">${percentage.toFixed(1)}%</span>
+					<span class="percentage-badge" ${percentStyle}>${percentage.toFixed(1)}%</span>
 				</div>`;
 			}
 
 			function getPercentageClass(percentage) {
-				if (percentage < 10) return 'low';
-				if (percentage < 20) return 'medium';
-				return 'high';
+				// Calculate color from very light (almost white) to red based on percentage
+				// At 0-5%: light gray, at 30%+: red
+				const adjustedPercentage = Math.max(0, percentage - 5);
+				const intensity = Math.min(adjustedPercentage / 25, 1); // Cap at 30% (5 + 25) for full red
+				const red = Math.round(245 + (248 - 245) * intensity);
+				const green = Math.round(245 * (1 - intensity));
+				const blue = Math.round(245 * (1 - intensity));
+				const bgColor = `rgb(${red}, ${green}, ${blue})`;
+				// Use white text for better readability at higher intensities
+				const textColor = intensity > 0.4 ? '#ffffff' : '#666';
+				return `style="background: ${bgColor}; color: ${textColor}"`;
 			}
-
 			function groupToolCallsWithResults(turns) {
 				const grouped = [];
 				const usedResultIndices = new Set();
@@ -1163,31 +1144,23 @@ ${newString
 
 				if (toolCall.tokenCount !== undefined) {
 					totalTokens += toolCall.tokenCount;
-					const cost =
-						toolCall.costUSD !== undefined
-							? ` ($${toolCall.costUSD.toFixed(4)})`
-							: '';
-					parts.push(`${toolCall.tokenCount.toLocaleString()} tokens${cost}`);
+					parts.push(`${toolCall.tokenCount.toLocaleString()} tokens`);
 				}
 
 				if (toolResult?.tokenCount !== undefined) {
 					totalTokens += toolResult.tokenCount;
-					const cost =
-						toolResult.costUSD !== undefined
-							? ` ($${toolResult.costUSD.toFixed(4)})`
-							: '';
-					parts.push(`${toolResult.tokenCount.toLocaleString()} tokens${cost}`);
+					parts.push(`${toolResult.tokenCount.toLocaleString()} tokens`);
 				}
 
 				if (parts.length === 0) return '';
 
 				const percentage =
 					totalMessageTokens > 0 ? (totalTokens / totalMessageTokens) * 100 : 0;
-				const percentClass = getPercentageClass(percentage);
+				const percentStyle = getPercentageClass(percentage);
 
 				return `<span class="turn-spacer"></span><span class="token-count">
 					<span>${parts.join(' + ')}</span>
-					<span class="percentage-badge ${percentClass}">${percentage.toFixed(1)}%</span>
+					<span class="percentage-badge" ${percentStyle}>${percentage.toFixed(1)}%</span>
 				</span>`;
 			}
 
@@ -1310,13 +1283,12 @@ ${newString
 
 			function formatTokenCost(tokens, cost, totalMessageTokens) {
 				if (tokens === undefined) return '';
-				const costStr = cost !== undefined ? ` ($${cost.toFixed(4)})` : '';
 				const percentage =
 					totalMessageTokens > 0 ? (tokens / totalMessageTokens) * 100 : 0;
-				const percentClass = getPercentageClass(percentage);
+				const percentStyle = getPercentageClass(percentage);
 				return `<span class="turn-spacer"></span><span class="token-count">
-					<span>${tokens.toLocaleString()} tokens${costStr}</span>
-					<span class="percentage-badge ${percentClass}">${percentage.toFixed(1)}%</span>
+					<span>${tokens.toLocaleString()} tokens</span>
+					<span class="percentage-badge" ${percentStyle}>${percentage.toFixed(1)}%</span>
 				</span>`;
 			}
 
