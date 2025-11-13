@@ -46,7 +46,6 @@ export const experimental_devServer: PresetProperty<
 			return await mcpServerHandler({
 				req,
 				res,
-				next,
 				options,
 				addonOptions,
 			});
