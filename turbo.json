@@ -5,6 +5,7 @@
 		"STORYBOOK_DISABLE_TELEMETRY",
 		"STORYBOOK_TELEMETRY_DEBUG"
 	],
+	"ui": "tui",
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],
@@ -17,18 +18,16 @@
 		"dev": {
 			"persistent": true
 		},
+
 		"storybook": {
 			"dependsOn": ["^build"],
-			"with": ["@storybook/addon-mcp#dev"],
 			"persistent": true,
 			"interruptible": true
 		},
-		"test": {
-			"dependsOn": ["^build"]
+		"//#test": {
+			"outputs": ["coverage/**"]
 		},
-		"typecheck": {
-			"dependsOn": ["^build"],
-			"outputs": []
-		}
+		"typecheck": {},
+		"//#typecheck": {}
 	}
 }
