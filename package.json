@@ -9,8 +9,6 @@
 	},
 	"type": "module",
 	"scripts": {
-		"build": "turbo run build",
-		"build-storybook": "turbo run build-storybook",
 		"changeset": "changeset",
 		"dev": "turbo run dev",
 		"format": "prettier --write .",
@@ -20,7 +18,6 @@
 		"lint:ci": "oxlint --format github --type-aware",
 		"check": "turbo run build build-storybook format lint publint typecheck test --continue",
 		"check:watch": "turbo watch build build-storybook format lint publint typecheck test --continue --experimental-write-cache",
-		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
 		"test": "vitest run",
 		"test:ci": "vitest run --coverage --reporter=default --reporter=github-actions --reporter=junit --outputFile=test-report.junit.xml",
