@@ -1,5 +1,5 @@
 name: 'Setup Node.js and Dependencies'
-description: 'Sets up Node.js, caches and installs dependencies'
+description: 'Sets up Node.js, caches, installs dependencies and turbo cache'
 
 runs:
   using: 'composite'
