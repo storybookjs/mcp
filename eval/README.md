@@ -12,6 +12,9 @@ This framework runs automated experiments where AI coding agents (like Claude Co
 
 The goal is to measure how well agents can use Storybook's MCP tools to build production-quality components.
 
+> [!NOTE]
+> All eval results that are uploaded (opt-outable) are publicly available in [this Google Sheet](https://docs.google.com/spreadsheets/d/1TAvPyK6S6J-Flc1-gNrQpwmd6NWVXoTrQhaQ35y13vw/edit?usp=sharing).
+
 ## Quick Start
 
 ```bash

@@ -450,7 +450,7 @@ export async function collectArgs() {
 
 				const result = await p.confirm({
 					message:
-						'Do you want to upload the results to the public results-table at the end of the run?',
+						'Do you want to upload the results to a public Google Sheet at the end of the run?',
 					initialValue: true,
 				});
 				if (p.isCancel(result)) {
