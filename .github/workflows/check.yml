@@ -22,8 +22,26 @@ jobs:
         with:
           fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
-      - name: Setup Node.js and Install Dependencies
-        uses: ./.github/actions/setup-node-and-install-new
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+
+      - name: Cache for Turbo
+        uses: rharkor/caching-for-turbo@v2.3.2
+
+      - name: Install dependencies
+        if: ${{ inputs.install-offline != 'true' }}
+        shell: bash
+        run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
+
+      - name: Prune pnpm store
+        shell: bash
+        run: pnpm prune store
 
       - name: Build
         run: pnpm turbo run build
