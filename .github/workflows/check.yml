@@ -11,21 +11,6 @@ permissions:
   id-token: write # used to upload artifacts to codecov
 
 jobs:
-  check-everything:
-    name: All checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
-
-      - name: Setup Node.js and Install Dependencies
-        uses: ./.github/actions/setup-node-and-install
-
-      - name: check
-        run: pnpm check-everything
-
   build:
     name: Build
     runs-on: ubuntu-latest
