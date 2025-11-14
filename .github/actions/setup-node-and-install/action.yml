@@ -13,6 +13,6 @@ runs:
         cache: pnpm
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
     - name: Cache for Turbo
       uses: rharkor/caching-for-turbo@v2.3.2
