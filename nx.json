@@ -1,6 +1,6 @@
 {
-  "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "targetDefaults": {
+	"$schema": "./node_modules/nx/schemas/nx-schema.json",
+	"targetDefaults": {
 		"build": {
 			"dependsOn": ["^build"],
 			"outputs": ["{projectRoot}/dist/**"],
@@ -11,27 +11,21 @@
 			"outputs": ["{projectRoot}/storybook-static/**"],
 			"cache": true
 		},
-		"dev": {
-			"cache": true
-		},
-		"storybook": {
-			"dependsOn": ["^build"],
-			"cache": true
-		},
-		"typecheck": {
-			"cache": true
-		},
-		"publint": {
-			"dependsOn": ["build"],
-			"cache": true
-		},
+		"dev": { "cache": true },
+		"storybook": { "dependsOn": ["^build"], "cache": true },
+		"typecheck": { "cache": true },
+		"publint": { "dependsOn": ["build"], "cache": true },
 		"format": {},
 		"format:check": {},
 		"lint": {},
 		"lint:ci": {},
 		"test": {},
 		"test:ci": {
-			"outputs": ["{projectRoot}/coverage/**", "{projectRoot}/test-report.junit.xml"]
+			"outputs": [
+				"{projectRoot}/coverage/**",
+				"{projectRoot}/test-report.junit.xml"
+			]
 		}
-	}
+	},
+	"nxCloudId": "6917a9e60e94ecbfdc98d0a9"
 }
