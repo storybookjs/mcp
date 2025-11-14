@@ -1,0 +1,31 @@
+name: 'Setup Node.js and Dependencies'
+description: 'Sets up Node.js, caches, installs dependencies and turbo cache'
+
+inputs:
+  install-offline:
+    description: 'Install offline for speed?'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/share/pnpm/store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Cache for Turbo
+      uses: rharkor/caching-for-turbo@v2.3.2
+
+    - name: Install dependencies
+      if: ${{ inputs.install-offline != 'true' }}
+      shell: bash
+      run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
+
+    - name: Prune pnpm store
+      shell: bash
+      run: pnpm prune store
