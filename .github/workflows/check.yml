@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   check-everything:
-    name: Build
+    name: All checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
