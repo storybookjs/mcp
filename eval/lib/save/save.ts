@@ -12,7 +12,7 @@ export async function save(
 	experimentArgs: ExperimentArgs,
 	evaluationSummary: EvaluationSummary,
 	executionSummary: ExecutionSummary,
-): Promise<void> {
+): Promise<string | undefined> {
 	const log = taskLog({
 		title: `Saving ${experimentArgs.upload ? 'and uploading ' : ''}results`,
 		retainLog: experimentArgs.verbose,
@@ -25,7 +25,7 @@ export async function save(
 	if (!experimentArgs.upload) {
 		await experimentArgs.hooks.postSave?.(experimentArgs, log);
 		log.success('Save complete, upload disabled!');
-		return;
+		return undefined;
 	}
 
 	// Build Storybook and upload to Chromatic
@@ -50,4 +50,5 @@ export async function save(
 
 	await experimentArgs.hooks.postSave?.(experimentArgs, log);
 	log.success('Upload complete!');
+	return storybookUrl;
 }

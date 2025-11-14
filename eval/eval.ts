@@ -148,11 +148,18 @@ p.log.message(
 );
 p.log.message(`💰 Cost: $${promptSummary.cost}`);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
-p.log.message(
-	`Inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
+
+const chromaticUrl = await save(
+	experimentArgs,
+	evaluationSummary,
+	promptSummary,
 );
 
-await save(experimentArgs, evaluationSummary, promptSummary);
+if (chromaticUrl) {
+	p.log.message(
+		`🔍 View results at:\n\u001b]8;;${chromaticUrl}\u0007${chromaticUrl}\u001b]8;;\u0007`,
+	);
+}
 
 const startStorybook =
 	args.storybook !== undefined
