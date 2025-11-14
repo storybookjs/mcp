@@ -25,8 +25,9 @@
 		},
 		"//#format": {},
 		"//#lint": {},
-		"//#test": {
-			"outputs": ["coverage/**"]
+		"//#test": {},
+		"//#test:ci": {
+			"outputs": ["coverage/**", "test-report.junit.xml"]
 		},
 		"typecheck": {},
 		"//#typecheck": {},

@@ -20,6 +20,7 @@
 		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
 		"test": "vitest run",
+		"test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml",
 		"typecheck": "tsc",
 		"turbo": "turbo",
 		"turbo:test": "turbo run test",
