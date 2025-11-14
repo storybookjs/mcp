@@ -5,6 +5,7 @@ import * as fs from 'node:fs/promises';
 import type { ExperimentArgs } from './types.ts';
 import { prepareExperiment } from './lib/prepare-experiment.ts';
 import { evaluate } from './lib/evaluations/evaluate.ts';
+import { save } from './lib/save/save.ts';
 import { collectArgs } from './lib/collect-args.ts';
 import { generatePrompt } from './lib/generate-prompt.ts';
 import { x } from 'tinyexec';
@@ -100,7 +101,7 @@ const promptSummary = await agent.execute(
 		: undefined,
 );
 
-const evaluationSummary = await evaluate(experimentArgs, promptSummary);
+const evaluationSummary = await evaluate(experimentArgs);
 
 await fs.writeFile(
 	path.join(resultsPath, 'summary.json'),
@@ -150,6 +151,8 @@ p.log.message(`🔄 Turns: ${promptSummary.turns}`);
 p.log.message(
 	`Inspect the experiment results at:\n cd ./${path.relative(process.cwd(), resultsPath)}`,
 );
+
+await save(experimentArgs, evaluationSummary, promptSummary);
 
 const startStorybook =
 	args.storybook !== undefined

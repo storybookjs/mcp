@@ -62,10 +62,13 @@ function doPost(e) {
 		const targetRow = lastRow < 1 ? 2 : lastRow + 1;
 		sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
 
-		// Auto-resize columns on first few rows
-		if (targetRow <= 10) {
-			sheet.autoResizeColumns(1, rowData.length);
+		// Handle chromaticUrl as a hyperlink
+		const chromaticUrlIndex = keys.indexOf('chromaticUrl');
+		if (chromaticUrlIndex !== -1 && data.chromaticUrl) {
+			const cell = sheet.getRange(targetRow, chromaticUrlIndex + 1);
+			cell.setFormula(`=HYPERLINK("${data.chromaticUrl}", "See results")`);
 		}
+		sheet.autoResizeColumns(1, rowData.length);
 
 		return ContentService.createTextOutput(
 			JSON.stringify({

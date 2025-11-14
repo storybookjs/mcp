@@ -1,15 +1,9 @@
-import type {
-	EvaluationSummary,
-	ExperimentArgs,
-	ExecutionSummary,
-} from '../../types';
-import { saveEnvironment } from './environment.ts';
+import type { EvaluationSummary, ExperimentArgs } from '../../types';
 import { runESLint } from './lint.ts';
 import { prepareEvaluations } from './prepare-evaluations.ts';
 import { testStories } from './test-stories.ts';
 import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
-import { saveToSheets } from './save-to-sheets.ts';
 import { taskLog, spinner } from '@clack/prompts';
 import { x } from 'tinyexec';
 
@@ -74,7 +68,6 @@ function createTaskLogger(verbose: boolean, title: string): TaskLogger {
 
 export async function evaluate(
 	experimentArgs: ExperimentArgs,
-	executionSummary: ExecutionSummary,
 ): Promise<EvaluationSummary> {
 	const log = createTaskLogger(experimentArgs.verbose, 'Evaluating');
 	await experimentArgs.hooks.preEvaluate?.(experimentArgs, log);
@@ -130,46 +123,8 @@ export async function evaluate(
 		return result;
 	};
 
-	const saveEnvTask = async () => {
-		log.start('Saving environment');
-		const env = await saveEnvironment(experimentArgs);
-		log.success('Environment saved');
-		return env;
-	};
-
-	const saveSheetsTask = async (
-		evaluationSummary: EvaluationSummary,
-		environment: { branch: string; commit: string },
-	) => {
-		if (!experimentArgs.upload) {
-			return;
-		}
-		const uploadSpinner = spinner();
-		uploadSpinner.start('Uploading results');
-		try {
-			await saveToSheets(
-				experimentArgs,
-				evaluationSummary,
-				executionSummary,
-				environment,
-			);
-			uploadSpinner.stop('Uploaded results to Google Sheets');
-		} catch (error) {
-			uploadSpinner.stop(
-				`Failed to upload results: ${error instanceof Error ? error.message : String(error)}`,
-				1,
-			);
-		}
-	};
-
-	const [buildSuccess, typeCheckErrors, lintErrors, testResults, environment] =
-		await Promise.all([
-			buildTask(),
-			typeCheckTask(),
-			lintTask(),
-			testTask(),
-			saveEnvTask(),
-		]);
+	const [buildSuccess, typeCheckErrors, lintErrors, testResults] =
+		await Promise.all([buildTask(), typeCheckTask(), lintTask(), testTask()]);
 
 	log.start('Formatting results');
 	await x('pnpm', ['exec', 'prettier', '--write', experimentArgs.resultsPath]);
@@ -181,8 +136,6 @@ export async function evaluate(
 		lintErrors,
 		...testResults,
 	};
-
-	await saveSheetsTask(evaluationSummary, environment);
 
 	await experimentArgs.hooks.postEvaluate?.(experimentArgs, log);
 	log.complete('Evaluation completed');

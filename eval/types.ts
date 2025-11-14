@@ -97,4 +97,6 @@ export type Hooks = {
 		experimentArgs: ExperimentArgs,
 		log: TaskLogger,
 	) => Promise<void>;
+	preSave?: Hook;
+	postSave?: Hook;
 };

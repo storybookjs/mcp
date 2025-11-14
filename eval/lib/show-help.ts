@@ -68,7 +68,7 @@ export function showHelp(): void {
 		`      ${styleText('yellow', '--no-storybook')}      Do not auto-start Storybook after evaluation completes`,
 	);
 	console.log(
-		`\n  ${styleText('yellow', '-u, --upload')}           Upload results to Google Sheets (default: true)`,
+		`\n  ${styleText('yellow', '-u, --upload')}           Build Storybook, upload to Chromatic, and save results to Google Sheets (default: true)`,
 	);
 	console.log(
 		`      ${styleText('yellow', '--no-upload')}         Skip uploading results`,

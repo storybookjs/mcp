@@ -8,7 +8,7 @@ import type {
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbxuDlcJeyNXh1zsgoCBBbvMzwJWEXoYWxPrf1CA-G_dfii-DaIhFk2ixKrBHeAhvCRFxg/exec';
+	'https://script.google.com/macros/s/AKfycbyMk794cnWgyrJXOKWoS7VysH9DDDaWvfVcgAlNzeEStElyjZc_71jfratk_VV4NYhlyw/exec';
 
 type SheetsData = {
 	timestamp: string;
@@ -21,7 +21,6 @@ type SheetsData = {
 	typeCheckErrors: number;
 	lintErrors: number;
 	testsPassed: number;
-	testsFailed: number;
 	a11yViolations: number;
 	cost: number;
 	duration: number;
@@ -30,6 +29,7 @@ type SheetsData = {
 	gitBranch: string;
 	gitCommit: string;
 	experimentPath: string;
+	chromaticUrl: string;
 };
 
 function getContextDetails(context: Context): string {
@@ -40,10 +40,53 @@ function getContextDetails(context: Context): string {
 			return context.prompts.join(', ');
 		case 'mcp-server':
 			return Object.keys(context.mcpServerConfig).join(', ');
+		case 'components-manifest': {
+			// Extract manifest path from MCP server config args
+			const mcpConfig = Object.values(context.mcpServerConfig)[0];
+			if (mcpConfig?.type === 'stdio' && mcpConfig.args) {
+				const manifestIndex = mcpConfig.args.indexOf('--manifestPath');
+				if (manifestIndex !== -1 && mcpConfig.args[manifestIndex + 1]) {
+					return path.basename(mcpConfig.args[manifestIndex + 1]);
+				}
+			}
+			return 'unknown manifest name';
+		}
 	}
 }
 
-async function saveToGoogleSheets(data: SheetsData): Promise<void> {
+export async function saveToGoogleSheets(
+	experimentArgs: ExperimentArgs,
+	evaluationSummary: EvaluationSummary,
+	executionSummary: ExecutionSummary,
+	environment: { branch: string; commit: string },
+	chromaticUrl?: string,
+): Promise<void> {
+	const { experimentPath, description, evalName, context } = experimentArgs;
+
+	const data: SheetsData = {
+		timestamp: new Date().toISOString().replace('Z', ''),
+		evalName,
+		chromaticUrl: chromaticUrl || '',
+		contextType: context.type === false ? 'none' : context.type,
+		contextDetails: getContextDetails(context),
+		agent: experimentArgs.agent,
+		description: description || '',
+		buildSuccess: evaluationSummary.buildSuccess,
+		typeCheckErrors: evaluationSummary.typeCheckErrors,
+		lintErrors: evaluationSummary.lintErrors,
+		testsPassed:
+			evaluationSummary.test.passed /
+			(evaluationSummary.test.passed + evaluationSummary.test.failed),
+		a11yViolations: evaluationSummary.a11y.violations,
+		cost: executionSummary.cost,
+		duration: executionSummary.duration,
+		durationApi: executionSummary.durationApi,
+		turns: executionSummary.turns,
+		gitBranch: environment.branch,
+		gitCommit: environment.commit,
+		experimentPath: path.relative(process.cwd(), experimentPath),
+	};
+
 	try {
 		const response = await fetch(GOOGLE_SHEETS_URL, {
 			method: 'POST',
@@ -80,37 +123,4 @@ async function saveToGoogleSheets(data: SheetsData): Promise<void> {
 			`Failed to save to Google Sheets: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
-}
-
-export async function saveToSheets(
-	experimentArgs: ExperimentArgs,
-	evaluationSummary: EvaluationSummary,
-	executionSummary: ExecutionSummary,
-	environment: { branch: string; commit: string },
-): Promise<void> {
-	const { experimentPath, description, evalName, context } = experimentArgs;
-
-	const data: SheetsData = {
-		timestamp: new Date().toISOString().replace('Z', ''),
-		evalName,
-		contextType: context.type === false ? 'none' : context.type,
-		contextDetails: getContextDetails(context),
-		agent: experimentArgs.agent,
-		description: description || '',
-		buildSuccess: evaluationSummary.buildSuccess,
-		typeCheckErrors: evaluationSummary.typeCheckErrors,
-		lintErrors: evaluationSummary.lintErrors,
-		testsPassed: evaluationSummary.test.passed,
-		testsFailed: evaluationSummary.test.failed,
-		a11yViolations: evaluationSummary.a11y.violations,
-		cost: executionSummary.cost,
-		duration: executionSummary.duration,
-		durationApi: executionSummary.durationApi,
-		turns: executionSummary.turns,
-		gitBranch: environment.branch,
-		gitCommit: environment.commit,
-		experimentPath: path.relative(process.cwd(), experimentPath),
-	};
-
-	await saveToGoogleSheets(data);
 }
