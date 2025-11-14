@@ -26,7 +26,7 @@
 	],
 	"scripts": {
 		"prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
-		"build": "tsdown --config ../../tsdown.config.ts",
+		"build": "tsdown",
 		"dev": "pnpm run build -- --watch",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-addon-mcp",
 		"publint": "publint",

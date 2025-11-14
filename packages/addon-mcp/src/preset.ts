@@ -25,10 +25,8 @@ export const experimental_devServer: PresetProperty<
 
 	const shouldRedirect = await isManifestAvailable(options);
 
-	app!.get('/mcp', async (req, res) => {
-		const acceptHeader = req.headers['accept'] || '';
-
-		if (acceptHeader.includes('text/html')) {
+	app!.use('/mcp', (req, res) => {
+		if (req.method === 'GET' && req.headers['accept']?.includes('text/html')) {
 			// Browser request - send HTML with redirect
 			res.writeHead(200, { 'Content-Type': 'text/html' });
 
@@ -42,13 +40,7 @@ export const experimental_devServer: PresetProperty<
 			);
 			res.end(html);
 		} else {
-			// Non-browser request - forward to MCP server
-			return await mcpServerHandler({
-				req,
-				res,
-				options,
-				addonOptions,
-			});
+			return mcpServerHandler({ req, res, options, addonOptions });
 		}
 	});
 	return app;
