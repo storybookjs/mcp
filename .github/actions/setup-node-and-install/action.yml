@@ -19,18 +19,13 @@ runs:
     - name: Install pnpm
       uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
 
-    - name: Setup pnpm cache
-      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
-      with:
-        cache: pnpm
-
     - name: Cache for Turbo
       uses: rharkor/caching-for-turbo@v2.3.2
 
     - name: Install dependencies
       if: ${{ inputs.install-offline != 'true' }}
       shell: bash
-      run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
+      run: pnpm install --frozen-lockfile --ignore-scripts
 
     - name: Install dependencies
       if: ${{ inputs.install-offline == 'true' }}
