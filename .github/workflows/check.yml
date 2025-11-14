@@ -62,7 +62,7 @@ jobs:
             test-report.junit.xml
 
   typecheck:
-    name: Type check @storybook/addon-mcp
+    name: Type check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
