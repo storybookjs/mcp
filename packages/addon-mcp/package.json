@@ -30,7 +30,6 @@
 		"dev": "pnpm run build -- --watch",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-addon-mcp",
 		"publint": "publint",
-		"test": "vitest",
 		"typecheck": "tsc"
 	},
 	"dependencies": {

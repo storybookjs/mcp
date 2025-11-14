@@ -1,6 +1,6 @@
 {
-  "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "targetDefaults": {
+	"$schema": "./node_modules/nx/schemas/nx-schema.json",
+	"targetDefaults": {
 		"build": {
 			"dependsOn": ["^build"],
 			"outputs": ["{projectRoot}/dist/**"],
@@ -31,7 +31,14 @@
 		"lint:ci": {},
 		"test": {},
 		"test:ci": {
-			"outputs": ["{projectRoot}/coverage/**", "{projectRoot}/test-report.junit.xml"]
+			"outputs": [
+				"{projectRoot}/coverage/**",
+				"{projectRoot}/test-report.junit.xml"
+			]
 		}
+	},
+	"namedInputs": {
+		"sharedGlobals": ["{workspaceRoot}/.github/workflows/nx.yml"],
+		"default": ["sharedGlobals"]
 	}
 }

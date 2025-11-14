@@ -29,7 +29,6 @@
 		"dev": "node --watch ./serve.ts",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-mcp",
 		"publint": "publint",
-		"test": "vitest",
 		"typecheck": "tsc"
 	},
 	"dependencies": {
