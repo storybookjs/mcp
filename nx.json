@@ -37,8 +37,5 @@
 			]
 		}
 	},
-	"namedInputs": {
-		"sharedGlobals": ["{workspaceRoot}/.github/workflows/nx.yml"],
-		"default": ["sharedGlobals"]
-	}
+	"nxCloudId": "6917a9e60e94ecbfdc98d0a9"
 }
