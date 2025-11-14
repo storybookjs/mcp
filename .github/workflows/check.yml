@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
 
-      - name: Build
+      - name: check
         run: pnpm check-everything
 
   build:
