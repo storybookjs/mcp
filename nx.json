@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "targetDefaults": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["{projectRoot}/dist/**"],
+			"cache": true
+		},
+		"build-storybook": {
+			"dependsOn": ["^build"],
+			"outputs": ["{projectRoot}/storybook-static/**"],
+			"cache": true
+		},
+		"dev": {
+			"cache": true
+		},
+		"storybook": {
+			"dependsOn": ["^build"],
+			"cache": true
+		},
+		"typecheck": {
+			"cache": true
+		},
+		"publint": {
+			"dependsOn": ["build"],
+			"cache": true
+		},
+		"format": {},
+		"format:check": {},
+		"lint": {},
+		"lint:ci": {},
+		"test": {},
+		"test:ci": {
+			"outputs": ["{projectRoot}/coverage/**", "{projectRoot}/test-report.junit.xml"]
+		}
+	}
+}
