@@ -51,6 +51,8 @@ jobs:
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
+        with:
+          install: false
 
       - name: Build
         run: pnpm build-storybook
@@ -91,6 +93,8 @@ jobs:
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
+        with:
+          install: false
 
       - name: Run linting
         run: pnpm publint
@@ -134,6 +138,8 @@ jobs:
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
+        with:
+          install: false
 
       - name: Restore coverage
         run: pnpm turbo run test:ci
