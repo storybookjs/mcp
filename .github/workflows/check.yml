@@ -123,7 +123,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run linting
-        run: pnpm turbo run lint
+        run: pnpm turbo run lint:ci
 
   format-check:
     name: Check formatting
