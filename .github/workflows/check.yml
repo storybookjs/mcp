@@ -132,6 +132,9 @@ jobs:
         with:
           fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
       - name: Restore coverage
         run: pnpm turbo run test:ci
 
