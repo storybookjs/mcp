@@ -10,16 +10,18 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install pnpm
-      shell: bash
-      run: corepack enable
-
-    - name: Use Node.js 24
-      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+    - name: Install Node.js
+      uses: actions/setup-node@v5
       with:
         node-version-file: .nvmrc
-        cache: pnpm
-
+        package-manager-cache: false
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+    - name: Configure dependency cache
+      uses: actions/setup-node@v5
+      with:
+        cache: pnpm # or yarn
 
 
     - name: Cache for Turbo
