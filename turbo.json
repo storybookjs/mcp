@@ -23,6 +23,8 @@
 			"persistent": true,
 			"interruptible": true
 		},
+		"//#format": {},
+		"//#lint": {},
 		"//#test": {
 			"outputs": ["coverage/**"]
 		},

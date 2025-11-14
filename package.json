@@ -16,7 +16,7 @@
 		"format": "prettier --write .",
 		"inspect": "pnpm run --filter @storybook/addon-mcp inspect",
 		"lint": "oxlint --type-aware",
-		"check-everything": "pnpm run format --check && pnpm run lint && pnpm run publint && pnpm run build && pnpm run build-storybook && pnpm run typecheck && pnpm run test -- run",
+		"check-everything": "turbo run build build-storybook format lint publint typecheck test --continue",
 		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
 		"test": "vitest run",
@@ -30,7 +30,7 @@
 		"@changesets/cli": "^2.29.6",
 		"@codecov/rollup-plugin": "^1.9.1",
 		"@codecov/vite-plugin": "^1.9.1",
-		"@modelcontextprotocol/inspector": "^0.16.5",
+		"@modelcontextprotocol/inspector": "^0.17.2",
 		"@storybook/addon-mcp": "workspace:",
 		"@storybook/mcp": "workspace:",
 		"@types/node": "20.19.0",
@@ -43,7 +43,7 @@
 		"tsdown": "^0.16.4",
 		"turbo": "^2.6.1",
 		"vite-tsconfig-paths": "^5.1.4",
-		"vite": "^7.2.2",
+		"vite": "catalog:",
 		"vitest": "^4.0.8"
 	},
 	"packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8"

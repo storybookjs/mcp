@@ -10,6 +10,7 @@ catalog:
   storybook: 10.1.0-alpha.9
   tmcp: ^1.16.0
   valibot: ^1.1.0
+  vite: ^7.2.2
 
 onlyBuiltDependencies:
   - '@swc/core'
