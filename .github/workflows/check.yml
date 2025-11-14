@@ -50,6 +50,10 @@ jobs:
         shell: bash
         run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
 
+      - name: Prune pnpm store
+        shell: bash
+        run: pnpm prune store
+
       - name: Build
         run: pnpm turbo run build
 
