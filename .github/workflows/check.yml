@@ -39,7 +39,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Build
-        run: pnpm build --env-mode=loose
+        run: pnpm turbo run build
 
   build-storybook:
     name: Build internal Storybook
@@ -52,7 +52,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Build
-        run: pnpm build-storybook
+        run: pnpm turbo run build-storybook
 
   test:
     name: Test
@@ -111,7 +111,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run linting
-        run: pnpm publint
+        run: pnpm turbo run publint
 
   lint:
     name: Lint
@@ -124,7 +124,7 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run linting
-        run: pnpm lint
+        run: pnpm turbo run lint
 
   format-check:
     name: Check formatting
@@ -137,4 +137,4 @@ jobs:
         uses: ./.github/actions/setup-node-and-install
 
       - name: Check formatting
-        run: pnpm format --check
+        run: pnpm turbo run format:check

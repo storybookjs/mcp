@@ -10,6 +10,7 @@ describe('errorToMCPContent', () => {
 		expect(result).toEqual({
 			content: [
 				{
+					error: 'plase',
 					type: 'text',
 					text: 'Error getting manifest: Failed to get',
 				},
