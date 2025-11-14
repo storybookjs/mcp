@@ -44,15 +44,12 @@ jobs:
   build-storybook:
     name: Build internal Storybook
     runs-on: ubuntu-latest
-    needs: [build]
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
-        with:
-          install-offline: true
 
       - name: Build
         run: pnpm build-storybook
@@ -63,12 +60,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run tests with coverage
         run: pnpm turbo run test:ci
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        if: always()
+        with:
+          use_oidc: true
+          fail_ci_if_error: true
+          files: |
+            coverage/lcov.info
+
+      - name: Upload test results to Codecov
+        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
+        if: always()
+        with:
+          use_oidc: true
+          fail_ci_if_error: true
+          files: |
+            test-report.junit.xml
 
   typecheck:
     name: Type check
@@ -86,15 +103,12 @@ jobs:
   publint:
     name: Publint
     runs-on: ubuntu-latest
-    needs: [build]
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
-        with:
-          install-offline: true
 
       - name: Run linting
         run: pnpm publint
@@ -124,38 +138,3 @@ jobs:
 
       - name: Check formatting
         run: pnpm format --check
-
-  collect-coverage:
-    name: Collect coverage and test results
-    runs-on: ubuntu-latest
-    needs: [test]
-    if: always()
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
-
-      - name: Setup Node.js and Install Dependencies
-        uses: ./.github/actions/setup-node-and-install
-        with:
-          install-offline: true
-
-      - name: Restore coverage
-        run: pnpm turbo run test:ci
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
-        with:
-          use_oidc: true
-          fail_ci_if_error: true
-          files: |
-            coverage/lcov.info
-
-      - name: Upload test results to Codecov
-        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
-        with:
-          use_oidc: true
-          fail_ci_if_error: true
-          files: |
-            test-report.junit.xml
