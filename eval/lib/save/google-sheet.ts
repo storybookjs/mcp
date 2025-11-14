@@ -8,15 +8,13 @@ import type {
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbyMk794cnWgyrJXOKWoS7VysH9DDDaWvfVcgAlNzeEStElyjZc_71jfratk_VV4NYhlyw/exec';
+	'https://script.google.com/macros/s/AKfycbwAbn91zsf9V2UKyLqtJb-NQ1CFbqqEyed_lc-AhauGu4zWflET_NDwMkD02xzvKVjCow/exec';
 
 type SheetsData = {
 	timestamp: string;
 	evalName: string;
-	contextType: string;
-	contextDetails: string;
-	agent: string;
 	description: string;
+	chromaticUrl: string;
 	buildSuccess: boolean;
 	typeCheckErrors: number;
 	lintErrors: number;
@@ -26,10 +24,12 @@ type SheetsData = {
 	duration: number;
 	durationApi: number;
 	turns: number;
+	contextType: string;
+	contextDetails: string;
+	agent: string;
 	gitBranch: string;
 	gitCommit: string;
 	experimentPath: string;
-	chromaticUrl: string;
 };
 
 function getContextDetails(context: Context): string {
@@ -66,11 +66,8 @@ export async function saveToGoogleSheets(
 	const data: SheetsData = {
 		timestamp: new Date().toISOString().replace('Z', ''),
 		evalName,
-		chromaticUrl: chromaticUrl || '',
-		contextType: context.type === false ? 'none' : context.type,
-		contextDetails: getContextDetails(context),
-		agent: experimentArgs.agent,
 		description: description || '',
+		chromaticUrl: chromaticUrl || '',
 		buildSuccess: evaluationSummary.buildSuccess,
 		typeCheckErrors: evaluationSummary.typeCheckErrors,
 		lintErrors: evaluationSummary.lintErrors,
@@ -82,6 +79,9 @@ export async function saveToGoogleSheets(
 		duration: executionSummary.duration,
 		durationApi: executionSummary.durationApi,
 		turns: executionSummary.turns,
+		contextType: context.type === false ? 'none' : context.type,
+		contextDetails: getContextDetails(context),
+		agent: experimentArgs.agent,
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
 		experimentPath: path.relative(process.cwd(), experimentPath),
