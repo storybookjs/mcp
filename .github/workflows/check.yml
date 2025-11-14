@@ -22,10 +22,25 @@ jobs:
         with:
           fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
-      - name: Use Node.js 24
-        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+      - name: Expose pnpm config(s) through "$GITHUB_OUTPUT"
+        id: pnpm-config
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache rotation keys
+        id: cache-rotation
+        shell: bash
+        run: |
+          echo "YEAR_MONTH=$(/bin/date -u "+%Y%m")" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
         with:
-          cache: pnpm
+          path: ${{ steps.pnpm-config.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-cache-${{ steps.cache-rotation.outputs.YEAR_MONTH }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-cache-${{ steps.cache-rotation.outputs.YEAR_MONTH }}-
 
       - name: Cache for Turbo
         uses: rharkor/caching-for-turbo@v2.3.2
