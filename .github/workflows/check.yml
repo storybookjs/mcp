@@ -40,7 +40,7 @@ jobs:
         run: pnpm build-storybook
 
   test:
-    name: Test @storybook/mcp
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
