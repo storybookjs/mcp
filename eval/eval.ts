@@ -1,5 +1,6 @@
 import * as p from '@clack/prompts';
 import { claudeCodeCli } from './lib/agents/claude-code-cli.ts';
+import { cloudAgent } from './lib/agents/cloud-agent.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { ExperimentArgs } from './types.ts';
@@ -89,6 +90,7 @@ await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 
 const agents = {
 	'claude-code': claudeCodeCli,
+	copilot: cloudAgent,
 };
 const agent = agents[args.agent as keyof typeof agents];
 const promptSummary = await agent.execute(

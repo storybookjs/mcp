@@ -35,7 +35,7 @@ export function showHelp(): void {
 	console.log(
 		`  ${styleText('yellow', '-a, --agent <name>')}      Which coding agent to use (default: will prompt)`,
 	);
-	console.log(`                           Options: claude-code`);
+	console.log(`                           Options: claude-code, copilot`);
 	console.log(
 		`\n  ${styleText('yellow', '-c, --context <value>')}   Additional context for the agent (default: will prompt)`,
 	);

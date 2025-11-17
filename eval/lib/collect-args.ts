@@ -148,8 +148,11 @@ export async function collectArgs() {
 				}
 
 				const result = await p.select({
-					message: 'Which coding agents do you want to use?',
-					options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
+					message: 'Which coding agent do you want to use?',
+					options: [
+						{ value: 'claude-code', label: 'Claude Code CLI' },
+						{ value: 'copilot', label: 'Cloud Agent (Copilot)' },
+					],
 				});
 
 				if (p.isCancel(result)) {
