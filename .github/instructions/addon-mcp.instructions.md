@@ -128,7 +128,7 @@ Runs the build in watch mode for hot reload during development.
 To test the addon with Storybook:
 
 ```bash
-pnpm --filter internal-storybook storybook  # From root - starts internal-storybook with addon in dev mode
+pnpm storybook  # From root - starts internal-storybook with addon in dev mode
 ```
 
 ### Formatting
@@ -495,7 +495,7 @@ pnpm test run --coverage  # With coverage report
 
 Manual integration testing using `apps/internal-storybook`:
 
-1. Run `pnpm --filter internal-storybook storybook` from root
+1. Run `pnpm storybook` from root
 2. Storybook starts on port 6006
 3. MCP endpoint available at `http://localhost:6006/mcp`
 4. Use MCP inspector or configure MCP client to connect
