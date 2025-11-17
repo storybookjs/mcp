@@ -27,7 +27,7 @@
 		"//#format:check": {},
 		"//#lint": {},
 		"//#lint:ci": {},
-		"//#test": {},
+		"//#test:run": {},
 		"//#test:ci": {
 			"outputs": ["coverage/**", "test-report.junit.xml"]
 		},
