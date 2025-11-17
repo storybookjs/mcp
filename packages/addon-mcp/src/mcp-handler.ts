@@ -107,6 +107,7 @@ export const mcpServerHandler = async ({
 				await collectTelemetry({
 					event: 'tool:listAllComponents',
 					server,
+					toolset: 'docs',
 					componentCount: Object.keys(manifest.components).length,
 				});
 			},
@@ -118,6 +119,7 @@ export const mcpServerHandler = async ({
 				await collectTelemetry({
 					event: 'tool:getComponentDocumentation',
 					server,
+					toolset: 'docs',
 					inputComponentCount: input.componentIds.length,
 					foundCount: foundComponents.length,
 					notFoundCount: notFoundIds.length,
