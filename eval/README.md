@@ -21,15 +21,18 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 # Interactive mode (recommended)
 node eval.ts
 
-# With all options specified
+# With all options specified (Claude Code CLI)
 node eval.ts --agent claude-code --context components.json --upload 100-flight-booking-plain
+
+# Using the Cloud Agent (Copilot)
+node eval.ts --agent copilot --context components.json --upload 100-flight-booking-plain
 ```
 
 ## CLI Options
 
 | Option        | Short | Type    | Description                                                                              |
 | ------------- | ----- | ------- | ---------------------------------------------------------------------------------------- |
-| `--agent`     | `-a`  | string  | Which agent to use (`claude-code`)                                                       |
+| `--agent`     | `-a`  | string  | Which agent to use (`claude-code`, `copilot`)                                            |
 | `--context`   | `-c`  | string  | Context type: `false`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
 | `--verbose`   | `-v`  | boolean | Show detailed logs during execution                                                      |
 | `--storybook` | `-s`  | boolean | Auto-start Storybook after completion                                                    |
@@ -37,6 +40,18 @@ node eval.ts --agent claude-code --context components.json --upload 100-flight-b
 | `--help`      | `-h`  | -       | Display help information                                                                 |
 
 **Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
+
+### Agents
+
+The framework supports multiple coding agents:
+
+1. **`claude-code`** - Claude Code CLI
+   - Requires Claude Code CLI to be installed globally: `npm install -g claude-code`
+   - Uses local execution with streaming JSON output
+   
+2. **`copilot`** - Cloud Agent (Copilot)
+   - Uses the `@anthropic-ai/claude-agent-sdk` for programmatic agent execution
+   - Suitable for cloud-based or automated testing scenarios
 
 ### Context Types
 
@@ -219,4 +234,5 @@ pnpm storybook
 
 - Node.js 24+
 - pnpm 10.19.0+
-- Claude Code CLI (`npm install -g claude-code`)
+- **For `claude-code` agent:** Claude Code CLI (`npm install -g claude-code`)
+- **For `copilot` agent:** The `@anthropic-ai/claude-agent-sdk` is already included as a dependency
