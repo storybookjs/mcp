@@ -82,7 +82,7 @@ This runs:
 
 ```bash
 # This is usually all you need - starts Storybook AND watches addon for changes
-pnpm --filter internal-storybook storybook
+pnpm storybook
 ```
 
 For more advanced workflows, you can run dev mode for a specific package:
@@ -100,10 +100,6 @@ pnpm --filter @storybook/mcp dev
 ```bash
 # Build all packages
 pnpm build
-
-# Build a specific package
-pnpm --filter @storybook/addon-mcp build
-pnpm --filter @storybook/mcp build
 ```
 
 ### Testing
@@ -119,14 +115,6 @@ pnpm test:run
 
 # Run tests with coverage and CI reporters
 pnpm test:ci
-```
-
-You can also run tests for specific packages:
-
-```bash
-# Run tests for a specific package
-pnpm --filter @storybook/mcp test
-pnpm --filter @storybook/addon-mcp test
 ```
 
 ### Debugging MCP Servers
@@ -174,7 +162,7 @@ curl -X POST http://localhost:13316/mcp \
 You can start Storybook with:
 
 ```bash
-pnpm --filter internal-storybook storybook
+pnpm storybook
 ```
 
 This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` and try it out.
