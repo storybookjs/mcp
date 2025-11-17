@@ -66,33 +66,16 @@ The Storybook command starts:
 
 ### Development
 
-The `dev` command runs all packages in watch mode, automatically rebuilding when you make changes:
+The `turbo watch build` command runs all packages in watch mode, automatically rebuilding when you make changes:
 
 ```bash
 # Start development mode for all packages
-pnpm dev
+pnpm turbo watch build
 ```
-
-This runs:
-
-- `packages/addon-mcp` in watch mode (using `tsdown --watch`)
-- `packages/mcp` in watch mode (using Node's `--watch` flag)
-
-**Note:** Running `pnpm --filter internal-storybook storybook` automatically starts the addon in dev mode alongside Storybook. In this mode, making changes to `addon-mcp` will automatically restart Storybook. So you typically only need one command:
 
 ```bash
 # This is usually all you need - starts Storybook AND watches addon for changes
 pnpm storybook
-```
-
-For more advanced workflows, you can run dev mode for a specific package:
-
-```bash
-# Watch only the addon package
-pnpm --filter @storybook/addon-mcp dev
-
-# Watch only the mcp package
-pnpm --filter @storybook/mcp dev
 ```
 
 ### Building
