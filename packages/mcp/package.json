@@ -29,7 +29,7 @@
 		"dev": "node --watch ./serve.ts",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-mcp",
 		"publint": "publint",
-		"test": "vitest",
+		"test": "cd ../.. && pnpm vitest --project=@storybook/mcp",
 		"typecheck": "tsc"
 	},
 	"dependencies": {
