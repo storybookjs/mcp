@@ -22,6 +22,7 @@
 		"check:watch": "turbo watch build build-storybook format lint publint typecheck test --continue --experimental-write-cache",
 		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
+		"storybook": "turbo watch storybook",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:ci": "vitest run --coverage --reporter=default --reporter=github-actions --reporter=junit --outputFile=test-report.junit.xml",
