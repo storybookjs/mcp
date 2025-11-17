@@ -183,7 +183,7 @@ export const Submitted: Story = {
 			await userEvent.click(returnToggle);
 		});
 
-		await step('Select fromt flight', async () => {
+		await step('Select from flight', async () => {
 			const fromFlightTrigger = (
 				await looseGetInteractiveElements('flight-trigger-from', 'From', step)
 			)[0];
