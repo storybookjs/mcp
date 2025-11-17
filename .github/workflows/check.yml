@@ -1,10 +1,11 @@
-name: Check and publish preview releases
+name: Check
 
 on:
   pull_request:
   push:
     branches:
       - main
+      - next
 
 permissions:
   id-token: write # used to upload artifacts to codecov
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
@@ -30,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
@@ -45,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -58,16 +59,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
 
       - name: Run tests with coverage
-        run: pnpm --filter @storybook/mcp test run --coverage --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm --filter @storybook/mcp test run --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml
 
       - name: Upload test and coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        if: always()
         with:
           name: test-mcp
           path: |
@@ -79,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -88,10 +90,11 @@ jobs:
         run: pnpm build --filter @storybook/mcp
 
       - name: Run tests with coverage
-        run: pnpm --filter @storybook/addon-mcp test run --coverage --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm --filter @storybook/addon-mcp test run --coverage --reporter=default --reporter=junit --outputFile=test-report.junit.xml
 
       - name: Upload test and coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        if: always()
         with:
           name: test-addon-mcp
           path: |
@@ -103,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -116,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -127,29 +130,38 @@ jobs:
       - name: Run type checking
         run: pnpm --filter @storybook/addon-mcp typecheck
 
-  release-preview:
-    name: Publish preview releases
+  publint:
+    name: Publint
     runs-on: ubuntu-latest
-    needs: [build-mcp, build-addon-mcp]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
 
-      - name: Build
-        run: pnpm build
+      - name: Run linting
+        run: pnpm publint
 
-      - name: Publish preview release
-        run: pnpm pkg-pr-new publish --pnpm --compact --no-template './packages/*'
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run linting
+        run: pnpm lint
 
   format-check:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
@@ -164,24 +176,24 @@ jobs:
     if: always()
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 2 # see https://docs.codecov.com/docs/environment-specific-requirements#github-actions
 
       - name: Download @storybook/mcp coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: test-mcp
           path: packages/mcp/
 
       - name: Download @storybook/addon-mcp coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: test-addon-mcp
           path: packages/addon-mcp/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           use_oidc: true
           fail_ci_if_error: true
@@ -189,7 +201,7 @@ jobs:
             packages/mcp/coverage/lcov.info
             packages/addon-mcp/coverage/lcov.info
       - name: Upload test results to Codecov
-        uses: codecov/test-results-action@v1
+        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
         with:
           use_oidc: true
           fail_ci_if_error: true

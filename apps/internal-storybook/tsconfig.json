@@ -15,8 +15,7 @@
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
 		"noImplicitAny": true,
-		"lib": ["esnext", "dom", "dom.iterable"],
-		"baseUrl": "."
+		"lib": ["esnext", "dom", "dom.iterable"]
 	},
 	"include": ["stories/**/*"]
 }
