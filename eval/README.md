@@ -27,15 +27,14 @@ node eval.ts --agent claude-code --context components.json --upload 100-flight-b
 
 ## CLI Options
 
-| Option          | Short | Type    | Description                                                                              |
-| --------------- | ----- | ------- | ---------------------------------------------------------------------------------------- |
-| `--agent`       | `-a`  | string  | Which agent to use (`claude-code`)                                                       |
-| `--context`     | `-c`  | string  | Context type: `false`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
-| `--verbose`     | `-v`  | boolean | Show detailed logs during execution                                                      |
-| `--description` | `-d`  | string  | Optional description for this experiment run                                             |
-| `--storybook`   | `-s`  | boolean | Auto-start Storybook after completion                                                    |
-| `--upload`      | `-u`  | boolean | Upload results to Google Sheets (default: true)                                          |
-| `--help`        | `-h`  | -       | Display help information                                                                 |
+| Option        | Short | Type    | Description                                                                              |
+| ------------- | ----- | ------- | ---------------------------------------------------------------------------------------- |
+| `--agent`     | `-a`  | string  | Which agent to use (`claude-code`)                                                       |
+| `--context`   | `-c`  | string  | Context type: `false`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
+| `--verbose`   | `-v`  | boolean | Show detailed logs during execution                                                      |
+| `--storybook` | `-s`  | boolean | Auto-start Storybook after completion                                                    |
+| `--upload`    | `-u`  | boolean | Upload results to Google Sheets (default: true)                                          |
+| `--help`      | `-h`  | -       | Display help information                                                                 |
 
 **Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
 

@@ -6,7 +6,6 @@ import { x } from 'tinyexec';
 
 export async function saveEnvironment({
 	resultsPath,
-	description,
 	agent,
 }: ExperimentArgs) {
 	const info = JSON.parse(
@@ -34,7 +33,6 @@ export async function saveEnvironment({
 			{
 				agent,
 				date: new Date().toISOString(),
-				description,
 				branch,
 				commit,
 				...info,

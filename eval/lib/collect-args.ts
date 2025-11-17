@@ -17,7 +17,6 @@ export async function collectArgs() {
 			agent: { type: 'string', short: 'a' },
 			verbose: { type: 'boolean', default: false, short: 'v' },
 			storybook: { type: 'boolean', short: 's' },
-			description: { type: 'string', short: 'd' },
 			context: { type: 'string', short: 'c' },
 			upload: { type: 'boolean', short: 'u' },
 		},
@@ -45,7 +44,6 @@ export async function collectArgs() {
 			v.union([v.literal('claude-code'), v.literal('copilot')]),
 		),
 		verbose: v.boolean(),
-		description: v.optional(v.string()),
 		storybook: v.optional(v.boolean()),
 		upload: v.optional(v.boolean()),
 		context: v.optionalAsync(
@@ -160,29 +158,6 @@ export async function collectArgs() {
 				}
 
 				rerunCommandParts.push('--agent', result.toString());
-				return result;
-			},
-			description: async function (): Promise<string | undefined> {
-				if (parsedArgValues.description !== undefined) {
-					rerunCommandParts.push(
-						'--description',
-						`"${parsedArgValues.description}"`,
-					);
-					return parsedArgValues.description;
-				}
-
-				const result = await p.text({
-					message:
-						'Can you provide a short description for this specific experiment?',
-					placeholder:
-						'This description is optional and can help provide context for the experiment results.',
-				});
-				if (p.isCancel(result)) {
-					p.cancel('Operation cancelled.');
-					process.exit(0);
-				}
-
-				rerunCommandParts.push('--description', `"${result}"`);
 				return result;
 			},
 			context: async function (): Promise<Context> {
@@ -473,7 +448,6 @@ export async function collectArgs() {
 	const result = {
 		agent: promptResults.agent,
 		verbose: promptResults.verbose,
-		description: promptResults.description,
 		eval: evalPromptResult,
 		context: promptResults.context,
 		storybook: parsedArgValues.storybook,

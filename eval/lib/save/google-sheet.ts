@@ -13,7 +13,6 @@ const GOOGLE_SHEETS_URL =
 type SheetsData = {
 	timestamp: string;
 	evalName: string;
-	description: string;
 	chromaticUrl: string;
 	buildSuccess: boolean;
 	typeCheckErrors: number;
@@ -61,12 +60,11 @@ export async function saveToGoogleSheets(
 	environment: { branch: string; commit: string },
 	chromaticUrl?: string,
 ): Promise<void> {
-	const { experimentPath, description, evalName, context } = experimentArgs;
+	const { experimentPath, evalName, context } = experimentArgs;
 
 	const data: SheetsData = {
 		timestamp: new Date().toISOString().replace('Z', ''),
 		evalName,
-		description: description || '',
 		chromaticUrl: chromaticUrl || '',
 		buildSuccess: evaluationSummary.buildSuccess,
 		typeCheckErrors: evaluationSummary.typeCheckErrors,

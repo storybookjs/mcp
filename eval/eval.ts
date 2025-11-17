@@ -71,7 +71,6 @@ const experimentArgs: ExperimentArgs = {
 	projectPath,
 	resultsPath,
 	verbose: args.verbose,
-	description: args.description,
 	upload: args.upload,
 	evalName: args.eval,
 	context: args.context,

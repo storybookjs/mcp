@@ -59,9 +59,6 @@ export function showHelp(): void {
 		`\n  ${styleText('yellow', '-v, --verbose')}          Show detailed logs during execution (default: false)`,
 	);
 	console.log(
-		`\n  ${styleText('yellow', '-d, --description <text>')} Optional description for this experiment run`,
-	);
-	console.log(
 		`\n  ${styleText('yellow', '-s, --storybook')}        Auto-start Storybook after evaluation completes`,
 	);
 	console.log(
