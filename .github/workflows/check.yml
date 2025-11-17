@@ -7,13 +7,12 @@ on:
       - main
       - next
 
-permissions:
-  id-token: write # used to upload artifacts to codecov
-
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # used to upload artifacts to codecov
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -42,6 +41,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # used to upload artifacts to codecov
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
