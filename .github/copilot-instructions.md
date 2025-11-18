@@ -63,8 +63,12 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - Factory pattern: `createStorybookMcpHandler()` returns a request handler
 - Context-based: handlers accept `StorybookContext` which includes the HTTP `Request` object and optional callbacks
 - **Exports tools and types** for reuse by `addon-mcp` and other consumers
-- **Request-based manifest loading**: The `request` property in context is passed to tools, which use it to determine the manifest URL (defaults to same origin, replacing `/mcp` with `/manifests/components.json`)
-- **Optional manifestProvider**: Custom function to override default manifest fetching behavior, receives the `Request` object
+- **Request-based manifest loading**: The `request` property in context is passed to tools, which use it to determine the manifest URL (defaults to same origin, replacing `/mcp` with the manifest path)
+- **Optional manifestProvider**: Custom function to override default manifest fetching behavior
+  - Signature: `(request: Request, path: string) => Promise<string>`
+  - Receives the `Request` object and a `path` parameter (currently always `'./manifests/components.json'`)
+  - The provider determines the base URL (e.g., mapping to S3 buckets) while the MCP server handles the path
+  - Returns the manifest JSON as a string
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllComponents`: Called when the list-all-components tool is invoked

@@ -53,11 +53,14 @@ const args = parseArgs({
 transport.listen({
 	source: args.values.manifestPath,
 	manifestProvider: async () => {
-		const source = args.values.manifestPath;
-		if (source.startsWith('http://') || source.startsWith('https://')) {
-			const res = await fetch(source);
+		const { manifestPath } = args.values;
+		if (
+			manifestPath.startsWith('http://') ||
+			manifestPath.startsWith('https://')
+		) {
+			const res = await fetch(manifestPath);
 			return await res.text();
 		}
-		return await fs.readFile(source, 'utf-8');
+		return await fs.readFile(manifestPath, 'utf-8');
 	},
 });
