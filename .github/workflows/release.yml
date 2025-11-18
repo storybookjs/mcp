@@ -6,6 +6,9 @@ on:
       - main
       - next
 
+env:
+  TURBO_ENV_MODE: loose
+
 jobs:
   release:
     permissions:

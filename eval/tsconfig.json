@@ -1,12 +1,6 @@
 {
-	"extends": [
-		"@tsconfig/node24/tsconfig.json",
-		"@tsconfig/node-ts/tsconfig.json"
-	],
+	"extends": "../tsconfig.json",
 	"compilerOptions": {
-		"module": "preserve",
-		"moduleResolution": "bundler",
-		"jsx": "react-jsx",
-		"lib": ["ES2022", "DOM", "DOM.Iterable"]
+		"jsx": "react-jsx"
 	}
 }
