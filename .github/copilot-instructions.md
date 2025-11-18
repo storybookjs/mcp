@@ -225,7 +225,7 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - **Optional handlers for tracking**:
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
   - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
-  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input, found components, and not found IDs
+  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input with componentId, and optional foundComponent
   - Addon-mcp uses these handlers to collect telemetry on tool usage
 
 **Storybook internals used:**
