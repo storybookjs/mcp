@@ -4,10 +4,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { x } from 'tinyexec';
 
-export async function saveEnvironment({
-	resultsPath,
-	agent,
-}: ExperimentArgs) {
+export async function saveEnvironment({ resultsPath, agent }: ExperimentArgs) {
 	const info = JSON.parse(
 		await envinfo.run(
 			{
