@@ -17,7 +17,7 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 - **Component Manifest**: Parses and formats component documentation including React prop information from react-docgen
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
-- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided
+- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided. The `onGetComponentDocumentation` handler receives a single `componentId` input and an optional `foundComponent` result.
 
 ### File Structure
 
@@ -140,24 +140,28 @@ Runs the development server with hot reload using Node's `--watch` flag.
 pnpm format
 ```
 
-Formats code using Prettier.
+Formats code using prettier.
 
 To check formatting without applying changes:
 
 ```bash
-pnpm format --check
+pnpm format:check
 ```
 
 ### Testing
 
-```bash
-pnpm test run
-```
-
-Or with coverage enabled:
+Tests can be run at the package level or from the monorepo root:
 
 ```bash
-pnpm test run --coverage
+# From the package directory
+pnpm test          # Run tests in watch mode
+pnpm test run      # Run tests once
+pnpm test run --coverage  # Run tests with coverage
+
+# From the monorepo root (runs tests across all packages)
+pnpm test          # Run all tests in watch mode
+pnpm test:run      # Run all tests once
+pnpm test:ci       # Run tests with coverage and CI reporters
 ```
 
 **Important**: Vitest automatically clears all mocks between tests, so you should never need to call `vi.clearAllMocks()` in a `beforeEach` hook.
@@ -181,7 +185,7 @@ Launches the MCP inspector for debugging the MCP server using the configuration 
 
 ### Code Style
 
-- Use Prettier for formatting (config: `.prettierignore`)
+- Use prettier for formatting (config: `.prettierrc`)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names

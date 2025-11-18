@@ -1,0 +1,13 @@
+.flight-booking {
+	padding: 20px;
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.flight-booking .rs-form {
+	width: 100%;
+}
+
+.flight-booking .rs-stack {
+	width: 100%;
+}

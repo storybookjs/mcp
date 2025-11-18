@@ -133,7 +133,7 @@ pnpm storybook  # From root - starts internal-storybook with addon in dev mode
 
 ### Formatting
 
-Use Prettier at the root level:
+Use prettier at the root level:
 
 ```bash
 pnpm format  # From root
@@ -149,17 +149,24 @@ Launches the MCP inspector for debugging the addon's MCP server using the config
 
 ### Testing
 
-The addon has comprehensive unit tests covering all utilities and tools:
+The addon has comprehensive unit tests covering all utilities and tools. Tests can be run at the package level or from the monorepo root:
 
 ```bash
+# From the package directory
 pnpm test          # Run tests in watch mode
 pnpm test run      # Run tests once
 pnpm test run --coverage  # Run tests with coverage report
+
+# From the monorepo root (runs tests across all packages)
+pnpm test          # Run all tests in watch mode
+pnpm test:run      # Run all tests once
+pnpm test:ci       # Run tests with coverage and CI reporters
 ```
 
 **Test Infrastructure:**
 
-- **Framework**: Vitest 3.2.4 with @vitest/coverage-v8
+- **Framework**: Vitest with @vitest/coverage-v8
+- **Configuration**: Root-level vitest.config.ts with per-package projects
 - **Fixtures**: JSON fixtures in `fixtures/` directory for story index data
 
 **Test Coverage Baseline:**
@@ -212,11 +219,11 @@ When adding new functionality:
 3. Mock external dependencies (fetch, logger, telemetry)
 4. Use fixtures for complex data structures
 5. Test both success and error paths
-6. Run `pnpm test run --coverage` to verify coverage
+6. Run `pnpm test run --coverage` (from package) or `pnpm test:ci` (from root) to verify coverage
 
 **CI Integration:**
 
-Tests run automatically on PRs and main branch pushes via `.github/workflows/check.yml` as the `test-addon-mcp` job.
+Tests run automatically on PRs and main branch pushes via `.github/workflows/check.yml` in the `test` job, which runs `pnpm turbo run test:ci` across all packages.
 
 ## Code Style and Conventions
 
@@ -229,7 +236,7 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 
 ### Code Style
 
-- Use Prettier for formatting (inherited from root config)
+- Use prettier for formatting (inherited from root config)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names

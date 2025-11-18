@@ -46,14 +46,17 @@ pnpm build
 # Start development mode (watches for changes in all packages)
 pnpm dev
 
-# Run unit tests
+# Run unit tests in watch mode
 pnpm test
 
+# Run unit tests once
+pnpm test:run
+
 # Run Storybook with the addon for testing
-pnpm storybook
+pnpm --filter internal-storybook storybook
 ```
 
-The `pnpm storybook` command starts:
+The Storybook command starts:
 
 - The internal test Storybook instance on `http://localhost:6006`
 - The addon in watch mode, so changes are reflected automatically
@@ -63,33 +66,16 @@ The `pnpm storybook` command starts:
 
 ### Development
 
-The `dev` command runs all packages in watch mode, automatically rebuilding when you make changes:
+The `turbo watch build` command runs all packages in watch mode, automatically rebuilding when you make changes:
 
 ```bash
 # Start development mode for all packages
-pnpm dev
+pnpm turbo watch build
 ```
-
-This runs:
-
-- `packages/addon-mcp` in watch mode (using `tsdown --watch`)
-- `packages/mcp` in watch mode (using Node's `--watch` flag)
-
-**Note:** Running `pnpm storybook` automatically starts the addon in dev mode alongside Storybook. In this mode, making changes to `addon-mcp` will automatically restart Storybook. So you typically only need one command:
 
 ```bash
 # This is usually all you need - starts Storybook AND watches addon for changes
 pnpm storybook
-```
-
-For more advanced workflows, you can run dev mode for a specific package:
-
-```bash
-# Watch only the addon package
-pnpm --filter @storybook/addon-mcp dev
-
-# Watch only the mcp package
-pnpm --filter @storybook/mcp dev
 ```
 
 ### Building
@@ -97,23 +83,21 @@ pnpm --filter @storybook/mcp dev
 ```bash
 # Build all packages
 pnpm build
-
-# Build a specific package
-pnpm --filter @storybook/addon-mcp build
-pnpm --filter @storybook/mcp build
 ```
 
 ### Testing
 
+The monorepo uses a centralized Vitest configuration at the root level with projects configured for each package:
+
 ```bash
-# Watch tests
+# Watch tests across all packages
 pnpm test
 
-# Run tests
-pnpm test run
+# Run tests once across all packages
+pnpm test:run
 
-# Run tests with coverage
-pnpm test run --coverage
+# Run tests with coverage and CI reporters
+pnpm test:ci
 ```
 
 ### Debugging MCP Servers
@@ -158,7 +142,7 @@ curl -X POST http://localhost:13316/mcp \
 
 ### Debugging with Storybook
 
-You can start the Storybook with
+You can start Storybook with:
 
 ```bash
 pnpm storybook
@@ -166,14 +150,44 @@ pnpm storybook
 
 This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` and try it out.
 
-### Formatting
+### Formatting & Linting
 
 ```bash
-# Format all files
+# Format all files with Prettier
 pnpm format
 
 # Check formatting without changing files
-pnpm format --check
+pnpm format:check
+
+# Lint code with oxlint
+pnpm lint
+
+# Lint with GitHub Actions format (for CI)
+pnpm lint:ci
+
+# Check package exports with publint
+pnpm publint
+```
+
+## 🔍 Quality Checks
+
+The monorepo includes several quality checks that run in CI:
+
+```bash
+# Run all checks (build, test, lint, format, typecheck, publint)
+pnpm check
+
+# Run checks in watch mode (experimental)
+pnpm check:watch
+
+# Type checking (uses tsc directly, not turbo)
+pnpm typecheck
+
+# Type checking with turbo (for individual packages)
+pnpm turbo:typecheck
+
+# Testing with turbo (for individual packages)
+pnpm turbo:test
 ```
 
 ## 📝 Code Conventions
@@ -224,8 +238,10 @@ We welcome contributions! Here's how to get started:
 ### Before Submitting
 
 - [ ] Code builds without errors (`pnpm build`)
-- [ ] Tests pass (`pnpm test`)
+- [ ] Tests pass (`pnpm test:run`)
 - [ ] Code is formatted (`pnpm format`)
+- [ ] Code is linted (`pnpm lint`)
+- [ ] Type checking passes (`pnpm typecheck`)
 - [ ] Changes tested with MCP inspector or internal Storybook
 - [ ] Changeset created if necessary (`pnpm changeset`)
 

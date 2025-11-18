@@ -1,4 +1,3 @@
-import type { Connect } from 'vite';
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { HttpTransport } from '@tmcp/transport-http';
@@ -37,12 +36,9 @@ const initializeMCPServer = async (options: Options) => {
 		},
 	).withContext<AddonContext>();
 
-	server.on('initialize', () => {
+	server.on('initialize', async () => {
 		if (!options.disableTelemetry) {
-			collectTelemetry({
-				event: 'session:initialized',
-				server,
-			});
+			await collectTelemetry({ event: 'session:initialized', server });
 		}
 	});
 
@@ -74,7 +70,6 @@ const initializeMCPServer = async (options: Options) => {
 type McpServerHandlerParams = {
 	req: IncomingMessage;
 	res: ServerResponse;
-	next: Connect.NextFunction;
 	options: Options;
 	addonOptions: AddonOptionsOutput;
 };
@@ -82,7 +77,6 @@ type McpServerHandlerParams = {
 export const mcpServerHandler = async ({
 	req,
 	res,
-	next,
 	options,
 	addonOptions,
 }: McpServerHandlerParams) => {
@@ -109,20 +103,17 @@ export const mcpServerHandler = async ({
 				await collectTelemetry({
 					event: 'tool:listAllComponents',
 					server,
+					toolset: 'docs',
 					componentCount: Object.keys(manifest.components).length,
 				});
 			},
-			onGetComponentDocumentation: async ({
-				input,
-				foundComponents,
-				notFoundIds,
-			}) => {
+			onGetComponentDocumentation: async ({ input, foundComponent }) => {
 				await collectTelemetry({
 					event: 'tool:getComponentDocumentation',
 					server,
-					inputComponentCount: input.componentIds.length,
-					foundCount: foundComponents.length,
-					notFoundCount: notFoundIds.length,
+					toolset: 'docs',
+					componentId: input.componentId,
+					found: !!foundComponent,
 				});
 			},
 		}),
@@ -153,6 +144,7 @@ export async function incomingMessageToWebRequest(
 	return new Request(url, {
 		method: req.method,
 		headers: req.headers as HeadersInit,
+		// oxlint-disable-next-line no-invalid-fetch-options -- We now req.method is always 'POST', linter doesn't
 		body: bodyBuffer.length > 0 ? new Uint8Array(bodyBuffer) : undefined,
 	});
 }

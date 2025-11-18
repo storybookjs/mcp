@@ -5,6 +5,7 @@ import {
 } from './format-manifest';
 import type { ComponentManifest, ComponentManifestMap } from '../types';
 import fullManifestFixture from '../../fixtures/full-manifest.fixture.json' with { type: 'json' };
+import withErrorsFixture from '../../fixtures/with-errors.fixture.json' with { type: 'json' };
 
 describe('formatComponentManifest', () => {
 	it('formats all full fixtures', () => {
@@ -102,14 +103,14 @@ describe('formatComponentManifest', () => {
 		});
 	});
 
-	describe('examples section', () => {
-		it('should format a single example', () => {
+	describe('stories section', () => {
+		it('should format a single story', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
 				path: 'src/components/Button.tsx',
 				import: 'import { Button } from "@/components";',
-				examples: [
+				stories: [
 					{
 						name: 'Primary',
 						description: 'A primary button variant',
@@ -124,28 +125,28 @@ describe('formatComponentManifest', () => {
 				"<component>
 				<id>button</id>
 				<name>Button</name>
-				<example>
-				<example_name>Primary</example_name>
-				<example_description>
+				<story>
+				<story_name>Primary</story_name>
+				<story_description>
 				A primary button variant
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				import { Button } from "@/components";
 
 				<Button variant="primary">Click me</Button>
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
 
-		it('should format multiple examples', () => {
+		it('should format multiple stories', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
 				path: 'src/components/Button.tsx',
 				import: 'import { Button } from "@/components";',
-				examples: [
+				stories: [
 					{
 						name: 'Primary',
 						snippet: '<Button variant="primary">Primary</Button>',
@@ -163,32 +164,32 @@ describe('formatComponentManifest', () => {
 				"<component>
 				<id>button</id>
 				<name>Button</name>
-				<example>
-				<example_name>Primary</example_name>
-				<example_code>
+				<story>
+				<story_name>Primary</story_name>
+				<story_code>
 				import { Button } from "@/components";
 
 				<Button variant="primary">Primary</Button>
-				</example_code>
-				</example>
-				<example>
-				<example_name>Secondary</example_name>
-				<example_code>
+				</story_code>
+				</story>
+				<story>
+				<story_name>Secondary</story_name>
+				<story_code>
 				import { Button } from "@/components";
 
 				<Button variant="secondary">Secondary</Button>
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
 
-		it('should format PascalCase example names correctly', () => {
+		it('should format PascalCase story names correctly', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
 				path: 'src/components/Button.tsx',
-				examples: [
+				stories: [
 					{
 						name: 'WithIcon',
 						snippet: '<Button icon={<Icon />}>Click me</Button>',
@@ -206,61 +207,28 @@ describe('formatComponentManifest', () => {
 				"<component>
 				<id>button</id>
 				<name>Button</name>
-				<example>
-				<example_name>With Icon</example_name>
-				<example_code>
+				<story>
+				<story_name>With Icon</story_name>
+				<story_code>
 				<Button icon={<Icon />}>Click me</Button>
-				</example_code>
-				</example>
-				<example>
-				<example_name>Disabled State</example_name>
-				<example_code>
+				</story_code>
+				</story>
+				<story>
+				<story_name>Disabled State</story_name>
+				<story_code>
 				<Button disabled>Disabled</Button>
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
 
-		it('should use example import over component import when provided', () => {
+		it('should handle stories without description', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
 				path: 'src/components/Button.tsx',
-				import: 'import { Button } from "@/components";',
-				examples: [
-					{
-						name: 'WithCustomImport',
-						import: 'import { Button } from "@/custom-path";',
-						snippet: '<Button>Custom</Button>',
-					},
-				],
-			};
-
-			const result = formatComponentManifest(manifest);
-
-			expect(result).toMatchInlineSnapshot(`
-				"<component>
-				<id>button</id>
-				<name>Button</name>
-				<example>
-				<example_name>With Custom Import</example_name>
-				<example_code>
-				import { Button } from "@/custom-path";
-
-				<Button>Custom</Button>
-				</example_code>
-				</example>
-				</component>"
-			`);
-		});
-
-		it('should handle examples without description', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				examples: [
+				stories: [
 					{
 						name: 'Simple',
 						snippet: '<Button>Simple</Button>',
@@ -274,22 +242,22 @@ describe('formatComponentManifest', () => {
 				"<component>
 				<id>button</id>
 				<name>Button</name>
-				<example>
-				<example_name>Simple</example_name>
-				<example_code>
+				<story>
+				<story_name>Simple</story_name>
+				<story_code>
 				<Button>Simple</Button>
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
 
-		it('should handle examples without import', () => {
+		it('should handle stories without import', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
 				path: 'src/components/Button.tsx',
-				examples: [
+				stories: [
 					{
 						name: 'NoImport',
 						snippet: '<Button>No Import</Button>',
@@ -303,17 +271,17 @@ describe('formatComponentManifest', () => {
 				"<component>
 				<id>button</id>
 				<name>Button</name>
-				<example>
-				<example_name>No Import</example_name>
-				<example_code>
+				<story>
+				<story_name>No Import</story_name>
+				<story_code>
 				<Button>No Import</Button>
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
 
-		it('should omit examples when no examples are provided', () => {
+		it('should omit stories when no stories are provided', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
@@ -334,12 +302,12 @@ describe('formatComponentManifest', () => {
 			`);
 		});
 
-		it('should omit examples when examples array is empty', () => {
+		it('should omit stories when stories array is empty', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
 				path: 'src/components/Button.tsx',
-				examples: [],
+				stories: [],
 			};
 
 			const result = formatComponentManifest(manifest);
@@ -354,7 +322,7 @@ describe('formatComponentManifest', () => {
 	});
 
 	describe('complete component', () => {
-		it('should format a complete component with description and multiple examples', () => {
+		it('should format a complete component with description and multiple stories', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
 				name: 'Button',
@@ -363,7 +331,7 @@ describe('formatComponentManifest', () => {
 					'A versatile button component.\n\nSupports multiple variants, sizes, and states.',
 				summary: 'A button for user interactions',
 				import: 'import { Button } from "@storybook/design-system";',
-				examples: [
+				stories: [
 					{
 						name: 'Primary',
 						description: 'The primary button variant.',
@@ -390,23 +358,23 @@ describe('formatComponentManifest', () => {
 
 				Supports multiple variants, sizes, and states.
 				</description>
-				<example>
-				<example_name>Primary</example_name>
-				<example_description>
+				<story>
+				<story_name>Primary</story_name>
+				<story_description>
 				The primary button variant.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				import { Button } from "@storybook/design-system";
 
 				const Primary = () => <Button variant="primary">Click Me</Button>
-				</example_code>
-				</example>
-				<example>
-				<example_name>With Sizes</example_name>
-				<example_description>
+				</story_code>
+				</story>
+				<story>
+				<story_name>With Sizes</story_name>
+				<story_description>
 				Buttons in different sizes.
-				</example_description>
-				<example_code>
+				</story_description>
+				<story_code>
 				import { Button } from "@storybook/design-system";
 
 				const Sizes = () => (
@@ -415,8 +383,8 @@ describe('formatComponentManifest', () => {
 				    <Button size="large">Large</Button>
 				  </>
 				)
-				</example_code>
-				</example>
+				</story_code>
+				</story>
 				</component>"
 			`);
 		});
@@ -869,6 +837,177 @@ describe('formatComponentManifestMapToList', () => {
 				<component>
 				<id>modal</id>
 				<name>Modal</name>
+				</component>
+				</components>"
+			`);
+		});
+	});
+
+	describe('with-errors fixture', () => {
+		it('should format success component with mixed stories (only successful ones)', () => {
+			const component =
+				withErrorsFixture.components['success-component-with-mixed-stories'];
+			const result = formatComponentManifest(component);
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>success-component-with-mixed-stories</id>
+				<name>SuccessWithMixedStories</name>
+				<description>
+				A component that loaded successfully but has some stories that failed to generate.
+				</description>
+				<story>
+				<story_name>Working</story_name>
+				<story_description>
+				This story generated successfully.
+				</story_description>
+				<story_code>
+				import { SuccessWithMixedStories } from '@storybook/design-system';
+
+				const Working = () => <SuccessWithMixedStories text="Hello" />
+				</story_code>
+				</story>
+				<props>
+				<prop>
+				<prop_name>text</prop_name>
+				<prop_description>
+				The text to display
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				<prop>
+				<prop_name>variant</prop_name>
+				<prop_description>
+				The visual variant
+				</prop_description>
+				<prop_type>"primary" | "secondary"</prop_type>
+				<prop_required>false</prop_required>
+				<prop_default>"primary"</prop_default>
+				</prop>
+				</props>
+				</component>"
+			`);
+		});
+
+		it('should format error component with success stories', () => {
+			const component =
+				withErrorsFixture.components['error-component-with-success-stories'];
+			const result = formatComponentManifest(component);
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>error-component-with-success-stories</id>
+				<name>ErrorWithSuccessStories</name>
+				<story>
+				<story_name>Basic</story_name>
+				<story_description>
+				Even though the component parsing failed, this story's code snippet was generated.
+				</story_description>
+				<story_code>
+				const Basic = () => <ErrorWithSuccessStories>Content</ErrorWithSuccessStories>
+				</story_code>
+				</story>
+				<story>
+				<story_name>Advanced</story_name>
+				<story_description>
+				Another successfully generated story despite component-level errors.
+				</story_description>
+				<story_code>
+				const Advanced = () => (
+				  <ErrorWithSuccessStories disabled>
+				    Advanced Content
+				  </ErrorWithSuccessStories>
+				)
+				</story_code>
+				</story>
+				</component>"
+			`);
+		});
+
+		it('should format partial success component (skips failed story)', () => {
+			const component = withErrorsFixture.components['partial-success'];
+			const result = formatComponentManifest(component);
+			expect(result).toMatchInlineSnapshot(`
+				"<component>
+				<id>partial-success</id>
+				<name>PartialSuccess</name>
+				<description>
+				A component where everything worked except one story.
+				</description>
+				<story>
+				<story_name>Default</story_name>
+				<story_description>
+				Default usage of the component.
+				</story_description>
+				<story_code>
+				import { PartialSuccess } from '@storybook/design-system';
+
+				const Default = () => <PartialSuccess title="Hello" />
+				</story_code>
+				</story>
+				<story>
+				<story_name>With Subtitle</story_name>
+				<story_description>
+				Component with both title and subtitle.
+				</story_description>
+				<story_code>
+				import { PartialSuccess } from '@storybook/design-system';
+
+				const WithSubtitle = () => <PartialSuccess title="Hello" subtitle="World" />
+				</story_code>
+				</story>
+				<props>
+				<prop>
+				<prop_name>title</prop_name>
+				<prop_description>
+				The title text
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				<prop>
+				<prop_name>subtitle</prop_name>
+				<prop_description>
+				Optional subtitle
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>false</prop_required>
+				</prop>
+				</props>
+				</component>"
+			`);
+		});
+
+		it('should format list of components with errors', () => {
+			const result = formatComponentManifestMapToList(
+				withErrorsFixture as ComponentManifestMap,
+			);
+			expect(result).toMatchInlineSnapshot(`
+				"<components>
+				<component>
+				<id>success-component-with-mixed-stories</id>
+				<name>SuccessWithMixedStories</name>
+				<summary>
+				Success component with both working and failing stories
+				</summary>
+				</component>
+				<component>
+				<id>error-component-with-success-stories</id>
+				<name>ErrorWithSuccessStories</name>
+				</component>
+				<component>
+				<id>error-component-with-error-stories</id>
+				<name>ErrorWithErrorStories</name>
+				</component>
+				<component>
+				<id>complete-error-component</id>
+				<name>CompleteError</name>
+				</component>
+				<component>
+				<id>partial-success</id>
+				<name>PartialSuccess</name>
+				<summary>
+				Mostly working component with one failing story
+				</summary>
 				</component>
 				</components>"
 			`);

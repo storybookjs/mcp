@@ -1,6 +1,6 @@
 {
 	"name": "@storybook/addon-mcp",
-	"version": "0.1.3",
+	"version": "0.1.4-next.2",
 	"description": "Help agents automatically write and test stories for your UI components",
 	"keywords": [
 		"storybook-addon",
@@ -8,8 +8,7 @@
 		"ai"
 	],
 	"repository": {
-		"type": "git",
-		"url": "https://github.com/storybookjs/mcp.git",
+		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/addon-mcp"
 	},
 	"license": "MIT",
@@ -27,11 +26,11 @@
 	],
 	"scripts": {
 		"prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
-		"build": "tsdown --config ../../tsdown.config.ts",
-		"dev": "pnpm run build -- --watch",
-		"test": "vitest",
+		"build": "tsdown",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-addon-mcp",
-		"typecheck": "tsc --noEmit"
+		"publint": "publint",
+		"test": "cd ../.. && pnpm vitest --project=@storybook/addon-mcp",
+		"typecheck": "tsc"
 	},
 	"dependencies": {
 		"@storybook/mcp": "workspace:*",
@@ -41,17 +40,11 @@
 		"valibot": "catalog:"
 	},
 	"devDependencies": {
-		"@types/node": "catalog:",
-		"@vitest/coverage-v8": "catalog:",
 		"storybook": "catalog:",
-		"ts-dedent": "^2.2.0",
-		"tsdown": "catalog:",
-		"typescript": "catalog:",
-		"vite": "^7.0.5",
-		"vitest": "catalog:"
+		"ts-dedent": "^2.2.0"
 	},
 	"peerDependencies": {
-		"storybook": "^9.1.16 || ^10.0.0"
+		"storybook": "^9.1.16 || ^10.0.0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0 || ^10.4.0-0"
 	},
 	"publishConfig": {
 		"access": "public"

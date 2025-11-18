@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import {
@@ -58,7 +58,7 @@ describe('getComponentDocumentationTool', () => {
 			params: {
 				name: GET_TOOL_NAME,
 				arguments: {
-					componentIds: ['button'],
+					componentId: 'button',
 				},
 			},
 		};
@@ -75,100 +75,15 @@ describe('getComponentDocumentationTool', () => {
 			      "text": "<component>
 			<id>button</id>
 			<name>Button</name>
-			<example>
-			<example_name>Primary</example_name>
-			<example_description>
+			<story>
+			<story_name>Primary</story_name>
+			<story_description>
 			The primary button variant.
-			</example_description>
-			<example_code>
+			</story_description>
+			<story_code>
 			const Primary = () => <Button variant="primary">Click Me</Button>
-			</example_code>
-			</example>
-			</component>",
-			      "type": "text",
-			    },
-			  ],
-			}
-		`);
-	});
-
-	it('should return formatted documentation for multiple components', async () => {
-		const request = {
-			jsonrpc: '2.0' as const,
-			id: 1,
-			method: 'tools/call',
-			params: {
-				name: GET_TOOL_NAME,
-				arguments: {
-					componentIds: ['button', 'card', 'input'],
-				},
-			},
-		};
-
-		const mockHttpRequest = new Request('https://example.com/mcp');
-		const response = await server.receive(request, {
-			custom: { request: mockHttpRequest },
-		});
-
-		expect(response.result).toMatchInlineSnapshot(`
-			{
-			  "content": [
-			    {
-			      "text": "<component>
-			<id>button</id>
-			<name>Button</name>
-			<example>
-			<example_name>Primary</example_name>
-			<example_description>
-			The primary button variant.
-			</example_description>
-			<example_code>
-			const Primary = () => <Button variant="primary">Click Me</Button>
-			</example_code>
-			</example>
-			</component>",
-			      "type": "text",
-			    },
-			    {
-			      "text": "<component>
-			<id>card</id>
-			<name>Card</name>
-			<description>
-			A container component for grouping related content.
-			</description>
-			<example>
-			<example_name>Basic</example_name>
-			<example_description>
-			A basic card with content.
-			</example_description>
-			<example_code>
-			const Basic = () => (
-			  <Card>
-			    <h3>Title</h3>
-			    <p>Content</p>
-			  </Card>
-			)
-			</example_code>
-			</example>
-			</component>",
-			      "type": "text",
-			    },
-			    {
-			      "text": "<component>
-			<id>input</id>
-			<name>Input</name>
-			<description>
-			A text input component with validation support.
-			</description>
-			<example>
-			<example_name>Basic</example_name>
-			<example_description>
-			A basic text input.
-			</example_description>
-			<example_code>
-			const Basic = () => <Input label="Name" placeholder="Enter name" />
-			</example_code>
-			</example>
+			</story_code>
+			</story>
 			</component>",
 			      "type": "text",
 			    },
@@ -185,7 +100,7 @@ describe('getComponentDocumentationTool', () => {
 			params: {
 				name: GET_TOOL_NAME,
 				arguments: {
-					componentIds: ['nonexistent'],
+					componentId: 'nonexistent',
 				},
 			},
 		};
@@ -199,80 +114,11 @@ describe('getComponentDocumentationTool', () => {
 			{
 			  "content": [
 			    {
-			      "text": "Error: Component not found: nonexistent",
+			      "text": "Component not found: "nonexistent". Use the list-all-components tool to see available components.",
 			      "type": "text",
 			    },
 			  ],
 			  "isError": true,
-			}
-		`);
-	});
-
-	it('should return partial results and a warning when some components are not found', async () => {
-		const request = {
-			jsonrpc: '2.0' as const,
-			id: 1,
-			method: 'tools/call',
-			params: {
-				name: GET_TOOL_NAME,
-				arguments: {
-					componentIds: ['button', 'nonexistent', 'card'],
-				},
-			},
-		};
-
-		const mockHttpRequest = new Request('https://example.com/mcp');
-		const response = await server.receive(request, {
-			custom: { request: mockHttpRequest },
-		});
-		expect(response.result).toMatchInlineSnapshot(`
-			{
-			  "content": [
-			    {
-			      "text": "<component>
-			<id>button</id>
-			<name>Button</name>
-			<example>
-			<example_name>Primary</example_name>
-			<example_description>
-			The primary button variant.
-			</example_description>
-			<example_code>
-			const Primary = () => <Button variant="primary">Click Me</Button>
-			</example_code>
-			</example>
-			</component>",
-			      "type": "text",
-			    },
-			    {
-			      "text": "<component>
-			<id>card</id>
-			<name>Card</name>
-			<description>
-			A container component for grouping related content.
-			</description>
-			<example>
-			<example_name>Basic</example_name>
-			<example_description>
-			A basic card with content.
-			</example_description>
-			<example_code>
-			const Basic = () => (
-			  <Card>
-			    <h3>Title</h3>
-			    <p>Content</p>
-			  </Card>
-			)
-			</example_code>
-			</example>
-			</component>",
-			      "type": "text",
-			    },
-			    {
-			      "text": "Warning: Component not found: nonexistent",
-			      "type": "text",
-			    },
-			  ],
 			}
 		`);
 	});
@@ -292,7 +138,7 @@ describe('getComponentDocumentationTool', () => {
 			params: {
 				name: GET_TOOL_NAME,
 				arguments: {
-					componentIds: ['button'],
+					componentId: 'button',
 				},
 			},
 		};
@@ -325,7 +171,7 @@ describe('getComponentDocumentationTool', () => {
 			params: {
 				name: GET_TOOL_NAME,
 				arguments: {
-					componentIds: ['button', 'card', 'non-existent'],
+					componentId: 'button',
 				},
 			},
 		};
@@ -333,7 +179,10 @@ describe('getComponentDocumentationTool', () => {
 		const mockHttpRequest = new Request('https://example.com/mcp');
 		// Pass the handler and request in the context for this specific request
 		await server.receive(request, {
-			custom: { request: mockHttpRequest, onGetComponentDocumentation: handler },
+			custom: {
+				request: mockHttpRequest,
+				onGetComponentDocumentation: handler,
+			},
 		});
 
 		expect(handler).toHaveBeenCalledTimes(1);
@@ -342,12 +191,8 @@ describe('getComponentDocumentationTool', () => {
 				request: mockHttpRequest,
 				onGetComponentDocumentation: handler,
 			}),
-			input: { componentIds: ['button', 'card', 'non-existent'] },
-			foundComponents: [
-				expect.objectContaining({ id: 'button', name: 'Button' }),
-				expect.objectContaining({ id: 'card', name: 'Card' }),
-			],
-			notFoundIds: ['non-existent'],
+			input: { componentId: 'button' },
+			foundComponent: expect.objectContaining({ id: 'button', name: 'Button' }),
 		});
 	});
 
@@ -396,7 +241,7 @@ describe('getComponentDocumentationTool', () => {
 			params: {
 				name: GET_TOOL_NAME,
 				arguments: {
-					componentIds: ['button'],
+					componentId: 'button',
 				},
 			},
 		};

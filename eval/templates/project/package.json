@@ -1,0 +1,33 @@
+{
+	"name": "mcp-eval-project-template",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"eval:build": "vite build",
+		"eval:build-storybook": "storybook build",
+		"eval:dev": "vite",
+		"eval:lint": "eslint .",
+		"preview": "vite preview",
+		"eval:test": "vitest run --reporter json --outputFile ../results/tests.json",
+		"eval:typecheck": "tsc --noEmit --project ./tsconfig.app.json"
+	},
+	"dependencies": {
+		"react": "catalog:experiments",
+		"react-dom": "catalog:experiments"
+	},
+	"devDependencies": {
+		"@eslint/js": "catalog:experiments",
+		"@types/node": "catalog:experiments",
+		"@types/react": "catalog:experiments",
+		"@types/react-dom": "catalog:experiments",
+		"@vitejs/plugin-react-swc": "catalog:experiments",
+		"eslint": "catalog:experiments",
+		"eslint-plugin-react-hooks": "catalog:experiments",
+		"eslint-plugin-react-refresh": "catalog:experiments",
+		"globals": "catalog:experiments",
+		"typescript": "catalog:experiments",
+		"typescript-eslint": "catalog:experiments",
+		"vite": "catalog:experiments"
+	}
+}
