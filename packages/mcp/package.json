@@ -39,6 +39,7 @@
 		"valibot": "catalog:"
 	},
 	"devDependencies": {
+		"@tmcp/transport-stdio": "catalog:",
 		"react-docgen": "^8.0.2",
 		"srvx": "^0.8.16"
 	}

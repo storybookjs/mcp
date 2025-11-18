@@ -288,6 +288,7 @@ For detailed package-specific guidance, see:
 
 - `packages/addon-mcp/**` → `.github/instructions/addon-mcp.instructions.md`
 - `packages/mcp/**` → `.github/instructions/mcp.instructions.md`
+- `eval/**` → `.github/instructions/eval.instructions.md`
 
 ## Documentation resources
 
