@@ -57,7 +57,7 @@ The handler accepts a `StorybookContext` with the following key properties:
   - Default behavior: Constructs URL from request origin, replacing `/mcp` with the provided path
   - Return value should be the manifest JSON as a string
 
-**Example with custom manifestProvider:**
+**Example with custom manifestProvider (local filesystem):**
 
 ```typescript
 import { createStorybookMcpHandler } from '@storybook/mcp';
@@ -69,17 +69,26 @@ const handler = await createStorybookMcpHandler({
 		// The provider decides on the base path, MCP provides the manifest path
 		const basePath = '/path/to/manifests';
 		// Remove leading './' from path if present
-		const normalizedPath = path.replace(/^\.\//g, '');
+		const normalizedPath = path.replace(/^\.\//, '');
 		const fullPath = `${basePath}/${normalizedPath}`;
 		return await readFile(fullPath, 'utf-8');
 	},
-	// Or map requests to different S3 buckets:
+});
+```
+
+**Example with custom manifestProvider (S3 bucket mapping):**
+
+```typescript
+import { createStorybookMcpHandler } from '@storybook/mcp';
+
+const handler = await createStorybookMcpHandler({
 	manifestProvider: async (request, path) => {
+		// Map requests to different S3 buckets based on hostname
 		const url = new URL(request.url);
 		const bucket = url.hostname.includes('staging')
 			? 'staging-bucket'
 			: 'prod-bucket';
-		const normalizedPath = path.replace(/^\.\//g, '');
+		const normalizedPath = path.replace(/^\.\, '');
 		const manifestUrl = `https://${bucket}.s3.amazonaws.com/${normalizedPath}`;
 		const response = await fetch(manifestUrl);
 		return await response.text();
