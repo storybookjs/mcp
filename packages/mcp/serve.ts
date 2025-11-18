@@ -7,11 +7,14 @@ async function serveMcp(port: number, manifestPath: string) {
 	const storybookMcpHandler = await createStorybookMcpHandler({
 		// Use the local fixture file via manifestProvider
 		manifestProvider: async () => {
-			// Read the manifest from the local file system
-			return await fs.readFile(
-				'./fixtures/full-manifest.fixture.json',
-				'utf-8',
-			);
+			if (
+				manifestPath.startsWith('http://') ||
+				manifestPath.startsWith('https://')
+			) {
+				const res = await fetch(manifestPath);
+				return await res.text();
+			}
+			return await fs.readFile(manifestPath, 'utf-8');
 		},
 	});
 
