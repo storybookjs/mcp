@@ -25,6 +25,10 @@
 			"persistent": true,
 			"interruptible": true
 		},
+		"test:e2e": {
+			"dependsOn": ["^build"],
+			"outputs": []
+		},
 		"//#format": {},
 		"//#format:check": {},
 		"//#lint": {},

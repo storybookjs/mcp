@@ -75,6 +75,19 @@ jobs:
           files: |
             test-report.junit.xml
 
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Run E2E tests
+        run: pnpm turbo run test:e2e
+
   typecheck:
     name: Type check
     runs-on: ubuntu-latest

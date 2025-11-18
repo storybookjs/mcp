@@ -89,9 +89,25 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 
 **Testing:**
 
-- Only `packages/mcp` has tests (Vitest with coverage)
-- Run `pnpm test run --coverage` in mcp package
-- Prefer TDD when adding new tools
+- **Unit tests**: `packages/mcp` has unit tests (Vitest with coverage)
+  - Run `pnpm test run --coverage` in mcp package
+  - Prefer TDD when adding new tools
+- **E2E tests**: `apps/internal-storybook/tests` contains E2E tests for the addon
+  - Run `pnpm test:e2e` at root or in internal-storybook
+  - Tests verify MCP endpoint works with latest Storybook prereleases
+  - Uses inline snapshots for response validation
+  - **When to update E2E tests**:
+    - Adding or modifying MCP tools (update tool discovery snapshots)
+    - Changing MCP protocol implementation (update session init tests)
+    - Modifying tool responses or schemas (update tool-specific tests)
+    - Adding new toolsets or changing toolset behavior (update filtering tests)
+  - **Running tests**:
+    - `pnpm test:e2e` - run all E2E tests
+    - `pnpm vitest run -u` - update snapshots when responses change
+    - Tests start Storybook server automatically, wait for MCP endpoint, then run
+  - **Test structure**:
+    - `mcp-endpoint.e2e.test.ts` - MCP protocol and tool tests
+    - `check-deps.e2e.test.ts` - Storybook version validation
 
 **Type checking:**
 

@@ -14,7 +14,7 @@ export default defineConfig({
 		},
 	],
 	test: {
-		projects: ['packages/*'],
+		projects: ['packages/*', 'apps/*'],
 		coverage: {
 			include: ['**/src/**/*.{ts,tsx}'],
 			exclude: ['*.d.ts'],

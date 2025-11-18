@@ -26,6 +26,7 @@
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:ci": "vitest run --coverage --reporter=default --reporter=github-actions --reporter=junit --outputFile=test-report.junit.xml",
+		"test:e2e": "turbo run test:e2e",
 		"typecheck": "tsc",
 		"turbo": "turbo",
 		"turbo:test": "turbo run test",
