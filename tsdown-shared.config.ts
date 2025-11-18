@@ -3,6 +3,7 @@ import { codecovRollupPlugin } from '@codecov/rollup-plugin';
 
 export default (pkgName: string) =>
 	defineConfig({
+		fixedExtension: false,
 		target: 'node20.19', // Minimum Node version supported by Storybook 10
 		loader: {
 			'.md': 'text',

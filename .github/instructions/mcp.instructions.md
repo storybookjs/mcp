@@ -118,19 +118,23 @@ Formats code using prettier.
 To check formatting without applying changes:
 
 ```bash
-pnpm format --check
+pnpm format:check
 ```
 
 ### Testing
 
-```bash
-pnpm test run
-```
-
-Or with coverage enabled:
+Tests can be run at the package level or from the monorepo root:
 
 ```bash
-pnpm test run --coverage
+# From the package directory
+pnpm test          # Run tests in watch mode
+pnpm test run      # Run tests once
+pnpm test run --coverage  # Run tests with coverage
+
+# From the monorepo root (runs tests across all packages)
+pnpm test          # Run all tests in watch mode
+pnpm test:run      # Run all tests once
+pnpm test:ci       # Run tests with coverage and CI reporters
 ```
 
 **Important**: Vitest automatically clears all mocks between tests, so you should never need to call `vi.clearAllMocks()` in a `beforeEach` hook.
