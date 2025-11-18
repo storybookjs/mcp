@@ -43,8 +43,8 @@ node eval.ts --agent claude-code --context components.json --upload 100-flight-b
 The framework supports four context modes:
 
 1. **No context** (`--no-context`): Agent uses only default tools
-2. **Component manifest** (`--context components.json`): Provides component documentation via `@storybook/mcp`
-3. **MCP server config** (`--context mcp.config.json` or inline JSON): Custom MCP server setup
+2. **Component manifest** (`--context components.json`): Provides component documentation via the `@storybook/mcp` package
+3. **MCP server config** (`--context mcp.config.json` or inline JSON): Custom MCP server setup (use this for fully custom MCP servers, not for Storybook MCP)
 4. **Extra prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`): Additional markdown files appended to main prompt
 
 ## Project Structure

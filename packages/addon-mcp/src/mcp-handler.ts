@@ -112,15 +112,13 @@ export const mcpServerHandler = async ({
 			},
 			onGetComponentDocumentation: async ({
 				input,
-				foundComponents,
-				notFoundIds,
+				foundComponent,
 			}) => {
 				await collectTelemetry({
 					event: 'tool:getComponentDocumentation',
 					server,
-					inputComponentCount: input.componentIds.length,
-					foundCount: foundComponents.length,
-					notFoundCount: notFoundIds.length,
+					componentId: input.componentId,
+					found: !!foundComponent,
 				});
 			},
 		}),
