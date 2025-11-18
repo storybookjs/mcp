@@ -44,8 +44,9 @@ function getContextDetails(context: Context): string {
 			const mcpConfig = Object.values(context.mcpServerConfig)[0];
 			if (mcpConfig?.type === 'stdio' && mcpConfig.args) {
 				const manifestIndex = mcpConfig.args.indexOf('--manifestPath');
-				if (manifestIndex !== -1 && mcpConfig.args[manifestIndex + 1]) {
-					return path.basename(mcpConfig.args[manifestIndex + 1]);
+				const manifestIndexValue = mcpConfig.args[manifestIndex + 1];
+				if (manifestIndex !== -1 && manifestIndexValue) {
+					return path.basename(manifestIndexValue);
 				}
 			}
 			return 'unknown manifest name';

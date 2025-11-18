@@ -5,15 +5,14 @@
 	"description": "The project for evaluating UI component development with and without Storybook MCP",
 	"type": "module",
 	"scripts": {
-		"build-storybook": "storybook build",
 		"eval": "node eval.ts",
-		"storybook": "storybook dev -p 6006"
+		"storybook": "storybook dev -p 6006",
+		"typecheck": "tsc"
 	},
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.30",
 		"@clack/prompts": "1.0.0-alpha.6",
 		"@radix-ui/colors": "^3.0.0",
-		"chromatic": "^13.3.3",
 		"@radix-ui/react-popover": "^1.1.15",
 		"@radix-ui/react-toggle": "^1.1.10",
 		"@radix-ui/react-toggle-group": "^1.1.11",
@@ -24,9 +23,11 @@
 		"@tsconfig/node24": "^24.0.1",
 		"@types/envinfo": "^7.8.4",
 		"@types/eslint": "^9.6.1",
+		"@types/node": "^24.10.1",
 		"@types/react": "^18.3.26",
 		"@vitejs/plugin-react-swc": "^4.2.0",
 		"ai-tokenizer": "^1.0.3",
+		"chromatic": "^13.3.3",
 		"envinfo": "^7.20.0",
 		"eslint": "^9.36.0",
 		"globals": "^16.4.0",

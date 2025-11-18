@@ -1,8 +1,9 @@
-import { startVitest } from 'vitest/node';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { EvaluationSummary, ExperimentArgs } from '../../types';
 import type { JsonTestResults } from 'vitest/reporters';
+import { x } from 'tinyexec';
+import { dedent } from 'ts-dedent';
 
 export async function testStories({
 	projectPath,
@@ -10,15 +11,31 @@ export async function testStories({
 }: ExperimentArgs): Promise<Pick<EvaluationSummary, 'test' | 'a11y'>> {
 	const testResultsPath = path.join(resultsPath, 'tests.json');
 
-	const vitest = await startVitest('test', undefined, {
-		root: projectPath,
-		watch: false,
-		silent: true,
-		reporters: ['json'],
-		outputFile: testResultsPath,
+	const result = await x('pnpm', ['eval:test'], {
+		nodeOptions: {
+			cwd: projectPath,
+		},
 	});
 
-	await vitest.close();
+	await fs.writeFile(
+		path.join(resultsPath, 'tests.md'),
+		dedent`# Test Results
+	
+	**Exit Code:** ${result.exitCode}
+
+	## stdout
+	
+	\`\`\`sh
+	${result.stdout}
+	\`\`\`
+	
+	## stderr
+	
+	\`\`\`
+	${result.stderr}
+	\`\`\`
+	`,
+	);
 
 	const { default: jsonTestResults } = (await import(testResultsPath, {
 		with: { type: 'json' },

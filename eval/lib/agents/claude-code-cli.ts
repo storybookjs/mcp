@@ -285,8 +285,7 @@ function getTodoProgress(
 	messages: ClaudeCodeStreamMessage[],
 ): TodoProgress | null {
 	// Find the most recent TodoWrite message
-	for (let i = messages.length - 1; i >= 0; i--) {
-		const message = messages[i];
+	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
 				(c): c is ToolUseContent =>

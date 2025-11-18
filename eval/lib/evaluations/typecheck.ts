@@ -109,8 +109,8 @@ if (import.meta.main) {
 	}
 	console.log({
 		typeErrors: await checkTypes({
-			projectPath: path.join(experimentPath[0], 'project'),
-			resultsPath: path.join(experimentPath[0], 'results'),
+			projectPath: path.join(experimentPath[0]!, 'project'),
+			resultsPath: path.join(experimentPath[0]!, 'results'),
 		} as ExperimentArgs),
 	});
 }

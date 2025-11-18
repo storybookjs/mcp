@@ -172,8 +172,8 @@ const CodeBlock = ({
 	const codeRef = useRef<HTMLElement>(null);
 
 	useEffect(() => {
-		if (codeRef.current && (window as any).hljs) {
-			(window as any).hljs.highlightElement(codeRef.current);
+		if (codeRef.current && (globalThis as any).hljs) {
+			(globalThis as any).hljs.highlightElement(codeRef.current);
 		}
 	}, [content, isTruncated]);
 
@@ -410,6 +410,15 @@ const ElapsedTime = ({
 	</div>
 );
 
+const TYPE_COLORS = {
+	assistant: { bg: '#dbeafe', text: '#1e40af' },
+	user: { bg: '#f3e8ff', text: '#6b21a8' },
+	system: { bg: '#e0e7ff', text: '#3730a3' },
+	result: { bg: '#dcfce7', text: '#166534' },
+	tool: { bg: '#fef3c7', text: '#92400e' },
+	prompt: { bg: '#fce7f3', text: '#9f1239' },
+} as const;
+
 const Turn = ({
 	children,
 	type,
@@ -420,7 +429,7 @@ const Turn = ({
 	isMCP = false,
 }: {
 	children: React.ReactNode;
-	type: string;
+	type: keyof typeof TYPE_COLORS;
 	title: string;
 	subtitle?: string;
 	tokenCount?: string;
@@ -429,16 +438,7 @@ const Turn = ({
 }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	const typeColors: Record<string, { bg: string; text: string }> = {
-		assistant: { bg: '#dbeafe', text: '#1e40af' },
-		user: { bg: '#f3e8ff', text: '#6b21a8' },
-		system: { bg: '#e0e7ff', text: '#3730a3' },
-		result: { bg: '#dcfce7', text: '#166534' },
-		tool: { bg: '#fef3c7', text: '#92400e' },
-		prompt: { bg: '#fce7f3', text: '#9f1239' },
-	};
-
-	const colors = typeColors[type] || typeColors.assistant;
+	const colors = TYPE_COLORS[type] ?? TYPE_COLORS.assistant;
 
 	return (
 		<div
@@ -771,10 +771,9 @@ function groupToolCallsWithResults(turns: ConversationMessage[]): Array<{
 	}> = [];
 	const usedResultIndices = new Set<number>();
 
-	for (let i = 0; i < turns.length; i++) {
+	for (const [i, turn] of turns.entries()) {
 		if (usedResultIndices.has(i)) continue;
 
-		const turn = turns[i];
 		const toolUseContent =
 			turn.type === 'assistant' &&
 			'message' in turn &&
