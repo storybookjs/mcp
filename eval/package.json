@@ -5,7 +5,6 @@
 	"description": "The project for evaluating UI component development with and without Storybook MCP",
 	"type": "module",
 	"scripts": {
-		"build-storybook": "storybook build",
 		"eval": "node eval.ts",
 		"storybook": "storybook dev -p 6006",
 		"typecheck": "tsc"

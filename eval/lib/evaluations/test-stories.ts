@@ -11,7 +11,7 @@ export async function testStories({
 }: ExperimentArgs): Promise<Pick<EvaluationSummary, 'test' | 'a11y'>> {
 	const testResultsPath = path.join(resultsPath, 'tests.json');
 
-	const result = await x('pnpm', ['test'], {
+	const result = await x('pnpm', ['eval:test'], {
 		nodeOptions: {
 			cwd: projectPath,
 		},

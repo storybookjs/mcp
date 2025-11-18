@@ -4,13 +4,13 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "vite build",
-		"build-storybook": "storybook build",
-		"dev": "vite",
-		"lint": "eslint .",
+		"eval:build": "vite build",
+		"eval:build-storybook": "storybook build",
+		"eval:dev": "vite",
+		"eval:lint": "eslint .",
 		"preview": "vite preview",
-		"test": "vitest run --reporter json --outputFile ../results/tests.json",
-		"typecheck": "tsc --noEmit --project ./tsconfig.app.json"
+		"eval:test": "vitest run --reporter json --outputFile ../results/tests.json",
+		"eval:typecheck": "tsc --noEmit --project ./tsconfig.app.json"
 	},
 	"dependencies": {
 		"react": "catalog:experiments",
