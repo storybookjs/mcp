@@ -9,8 +9,7 @@
 		"dev": "vite",
 		"lint": "eslint .",
 		"preview": "vite preview",
-		"test": "vitest",
-		"storybook": "storybook dev --port 6006",
+		"test": "vitest run --reporter json --outputFile ../results/tests.json",
 		"typecheck": "tsc --noEmit --project ./tsconfig.app.json"
 	},
 	"dependencies": {

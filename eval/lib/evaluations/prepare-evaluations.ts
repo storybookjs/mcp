@@ -28,6 +28,20 @@ export async function prepareEvaluations({
 		filter: (source) =>
 			!source.includes('node_modules') && !source.includes('dist'),
 	});
+
+	const { default: pkgJson } = await import(
+		path.join(projectPath, 'package.json'),
+		{
+			with: { type: 'json' },
+		}
+	);
+	// add the storybook script after agent execution, so it does not taint the experiment
+	pkgJson.scripts.storybook = 'storybook dev --port 6006';
+	await fs.writeFile(
+		path.join(projectPath, 'package.json'),
+		JSON.stringify(pkgJson, null, 2),
+	);
+
 	await fs
 		.cp(
 			path.join(evalPath, 'expected', 'stories'),
