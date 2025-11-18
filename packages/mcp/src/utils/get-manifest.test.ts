@@ -104,7 +104,9 @@ describe('getManifest', () => {
 			});
 
 			const request = createMockRequest('https://example.com/mcp');
-			await expect(getManifest(request)).rejects.toThrowErrorMatchingInlineSnapshot(
+			await expect(
+				getManifest(request),
+			).rejects.toThrowErrorMatchingInlineSnapshot(
 				`[ManifestGetError: Failed to get manifest: Invalid key: Expected "v" but received undefined]`,
 			);
 		});
@@ -215,7 +217,10 @@ describe('getManifest', () => {
 			const result = await getManifest(request, manifestProvider);
 
 			expect(result).toEqual(validManifest);
-			expect(manifestProvider).toHaveBeenCalledExactlyOnceWith(request);
+			expect(manifestProvider).toHaveBeenCalledExactlyOnceWith(
+				request,
+				'./manifests/components.json',
+			);
 			// fetch should not be called when manifestProvider is used
 			expect(global.fetch).not.toHaveBeenCalled();
 		});

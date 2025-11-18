@@ -52,7 +52,8 @@ const args = parseArgs({
 
 transport.listen({
 	source: args.values.manifestPath,
-	manifestProvider: async (source) => {
+	manifestProvider: async () => {
+		const source = args.values.manifestPath;
 		if (source.startsWith('http://') || source.startsWith('https://')) {
 			const res = await fetch(source);
 			return await res.text();

@@ -6,9 +6,8 @@ import { parseArgs } from 'node:util';
 async function serveMcp(port: number, manifestPath: string) {
 	const storybookMcpHandler = await createStorybookMcpHandler({
 		// Use the local fixture file via manifestProvider
-		manifestProvider: async (request) => {
+		manifestProvider: async () => {
 			// Read the manifest from the local file system
-			// Ignore the request URL and always use the local fixture
 			return await fs.readFile(
 				'./fixtures/full-manifest.fixture.json',
 				'utf-8',
