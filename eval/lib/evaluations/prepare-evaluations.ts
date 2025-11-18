@@ -9,14 +9,14 @@ export async function prepareEvaluations({
 }: ExperimentArgs) {
 	await addDevDependency(
 		[
-			'vitest@catalog:',
-			'@vitest/browser-playwright@catalog:',
-			'storybook@catalog:',
-			'@storybook/addon-docs@catalog:',
-			'@storybook/addon-a11y@catalog:',
-			'@storybook/addon-vitest@catalog:',
-			'@storybook/react-vite@catalog:',
-			'eslint-plugin-storybook@catalog:',
+			'vitest@catalog:experiments',
+			'@vitest/browser-playwright@catalog:experiments',
+			'storybook@catalog:experiments',
+			'@storybook/addon-docs@catalog:experiments',
+			'@storybook/addon-a11y@catalog:experiments',
+			'@storybook/addon-vitest@catalog:experiments',
+			'@storybook/react-vite@catalog:experiments',
+			'eslint-plugin-storybook@catalog:experiments',
 		],
 		{ cwd: projectPath, silent: true },
 	);
