@@ -362,7 +362,7 @@ export async function collectArgs() {
 							const config: McpServerConfig = {
 								[mcpServerName]: {
 									type: 'stdio',
-									command,
+									command: command!,
 									args: argsParts.length > 0 ? argsParts : undefined,
 								},
 							};

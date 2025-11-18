@@ -9,14 +9,14 @@ export async function prepareEvaluations({
 }: ExperimentArgs) {
 	await addDevDependency(
 		[
-			'vitest@catalog:',
-			'@vitest/browser-playwright@catalog:',
-			'storybook@catalog:',
-			'@storybook/addon-docs@catalog:',
-			'@storybook/addon-a11y@catalog:',
-			'@storybook/addon-vitest@catalog:',
-			'@storybook/react-vite@catalog:',
-			'eslint-plugin-storybook@catalog:',
+			'vitest@catalog:experiments',
+			'@vitest/browser-playwright@catalog:experiments',
+			'storybook@catalog:experiments',
+			'@storybook/addon-docs@catalog:experiments',
+			'@storybook/addon-a11y@catalog:experiments',
+			'@storybook/addon-vitest@catalog:experiments',
+			'@storybook/react-vite@catalog:experiments',
+			'eslint-plugin-storybook@catalog:experiments',
 		],
 		{ cwd: projectPath, silent: true },
 	);
@@ -28,6 +28,20 @@ export async function prepareEvaluations({
 		filter: (source) =>
 			!source.includes('node_modules') && !source.includes('dist'),
 	});
+
+	const { default: pkgJson } = await import(
+		path.join(projectPath, 'package.json'),
+		{
+			with: { type: 'json' },
+		}
+	);
+	// add the storybook script after agent execution, so it does not taint the experiment
+	pkgJson.scripts.storybook = 'storybook dev --port 6006';
+	await fs.writeFile(
+		path.join(projectPath, 'package.json'),
+		JSON.stringify(pkgJson, null, 2),
+	);
+
 	await fs
 		.cp(
 			path.join(evalPath, 'expected', 'stories'),

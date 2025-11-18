@@ -37,7 +37,7 @@
 		"@codecov/rollup-plugin": "^1.9.1",
 		"@modelcontextprotocol/inspector": "^0.17.2",
 		"@types/node": "20.19.0",
-		"@vitest/coverage-v8": "^4.0.8",
+		"@vitest/coverage-v8": "4.0.6",
 		"oxlint": "^1.25.0",
 		"oxlint-tsgolint": "^0.4.0",
 		"pkg-pr-new": "^0.0.57",
@@ -45,9 +45,10 @@
 		"publint": "^0.3.15",
 		"tsdown": "^0.16.4",
 		"turbo": "^2.6.1",
-		"vite-tsconfig-paths": "^5.1.4",
+		"typescript": "~5.9.3",
 		"vite": "catalog:",
-		"vitest": "^4.0.8"
+		"vite-tsconfig-paths": "^5.1.4",
+		"vitest": "4.0.6"
 	},
 	"packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8"
 }

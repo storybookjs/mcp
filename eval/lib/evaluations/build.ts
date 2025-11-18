@@ -8,7 +8,7 @@ export async function build({
 	projectPath,
 	resultsPath,
 }: ExperimentArgs): Promise<boolean> {
-	const result = await x('pnpm', ['build'], {
+	const result = await x('pnpm', ['eval:build'], {
 		nodeOptions: {
 			cwd: projectPath,
 		},

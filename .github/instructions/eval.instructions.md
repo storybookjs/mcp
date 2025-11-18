@@ -74,14 +74,16 @@ The framework supports four distinct context types:
    - Tests baseline agent capabilities
 
 2. **Component Manifest** (`--context components.json`):
-   - Provides component documentation via `@storybook/mcp`
+   - Provides component documentation via `@storybook/mcp` package
    - Uses stdio transport with `packages/mcp/bin.ts`
    - Best for testing agents with library/component documentation
+   - This uses the Storybook MCP server, not a custom MCP server
 
 3. **MCP Server** (`--context mcp.config.json` or inline JSON):
    - Custom MCP server configuration (HTTP or stdio)
    - Supports multiple named servers
    - Flexible for testing different MCP tool combinations
+   - Use this for fully custom MCP servers; use components.json for Storybook MCP
 
 4. **Extra Prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`):
    - Appends additional markdown files to main prompt
@@ -106,8 +108,10 @@ node eval.ts
 
 **Non-interactive mode:**
 ```bash
-node eval.ts --agent claude-code --context components.json --upload 100-flight-booking-plain
+node eval.ts --agent claude-code --context components.json --upload --no-storybook 100-flight-booking-plain
 ```
+
+**IMPORTANT**: Always use the `--no-storybook` flag when running evals to prevent the process from hanging at the end waiting for user input about starting Storybook.
 
 **Get help:**
 ```bash

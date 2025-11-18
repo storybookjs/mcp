@@ -22,7 +22,7 @@ export async function buildStorybook(
 	let buildError = '';
 
 	try {
-		await runScript('build-storybook', {
+		await runScript('eval:build-storybook', {
 			cwd: projectPath,
 			silent: true,
 		});
