@@ -19,8 +19,8 @@ catalog:
   tsdown: ^0.15.12
   typescript: ^5.9.3
   valibot: 1.1.0
-  vitest: 4.0.6
   vite: 7.2.2
+  vitest: 4.0.6
 
 catalogs:
   experiments:
