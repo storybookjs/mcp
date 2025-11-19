@@ -182,7 +182,7 @@ export async function collectArgs() {
 						case 'components-manifest': {
 							rerunCommandParts.push(
 								'--context',
-								`'${JSON.stringify(parsedArgValues.context.manifestPath)}'`,
+								JSON.stringify(parsedArgValues.context.manifestPath),
 							);
 							return {
 								type: 'components-manifest',
