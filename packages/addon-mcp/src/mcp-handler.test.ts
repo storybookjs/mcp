@@ -8,10 +8,6 @@ import {
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { PassThrough } from 'node:stream';
 
-vi.mock('storybook/internal/telemetry', () => ({
-	telemetry: vi.fn(),
-}));
-
 // Test helpers to reduce boilerplate
 function createMockIncomingMessage(options: {
 	method?: string;

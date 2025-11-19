@@ -8,10 +8,6 @@ import {
 import type { AddonContext } from '../types.ts';
 import { GET_STORY_URLS_TOOL_NAME } from './get-story-urls.ts';
 
-vi.mock('storybook/internal/telemetry', () => ({
-	telemetry: vi.fn(),
-}));
-
 describe('getUIBuildingInstructionsTool', () => {
 	let server: McpServer<any, AddonContext>;
 

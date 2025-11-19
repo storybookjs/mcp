@@ -1,18 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { McpServer } from 'tmcp';
 import type { AddonContext } from './types.ts';
-
-// Mock external dependencies only
-vi.mock('storybook/internal/node-logger', () => ({
-	logger: {
-		debug: vi.fn(),
-	},
-}));
-
-vi.mock('storybook/internal/telemetry', () => ({
-	telemetry: vi.fn(),
-}));
-
 import { collectTelemetry } from './telemetry.ts';
 import { logger } from 'storybook/internal/node-logger';
 import { telemetry } from 'storybook/internal/telemetry';
