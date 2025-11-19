@@ -128,8 +128,8 @@ function getManifestUrlFromRequest(request: Request, path: string): string {
  * replacing /mcp with the provided path
  */
 async function defaultManifestProvider(
-	request?: Request,
-	path: string = './manifests/components.json',
+	request: Request | undefined,
+	path: string,
 ): Promise<string> {
 	if (!request) {
 		throw new ManifestGetError(
