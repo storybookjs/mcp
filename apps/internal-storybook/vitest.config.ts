@@ -2,7 +2,8 @@ import { defineProject } from 'vitest/config';
 
 export default defineProject({
 	test: {
-		testTimeout: 60_000,
-		hookTimeout: 60_000,
+		name: 'e2e',
+		testTimeout: 15_000,
+		hookTimeout: 15_000,
 	},
 });

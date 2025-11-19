@@ -25,16 +25,20 @@
 			"persistent": true,
 			"interruptible": true
 		},
-		"test:e2e": {
-			"dependsOn": ["^build"],
-			"outputs": []
-		},
 		"//#format": {},
 		"//#format:check": {},
 		"//#lint": {},
 		"//#lint:ci": {},
-		"//#test:run": {},
+		"//#test": {
+			"dependsOn": ["^build"],
+			"persistent": true,
+			"interruptible": true
+		},
+		"//#test:run": {
+			"dependsOn": ["^build"]
+		},
 		"//#test:ci": {
+			"dependsOn": ["^build"],
 			"outputs": ["coverage/**", "test-report.junit.xml"]
 		},
 		"typecheck": {},

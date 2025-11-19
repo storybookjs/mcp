@@ -96,6 +96,12 @@ importers:
       '@modelcontextprotocol/inspector':
         specifier: ^0.17.2
         version: 0.17.2(@swc/core@1.13.5)(@types/node@20.19.0)(@types/react-dom@19.2.3(@types/react@19.2.6))(@types/react@19.2.6)(typescript@5.9.3)
+      '@storybook/addon-mcp':
+        specifier: workspace:*
+        version: link:packages/addon-mcp
+      '@storybook/mcp':
+        specifier: workspace:*
+        version: link:packages/mcp
       '@types/node':
         specifier: 20.19.0
         version: 20.19.0

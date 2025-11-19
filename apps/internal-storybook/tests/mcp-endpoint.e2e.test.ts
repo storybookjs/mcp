@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { x } from 'tinyexec';
 
 const STORYBOOK_DIR = new URL('..', import.meta.url).pathname;
-
 const MCP_ENDPOINT = 'http://localhost:6006/mcp';
 const STARTUP_TIMEOUT = 15_000;
 
@@ -66,7 +65,6 @@ async function waitForMcpEndpoint(
 				body: JSON.stringify(createMCPRequestBody('tools/list')),
 			});
 			if (response.ok) {
-				console.log('✓ MCP endpoint is ready');
 				clearInterval(intervalId);
 				resolve();
 				return;
@@ -88,9 +86,6 @@ async function waitForMcpEndpoint(
 
 describe('MCP Endpoint E2E Tests', () => {
 	beforeAll(async () => {
-		console.log('Starting Storybook dev server...');
-
-		// Start Storybook process from the internal-storybook directory
 		storybookProcess = x('pnpm', ['storybook'], {
 			nodeOptions: {
 				cwd: STORYBOOK_DIR,
@@ -103,7 +98,6 @@ describe('MCP Endpoint E2E Tests', () => {
 
 	afterAll(async () => {
 		if (storybookProcess) {
-			console.log('Shutting down Storybook...');
 			storybookProcess.kill('SIGTERM');
 			storybookProcess = null;
 		}
