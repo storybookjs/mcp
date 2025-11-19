@@ -14,7 +14,6 @@ export const experimental_devServer: PresetProperty<
 		toolsets: 'toolsets' in options ? options.toolsets : {},
 	});
 
-	const shouldRedirect = await isManifestAvailable(options);
 	app!.post('/mcp', (req, res) =>
 		mcpServerHandler({
 			req,
@@ -23,6 +22,9 @@ export const experimental_devServer: PresetProperty<
 			addonOptions,
 		}),
 	);
+
+	const shouldRedirect = await isManifestAvailable(options);
+
 	app!.get('/mcp', (req, res) => {
 		if (!req.headers['accept']?.includes('text/html')) {
 			return mcpServerHandler({ req, res, options, addonOptions });
