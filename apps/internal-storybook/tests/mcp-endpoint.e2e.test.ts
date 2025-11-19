@@ -97,10 +97,14 @@ describe('MCP Endpoint E2E Tests', () => {
 	}, STARTUP_TIMEOUT);
 
 	afterAll(async () => {
-		if (storybookProcess) {
-			storybookProcess.kill('SIGTERM');
-			storybookProcess = null;
+		if (!storybookProcess || !storybookProcess.process) {
+			return;
 		}
+		const kill = Promise.withResolvers<void>();
+		storybookProcess.process.on('exit', kill.resolve);
+		storybookProcess.kill('SIGTERM');
+		await kill.promise;
+		storybookProcess = null;
 	});
 
 	describe('Session Initialization', () => {
