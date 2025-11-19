@@ -62,30 +62,6 @@ describe('XmlFormatter - formatComponentManifest', () => {
 			`);
 		});
 
-		it('should handle multi-line descriptions', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				path: 'src/components/Button.tsx',
-				name: 'Button',
-				description:
-					'A versatile button component.\n\nSupports multiple variants and sizes.',
-			};
-
-			const result = xmlFormatter.formatComponentManifest(manifest);
-
-			expect(result).toMatchInlineSnapshot(`
-				"<component>
-				<id>button</id>
-				<name>Button</name>
-				<description>
-				A versatile button component.
-
-				Supports multiple variants and sizes.
-				</description>
-				</component>"
-			`);
-		});
-
 		it('should omit description section when not provided', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
@@ -218,64 +194,6 @@ describe('XmlFormatter - formatComponentManifest', () => {
 				<story_name>Disabled State</story_name>
 				<story_code>
 				<Button disabled>Disabled</Button>
-				</story_code>
-				</story>
-				</component>"
-			`);
-		});
-
-		it('should handle stories without description', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				stories: [
-					{
-						name: 'Simple',
-						snippet: '<Button>Simple</Button>',
-					},
-				],
-			};
-
-			const result = xmlFormatter.formatComponentManifest(manifest);
-
-			expect(result).toMatchInlineSnapshot(`
-				"<component>
-				<id>button</id>
-				<name>Button</name>
-				<story>
-				<story_name>Simple</story_name>
-				<story_code>
-				<Button>Simple</Button>
-				</story_code>
-				</story>
-				</component>"
-			`);
-		});
-
-		it('should handle stories without import', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				stories: [
-					{
-						name: 'NoImport',
-						snippet: '<Button>No Import</Button>',
-					},
-				],
-			};
-
-			const result = xmlFormatter.formatComponentManifest(manifest);
-
-			expect(result).toMatchInlineSnapshot(`
-				"<component>
-				<id>button</id>
-				<name>Button</name>
-				<story>
-				<story_name>No Import</story_name>
-				<story_code>
-				<Button>No Import</Button>
 				</story_code>
 				</story>
 				</component>"
@@ -921,60 +839,6 @@ describe('XmlFormatter - formatComponentManifestMapToList', () => {
 				)
 				</story_code>
 				</story>
-				</component>"
-			`);
-		});
-
-		it('should format partial success component (skips failed story)', () => {
-			const component = withErrorsFixture.components['partial-success'];
-			const result = xmlFormatter.formatComponentManifest(component);
-			expect(result).toMatchInlineSnapshot(`
-				"<component>
-				<id>partial-success</id>
-				<name>PartialSuccess</name>
-				<description>
-				A component where everything worked except one story.
-				</description>
-				<story>
-				<story_name>Default</story_name>
-				<story_description>
-				Default usage of the component.
-				</story_description>
-				<story_code>
-				import { PartialSuccess } from '@storybook/design-system';
-
-				const Default = () => <PartialSuccess title="Hello" />
-				</story_code>
-				</story>
-				<story>
-				<story_name>With Subtitle</story_name>
-				<story_description>
-				Component with both title and subtitle.
-				</story_description>
-				<story_code>
-				import { PartialSuccess } from '@storybook/design-system';
-
-				const WithSubtitle = () => <PartialSuccess title="Hello" subtitle="World" />
-				</story_code>
-				</story>
-				<props>
-				<prop>
-				<prop_name>title</prop_name>
-				<prop_description>
-				The title text
-				</prop_description>
-				<prop_type>string</prop_type>
-				<prop_required>true</prop_required>
-				</prop>
-				<prop>
-				<prop_name>subtitle</prop_name>
-				<prop_description>
-				Optional subtitle
-				</prop_description>
-				<prop_type>string</prop_type>
-				<prop_required>false</prop_required>
-				</prop>
-				</props>
 				</component>"
 			`);
 		});

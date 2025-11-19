@@ -2,7 +2,7 @@ import { createStorybookMcpHandler } from './src/index.ts';
 import { serve } from 'srvx';
 import fs from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import type { OutputFormat } from './src/utils/manifest-formatter/types.ts';
+import type { OutputFormat } from './src/types.ts';
 
 async function serveMcp(
 	port: number,

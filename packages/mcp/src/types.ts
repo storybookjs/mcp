@@ -4,11 +4,7 @@ import * as v from 'valibot';
 /**
  * Supported output formats for component manifest formatting.
  */
-export const OutputFormat = v.optional(
-	v.picklist(['xml', 'markdown']),
-	'markdown',
-);
-export type OutputFormat = v.InferOutput<typeof OutputFormat>;
+export type OutputFormat = 'xml' | 'markdown';
 
 /**
  * Custom context passed to MCP server and tools.

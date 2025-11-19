@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import type { Options } from 'storybook/internal/types';
-import type { StorybookContext } from '@storybook/mcp';
+import type { StorybookContext, OutputFormat } from '@storybook/mcp';
 
 export const AddonOptions = v.object({
 	toolsets: v.optional(
@@ -14,7 +14,10 @@ export const AddonOptions = v.object({
 			docs: true,
 		},
 	),
-	experimentalFormat: v.optional(v.picklist(['xml', 'markdown']), 'markdown'),
+	experimentalFormat: v.optional(
+		v.custom<OutputFormat>((val) => val === 'xml' || val === 'markdown'),
+		'markdown',
+	),
 });
 
 export type AddonOptionsInput = v.InferInput<typeof AddonOptions>;

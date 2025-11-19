@@ -1,8 +1,9 @@
-import type { ComponentManifest, ComponentManifestMap } from '../types.ts';
 import type {
+	ComponentManifest,
+	ComponentManifestMap,
 	OutputFormat,
-	ManifestFormatter,
-} from './manifest-formatter/types.ts';
+} from '../types.ts';
+import type { ManifestFormatter } from './manifest-formatter/types.ts';
 import { xmlFormatter } from './manifest-formatter/xml.ts';
 import { markdownFormatter } from './manifest-formatter/markdown.ts';
 

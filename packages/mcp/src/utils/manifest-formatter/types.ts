@@ -1,11 +1,4 @@
-import * as v from 'valibot';
 import type { ComponentManifest, ComponentManifestMap } from '../../types.ts';
-
-/**
- * Supported output formats for component manifest formatting.
- */
-export const OutputFormat = v.picklist(['xml', 'markdown']);
-export type OutputFormat = v.InferOutput<typeof OutputFormat>;
 
 /**
  * Interface for manifest formatters.

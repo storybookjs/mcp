@@ -18,8 +18,7 @@ import { StdioTransport } from '@tmcp/transport-stdio';
 import pkgJson from './package.json' with { type: 'json' };
 import { addListAllComponentsTool } from './src/tools/list-all-components.ts';
 import { addGetComponentDocumentationTool } from './src/tools/get-component-documentation.ts';
-import type { StorybookContext } from './src/types.ts';
-import type { OutputFormat } from './src/utils/manifest-formatter/types.ts';
+import type { StorybookContext, OutputFormat } from './src/types.ts';
 import { parseArgs } from 'node:util';
 import * as fs from 'node:fs/promises';
 
