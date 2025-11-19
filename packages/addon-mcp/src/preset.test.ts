@@ -9,9 +9,10 @@ describe('experimental_devServer', () => {
 
 	beforeEach(() => {
 		mockApp = {
-			use: vi.fn((path, handler) => {
+			post: vi.fn((path, handler) => {
 				mcpHandler = handler;
 			}),
+			get: vi.fn(),
 		};
 
 		mockOptions = {
@@ -26,18 +27,28 @@ describe('experimental_devServer', () => {
 		} as unknown as Options;
 	});
 
-	it('should register /mcp endpoint', async () => {
+	it('should register /mcp POST endpoint', async () => {
 		await (experimental_devServer as any)(mockApp, mockOptions);
 
-		expect(mockApp.use).toHaveBeenCalledWith('/mcp', expect.any(Function));
+		expect(mockApp.post).toHaveBeenCalledWith('/mcp', expect.any(Function));
 		expect(mcpHandler).toBeDefined();
 	});
 
+	it('should register /mcp GET endpoint', async () => {
+		await (experimental_devServer as any)(mockApp, mockOptions);
+
+		expect(mockApp.get).toHaveBeenCalledWith('/mcp', expect.any(Function));
+	});
+
 	it('should serve HTML for browser GET requests', async () => {
+		let getHandler: any;
+		mockApp.get = vi.fn((path, handler) => {
+			getHandler = handler;
+		});
+
 		await (experimental_devServer as any)(mockApp, mockOptions);
 
 		const mockReq = {
-			method: 'GET',
 			headers: {
 				accept: 'text/html',
 			},
@@ -48,7 +59,7 @@ describe('experimental_devServer', () => {
 			end: vi.fn(),
 		} as any;
 
-		await mcpHandler(mockReq, mockRes);
+		await getHandler(mockReq, mockRes);
 
 		expect(mockRes.writeHead).toHaveBeenCalledWith(200, {
 			'Content-Type': 'text/html',
@@ -56,7 +67,7 @@ describe('experimental_devServer', () => {
 		expect(mockRes.end).toHaveBeenCalledWith(expect.stringContaining('<html'));
 	});
 
-	it('should not serve HTML for POST requests', async () => {
+	it('should handle POST requests as MCP protocol', async () => {
 		await (experimental_devServer as any)(mockApp, mockOptions);
 
 		const initializeRequest = JSON.stringify({
@@ -78,8 +89,9 @@ describe('experimental_devServer', () => {
 			headers: {
 				accept: 'text/html',
 				'content-type': 'application/json',
+				host: 'localhost:6006',
 			},
-			socket: {},
+			socket: { encrypted: false },
 			url: '/',
 			[Symbol.asyncIterator]: async function* () {
 				yield Buffer.from(initializeRequest);
@@ -126,6 +138,7 @@ describe('experimental_devServer', () => {
 
 		await (experimental_devServer as any)(mockApp, partialOptions);
 
-		expect(mockApp.use).toHaveBeenCalledWith('/mcp', expect.any(Function));
+		expect(mockApp.post).toHaveBeenCalledWith('/mcp', expect.any(Function));
+		expect(mockApp.get).toHaveBeenCalledWith('/mcp', expect.any(Function));
 	});
 });
