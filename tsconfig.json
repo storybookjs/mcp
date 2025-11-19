@@ -20,7 +20,8 @@
 		"noEmit": true,
 
 		// Node 20 according to https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping#node-20
-		"lib": ["es2023", "dom", "dom.iterable"],
+		// es2024 added for Promise.withResolvers()
+		"lib": ["es2023", "es2024", "dom", "dom.iterable"],
 
 		// Customization
 		"allowImportingTsExtensions": true,
