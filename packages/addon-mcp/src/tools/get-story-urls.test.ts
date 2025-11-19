@@ -13,10 +13,6 @@ vi.mock('storybook/internal/csf', () => ({
 	storyNameFromExport: (exportName: string) => exportName,
 }));
 
-vi.mock('storybook/internal/telemetry', () => ({
-	telemetry: vi.fn(),
-}));
-
 describe('getStoryUrlsTool', () => {
 	let server: McpServer<any, AddonContext>;
 	let fetchStoryIndexSpy: any;
