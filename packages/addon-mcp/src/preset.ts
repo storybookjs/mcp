@@ -14,15 +14,6 @@ export const experimental_devServer: PresetProperty<
 		toolsets: 'toolsets' in options ? options.toolsets : {},
 	});
 
-	app!.post('/mcp', (req, res) =>
-		mcpServerHandler({
-			req,
-			res,
-			options,
-			addonOptions,
-		}),
-	);
-
 	const shouldRedirect = await isManifestAvailable(options);
 
 	app!.use('/mcp', (req, res) => {
