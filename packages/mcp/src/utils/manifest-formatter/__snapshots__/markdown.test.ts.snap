@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`formatComponentManifest > formats all full fixtures 1`] = `
+exports[`MarkdownFormatter - formatComponentManifest > formats all full fixtures 1`] = `
 "# Button
 
 ID: button
@@ -98,7 +98,7 @@ const Danger = () => <Button variant="danger" onClick={() => confirm('Are you su
 | children | \`ReactNode\` | The content of the button | true |  |"
 `;
 
-exports[`formatComponentManifest > formats all full fixtures 2`] = `
+exports[`MarkdownFormatter - formatComponentManifest > formats all full fixtures 2`] = `
 "# Card
 
 ID: card
@@ -250,7 +250,7 @@ const UserProfile = () => (
 | onClick | \`(event: MouseEvent) => void\` | Callback function when the card is clicked (requires clickable=true) | false |  |"
 `;
 
-exports[`formatComponentManifest > formats all full fixtures 3`] = `
+exports[`MarkdownFormatter - formatComponentManifest > formats all full fixtures 3`] = `
 "# Input
 
 ID: input
@@ -348,7 +348,7 @@ const Disabled = () => <Input label="Username" value="john_doe" disabled />
 | onChange | \`(event: ChangeEvent<HTMLInputElement>) => void\` | Callback function when the input value changes | false |  |"
 `;
 
-exports[`formatComponentManifestMapToList > formats the full manifest fixture 1`] = `
+exports[`MarkdownFormatter - formatComponentManifestMapToList > formats the full manifest fixture 1`] = `
 "# Components
 
 - Button (button): A versatile button component for user interactions

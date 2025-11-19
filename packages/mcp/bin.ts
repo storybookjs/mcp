@@ -1,14 +1,14 @@
 /**
  * This is a way to start the @storybook/mcp server as a stdio MCP server, which is sometimes easier for testing.
  * You can run it like this:
- *   node bin.ts --manifestPath ./path/to/manifest.json
+ *   node bin.ts --manifestPath ./path/to/manifest.json --format markdown
  *
  * Or when configuring it as an MCP server:
  * {
  *   "storybook-mcp": {
  *     "type": "stdio",
  *     "command": "node",
- *     "args": ["bin.ts", "--manifestPath", "./path/to/manifest.json"]
+ *     "args": ["bin.ts", "--manifestPath", "./path/to/manifest.json", "--format", "markdown"]
  *   }
  * }
  */
@@ -19,6 +19,7 @@ import pkgJson from './package.json' with { type: 'json' };
 import { addListAllComponentsTool } from './src/tools/list-all-components.ts';
 import { addGetComponentDocumentationTool } from './src/tools/get-component-documentation.ts';
 import type { StorybookContext } from './src/types.ts';
+import type { OutputFormat } from './src/utils/manifest-formatter/types.ts';
 import { parseArgs } from 'node:util';
 import * as fs from 'node:fs/promises';
 
@@ -47,11 +48,18 @@ const args = parseArgs({
 			type: 'string',
 			default: './fixtures/full-manifest.fixture.json',
 		},
+		format: {
+			type: 'string',
+			default: 'markdown',
+		},
 	},
 });
 
+const format = args.values.format as OutputFormat;
+
 transport.listen({
 	source: args.values.manifestPath,
+	format,
 	manifestProvider: async () => {
 		const { manifestPath } = args.values;
 		if (

@@ -35,7 +35,8 @@ The addon supports configuring which toolsets are enabled:
       toolsets: {
         dev: true,      // get-story-urls, get-ui-building-instructions
         docs: true,  // list-all-components, get-component-documentation
-      }
+      },
+      experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
   }
   ```
@@ -73,6 +74,11 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllComponents`: Called when the list-all-components tool is invoked
   - `onGetComponentDocumentation`: Called when the get-component-documentation tool is invoked
+- **Output Format**: The `format` property in context controls output format:
+  - `'markdown'` (default): Token-efficient markdown with adaptive formatting
+  - `'xml'`: Legacy XML format
+  - Format is configurable via addon options or directly in `StorybookContext`
+  - Formatters are implemented in `packages/mcp/src/utils/manifest-formatter/` with separate files for XML and markdown
 
 ## Development Environment
 

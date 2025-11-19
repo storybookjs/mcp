@@ -1,22 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import {
-	formatComponentManifest,
-	formatComponentManifestMapToList,
-} from './format-manifest';
-import type { ComponentManifest, ComponentManifestMap } from '../types';
-import fullManifestFixture from '../../fixtures/full-manifest.fixture.json' with { type: 'json' };
-import withErrorsFixture from '../../fixtures/with-errors.fixture.json' with { type: 'json' };
+import { xmlFormatter } from './xml.ts';
+import type { ComponentManifest, ComponentManifestMap } from '../../types.ts';
+import fullManifestFixture from '../../../fixtures/full-manifest.fixture.json' with { type: 'json' };
+import withErrorsFixture from '../../../fixtures/with-errors.fixture.json' with { type: 'json' };
 
-describe('formatComponentManifest', () => {
+describe('XmlFormatter - formatComponentManifest', () => {
 	it('formats all full fixtures', () => {
 		expect(
-			formatComponentManifest(fullManifestFixture.components.button),
+			xmlFormatter.formatComponentManifest(
+				fullManifestFixture.components.button,
+			),
 		).toMatchSnapshot();
 		expect(
-			formatComponentManifest(fullManifestFixture.components.card),
+			xmlFormatter.formatComponentManifest(fullManifestFixture.components.card),
 		).toMatchSnapshot();
 		expect(
-			formatComponentManifest(fullManifestFixture.components.input),
+			xmlFormatter.formatComponentManifest(
+				fullManifestFixture.components.input,
+			),
 		).toMatchSnapshot();
 	});
 
@@ -28,12 +29,13 @@ describe('formatComponentManifest', () => {
 				name: 'TestComponent',
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# TestComponent
-
-				ID: test-component"
+				"<component>
+				<id>test-component</id>
+				<name>TestComponent</name>
+				</component>"
 			`);
 		});
 	});
@@ -47,14 +49,16 @@ describe('formatComponentManifest', () => {
 				description: 'A simple button component',
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				A simple button component"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<description>
+				A simple button component
+				</description>
+				</component>"
 			`);
 		});
 
@@ -67,16 +71,18 @@ describe('formatComponentManifest', () => {
 					'A versatile button component.\n\nSupports multiple variants and sizes.',
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<description>
 				A versatile button component.
 
-				Supports multiple variants and sizes."
+				Supports multiple variants and sizes.
+				</description>
+				</component>"
 			`);
 		});
 
@@ -87,12 +93,13 @@ describe('formatComponentManifest', () => {
 				path: 'src/components/Button.tsx',
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>"
 			`);
 		});
 	});
@@ -113,24 +120,24 @@ describe('formatComponentManifest', () => {
 				],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Examples
-
-				### Primary
-
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<story>
+				<story_name>Primary</story_name>
+				<story_description>
 				A primary button variant
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				import { Button } from "@/components";
 
 				<Button variant="primary">Click me</Button>
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 
@@ -152,30 +159,29 @@ describe('formatComponentManifest', () => {
 				],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Examples
-
-				### Primary
-
-				\`\`\`
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<story>
+				<story_name>Primary</story_name>
+				<story_code>
 				import { Button } from "@/components";
 
 				<Button variant="primary">Primary</Button>
-				\`\`\`
-
-				### Secondary
-
-				\`\`\`
+				</story_code>
+				</story>
+				<story>
+				<story_name>Secondary</story_name>
+				<story_code>
 				import { Button } from "@/components";
 
 				<Button variant="secondary">Secondary</Button>
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 
@@ -196,26 +202,25 @@ describe('formatComponentManifest', () => {
 				],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Examples
-
-				### With Icon
-
-				\`\`\`
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<story>
+				<story_name>With Icon</story_name>
+				<story_code>
 				<Button icon={<Icon />}>Click me</Button>
-				\`\`\`
-
-				### Disabled State
-
-				\`\`\`
+				</story_code>
+				</story>
+				<story>
+				<story_name>Disabled State</story_name>
+				<story_code>
 				<Button disabled>Disabled</Button>
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 
@@ -232,20 +237,19 @@ describe('formatComponentManifest', () => {
 				],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Examples
-
-				### Simple
-
-				\`\`\`
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<story>
+				<story_name>Simple</story_name>
+				<story_code>
 				<Button>Simple</Button>
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 
@@ -262,20 +266,19 @@ describe('formatComponentManifest', () => {
 				],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Examples
-
-				### No Import
-
-				\`\`\`
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<story>
+				<story_name>No Import</story_name>
+				<story_code>
 				<Button>No Import</Button>
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 
@@ -287,14 +290,16 @@ describe('formatComponentManifest', () => {
 				description: 'A button component',
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				A button component"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<description>
+				A button component
+				</description>
+				</component>"
 			`);
 		});
 
@@ -306,12 +311,13 @@ describe('formatComponentManifest', () => {
 				stories: [],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>"
 			`);
 		});
 	});
@@ -342,34 +348,34 @@ describe('formatComponentManifest', () => {
 				],
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<description>
 				A versatile button component.
 
 				Supports multiple variants, sizes, and states.
-
-				## Examples
-
-				### Primary
-
+				</description>
+				<story>
+				<story_name>Primary</story_name>
+				<story_description>
 				The primary button variant.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				import { Button } from "@storybook/design-system";
 
 				const Primary = () => <Button variant="primary">Click Me</Button>
-				\`\`\`
-
-				### With Sizes
-
+				</story_code>
+				</story>
+				<story>
+				<story_name>With Sizes</story_name>
+				<story_description>
 				Buttons in different sizes.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				import { Button } from "@storybook/design-system";
 
 				const Sizes = () => (
@@ -378,7 +384,9 @@ describe('formatComponentManifest', () => {
 				    <Button size="large">Large</Button>
 				  </>
 				)
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 	});
@@ -428,20 +436,41 @@ describe('formatComponentManifest', () => {
 				},
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Props
-
-				| Name | Type | Description | Required | Default |
-				|------|------|-------------|----------|---------|
-				| variant | \`"primary" | "secondary"\` | The visual style variant | false | "primary" |
-				| disabled | \`boolean\` | Whether the button is disabled | false | false |
-				| onClick | \`(event: MouseEvent) => void\` | Click handler | true |  |"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<props>
+				<prop>
+				<prop_name>variant</prop_name>
+				<prop_description>
+				The visual style variant
+				</prop_description>
+				<prop_type>"primary" | "secondary"</prop_type>
+				<prop_required>false</prop_required>
+				<prop_default>"primary"</prop_default>
+				</prop>
+				<prop>
+				<prop_name>disabled</prop_name>
+				<prop_description>
+				Whether the button is disabled
+				</prop_description>
+				<prop_type>boolean</prop_type>
+				<prop_required>false</prop_required>
+				<prop_default>false</prop_default>
+				</prop>
+				<prop>
+				<prop_name>onClick</prop_name>
+				<prop_description>
+				Click handler
+				</prop_description>
+				<prop_type>(event: MouseEvent) => void</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				</props>
+				</component>"
 			`);
 		});
 
@@ -461,16 +490,19 @@ describe('formatComponentManifest', () => {
 				},
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				## Props
-
-				- children: string"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<props>
+				<prop>
+				<prop_name>children</prop_name>
+				<prop_type>string</prop_type>
+				</prop>
+				</props>
+				</component>"
 			`);
 		});
 
@@ -482,14 +514,16 @@ describe('formatComponentManifest', () => {
 				description: 'A button component',
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				A button component"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				<description>
+				A button component
+				</description>
+				</component>"
 			`);
 		});
 
@@ -503,20 +537,22 @@ describe('formatComponentManifest', () => {
 				},
 			};
 
-			const result = formatComponentManifest(manifest);
+			const result = xmlFormatter.formatComponentManifest(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button"
+				"<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>"
 			`);
 		});
 	});
 });
 
-describe('formatComponentManifestMapToList', () => {
+describe('XmlFormatter - formatComponentManifestMapToList', () => {
 	it('formats the full manifest fixture', () => {
-		const result = formatComponentManifestMapToList(fullManifestFixture);
+		const result =
+			xmlFormatter.formatComponentManifestMapToList(fullManifestFixture);
 		expect(result).toMatchSnapshot();
 	});
 
@@ -533,12 +569,15 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button)"
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>
+				</components>"
 			`);
 		});
 
@@ -564,14 +603,23 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button)
-				- Card (card)
-				- Input (input)"
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>
+				<component>
+				<id>card</id>
+				<name>Card</name>
+				</component>
+				<component>
+				<id>input</id>
+				<name>Input</name>
+				</component>
+				</components>"
 			`);
 		});
 	});
@@ -590,12 +638,18 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button): A versatile button component"
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				<summary>
+				A versatile button component
+				</summary>
+				</component>
+				</components>"
 			`);
 		});
 
@@ -613,7 +667,7 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toContain('Short summary');
 			expect(result).not.toContain('longer description');
@@ -632,12 +686,18 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button): A simple button component"
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				<summary>
+				A simple button component
+				</summary>
+				</component>
+				</components>"
 			`);
 		});
 
@@ -655,12 +715,18 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button): This is a very long description that exceeds ninety characters and should be truncated wit..."
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				<summary>
+				This is a very long description that exceeds ninety characters and should be truncated wit...
+				</summary>
+				</component>
+				</components>"
 			`);
 		});
 
@@ -678,7 +744,7 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toContain(
 				'A description with exactly eighty characters is fine and should not be truncated',
@@ -698,13 +764,16 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).not.toContain('<summary>');
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button)"
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>
+				</components>"
 			`);
 		});
 	});
@@ -742,15 +811,36 @@ describe('formatComponentManifestMapToList', () => {
 				},
 			};
 
-			const result = formatComponentManifestMapToList(manifest);
+			const result = xmlFormatter.formatComponentManifestMapToList(manifest);
 
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- Button (button): A versatile button component
-				- Card (card): A flexible container for grouping content
-				- Input (input): Text input with validation
-				- Modal (modal)"
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				<summary>
+				A versatile button component
+				</summary>
+				</component>
+				<component>
+				<id>card</id>
+				<name>Card</name>
+				<summary>
+				A flexible container for grouping content
+				</summary>
+				</component>
+				<component>
+				<id>input</id>
+				<name>Input</name>
+				<summary>
+				Text input with validation
+				</summary>
+				</component>
+				<component>
+				<id>modal</id>
+				<name>Modal</name>
+				</component>
+				</components>"
 			`);
 		});
 	});
@@ -759,121 +849,169 @@ describe('formatComponentManifestMapToList', () => {
 		it('should format success component with mixed stories (only successful ones)', () => {
 			const component =
 				withErrorsFixture.components['success-component-with-mixed-stories'];
-			const result = formatComponentManifest(component);
+			const result = xmlFormatter.formatComponentManifest(component);
 			expect(result).toMatchInlineSnapshot(`
-				"# SuccessWithMixedStories
-
-				ID: success-component-with-mixed-stories
-
+				"<component>
+				<id>success-component-with-mixed-stories</id>
+				<name>SuccessWithMixedStories</name>
+				<description>
 				A component that loaded successfully but has some stories that failed to generate.
-
-				## Examples
-
-				### Working
-
+				</description>
+				<story>
+				<story_name>Working</story_name>
+				<story_description>
 				This story generated successfully.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				import { SuccessWithMixedStories } from '@storybook/design-system';
 
 				const Working = () => <SuccessWithMixedStories text="Hello" />
-				\`\`\`
-
-				## Props
-
-				| Name | Type | Description | Required | Default |
-				|------|------|-------------|----------|---------|
-				| text | \`string\` | The text to display | true |  |
-				| variant | \`"primary" | "secondary"\` | The visual variant | false | "primary" |"
+				</story_code>
+				</story>
+				<props>
+				<prop>
+				<prop_name>text</prop_name>
+				<prop_description>
+				The text to display
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				<prop>
+				<prop_name>variant</prop_name>
+				<prop_description>
+				The visual variant
+				</prop_description>
+				<prop_type>"primary" | "secondary"</prop_type>
+				<prop_required>false</prop_required>
+				<prop_default>"primary"</prop_default>
+				</prop>
+				</props>
+				</component>"
 			`);
 		});
 
 		it('should format error component with success stories', () => {
 			const component =
 				withErrorsFixture.components['error-component-with-success-stories'];
-			const result = formatComponentManifest(component);
+			const result = xmlFormatter.formatComponentManifest(component);
 			expect(result).toMatchInlineSnapshot(`
-				"# ErrorWithSuccessStories
-
-				ID: error-component-with-success-stories
-
-				## Examples
-
-				### Basic
-
+				"<component>
+				<id>error-component-with-success-stories</id>
+				<name>ErrorWithSuccessStories</name>
+				<story>
+				<story_name>Basic</story_name>
+				<story_description>
 				Even though the component parsing failed, this story's code snippet was generated.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				const Basic = () => <ErrorWithSuccessStories>Content</ErrorWithSuccessStories>
-				\`\`\`
-
-				### Advanced
-
+				</story_code>
+				</story>
+				<story>
+				<story_name>Advanced</story_name>
+				<story_description>
 				Another successfully generated story despite component-level errors.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				const Advanced = () => (
 				  <ErrorWithSuccessStories disabled>
 				    Advanced Content
 				  </ErrorWithSuccessStories>
 				)
-				\`\`\`"
+				</story_code>
+				</story>
+				</component>"
 			`);
 		});
 
 		it('should format partial success component (skips failed story)', () => {
 			const component = withErrorsFixture.components['partial-success'];
-			const result = formatComponentManifest(component);
+			const result = xmlFormatter.formatComponentManifest(component);
 			expect(result).toMatchInlineSnapshot(`
-				"# PartialSuccess
-
-				ID: partial-success
-
+				"<component>
+				<id>partial-success</id>
+				<name>PartialSuccess</name>
+				<description>
 				A component where everything worked except one story.
-
-				## Examples
-
-				### Default
-
+				</description>
+				<story>
+				<story_name>Default</story_name>
+				<story_description>
 				Default usage of the component.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				import { PartialSuccess } from '@storybook/design-system';
 
 				const Default = () => <PartialSuccess title="Hello" />
-				\`\`\`
-
-				### With Subtitle
-
+				</story_code>
+				</story>
+				<story>
+				<story_name>With Subtitle</story_name>
+				<story_description>
 				Component with both title and subtitle.
-
-				\`\`\`
+				</story_description>
+				<story_code>
 				import { PartialSuccess } from '@storybook/design-system';
 
 				const WithSubtitle = () => <PartialSuccess title="Hello" subtitle="World" />
-				\`\`\`
-
-				## Props
-
-				| Name | Type | Description | Required | Default |
-				|------|------|-------------|----------|---------|
-				| title | \`string\` | The title text | true |  |
-				| subtitle | \`string\` | Optional subtitle | false |  |"
+				</story_code>
+				</story>
+				<props>
+				<prop>
+				<prop_name>title</prop_name>
+				<prop_description>
+				The title text
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>true</prop_required>
+				</prop>
+				<prop>
+				<prop_name>subtitle</prop_name>
+				<prop_description>
+				Optional subtitle
+				</prop_description>
+				<prop_type>string</prop_type>
+				<prop_required>false</prop_required>
+				</prop>
+				</props>
+				</component>"
 			`);
 		});
 
 		it('should format list of components with errors', () => {
-			const result = formatComponentManifestMapToList(
+			const result = xmlFormatter.formatComponentManifestMapToList(
 				withErrorsFixture as ComponentManifestMap,
 			);
 			expect(result).toMatchInlineSnapshot(`
-				"# Components
-
-				- SuccessWithMixedStories (success-component-with-mixed-stories): Success component with both working and failing stories
-				- ErrorWithSuccessStories (error-component-with-success-stories)
-				- ErrorWithErrorStories (error-component-with-error-stories)
-				- CompleteError (complete-error-component)
-				- PartialSuccess (partial-success): Mostly working component with one failing story"
+				"<components>
+				<component>
+				<id>success-component-with-mixed-stories</id>
+				<name>SuccessWithMixedStories</name>
+				<summary>
+				Success component with both working and failing stories
+				</summary>
+				</component>
+				<component>
+				<id>error-component-with-success-stories</id>
+				<name>ErrorWithSuccessStories</name>
+				</component>
+				<component>
+				<id>error-component-with-error-stories</id>
+				<name>ErrorWithErrorStories</name>
+				</component>
+				<component>
+				<id>complete-error-component</id>
+				<name>CompleteError</name>
+				</component>
+				<component>
+				<id>partial-success</id>
+				<name>PartialSuccess</name>
+				<summary>
+				Mostly working component with one failing story
+				</summary>
+				</component>
+				</components>"
 			`);
 		});
 	});

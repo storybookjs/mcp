@@ -1,0 +1,740 @@
+import { describe, it, expect } from 'vitest';
+import { markdownFormatter } from './markdown.ts';
+import type { ComponentManifest, ComponentManifestMap } from '../../types.ts';
+import fullManifestFixture from '../../../fixtures/full-manifest.fixture.json' with { type: 'json' };
+
+describe('MarkdownFormatter - formatComponentManifest', () => {
+	it('formats all full fixtures', () => {
+		expect(
+			markdownFormatter.formatComponentManifest(
+				fullManifestFixture.components.button,
+			),
+		).toMatchSnapshot();
+		expect(
+			markdownFormatter.formatComponentManifest(
+				fullManifestFixture.components.card,
+			),
+		).toMatchSnapshot();
+		expect(
+			markdownFormatter.formatComponentManifest(
+				fullManifestFixture.components.input,
+			),
+		).toMatchSnapshot();
+	});
+
+	describe('component header', () => {
+		it('should include component name and ID', () => {
+			const manifest: ComponentManifest = {
+				id: 'test-component',
+				path: 'src/components/TestComponent.tsx',
+				name: 'TestComponent',
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# TestComponent
+
+				ID: test-component"
+			`);
+		});
+	});
+
+	describe('description section', () => {
+		it('should include description when provided', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				path: 'src/components/Button.tsx',
+				name: 'Button',
+				description: 'A simple button component',
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				A simple button component"
+			`);
+		});
+
+		it('should handle multi-line descriptions', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				path: 'src/components/Button.tsx',
+				name: 'Button',
+				description:
+					'A versatile button component.\n\nSupports multiple variants and sizes.',
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				A versatile button component.
+
+				Supports multiple variants and sizes."
+			`);
+		});
+
+		it('should omit description section when not provided', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).not.toContain('A simple button component');
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button"
+			`);
+		});
+	});
+
+	describe('stories section', () => {
+		it('should format a single story', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				import: 'import { Button } from "@/components";',
+				stories: [
+					{
+						name: 'Default',
+						snippet: '<Button>Click me</Button>',
+					},
+				],
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				## Examples
+
+				### Default
+
+				\`\`\`
+				import { Button } from "@/components";
+
+				<Button>Click me</Button>
+				\`\`\`"
+			`);
+		});
+
+		it('should format multiple stories', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				import: 'import { Button } from "@/components";',
+				stories: [
+					{
+						name: 'Default',
+						snippet: '<Button>Click me</Button>',
+					},
+					{
+						name: 'Primary',
+						snippet: '<Button variant="primary">Primary</Button>',
+					},
+				],
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('### Default');
+			expect(result).toContain('### Primary');
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				## Examples
+
+				### Default
+
+				\`\`\`
+				import { Button } from "@/components";
+
+				<Button>Click me</Button>
+				\`\`\`
+
+				### Primary
+
+				\`\`\`
+				import { Button } from "@/components";
+
+				<Button variant="primary">Primary</Button>
+				\`\`\`"
+			`);
+		});
+
+		it('should format PascalCase story names correctly', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				stories: [
+					{
+						name: 'WithIcon',
+						snippet: '<Button icon="check">Save</Button>',
+					},
+				],
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('### With Icon');
+		});
+
+		it('should handle stories with description', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				stories: [
+					{
+						name: 'Primary',
+						description: 'The primary action button style',
+						snippet: '<Button variant="primary">Click me</Button>',
+					},
+				],
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('The primary action button style');
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				## Examples
+
+				### Primary
+
+				The primary action button style
+
+				\`\`\`
+				<Button variant="primary">Click me</Button>
+				\`\`\`"
+			`);
+		});
+
+		it('should handle stories without import', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				stories: [
+					{
+						name: 'Default',
+						snippet: '<Button>Click me</Button>',
+					},
+				],
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).not.toContain('import');
+		});
+
+		it('should omit stories when no stories are provided', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).not.toContain('## Examples');
+		});
+
+		it('should omit stories when stories array is empty', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				stories: [],
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).not.toContain('## Examples');
+		});
+	});
+
+	describe('props section - table format', () => {
+		it('should format props with rich metadata as table', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							description: 'The visual style variant',
+							type: { name: 'union', value: ['primary', 'secondary'] },
+							required: false,
+							defaultValue: { value: 'primary', computed: false },
+						},
+						disabled: {
+							description: 'Whether the button is disabled',
+							type: { name: 'bool' },
+							required: false,
+							defaultValue: { value: 'false', computed: false },
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('## Props');
+			expect(result).toContain(
+				'| Name | Type | Description | Required | Default |',
+			);
+			expect(result).toContain('| variant |');
+			expect(result).toContain('| disabled |');
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				## Props
+
+				| Name | Type | Description | Required | Default |
+				|------|------|-------------|----------|---------|
+				| variant | \`union\` | The visual style variant | false | primary |
+				| disabled | \`bool\` | Whether the button is disabled | false | false |"
+			`);
+		});
+	});
+
+	describe('props section - bullet list format', () => {
+		it('should format props with only name and type as bullet list', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'union', value: ['primary', 'secondary'] },
+						},
+						size: {
+							type: { name: 'union', value: ['small', 'medium', 'large'] },
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('## Props');
+			expect(result).toContain('- variant: union');
+			expect(result).toContain('- size: union');
+			expect(result).not.toContain('| Name |');
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				## Props
+
+				- variant: union
+				- size: union"
+			`);
+		});
+
+		it('should format props with name, type, and description as bullet list', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'union', value: ['primary', 'secondary'] },
+							description: 'The visual style variant',
+						},
+						size: {
+							type: { name: 'union', value: ['small', 'medium', 'large'] },
+							description: 'The size of the button',
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('## Props');
+			expect(result).toContain('- variant: union - The visual style variant');
+			expect(result).toContain('- size: union - The size of the button');
+			expect(result).not.toContain('| Name |');
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				## Props
+
+				- variant: union - The visual style variant
+				- size: union - The size of the button"
+			`);
+		});
+
+		it('should omit props section when reactDocgen is not present', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				description: 'A button component',
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).not.toContain('## Props');
+		});
+
+		it('should omit props section when reactDocgen has no props', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).not.toContain('## Props');
+		});
+	});
+
+	describe('props section - format decision logic', () => {
+		it('should use bullet list when props have only name and type', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'string' },
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('- variant: string');
+			expect(result).not.toContain('| Name | Type |');
+		});
+
+		it('should use bullet list when props have name, type, and description but no required/default', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'string' },
+							description: 'The button variant',
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('- variant: string - The button variant');
+			expect(result).not.toContain('| Name | Type |');
+		});
+
+		it('should use table when props have required metadata', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'string' },
+							required: true,
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('| Name | Type | Description | Required | Default |');
+			expect(result).toContain('| variant | `string` |  | true |  |');
+		});
+
+		it('should use table when props have default value metadata', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'string' },
+							defaultValue: { value: 'primary', computed: false },
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('| Name | Type | Description | Required | Default |');
+			expect(result).toContain('| variant | `string` |  |  | primary |');
+		});
+
+		it('should use table when props have all metadata fields', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				reactDocgen: {
+					props: {
+						variant: {
+							type: { name: 'string' },
+							description: 'The button variant',
+							required: false,
+							defaultValue: { value: 'primary', computed: false },
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatComponentManifest(manifest);
+
+			expect(result).toContain('| Name | Type | Description | Required | Default |');
+			expect(result).toContain(
+				'| variant | `string` | The button variant | false | primary |',
+			);
+		});
+	});
+});
+
+describe('MarkdownFormatter - formatComponentManifestMapToList', () => {
+	it('formats the full manifest fixture', () => {
+		const result =
+			markdownFormatter.formatComponentManifestMapToList(fullManifestFixture);
+		expect(result).toMatchSnapshot();
+	});
+
+	describe('component list structure', () => {
+		it('should format a single component', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button)"
+			`);
+		});
+
+		it('should format multiple components', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+					},
+					card: {
+						id: 'card',
+						name: 'Card',
+						path: 'src/components/Card.tsx',
+					},
+					input: {
+						id: 'input',
+						name: 'Input',
+						path: 'src/components/Input.tsx',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button)
+				- Card (card)
+				- Input (input)"
+			`);
+		});
+	});
+
+	describe('summary section', () => {
+		it('should include summary when provided', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+						summary: 'A versatile button component',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button): A versatile button component"
+			`);
+		});
+
+		it('should prefer summary over description', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+						summary: 'Button summary',
+						description: 'Button description',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toContain('Button summary');
+			expect(result).not.toContain('Button description');
+		});
+
+		it('should use description when summary is not provided', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+						description: 'A simple button component',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button): A simple button component"
+			`);
+		});
+
+		it('should truncate long descriptions to 90 characters', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+						description:
+							'This is a very long description that exceeds ninety characters and should be truncated with ellipsis',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toContain('...');
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button): This is a very long description that exceeds ninety characters and should be truncated wit..."
+			`);
+		});
+
+		it('should not truncate descriptions under 90 characters', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+						description: 'A button component for user interactions',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).not.toContain('...');
+			expect(result).toContain('A button component for user interactions');
+		});
+
+		it('should omit summary when neither summary nor description provided', () => {
+			const manifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						name: 'Button',
+						path: 'src/components/Button.tsx',
+					},
+				},
+			};
+
+			const result =
+				markdownFormatter.formatComponentManifestMapToList(manifest);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button)"
+			`);
+		});
+	});
+});

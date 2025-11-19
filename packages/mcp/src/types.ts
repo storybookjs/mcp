@@ -2,6 +2,15 @@ import type { Documentation } from 'react-docgen';
 import * as v from 'valibot';
 
 /**
+ * Supported output formats for component manifest formatting.
+ */
+export const OutputFormat = v.optional(
+	v.picklist(['xml', 'markdown']),
+	'markdown',
+);
+export type OutputFormatType = v.InferOutput<typeof OutputFormat>;
+
+/**
  * Custom context passed to MCP server and tools.
  * Contains the request object and optional manifest provider.
  */
@@ -10,6 +19,11 @@ export interface StorybookContext extends Record<string, unknown> {
 	 * The incoming HTTP request being processed.
 	 */
 	request?: Request;
+	/**
+	 * Output format for component manifests.
+	 * @default 'markdown'
+	 */
+	format?: OutputFormatType;
 	/**
 	 * Optional function to provide custom manifest retrieval logic.
 	 * If provided, this function will be called instead of the default fetch-based provider.
