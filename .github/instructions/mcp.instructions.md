@@ -42,6 +42,59 @@ src/
 1. **Factory Pattern**: `createStorybookMcpHandler()` creates configured handler instances
 2. **Tool Registration**: Tools are added to the server using `server.tool()` method
 3. **Async Handler**: Returns a Promise-based request handler compatible with standard HTTP servers
+4. **Request-based Context**: The `Request` object is passed through context to tools, which use it to construct the manifest URL
+
+### Manifest Provider API
+
+The handler accepts a `StorybookContext` with the following key properties:
+
+- **`request`**: The HTTP `Request` object being processed (automatically passed by the handler)
+- **`manifestProvider`**: Optional custom function `(request: Request, path: string) => Promise<string>` to override default manifest fetching
+  - **Parameters**:
+    - `request`: The HTTP `Request` object to determine base URL, headers, routing, etc.
+    - `path`: The manifest path (currently always `'./manifests/components.json'`)
+  - **Responsibility**: The provider determines the "first part" of the URL (base URL/origin) by examining the request. The MCP server provides the path.
+  - Default behavior: Constructs URL from request origin, replacing `/mcp` with the provided path
+  - Return value should be the manifest JSON as a string
+
+**Example with custom manifestProvider (local filesystem):**
+
+```typescript
+import { createStorybookMcpHandler } from '@storybook/mcp';
+import { readFile } from 'node:fs/promises';
+
+const handler = await createStorybookMcpHandler({
+	manifestProvider: async (request, path) => {
+		// Custom logic: read from local filesystem
+		// The provider decides on the base path, MCP provides the manifest path
+		const basePath = '/path/to/manifests';
+		// Remove leading './' from path if present
+		const normalizedPath = path.replace(/^\.\//, '');
+		const fullPath = `${basePath}/${normalizedPath}`;
+		return await readFile(fullPath, 'utf-8');
+	},
+});
+```
+
+**Example with custom manifestProvider (S3 bucket mapping):**
+
+```typescript
+import { createStorybookMcpHandler } from '@storybook/mcp';
+
+const handler = await createStorybookMcpHandler({
+	manifestProvider: async (request, path) => {
+		// Map requests to different S3 buckets based on hostname
+		const url = new URL(request.url);
+		const bucket = url.hostname.includes('staging')
+			? 'staging-bucket'
+			: 'prod-bucket';
+		const normalizedPath = path.replace(/^\.\, '');
+		const manifestUrl = `https://${bucket}.s3.amazonaws.com/${normalizedPath}`;
+		const response = await fetch(manifestUrl);
+		return await response.text();
+	},
+});
+```
 
 ### Component Manifest and ReactDocgen Support
 
