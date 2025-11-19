@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"eval": "node eval.ts",
-		"storybook": "storybook dev -p 6006",
+		"storybook": "storybook dev --port 6007 --no-open",
 		"typecheck": "tsc"
 	},
 	"devDependencies": {

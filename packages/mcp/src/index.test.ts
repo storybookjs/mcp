@@ -95,7 +95,6 @@ describe('createStorybookMcpHandler', () => {
 			.mockResolvedValue(JSON.stringify(smallManifestFixture));
 
 		const handler = await createStorybookMcpHandler({
-			source: 'https://example.com/manifest.json',
 			manifestProvider,
 		});
 		await setupClient(handler);
@@ -106,7 +105,8 @@ describe('createStorybookMcpHandler', () => {
 		});
 
 		expect(manifestProvider).toHaveBeenCalledWith(
-			'https://example.com/manifest.json',
+			expect.any(Request),
+			'./manifests/components.json',
 		);
 		expect(result.content).toHaveLength(1);
 		expect((result.content as any)[0]).toMatchObject({
@@ -122,7 +122,6 @@ describe('createStorybookMcpHandler', () => {
 			.mockResolvedValue(JSON.stringify(smallManifestFixture));
 
 		const handler = await createStorybookMcpHandler({
-			source: 'https://example.com/manifest.json',
 			manifestProvider,
 			onListAllComponents,
 		});
@@ -136,7 +135,7 @@ describe('createStorybookMcpHandler', () => {
 		expect(onListAllComponents).toHaveBeenCalledTimes(1);
 		expect(onListAllComponents).toHaveBeenCalledWith({
 			context: expect.objectContaining({
-				source: 'https://example.com/manifest.json',
+				request: expect.any(Request),
 			}),
 			manifest: smallManifestFixture,
 		});
@@ -149,7 +148,6 @@ describe('createStorybookMcpHandler', () => {
 			.mockResolvedValue(JSON.stringify(smallManifestFixture));
 
 		const handler = await createStorybookMcpHandler({
-			source: 'https://example.com/manifest.json',
 			manifestProvider,
 			onGetComponentDocumentation,
 		});
@@ -165,7 +163,7 @@ describe('createStorybookMcpHandler', () => {
 		expect(onGetComponentDocumentation).toHaveBeenCalledTimes(1);
 		expect(onGetComponentDocumentation).toHaveBeenCalledWith({
 			context: expect.objectContaining({
-				source: 'https://example.com/manifest.json',
+				request: expect.any(Request),
 			}),
 			input: { componentId: 'button' },
 			foundComponent: expect.objectContaining({
@@ -204,7 +202,6 @@ describe('createStorybookMcpHandler', () => {
 			.mockResolvedValue(JSON.stringify(smallManifestFixture));
 
 		const handler = await createStorybookMcpHandler({
-			source: 'https://example.com/manifest.json',
 			manifestProvider,
 			onGetComponentDocumentation,
 		});
@@ -217,14 +214,13 @@ describe('createStorybookMcpHandler', () => {
 			},
 		});
 
-		// Should still call the handler with foundComponent: undefined
+		// Should still call the handler
 		expect(onGetComponentDocumentation).toHaveBeenCalledTimes(1);
 		expect(onGetComponentDocumentation).toHaveBeenCalledWith({
 			context: expect.objectContaining({
-				source: 'https://example.com/manifest.json',
+				request: expect.any(Request),
 			}),
 			input: { componentId: 'non-existent' },
-			foundComponent: undefined,
 		});
 
 		expect(result.content).toHaveLength(1);
