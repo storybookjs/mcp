@@ -405,11 +405,11 @@ describe('MCP Endpoint E2E Tests', () => {
 
 				| Name | Type | Description | Required | Default |
 				|------|------|-------------|----------|---------|
-				| primary | boolean | Is this the principal call to action on the page? | false | false |
-				| backgroundColor | string | What background color to use | false |  |
-				| size | 'small' | 'medium' | 'large' | How large should the button be? | false | 'medium' |
-				| label | string | Button contents | true |  |
-				| onClick | () => void | Optional click handler | false |  |",
+				| primary | \`boolean\` | Is this the principal call to action on the page? | false | false |
+				| backgroundColor | \`string\` | What background color to use | false |  |
+				| size | \`'small' | 'medium' | 'large'\` | How large should the button be? | false | 'medium' |
+				| label | \`string\` | Button contents | true |  |
+				| onClick | \`() => void\` | Optional click handler | false |  |",
 				      "type": "text",
 				    },
 				  ],

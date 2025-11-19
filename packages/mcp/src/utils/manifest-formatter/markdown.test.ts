@@ -485,7 +485,9 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('| Name | Type | Description | Required | Default |');
+			expect(result).toContain(
+				'| Name | Type | Description | Required | Default |',
+			);
 			expect(result).toContain('| variant | `string` |  | true |  |');
 		});
 
@@ -506,7 +508,9 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('| Name | Type | Description | Required | Default |');
+			expect(result).toContain(
+				'| Name | Type | Description | Required | Default |',
+			);
 			expect(result).toContain('| variant | `string` |  |  | primary |');
 		});
 
@@ -529,7 +533,9 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('| Name | Type | Description | Required | Default |');
+			expect(result).toContain(
+				'| Name | Type | Description | Required | Default |',
+			);
 			expect(result).toContain(
 				'| variant | `string` | The button variant | false | primary |',
 			);
