@@ -60,28 +60,6 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 			`);
 		});
 
-		it('should handle multi-line descriptions', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				path: 'src/components/Button.tsx',
-				name: 'Button',
-				description:
-					'A versatile button component.\n\nSupports multiple variants and sizes.',
-			};
-
-			const result = markdownFormatter.formatComponentManifest(manifest);
-
-			expect(result).toMatchInlineSnapshot(`
-				"# Button
-
-				ID: button
-
-				A versatile button component.
-
-				Supports multiple variants and sizes."
-			`);
-		});
-
 		it('should omit description section when not provided', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
@@ -122,7 +100,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### Default
 
@@ -161,7 +139,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### Default
 
@@ -221,7 +199,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### Primary
 
@@ -233,24 +211,6 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 			`);
 		});
 
-		it('should handle stories without import', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				stories: [
-					{
-						name: 'Default',
-						snippet: '<Button>Click me</Button>',
-					},
-				],
-			};
-
-			const result = markdownFormatter.formatComponentManifest(manifest);
-
-			expect(result).not.toContain('import');
-		});
-
 		it('should omit stories when no stories are provided', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
@@ -260,7 +220,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).not.toContain('## Examples');
+			expect(result).not.toContain('## Stories');
 		});
 
 		it('should omit stories when stories array is empty', () => {
@@ -273,7 +233,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).not.toContain('## Examples');
+			expect(result).not.toContain('## Stories');
 		});
 	});
 
@@ -303,12 +263,6 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('## Props');
-			expect(result).toContain(
-				'| Name | Type | Description | Required | Default |',
-			);
-			expect(result).toContain('| variant |');
-			expect(result).toContain('| disabled |');
 			expect(result).toMatchInlineSnapshot(`
 				"# Button
 
@@ -324,7 +278,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 		});
 	});
 
-	describe('props section - bullet list format', () => {
+	describe('props section', () => {
 		it('should format props with only name and type as bullet list', () => {
 			const manifest: ComponentManifest = {
 				id: 'button',
@@ -344,10 +298,6 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('## Props');
-			expect(result).toContain('- variant: union');
-			expect(result).toContain('- size: union');
-			expect(result).not.toContain('| Name |');
 			expect(result).toMatchInlineSnapshot(`
 				"# Button
 
@@ -381,10 +331,6 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 			const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('## Props');
-			expect(result).toContain('- variant: union - The visual style variant');
-			expect(result).toContain('- size: union - The size of the button');
-			expect(result).not.toContain('| Name |');
 			expect(result).toMatchInlineSnapshot(`
 				"# Button
 
@@ -426,120 +372,46 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 		});
 	});
 
-	describe('props section - format decision logic', () => {
-		it('should use bullet list when props have only name and type', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				reactDocgen: {
-					props: {
-						variant: {
-							type: { name: 'string' },
-						},
+	it('should use table when props have rich metadata', () => {
+		const manifest: ComponentManifest = {
+			id: 'button',
+			name: 'Button',
+			path: 'src/components/Button.tsx',
+			reactDocgen: {
+				props: {
+					variant: {
+						type: { name: 'string' },
+						description: 'The button variant',
+						required: false,
+						defaultValue: { value: 'primary', computed: false },
+					},
+					disabled: {
+						type: { name: 'bool' },
+						required: true,
+					},
+					size: {
+						type: { name: 'union', value: ['small', 'medium', 'large'] },
+						defaultValue: { value: 'medium', computed: false },
 					},
 				},
-			};
+			},
+		};
 
-			const result = markdownFormatter.formatComponentManifest(manifest);
+		const result = markdownFormatter.formatComponentManifest(manifest);
 
-			expect(result).toContain('- variant: string');
-			expect(result).not.toContain('| Name | Type |');
-		});
+		expect(result).toMatchInlineSnapshot(`
+				"# Button
 
-		it('should use bullet list when props have name, type, and description but no required/default', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				reactDocgen: {
-					props: {
-						variant: {
-							type: { name: 'string' },
-							description: 'The button variant',
-						},
-					},
-				},
-			};
+				ID: button
 
-			const result = markdownFormatter.formatComponentManifest(manifest);
+				## Props
 
-			expect(result).toContain('- variant: string - The button variant');
-			expect(result).not.toContain('| Name | Type |');
-		});
-
-		it('should use table when props have required metadata', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				reactDocgen: {
-					props: {
-						variant: {
-							type: { name: 'string' },
-							required: true,
-						},
-					},
-				},
-			};
-
-			const result = markdownFormatter.formatComponentManifest(manifest);
-
-			expect(result).toContain(
-				'| Name | Type | Description | Required | Default |',
-			);
-			expect(result).toContain('| variant | `string` |  | true |  |');
-		});
-
-		it('should use table when props have default value metadata', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				reactDocgen: {
-					props: {
-						variant: {
-							type: { name: 'string' },
-							defaultValue: { value: 'primary', computed: false },
-						},
-					},
-				},
-			};
-
-			const result = markdownFormatter.formatComponentManifest(manifest);
-
-			expect(result).toContain(
-				'| Name | Type | Description | Required | Default |',
-			);
-			expect(result).toContain('| variant | `string` |  |  | primary |');
-		});
-
-		it('should use table when props have all metadata fields', () => {
-			const manifest: ComponentManifest = {
-				id: 'button',
-				name: 'Button',
-				path: 'src/components/Button.tsx',
-				reactDocgen: {
-					props: {
-						variant: {
-							type: { name: 'string' },
-							description: 'The button variant',
-							required: false,
-							defaultValue: { value: 'primary', computed: false },
-						},
-					},
-				},
-			};
-
-			const result = markdownFormatter.formatComponentManifest(manifest);
-
-			expect(result).toContain(
-				'| Name | Type | Description | Required | Default |',
-			);
-			expect(result).toContain(
-				'| variant | `string` | The button variant | false | primary |',
-			);
-		});
+				| Name | Type | Description | Required | Default |
+				|------|------|-------------|----------|---------|
+				| variant | \`string\` | The button variant | false | primary |
+				| disabled | \`bool\` |  | true |  |
+				| size | \`union\` |  |  | medium |"
+			`);
 	});
 });
 

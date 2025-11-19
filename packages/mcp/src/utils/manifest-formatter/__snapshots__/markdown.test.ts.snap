@@ -13,7 +13,7 @@ The Button component is a fundamental building block for user interactions. It c
 
 Buttons should be used for actions that affect the current page or trigger operations. For navigation, consider using a Link component instead.
 
-## Examples
+## Stories
 
 ### Primary
 
@@ -114,7 +114,7 @@ The Card component provides a consistent way to present information in a contain
 - Use elevation to indicate interactive vs static cards
 - Keep content hierarchy clear with proper use of typography
 
-## Examples
+## Stories
 
 ### Basic
 
@@ -263,7 +263,7 @@ The Input component is a foundational form element that wraps the native HTML in
 
 The Input component automatically manages ARIA attributes for labels, descriptions, and error messages to ensure screen reader compatibility.
 
-## Examples
+## Stories
 
 ### Basic
 

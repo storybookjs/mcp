@@ -76,7 +76,7 @@ describe('getComponentDocumentationTool', () => {
 
 			ID: button
 
-			## Examples
+			## Stories
 
 			### Primary
 

@@ -8,7 +8,7 @@ export const OutputFormat = v.optional(
 	v.picklist(['xml', 'markdown']),
 	'markdown',
 );
-export type OutputFormatType = v.InferOutput<typeof OutputFormat>;
+export type OutputFormat = v.InferOutput<typeof OutputFormat>;
 
 /**
  * Custom context passed to MCP server and tools.
@@ -23,7 +23,7 @@ export interface StorybookContext extends Record<string, unknown> {
 	 * Output format for component manifests.
 	 * @default 'markdown'
 	 */
-	format?: OutputFormatType;
+	format?: OutputFormat;
 	/**
 	 * Optional function to provide custom manifest retrieval logic.
 	 * If provided, this function will be called instead of the default fetch-based provider.

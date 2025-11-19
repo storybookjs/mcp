@@ -27,7 +27,7 @@ export const markdownFormatter: ManifestFormatter = {
 
 		// Stories section
 		if (componentManifest.stories && componentManifest.stories.length > 0) {
-			parts.push('## Examples');
+			parts.push('## Stories');
 			parts.push('');
 
 			for (const story of componentManifest.stories) {

@@ -120,7 +120,7 @@ describe('formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### Primary
 
@@ -159,7 +159,7 @@ describe('formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### Primary
 
@@ -203,7 +203,7 @@ describe('formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### With Icon
 
@@ -239,7 +239,7 @@ describe('formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### Simple
 
@@ -269,7 +269,7 @@ describe('formatComponentManifest', () => {
 
 				ID: button
 
-				## Examples
+				## Stories
 
 				### No Import
 
@@ -353,7 +353,7 @@ describe('formatComponentManifest', () => {
 
 				Supports multiple variants, sizes, and states.
 
-				## Examples
+				## Stories
 
 				### Primary
 
@@ -767,7 +767,7 @@ describe('formatComponentManifestMapToList', () => {
 
 				A component that loaded successfully but has some stories that failed to generate.
 
-				## Examples
+				## Stories
 
 				### Working
 
@@ -797,7 +797,7 @@ describe('formatComponentManifestMapToList', () => {
 
 				ID: error-component-with-success-stories
 
-				## Examples
+				## Stories
 
 				### Basic
 
@@ -831,7 +831,7 @@ describe('formatComponentManifestMapToList', () => {
 
 				A component where everything worked except one story.
 
-				## Examples
+				## Stories
 
 				### Default
 
