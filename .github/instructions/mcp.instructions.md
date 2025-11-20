@@ -17,7 +17,7 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 - **Component Manifest**: Parses and formats component documentation including React prop information from react-docgen
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
-- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided
+- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided. The `onGetComponentDocumentation` handler receives a single `componentId` input and an optional `foundComponent` result.
 
 ### File Structure
 
@@ -42,6 +42,59 @@ src/
 1. **Factory Pattern**: `createStorybookMcpHandler()` creates configured handler instances
 2. **Tool Registration**: Tools are added to the server using `server.tool()` method
 3. **Async Handler**: Returns a Promise-based request handler compatible with standard HTTP servers
+4. **Request-based Context**: The `Request` object is passed through context to tools, which use it to construct the manifest URL
+
+### Manifest Provider API
+
+The handler accepts a `StorybookContext` with the following key properties:
+
+- **`request`**: The HTTP `Request` object being processed (automatically passed by the handler)
+- **`manifestProvider`**: Optional custom function `(request: Request, path: string) => Promise<string>` to override default manifest fetching
+  - **Parameters**:
+    - `request`: The HTTP `Request` object to determine base URL, headers, routing, etc.
+    - `path`: The manifest path (currently always `'./manifests/components.json'`)
+  - **Responsibility**: The provider determines the "first part" of the URL (base URL/origin) by examining the request. The MCP server provides the path.
+  - Default behavior: Constructs URL from request origin, replacing `/mcp` with the provided path
+  - Return value should be the manifest JSON as a string
+
+**Example with custom manifestProvider (local filesystem):**
+
+```typescript
+import { createStorybookMcpHandler } from '@storybook/mcp';
+import { readFile } from 'node:fs/promises';
+
+const handler = await createStorybookMcpHandler({
+	manifestProvider: async (request, path) => {
+		// Custom logic: read from local filesystem
+		// The provider decides on the base path, MCP provides the manifest path
+		const basePath = '/path/to/manifests';
+		// Remove leading './' from path if present
+		const normalizedPath = path.replace(/^\.\//, '');
+		const fullPath = `${basePath}/${normalizedPath}`;
+		return await readFile(fullPath, 'utf-8');
+	},
+});
+```
+
+**Example with custom manifestProvider (S3 bucket mapping):**
+
+```typescript
+import { createStorybookMcpHandler } from '@storybook/mcp';
+
+const handler = await createStorybookMcpHandler({
+	manifestProvider: async (request, path) => {
+		// Map requests to different S3 buckets based on hostname
+		const url = new URL(request.url);
+		const bucket = url.hostname.includes('staging')
+			? 'staging-bucket'
+			: 'prod-bucket';
+		const normalizedPath = path.replace(/^\.\, '');
+		const manifestUrl = `https://${bucket}.s3.amazonaws.com/${normalizedPath}`;
+		const response = await fetch(manifestUrl);
+		return await response.text();
+	},
+});
+```
 
 ### Component Manifest and ReactDocgen Support
 
@@ -113,24 +166,28 @@ Runs the development server with hot reload using Node's `--watch` flag.
 pnpm format
 ```
 
-Formats code using Prettier.
+Formats code using prettier.
 
 To check formatting without applying changes:
 
 ```bash
-pnpm format --check
+pnpm format:check
 ```
 
 ### Testing
 
-```bash
-pnpm test run
-```
-
-Or with coverage enabled:
+Tests can be run at the package level or from the monorepo root:
 
 ```bash
-pnpm test run --coverage
+# From the package directory
+pnpm test          # Run tests in watch mode
+pnpm test run      # Run tests once
+pnpm test run --coverage  # Run tests with coverage
+
+# From the monorepo root (runs tests across all packages)
+pnpm test          # Run all tests in watch mode
+pnpm test:run      # Run all tests once
+pnpm test:ci       # Run tests with coverage and CI reporters
 ```
 
 **Important**: Vitest automatically clears all mocks between tests, so you should never need to call `vi.clearAllMocks()` in a `beforeEach` hook.
@@ -154,7 +211,7 @@ Launches the MCP inspector for debugging the MCP server using the configuration 
 
 ### Code Style
 
-- Use Prettier for formatting (config: `.prettierignore`)
+- Use prettier for formatting (config: `.prettierrc`)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names

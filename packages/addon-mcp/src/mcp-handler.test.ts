@@ -1,35 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+// oxlint-disable typescript-eslint(unbound-method) -- I'm unsure how to fix this properly
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
 	incomingMessageToWebRequest,
 	webResponseToServerResponse,
-	mcpServerHandler,
 	getToolsets,
 } from './mcp-handler.ts';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { PassThrough } from 'node:stream';
-import type { Connect } from 'vite';
-
-// Mock dependencies
-vi.mock('./telemetry.ts', () => ({
-	collectTelemetry: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('./tools/get-story-urls.ts', () => ({
-	addGetStoryUrlsTool: vi.fn().mockResolvedValue(undefined),
-	GET_STORY_URLS_TOOL_NAME: 'get_story_urls',
-}));
-
-vi.mock('./tools/get-ui-building-instructions.ts', () => ({
-	addGetUIBuildingInstructionsTool: vi.fn().mockResolvedValue(undefined),
-	GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME: 'get_ui_building_instructions',
-}));
-
-vi.mock('@storybook/mcp', () => ({
-	addListAllComponentsTool: vi.fn().mockResolvedValue(undefined),
-	addGetComponentDocumentationTool: vi.fn().mockResolvedValue(undefined),
-	LIST_TOOL_NAME: 'list-all-components',
-	GET_TOOL_NAME: 'get-component-documentation',
-}));
 
 // Test helpers to reduce boilerplate
 function createMockIncomingMessage(options: {
@@ -223,6 +200,15 @@ describe('mcp-handler conversion utilities', () => {
 });
 
 describe('mcpServerHandler', () => {
+	let mcpServerHandler: any;
+
+	beforeEach(async () => {
+		// Reset modules and get fresh handler for each test to avoid state pollution
+		vi.resetModules();
+		const handler = await import('./mcp-handler.ts');
+		mcpServerHandler = handler.mcpServerHandler;
+	});
+
 	function createMockOptions(overrides = {}) {
 		return {
 			port: 6006,
@@ -254,12 +240,10 @@ describe('mcpServerHandler', () => {
 			body: createMCPInitializeRequest(),
 		});
 		const { response, getResponseData } = createMockServerResponse();
-		const mockNext = vi.fn() as Connect.NextFunction;
 
 		await mcpServerHandler({
 			req: mockReq,
 			res: response,
-			next: mockNext,
 			options: mockOptions as any,
 			addonOptions: {
 				toolsets: {
@@ -295,13 +279,18 @@ describe('mcpServerHandler', () => {
 	});
 
 	it('should respect disableTelemetry setting', async () => {
-		const { collectTelemetry } = await import('./telemetry.ts');
-		vi.mocked(collectTelemetry).mockClear();
+		const { telemetry } = await import('storybook/internal/telemetry');
+		vi.mocked(telemetry).mockClear();
 
 		const mockOptions = createMockOptions({
 			port: 6007,
 			presets: {
-				apply: vi.fn().mockResolvedValue({ disableTelemetry: true }),
+				apply: vi.fn(async (key: string) => {
+					if (key === 'core') {
+						return { disableTelemetry: true };
+					}
+					return {};
+				}),
 			},
 		});
 		const mockReq = createMockIncomingMessage({
@@ -311,17 +300,10 @@ describe('mcpServerHandler', () => {
 			body: createMCPInitializeRequest(),
 		});
 		const { response } = createMockServerResponse();
-		const mockNext = vi.fn() as Connect.NextFunction;
-
-		// Reset module state by clearing transport
-		const handler = await import('./mcp-handler.ts');
-		(handler as any).transport = undefined;
-		(handler as any).origin = undefined;
 
 		await mcpServerHandler({
 			req: mockReq,
 			res: response,
-			next: mockNext,
 			options: mockOptions as any,
 			addonOptions: {
 				toolsets: {
@@ -333,76 +315,79 @@ describe('mcpServerHandler', () => {
 
 		// Verify handler completes successfully when telemetry is disabled
 		expect(response.end).toHaveBeenCalled();
+
+		// Verify telemetry was NOT called when disabled
+		expect(telemetry).not.toHaveBeenCalled();
 	});
 
 	it('should register tools from @storybook/mcp when feature flag and generator are enabled', async () => {
-		// Force module reload to get fresh state
-		vi.resetModules();
-
-		const { mcpServerHandler: freshHandler } = await import('./mcp-handler.ts');
-		const { addListAllComponentsTool, addGetComponentDocumentationTool } =
-			await import('@storybook/mcp');
-
-		const applyMock = vi.fn((key: string, defaultValue?: any) => {
-			if (key === 'dev') {
-				return Promise.resolve({ disableTelemetry: false });
+		const applyMock = vi.fn(async (key: string, defaultValue?: any) => {
+			if (key === 'core') {
+				return { disableTelemetry: false };
 			}
 			if (key === 'features') {
-				return Promise.resolve({ experimentalComponentsManifest: true });
+				return { experimentalComponentsManifest: true };
 			}
 			if (key === 'experimental_componentManifestGenerator') {
-				return Promise.resolve(vi.fn());
+				return vi.fn();
 			}
-			return Promise.resolve(defaultValue);
+			return defaultValue;
 		});
 
 		const mockOptions = createMockOptions({
 			port: 6008,
 			presets: { apply: applyMock },
 		});
-		const mockReq = createMockIncomingMessage({
+
+		// First, initialize the MCP server
+		const initReq = createMockIncomingMessage({
 			method: 'POST',
 			headers: { 'content-type': 'application/json', host: 'localhost:6008' },
 			body: createMCPInitializeRequest(),
 		});
-		const { response } = createMockServerResponse();
-		const mockNext = vi.fn() as Connect.NextFunction;
+		const { response: initResponse } = createMockServerResponse();
 
-		await freshHandler({
-			req: mockReq,
-			res: response,
-			next: mockNext,
+		await mcpServerHandler({
+			req: initReq,
+			res: initResponse,
 			options: mockOptions as any,
 			addonOptions: {
-				toolsets: {
-					dev: true,
-					docs: true,
-				},
+				toolsets: { dev: true, docs: true },
 			},
 		});
 
-		// Verify component tools were registered
-		expect(addListAllComponentsTool).toHaveBeenCalledExactlyOnceWith(
-			expect.objectContaining({
-				tool: expect.any(Function),
-			}),
-			expect.any(Function),
-		);
-		expect(addGetComponentDocumentationTool).toHaveBeenCalledExactlyOnceWith(
-			expect.objectContaining({
-				tool: expect.any(Function),
-			}),
-			expect.any(Function),
-		);
+		// Then, list tools to verify component manifest tools are registered
+		const listToolsReq = createMockIncomingMessage({
+			method: 'POST',
+			headers: { 'content-type': 'application/json', host: 'localhost:6008' },
+			body: {
+				jsonrpc: '2.0',
+				id: 2,
+				method: 'tools/list',
+				params: {},
+			},
+		});
+		const { response: listResponse, getResponseData } =
+			createMockServerResponse();
 
-		// Verify the 'enabled' callbacks matches the truthy addon options
-		const listToolEnabledCallback = vi.mocked(addListAllComponentsTool).mock
-			.calls[0]?.[1]!;
-		const getToolEnabledCallback = vi.mocked(addGetComponentDocumentationTool)
-			.mock.calls[0]?.[1]!;
+		await mcpServerHandler({
+			req: listToolsReq,
+			res: listResponse,
+			options: mockOptions as any,
+			addonOptions: {
+				toolsets: { dev: true, docs: true },
+			},
+		});
 
-		expect(listToolEnabledCallback()).toBe(true);
-		expect(getToolEnabledCallback()).toBe(true);
+		// Parse the SSE response
+		const { body } = getResponseData();
+		const responseText = body.replace(/^data: /, '').trim();
+		const parsedResponse = JSON.parse(responseText);
+
+		// Verify component manifest tools are included
+		const toolNames = parsedResponse.result.tools.map((t: any) => t.name);
+		expect(toolNames).toContain('list-all-components');
+		expect(toolNames).toContain('get-component-documentation');
 	});
 });
 
@@ -414,6 +399,7 @@ describe('getToolsets', () => {
 				dev: true,
 				docs: false,
 			},
+			experimentalFormat: 'markdown' as const,
 		};
 
 		const result = getToolsets(request, addonOptions);
@@ -433,6 +419,7 @@ describe('getToolsets', () => {
 				dev: true,
 				docs: true,
 			},
+			experimentalFormat: 'markdown' as const,
 		};
 
 		const result = getToolsets(request, addonOptions);
@@ -454,6 +441,7 @@ describe('getToolsets', () => {
 				dev: false,
 				docs: false,
 			},
+			experimentalFormat: 'markdown' as const,
 		};
 
 		const result = getToolsets(request, addonOptions);
@@ -475,6 +463,7 @@ describe('getToolsets', () => {
 				dev: false,
 				docs: false,
 			},
+			experimentalFormat: 'markdown' as const,
 		};
 
 		const result = getToolsets(request, addonOptions);
@@ -496,6 +485,7 @@ describe('getToolsets', () => {
 				dev: false,
 				docs: false,
 			},
+			experimentalFormat: 'markdown' as const,
 		};
 
 		const result = getToolsets(request, addonOptions);
@@ -515,6 +505,7 @@ describe('getToolsets', () => {
 				dev: true,
 				docs: true,
 			},
+			experimentalFormat: 'markdown' as const,
 		};
 
 		const result = getToolsets(request, addonOptions);

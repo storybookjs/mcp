@@ -1,0 +1,23 @@
+{
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"lib": [
+			"es2024",
+			"ESNext.Array",
+			"ESNext.Collection",
+			"ESNext.Iterator",
+			"ESNext.Promise",
+			"DOM",
+			"DOM.AsyncIterable",
+			"DOM.Iterable"
+		]
+	},
+	"include": [
+		"eval.ts",
+		"clean-experiments.ts",
+		"lib",
+		"templates/result-docs",
+		"google-apps-script.js"
+	]
+}

@@ -2,11 +2,16 @@ import { ComponentManifestMap } from '../types.ts';
 import * as v from 'valibot';
 
 /**
+ * The path to the component manifest file relative to the Storybook build
+ */
+export const MANIFEST_PATH = './manifests/components.json';
+
+/**
  * Error thrown when getting or parsing a manifest fails
  */
 export class ManifestGetError extends Error {
 	public readonly url: string;
-	public readonly cause?: Error;
+	public override readonly cause?: Error;
 
 	constructor(message: string, url?: string, cause?: Error) {
 		super(message);
@@ -57,33 +62,34 @@ export const errorToMCPContent = (error: unknown): MCPErrorResult => {
 };
 
 /**
- * Gets a component manifest from a remote URL or using a custom provider
+ * Gets a component manifest from a request or using a custom provider
  *
- * @param url - The URL to get the manifest from
+ * @param request - The HTTP request to get the manifest for (optional when using custom manifestProvider)
  * @param manifestProvider - Optional custom function to get the manifest
  * @returns A promise that resolves to the parsed ComponentManifestMap
  * @throws {ManifestGetError} If getting the manifest fails or the response is invalid
  */
 export async function getManifest(
-	url?: string,
-	manifestProvider?: (source: string) => Promise<string>,
+	request?: Request,
+	manifestProvider?: (
+		request: Request | undefined,
+		path: string,
+	) => Promise<string>,
 ): Promise<ComponentManifestMap> {
 	try {
-		if (!url) {
-			throw new ManifestGetError(
-				'The source URL is required, but was not part of the request context nor was a default source for the server set',
-			);
-		}
-
-		// Use custom manifestProvider if provided, otherwise fallback to fetch
-		const manifestString = await (
-			manifestProvider ?? defaultFetchManifestProvider
-		)(url);
+		// Use custom manifestProvider if provided, otherwise fallback to default
+		const manifestString = await (manifestProvider ?? defaultManifestProvider)(
+			request,
+			MANIFEST_PATH,
+		);
 		const manifestData: unknown = JSON.parse(manifestString);
 
 		const manifest = v.parse(ComponentManifestMap, manifestData);
 
 		if (Object.keys(manifest.components).length === 0) {
+			const url = request
+				? getManifestUrlFromRequest(request, MANIFEST_PATH)
+				: 'Unknown manifest source';
 			throw new ManifestGetError(`No components found in the manifest`, url);
 		}
 
@@ -94,6 +100,9 @@ export async function getManifest(
 		}
 
 		// Wrap network errors and other unexpected errors
+		const url = request
+			? getManifestUrlFromRequest(request, MANIFEST_PATH)
+			: 'Unknown manifest source';
 		throw new ManifestGetError(
 			`Failed to get manifest: ${error instanceof Error ? error.message : String(error)}`,
 			url,
@@ -102,13 +111,38 @@ export async function getManifest(
 	}
 }
 
-async function defaultFetchManifestProvider(source: string): Promise<string> {
-	const response = await fetch(source);
+/**
+ * Constructs the manifest URL from a request by replacing /mcp with the provided path
+ */
+function getManifestUrlFromRequest(request: Request, path: string): string {
+	const url = new URL(request.url);
+	// Replace /mcp endpoint with the provided path (e.g., './manifests/components.json')
+	// Remove leading './' from path if present
+	const normalizedPath = path.replace(/^\.\//, '');
+	url.pathname = url.pathname.replace(/\/mcp\/?$/, `/${normalizedPath}`);
+	return url.toString();
+}
+
+/**
+ * Default manifest provider that fetches from the same origin as the request,
+ * replacing /mcp with the provided path
+ */
+async function defaultManifestProvider(
+	request: Request | undefined,
+	path: string,
+): Promise<string> {
+	if (!request) {
+		throw new ManifestGetError(
+			"Request is required when using the default manifest provider. You must either pass the original request forward to the server context, or set a custom manifestProvider that doesn't need the request.",
+		);
+	}
+	const manifestUrl = getManifestUrlFromRequest(request, path);
+	const response = await fetch(manifestUrl);
 
 	if (!response.ok) {
 		throw new ManifestGetError(
 			`Failed to fetch manifest: ${response.status} ${response.statusText}`,
-			source,
+			manifestUrl,
 		);
 	}
 
@@ -116,7 +150,7 @@ async function defaultFetchManifestProvider(source: string): Promise<string> {
 	if (!contentType?.includes('application/json')) {
 		throw new ManifestGetError(
 			`Invalid content type: expected application/json, got ${contentType}`,
-			source,
+			manifestUrl,
 		);
 	}
 	return response.text();

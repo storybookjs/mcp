@@ -61,7 +61,138 @@ describe('listAllComponentsTool', () => {
 			},
 		};
 
-		const response = await server.receive(request);
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
+
+		expect(response.result).toMatchInlineSnapshot(`
+			{
+			  "content": [
+			    {
+			      "text": "# Components
+
+			- Button (button): A simple button component
+			- Card (card): A container component for grouping related content.
+			- Input (input): A text input component with validation support.",
+			      "type": "text",
+			    },
+			  ],
+			}
+		`);
+	});
+
+	it('should handle fetch errors gracefully', async () => {
+		getManifestSpy.mockRejectedValue(
+			new getManifest.ManifestGetError(
+				'Failed to fetch manifest: 404 Not Found',
+				'https://example.com/manifest.json',
+			),
+		);
+
+		const request = {
+			jsonrpc: '2.0' as const,
+			id: 1,
+			method: 'tools/call',
+			params: {
+				name: LIST_TOOL_NAME,
+				arguments: {},
+			},
+		};
+
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
+
+		expect(response.result).toMatchInlineSnapshot(`
+			{
+			  "content": [
+			    {
+			      "text": "Error getting manifest: Failed to fetch manifest: 404 Not Found",
+			      "type": "text",
+			    },
+			  ],
+			  "isError": true,
+			}
+		`);
+	});
+
+	it('should handle unexpected errors gracefully', async () => {
+		getManifestSpy.mockRejectedValue(new Error('Network timeout'));
+
+		const request = {
+			jsonrpc: '2.0' as const,
+			id: 1,
+			method: 'tools/call',
+			params: {
+				name: LIST_TOOL_NAME,
+				arguments: {},
+			},
+		};
+
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
+
+		expect(response.result).toMatchInlineSnapshot(`
+			{
+			  "content": [
+			    {
+			      "text": "Unexpected error: Network timeout",
+			      "type": "text",
+			    },
+			  ],
+			  "isError": true,
+			}
+		`);
+	});
+
+	it('should call onListAllComponents handler when provided', async () => {
+		const handler = vi.fn();
+
+		const request = {
+			jsonrpc: '2.0' as const,
+			id: 2,
+			method: 'tools/call',
+			params: {
+				name: LIST_TOOL_NAME,
+				arguments: {},
+			},
+		};
+
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		// Pass the handler and request in the context for this specific request
+		await server.receive(request, {
+			custom: { request: mockHttpRequest, onListAllComponents: handler },
+		});
+
+		expect(handler).toHaveBeenCalledTimes(1);
+		expect(handler).toHaveBeenCalledWith({
+			context: expect.objectContaining({
+				request: mockHttpRequest,
+				onListAllComponents: handler,
+			}),
+			manifest: smallManifestFixture,
+		});
+	});
+
+	it('should format components as XML when format is "xml"', async () => {
+		const request = {
+			jsonrpc: '2.0' as const,
+			id: 1,
+			method: 'tools/call',
+			params: {
+				name: LIST_TOOL_NAME,
+				arguments: {},
+			},
+		};
+
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest, format: 'xml' as const },
+		});
 
 		expect(response.result).toMatchInlineSnapshot(`
 			{
@@ -95,91 +226,5 @@ describe('listAllComponentsTool', () => {
 			  ],
 			}
 		`);
-	});
-
-	it('should handle fetch errors gracefully', async () => {
-		getManifestSpy.mockRejectedValue(
-			new getManifest.ManifestGetError(
-				'Failed to fetch manifest: 404 Not Found',
-				'https://example.com/manifest.json',
-			),
-		);
-
-		const request = {
-			jsonrpc: '2.0' as const,
-			id: 1,
-			method: 'tools/call',
-			params: {
-				name: LIST_TOOL_NAME,
-				arguments: {},
-			},
-		};
-
-		const response = await server.receive(request);
-
-		expect(response.result).toMatchInlineSnapshot(`
-			{
-			  "content": [
-			    {
-			      "text": "Error getting manifest: Failed to fetch manifest: 404 Not Found",
-			      "type": "text",
-			    },
-			  ],
-			  "isError": true,
-			}
-		`);
-	});
-
-	it('should handle unexpected errors gracefully', async () => {
-		getManifestSpy.mockRejectedValue(new Error('Network timeout'));
-
-		const request = {
-			jsonrpc: '2.0' as const,
-			id: 1,
-			method: 'tools/call',
-			params: {
-				name: LIST_TOOL_NAME,
-				arguments: {},
-			},
-		};
-
-		const response = await server.receive(request);
-
-		expect(response.result).toMatchInlineSnapshot(`
-			{
-			  "content": [
-			    {
-			      "text": "Unexpected error: Network timeout",
-			      "type": "text",
-			    },
-			  ],
-			  "isError": true,
-			}
-		`);
-	});
-
-	it('should call onListAllComponents handler when provided', async () => {
-		const handler = vi.fn();
-
-		const request = {
-			jsonrpc: '2.0' as const,
-			id: 2,
-			method: 'tools/call',
-			params: {
-				name: LIST_TOOL_NAME,
-				arguments: {},
-			},
-		};
-
-		// Pass the handler in the context for this specific request
-		await server.receive(request, { custom: { onListAllComponents: handler } });
-
-		expect(handler).toHaveBeenCalledTimes(1);
-		expect(handler).toHaveBeenCalledWith({
-			context: expect.objectContaining({
-				onListAllComponents: handler,
-			}),
-			manifest: smallManifestFixture,
-		});
 	});
 });

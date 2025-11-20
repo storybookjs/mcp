@@ -1,22 +1,17 @@
 {
+	"extends": "../../tsconfig.json",
 	"compilerOptions": {
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"target": "es2023", // Node 20 according to https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping#node-20
-		"allowJs": true,
-		"resolveJsonModule": true,
-		"moduleDetection": "force",
-		"moduleResolution": "bundler",
-		"module": "esnext",
 		"jsx": "react",
-		"isolatedModules": true,
-		"verbatimModuleSyntax": true,
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"noImplicitOverride": true,
-		"noImplicitAny": true,
-		"lib": ["esnext", "dom", "dom.iterable"],
-		"baseUrl": "."
+		"lib": [
+			"es2024",
+			"ESNext.Array",
+			"ESNext.Collection",
+			"ESNext.Iterator",
+			"ESNext.Promise",
+			"DOM",
+			"DOM.AsyncIterable",
+			"DOM.Iterable"
+		]
 	},
-	"include": ["stories/**/*"]
+	"include": ["stories/**/*", "**/*.ts"]
 }

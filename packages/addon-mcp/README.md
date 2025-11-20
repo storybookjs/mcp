@@ -7,7 +7,7 @@ It enables a workflow where for each UI component created, the agent will automa
 The addon provides tools to improve agents' UI development capabilities, retrieve story URLs, and access component documentation.
 
 <div align="center">
-   <img src="https://storybook.js.org/embed/addon-mcp-claude-code-showcase.gif" alt="Storybook MCP Addon Demo" />
+   <img src="./addon-mcp-claude-code-showcase.gif" alt="Storybook MCP Addon Demo" />
 </div>
 
 ## Getting Started
@@ -50,6 +50,7 @@ export default {
 					dev: true, // Tools for story URL retrieval and UI building instructions (default: true)
 					docs: true, // Tools for component manifest and documentation (default: true, requires experimental feature)
 				},
+				experimentalFormat: 'markdown', // Output format: 'markdown' (default) or 'xml'
 			},
 		},
 	],
@@ -193,12 +194,12 @@ Returns a list of all available UI components in your component library. Useful 
 
 #### 4. Get Component Documentation (`get-component-documentation`)
 
-Retrieves detailed documentation for specific components, including:
+Retrieves detailed documentation for a specific component, including:
 
 - Component documentation
 - Usage examples
 
-The agent provides component IDs to retrieve their documentation.
+The agent provides a component ID to retrieve its documentation. To get documentation for multiple components, call this tool multiple times.
 
 ## Contributing
 

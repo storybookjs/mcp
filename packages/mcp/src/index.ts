@@ -1,7 +1,7 @@
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { HttpTransport } from '@tmcp/transport-http';
-import packageJson from '../package.json' with { type: 'json' };
+import pkgJson from '../package.json' with { type: 'json' };
 import { addListAllComponentsTool } from './tools/list-all-components.ts';
 import { addGetComponentDocumentationTool } from './tools/get-component-documentation.ts';
 import type { StorybookContext } from './types.ts';
@@ -15,6 +15,9 @@ export {
 	addGetComponentDocumentationTool,
 	GET_TOOL_NAME,
 } from './tools/get-component-documentation.ts';
+
+// Export manifest constants
+export { MANIFEST_PATH } from './utils/get-manifest.ts';
 
 // Export types for reuse
 export type { StorybookContext } from './types.ts';
@@ -71,11 +74,9 @@ export const createStorybookMcpHandler = async (
 	const adapter = new ValibotJsonSchemaAdapter();
 	const server = new McpServer(
 		{
-			// package.json properties are tree-shaken during build via a rolldown plugin in tsdown.config.ts
-			// If we ever changed the used properties here, we would need to update that plugin as well
-			name: packageJson.name,
-			version: packageJson.version,
-			description: packageJson.description,
+			name: pkgJson.name,
+			version: pkgJson.version,
+			description: pkgJson.description,
 		},
 		{
 			adapter,
@@ -96,7 +97,8 @@ export const createStorybookMcpHandler = async (
 
 	return (async (req, context) => {
 		return await transport.respond(req, {
-			source: context?.source ?? options.source,
+			request: req,
+			format: context?.format ?? options.format ?? 'markdown',
 			manifestProvider: context?.manifestProvider ?? options.manifestProvider,
 			onListAllComponents:
 				context?.onListAllComponents ?? options.onListAllComponents,

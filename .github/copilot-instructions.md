@@ -35,7 +35,8 @@ The addon supports configuring which toolsets are enabled:
       toolsets: {
         dev: true,      // get-story-urls, get-ui-building-instructions
         docs: true,  // list-all-components, get-component-documentation
-      }
+      },
+      experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
   }
   ```
@@ -61,12 +62,23 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 
 - Uses `tmcp` with HTTP transport and Valibot schema validation
 - Factory pattern: `createStorybookMcpHandler()` returns a request handler
-- Context-based: handlers accept `StorybookContext` to override source URLs and provide optional callbacks
+- Context-based: handlers accept `StorybookContext` which includes the HTTP `Request` object and optional callbacks
 - **Exports tools and types** for reuse by `addon-mcp` and other consumers
+- **Request-based manifest loading**: The `request` property in context is passed to tools, which use it to determine the manifest URL (defaults to same origin, replacing `/mcp` with the manifest path)
+- **Optional manifestProvider**: Custom function to override default manifest fetching behavior
+  - Signature: `(request: Request, path: string) => Promise<string>`
+  - Receives the `Request` object and a `path` parameter (currently always `'./manifests/components.json'`)
+  - The provider determines the base URL (e.g., mapping to S3 buckets) while the MCP server handles the path
+  - Returns the manifest JSON as a string
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllComponents`: Called when the list-all-components tool is invoked
   - `onGetComponentDocumentation`: Called when the get-component-documentation tool is invoked
+- **Output Format**: The `format` property in context controls output format:
+  - `'markdown'` (default): Token-efficient markdown with adaptive formatting
+  - `'xml'`: Legacy XML format
+  - Format is configurable via addon options or directly in `StorybookContext`
+  - Formatters are implemented in `packages/mcp/src/utils/manifest-formatter/` with separate files for XML and markdown
 
 ## Development Environment
 
@@ -89,9 +101,26 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 
 **Testing:**
 
-- Only `packages/mcp` has tests (Vitest with coverage)
-- Run `pnpm test run --coverage` in mcp package
-- Prefer TDD when adding new tools
+- **Unit tests**: Both `packages/mcp` and `packages/addon-mcp` have unit tests (Vitest with coverage)
+  - Run `pnpm test run --coverage` in individual package directories
+  - Run `pnpm test:run` at root to run all unit tests
+  - Prefer TDD when adding new tools
+- **E2E tests**: `apps/internal-storybook/tests` contains E2E tests for the addon
+  - Run `pnpm test` in `apps/internal-storybook` directory
+  - Tests verify MCP endpoint works with latest Storybook prereleases
+  - Uses inline snapshots for response validation
+  - **When to update E2E tests**:
+    - Adding or modifying MCP tools (update tool discovery snapshots)
+    - Changing MCP protocol implementation (update session init tests)
+    - Modifying tool responses or schemas (update tool-specific tests)
+    - Adding new toolsets or changing toolset behavior (update filtering tests)
+  - **Running tests**:
+    - `pnpm test` in apps/internal-storybook - run E2E tests
+    - `pnpm vitest run -u` - update snapshots when responses change
+    - Tests start Storybook server automatically, wait for MCP endpoint, then run
+  - **Test structure**:
+    - `mcp-endpoint.e2e.test.ts` - MCP protocol and tool tests
+    - `check-deps.e2e.test.ts` - Storybook version validation
 
 **Type checking:**
 
@@ -221,11 +250,12 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
   - Checks `features.experimentalComponentsManifest` flag
   - Checks for `experimental_componentManifestGenerator` preset
   - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
-- Context includes `source` URL pointing to `/manifests/components.json` endpoint
+- Context includes `request` (HTTP Request object) which tools use to determine manifest location
+- Default manifest URL is constructed from request origin, replacing `/mcp` with `/manifests/components.json`
 - **Optional handlers for tracking**:
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
   - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
-  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input, found components, and not found IDs
+  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input with componentId, and optional foundComponent
   - Addon-mcp uses these handlers to collect telemetry on tool usage
 
 **Storybook internals used:**
@@ -288,6 +318,7 @@ For detailed package-specific guidance, see:
 
 - `packages/addon-mcp/**` → `.github/instructions/addon-mcp.instructions.md`
 - `packages/mcp/**` → `.github/instructions/mcp.instructions.md`
+- `eval/**` → `.github/instructions/eval.instructions.md`
 
 ## Documentation resources
 

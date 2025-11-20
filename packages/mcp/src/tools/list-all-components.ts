@@ -20,11 +20,15 @@ export async function addListAllComponentsTool(
 		async () => {
 			try {
 				const manifest = await getManifest(
-					server.ctx.custom?.source,
+					server.ctx.custom?.request,
 					server.ctx.custom?.manifestProvider,
 				);
 
-				const componentList = formatComponentManifestMapToList(manifest);
+				const format = server.ctx.custom?.format ?? 'markdown';
+				const componentList = formatComponentManifestMapToList(
+					manifest,
+					format,
+				);
 
 				await server.ctx.custom?.onListAllComponents?.({
 					context: server.ctx.custom,

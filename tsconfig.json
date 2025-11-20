@@ -1,0 +1,35 @@
+{
+	"compilerOptions": {
+		/* Base Options: */
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"target": "es2022",
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"moduleDetection": "force",
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+
+		/* Strictness */
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+
+		/* If NOT transpiling with TypeScript: */
+		"module": "preserve",
+		"noEmit": true,
+
+		// Node 20 according to https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping#node-20
+		// es2024 added for Promise.withResolvers()
+		"lib": ["es2023", "es2024", "dom", "dom.iterable"],
+
+		// Customization
+		"allowImportingTsExtensions": true,
+
+		// Enable live types
+		"paths": {
+			"@storybook/mcp": ["./packages/mcp/src/index.ts"]
+		}
+	},
+	"include": ["*.ts"]
+}

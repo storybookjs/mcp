@@ -1,25 +1,64 @@
 import { createStorybookMcpHandler } from './src/index.ts';
 import { serve } from 'srvx';
 import fs from 'node:fs/promises';
+import { parseArgs } from 'node:util';
+import type { OutputFormat } from './src/types.ts';
 
-const storybookMcpHandler = await createStorybookMcpHandler({
-	// Use the local path directly via manifestProvider
-	source: './fixtures/full-manifest.fixture.json',
-	manifestProvider: async (source) => {
-		// Read the manifest from the local file system
-		return await fs.readFile(source, 'utf-8');
-	},
-});
+async function serveMcp(
+	port: number,
+	manifestPath: string,
+	format: OutputFormat,
+) {
+	const storybookMcpHandler = await createStorybookMcpHandler({
+		format,
+		// Use the local fixture file via manifestProvider
+		manifestProvider: async () => {
+			if (
+				manifestPath.startsWith('http://') ||
+				manifestPath.startsWith('https://')
+			) {
+				const res = await fetch(manifestPath);
+				return await res.text();
+			}
+			return await fs.readFile(manifestPath, 'utf-8');
+		},
+	});
 
-serve({
-	async fetch(req) {
-		const pathname = new URL(req.url).pathname;
+	serve({
+		async fetch(req) {
+			const pathname = new URL(req.url).pathname;
 
-		if (pathname === '/mcp') {
-			return await storybookMcpHandler(req);
-		}
+			if (pathname === '/mcp') {
+				return await storybookMcpHandler(req);
+			}
 
-		return new Response('Not found', { status: 404 });
-	},
-	port: 13316,
-});
+			return new Response('Not found', { status: 404 });
+		},
+		port,
+	});
+}
+
+// @ts-ignore
+if (import.meta.main) {
+	const args = parseArgs({
+		options: {
+			port: {
+				type: 'string',
+				default: '13316',
+			},
+			manifestPath: {
+				type: 'string',
+				default: './fixtures/full-manifest.fixture.json',
+			},
+			format: {
+				type: 'string',
+				default: 'markdown',
+			},
+		},
+	});
+	await serveMcp(
+		Number(args.values.port),
+		args.values.manifestPath,
+		args.values.format as OutputFormat,
+	);
+}
