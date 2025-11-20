@@ -12,12 +12,20 @@ export default defineConfig({
 				}
 			},
 		},
+		{
+			name: 'html-loader',
+			transform(code: string, id: string) {
+				if (id.endsWith('.html')) {
+					return { code: `export default ${JSON.stringify(code)};`, map: null };
+				}
+			},
+		},
 	],
 	test: {
-		projects: ['packages/*'],
+		projects: ['packages/*', 'apps/*'],
 		coverage: {
 			include: ['**/src/**/*.{ts,tsx}'],
-			exclude: ['*.d.ts'],
+			exclude: ['*.d.ts', 'eval/templates/project/**', 'eval/evals/**'],
 			reporter: ['text', 'lcov', 'html'],
 		},
 	},
