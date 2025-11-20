@@ -20,7 +20,7 @@ export {
 export { MANIFEST_PATH } from './utils/get-manifest.ts';
 
 // Export types for reuse
-export type { StorybookContext, OutputFormat } from './types.ts';
+export type { StorybookContext } from './types.ts';
 
 // copied from tmcp internals as it's not exposed
 type InitializeRequestParams = {

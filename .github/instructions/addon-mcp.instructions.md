@@ -417,7 +417,6 @@ This addon implements MCP using `tmcp`:
 
 - `storybook` - Peer dependency (Storybook framework)
 - `valibot` - Schema validation for tool inputs/outputs
-- `ts-dedent` - Template string formatting
 - `tsdown` - Build tool (rolldown-based)
 - `vite` - Peer dependency for middleware injection
 

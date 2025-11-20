@@ -7,10 +7,6 @@ import type { ManifestFormatter } from './manifest-formatter/types.ts';
 import { xmlFormatter } from './manifest-formatter/xml.ts';
 import { markdownFormatter } from './manifest-formatter/markdown.ts';
 
-// Re-export utility functions for use by formatters
-export { dedent } from './dedent.ts';
-export { parseReactDocgen } from './parse-react-docgen.ts';
-
 const formatters: Record<OutputFormat, ManifestFormatter> = {
 	xml: xmlFormatter,
 	markdown: markdownFormatter,
