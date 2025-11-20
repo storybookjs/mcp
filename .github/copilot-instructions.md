@@ -35,7 +35,8 @@ The addon supports configuring which toolsets are enabled:
       toolsets: {
         dev: true,      // get-story-urls, get-ui-building-instructions
         docs: true,  // list-all-components, get-component-documentation
-      }
+      },
+      experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
   }
   ```
@@ -73,6 +74,11 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllComponents`: Called when the list-all-components tool is invoked
   - `onGetComponentDocumentation`: Called when the get-component-documentation tool is invoked
+- **Output Format**: The `format` property in context controls output format:
+  - `'markdown'` (default): Token-efficient markdown with adaptive formatting
+  - `'xml'`: Legacy XML format
+  - Format is configurable via addon options or directly in `StorybookContext`
+  - Formatters are implemented in `packages/mcp/src/utils/manifest-formatter/` with separate files for XML and markdown
 
 ## Development Environment
 
@@ -95,9 +101,26 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 
 **Testing:**
 
-- Only `packages/mcp` has tests (Vitest with coverage)
-- Run `pnpm test run --coverage` in mcp package
-- Prefer TDD when adding new tools
+- **Unit tests**: Both `packages/mcp` and `packages/addon-mcp` have unit tests (Vitest with coverage)
+  - Run `pnpm test run --coverage` in individual package directories
+  - Run `pnpm test:run` at root to run all unit tests
+  - Prefer TDD when adding new tools
+- **E2E tests**: `apps/internal-storybook/tests` contains E2E tests for the addon
+  - Run `pnpm test` in `apps/internal-storybook` directory
+  - Tests verify MCP endpoint works with latest Storybook prereleases
+  - Uses inline snapshots for response validation
+  - **When to update E2E tests**:
+    - Adding or modifying MCP tools (update tool discovery snapshots)
+    - Changing MCP protocol implementation (update session init tests)
+    - Modifying tool responses or schemas (update tool-specific tests)
+    - Adding new toolsets or changing toolset behavior (update filtering tests)
+  - **Running tests**:
+    - `pnpm test` in apps/internal-storybook - run E2E tests
+    - `pnpm vitest run -u` - update snapshots when responses change
+    - Tests start Storybook server automatically, wait for MCP endpoint, then run
+  - **Test structure**:
+    - `mcp-endpoint.e2e.test.ts` - MCP protocol and tool tests
+    - `check-deps.e2e.test.ts` - Storybook version validation
 
 **Type checking:**
 
