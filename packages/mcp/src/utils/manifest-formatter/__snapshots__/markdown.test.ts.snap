@@ -87,15 +87,38 @@ const Danger = () => <Button variant="danger" onClick={() => confirm('Are you su
 
 ## Props
 
-| Name | Type | Description | Required | Default |
-|------|------|-------------|----------|---------|
-| variant | \`"primary" | "secondary" | "tertiary" | "danger"\` | The visual style variant of the button | false | "primary" |
-| size | \`"small" | "medium" | "large"\` | The size of the button | false | "medium" |
-| disabled | \`boolean\` | Whether the button is disabled | false | false |
-| loading | \`boolean\` | Whether the button is in a loading state | false | false |
-| fullWidth | \`boolean\` | Whether the button should take up the full width of its container | false | false |
-| onClick | \`(event: MouseEvent) => void\` | Callback function when the button is clicked | false |  |
-| children | \`ReactNode\` | The content of the button | true |  |"
+\`\`\`
+export type Props = {
+  /**
+    The visual style variant of the button
+  */
+  variant?: "primary" | "secondary" | "tertiary" | "danger" = "primary";
+  /**
+    The size of the button
+  */
+  size?: "small" | "medium" | "large" = "medium";
+  /**
+    Whether the button is disabled
+  */
+  disabled?: boolean = false;
+  /**
+    Whether the button is in a loading state
+  */
+  loading?: boolean = false;
+  /**
+    Whether the button should take up the full width of its container
+  */
+  fullWidth?: boolean = false;
+  /**
+    Callback function when the button is clicked
+  */
+  onClick?: (event: MouseEvent) => void;
+  /**
+    The content of the button
+  */
+  children: ReactNode;
+}
+\`\`\`"
 `;
 
 exports[`MarkdownFormatter - formatComponentManifest > formats all full fixtures 2`] = `
@@ -239,15 +262,38 @@ const UserProfile = () => (
 
 ## Props
 
-| Name | Type | Description | Required | Default |
-|------|------|-------------|----------|---------|
-| variant | \`"elevated" | "outlined" | "flat"\` | The visual style variant of the card | false | "elevated" |
-| padding | \`"none" | "small" | "medium" | "large"\` | The amount of internal padding | false | "medium" |
-| clickable | \`boolean\` | Whether the entire card is clickable/interactive | false | false |
-| header | \`ReactNode\` | Content to display in the card header | false |  |
-| footer | \`ReactNode\` | Content to display in the card footer | false |  |
-| children | \`ReactNode\` | The main content of the card | true |  |
-| onClick | \`(event: MouseEvent) => void\` | Callback function when the card is clicked (requires clickable=true) | false |  |"
+\`\`\`
+export type Props = {
+  /**
+    The visual style variant of the card
+  */
+  variant?: "elevated" | "outlined" | "flat" = "elevated";
+  /**
+    The amount of internal padding
+  */
+  padding?: "none" | "small" | "medium" | "large" = "medium";
+  /**
+    Whether the entire card is clickable/interactive
+  */
+  clickable?: boolean = false;
+  /**
+    Content to display in the card header
+  */
+  header?: ReactNode;
+  /**
+    Content to display in the card footer
+  */
+  footer?: ReactNode;
+  /**
+    The main content of the card
+  */
+  children: ReactNode;
+  /**
+    Callback function when the card is clicked (requires clickable=true)
+  */
+  onClick?: (event: MouseEvent) => void;
+}
+\`\`\`"
 `;
 
 exports[`MarkdownFormatter - formatComponentManifest > formats all full fixtures 3`] = `
@@ -334,18 +380,50 @@ const Disabled = () => <Input label="Username" value="john_doe" disabled />
 
 ## Props
 
-| Name | Type | Description | Required | Default |
-|------|------|-------------|----------|---------|
-| type | \`"text" | "email" | "password" | "number" | "tel" | "url"\` | The type of input field | false | "text" |
-| label | \`string\` | The label text for the input | false |  |
-| placeholder | \`string\` | Placeholder text shown when the input is empty | false |  |
-| value | \`string\` | The controlled value of the input | false |  |
-| defaultValue | \`string\` | The initial value for an uncontrolled input | false |  |
-| disabled | \`boolean\` | Whether the input is disabled | false | false |
-| required | \`boolean\` | Whether the input is required | false | false |
-| error | \`string\` | Error message to display below the input | false |  |
-| helperText | \`string\` | Helper text to display below the input | false |  |
-| onChange | \`(event: ChangeEvent<HTMLInputElement>) => void\` | Callback function when the input value changes | false |  |"
+\`\`\`
+export type Props = {
+  /**
+    The type of input field
+  */
+  type?: "text" | "email" | "password" | "number" | "tel" | "url" = "text";
+  /**
+    The label text for the input
+  */
+  label?: string;
+  /**
+    Placeholder text shown when the input is empty
+  */
+  placeholder?: string;
+  /**
+    The controlled value of the input
+  */
+  value?: string;
+  /**
+    The initial value for an uncontrolled input
+  */
+  defaultValue?: string;
+  /**
+    Whether the input is disabled
+  */
+  disabled?: boolean = false;
+  /**
+    Whether the input is required
+  */
+  required?: boolean = false;
+  /**
+    Error message to display below the input
+  */
+  error?: string;
+  /**
+    Helper text to display below the input
+  */
+  helperText?: string;
+  /**
+    Callback function when the input value changes
+  */
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+}
+\`\`\`"
 `;
 
 exports[`MarkdownFormatter - formatComponentManifestMapToList > formats the full manifest fixture 1`] = `

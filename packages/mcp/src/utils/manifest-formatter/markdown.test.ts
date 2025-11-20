@@ -270,10 +270,18 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 				## Props
 
-				| Name | Type | Description | Required | Default |
-				|------|------|-------------|----------|---------|
-				| variant | \`union\` | The visual style variant | false | primary |
-				| disabled | \`bool\` | Whether the button is disabled | false | false |"
+				\`\`\`
+				export type Props = {
+				  /**
+				    The visual style variant
+				  */
+				  variant?: union = primary;
+				  /**
+				    Whether the button is disabled
+				  */
+				  disabled?: bool = false;
+				}
+				\`\`\`"
 			`);
 		});
 	});
@@ -305,8 +313,12 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 				## Props
 
-				- variant: union
-				- size: union"
+				\`\`\`
+				export type Props = {
+				  variant: union;
+				  size: union;
+				}
+				\`\`\`"
 			`);
 		});
 
@@ -338,8 +350,18 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 
 				## Props
 
-				- variant: union - The visual style variant
-				- size: union - The size of the button"
+				\`\`\`
+				export type Props = {
+				  /**
+				    The visual style variant
+				  */
+				  variant: union;
+				  /**
+				    The size of the button
+				  */
+				  size: union;
+				}
+				\`\`\`"
 			`);
 		});
 
@@ -400,18 +422,23 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 		const result = markdownFormatter.formatComponentManifest(manifest);
 
 		expect(result).toMatchInlineSnapshot(`
-				"# Button
+			"# Button
 
-				ID: button
+			ID: button
 
-				## Props
+			## Props
 
-				| Name | Type | Description | Required | Default |
-				|------|------|-------------|----------|---------|
-				| variant | \`string\` | The button variant | false | primary |
-				| disabled | \`bool\` |  | true |  |
-				| size | \`union\` |  |  | medium |"
-			`);
+			\`\`\`
+			export type Props = {
+			  /**
+			    The button variant
+			  */
+			  variant?: string = primary;
+			  disabled: bool;
+			  size: union = medium;
+			}
+			\`\`\`"
+		`);
 	});
 });
 

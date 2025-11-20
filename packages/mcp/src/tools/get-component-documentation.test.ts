@@ -263,10 +263,18 @@ describe('getComponentDocumentationTool', () => {
 
 			## Props
 
-			| Name | Type | Description | Required | Default |
-			|------|------|-------------|----------|---------|
-			| variant | \`"primary" | "secondary"\` | Button style variant | false | "primary" |
-			| disabled | \`boolean\` | Disable the button | false |  |",
+			\`\`\`
+			export type Props = {
+			  /**
+			    Button style variant
+			  */
+			  variant?: "primary" | "secondary" = "primary";
+			  /**
+			    Disable the button
+			  */
+			  disabled?: boolean;
+			}
+			\`\`\`",
 			      "type": "text",
 			    },
 			  ],

@@ -64,47 +64,43 @@ export const markdownFormatter: ManifestFormatter = {
 			if (propEntries.length > 0) {
 				parts.push('## Props');
 				parts.push('');
+				parts.push('```');
+				parts.push('export type Props = {');
 
-				// Determine if we should use table format or bullet list
-				// Use table if any prop has description, required, or defaultValue
-				const hasRichMetadata = propEntries.some(
-					([, propInfo]) =>
-						propInfo.required !== undefined ||
-						propInfo.defaultValue !== undefined,
-				);
+				for (const [propName, propInfo] of propEntries) {
+					const type = propInfo.type ?? 'any';
+					const isRequired = propInfo.required ?? true;
+					const hasDefault = propInfo.defaultValue !== undefined;
+					const hasDescription = propInfo.description !== undefined;
 
-				if (hasRichMetadata) {
-					// Use table format for props with rich metadata
-					parts.push('| Name | Type | Description | Required | Default |');
-					parts.push('|------|------|-------------|----------|---------|');
-
-					for (const [propName, propInfo] of propEntries) {
-						const type = propInfo.type ?? '';
-						const description = propInfo.description ?? '';
-						const required =
-							propInfo.required !== undefined
-								? propInfo.required
-									? 'true'
-									: 'false'
-								: '';
-						const defaultValue = propInfo.defaultValue ?? '';
-
-						parts.push(
-							`| ${propName} | \`${type}\` | ${description} | ${required} | ${defaultValue} |`,
-						);
+					// Add description as JSDoc comment if present
+					if (hasDescription) {
+						parts.push('  /**');
+						parts.push(`    ${propInfo.description}`);
+						parts.push('  */');
 					}
-				} else {
-					// Use bullet list format for simple props (name + type only)
-					for (const [propName, propInfo] of propEntries) {
-						const type = propInfo.type ?? '';
-						let propString = `- ${propName}: ${type}`;
-						if (propInfo.description) {
-							propString += ` - ${propInfo.description}`;
-						}
-						parts.push(propString);
+
+					// Build the prop line
+					let propLine = `  ${propName}`;
+
+					// Add ? for optional props
+					if (!isRequired) {
+						propLine += '?';
 					}
+
+					propLine += `: ${type}`;
+
+					// Add default value if present
+					if (hasDefault) {
+						propLine += ` = ${propInfo.defaultValue}`;
+					}
+
+					propLine += ';';
+					parts.push(propLine);
 				}
 
+				parts.push('}');
+				parts.push('```');
 				parts.push('');
 			}
 		}

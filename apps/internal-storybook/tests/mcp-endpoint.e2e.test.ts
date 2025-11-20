@@ -367,7 +367,7 @@ describe('MCP Endpoint E2E Tests', () => {
 
 				Primary UI component for user interaction
 
-				## Examples
+				## Stories
 
 				### Primary
 
@@ -403,13 +403,30 @@ describe('MCP Endpoint E2E Tests', () => {
 
 				## Props
 
-				| Name | Type | Description | Required | Default |
-				|------|------|-------------|----------|---------|
-				| primary | \`boolean\` | Is this the principal call to action on the page? | false | false |
-				| backgroundColor | \`string\` | What background color to use | false |  |
-				| size | \`'small' | 'medium' | 'large'\` | How large should the button be? | false | 'medium' |
-				| label | \`string\` | Button contents | true |  |
-				| onClick | \`() => void\` | Optional click handler | false |  |",
+				\`\`\`
+				export type Props = {
+				  /**
+				    Is this the principal call to action on the page?
+				  */
+				  primary?: boolean = false;
+				  /**
+				    What background color to use
+				  */
+				  backgroundColor?: string;
+				  /**
+				    How large should the button be?
+				  */
+				  size?: 'small' | 'medium' | 'large' = 'medium';
+				  /**
+				    Button contents
+				  */
+				  label: string;
+				  /**
+				    Optional click handler
+				  */
+				  onClick?: () => void;
+				}
+				\`\`\`",
 				      "type": "text",
 				    },
 				  ],
