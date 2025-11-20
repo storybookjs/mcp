@@ -7,9 +7,5 @@
 	"access": "public",
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",
-	"ignore": [
-		"@storybook/mcp-internal-storybook",
-		"@storybook/mcp-eval",
-		"@storybook/mcp-eval--*"
-	]
+	"ignore": ["@storybook/mcp-internal-storybook", "@storybook/mcp-eval*"]
 }

@@ -13,5 +13,11 @@
 			"DOM.Iterable"
 		]
 	},
-	"include": ["eval", "lib", "templates/result-docs", "google-apps-script.js"]
+	"include": [
+		"eval.ts",
+		"clean-experiments.ts",
+		"lib",
+		"templates/result-docs",
+		"google-apps-script.js"
+	]
 }
