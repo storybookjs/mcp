@@ -1,0 +1,22 @@
+# GitHub Copilot setup steps for the Storybook MCP repository
+# This file defines the steps to prepare the repository environment for AI development
+# See: https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-environment
+
+name: Setup Storybook MCP Development Environment
+
+steps:
+  - name: Install pnpm
+    run: |
+      # Install pnpm package manager (required by this monorepo)
+      npm install -g pnpm@10.19.0
+
+  - name: Install dependencies
+    run: |
+      # Install all dependencies for the monorepo with frozen lockfile
+      pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
+
+  - name: Build packages
+    run: |
+      # Build all packages in the monorepo
+      # This is required before running tests, linting, or typechecking
+      pnpm turbo run build
