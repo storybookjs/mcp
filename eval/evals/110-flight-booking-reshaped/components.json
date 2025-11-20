@@ -39,13 +39,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <ActionBar className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Placeholder />\n        </ActionBar>\n    </div>\n);"
 				}
 			],
-			"import": "import ActionBar from \"components/ActionBar\";\nimport Button from \"components/Button\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { ActionBar, Button, Example, Placeholder, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "ActionBar",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/ActionBar/ActionBar.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/ActionBar/ActionBar.tsx",
 				"actualName": "ActionBar",
 				"exportName": "default"
 			}
@@ -72,13 +72,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Alert className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Placeholder />\n        </Alert>\n    </div>\n);"
 				}
 			],
-			"import": "import Alert from \"components/Alert\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport Link from \"components/Link\";",
+			"import": "import { Alert, Example, Link, Placeholder } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Alert",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Alert/Alert.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Alert/Alert.tsx",
 				"actualName": "Alert",
 				"exportName": "default"
 			}
@@ -109,13 +109,13 @@
 					"snippet": "const multiselect = () => {\n    const options = [\n        \"Pizza\",\n        \"Pie\",\n        \"Ice-cream\",\n        \"Fries\",\n        \"Salad\",\n        \"Option 4\",\n        \"Option 5\",\n        \"Option 6\",\n    ];\n\n    const inputRef = React.useRef<HTMLInputElement>(null);\n    const [values, setValues] = React.useState<string[]>([\n        \"Option 4\",\n        \"Option 5\",\n        \"Option 6\",\n        \"Pizza\",\n        \"Ice-cream\",\n    ]);\n    const [query, setQuery] = React.useState(\"\");\n\n    const handleDismiss = (dismissedValue: string) => {\n        const nextValues = values.filter((value) => value !== dismissedValue);\n        setValues(nextValues);\n        inputRef.current?.focus();\n    };\n\n    const valuesNode = values.map((value) => (\n        <Badge dismissAriaLabel=\"Dismiss value\" onDismiss={() => handleDismiss(value)} key={value}>\n            {value}\n        </Badge>\n    ));\n\n    return (\n        <FormControl>\n            <FormControl.Label>Food</FormControl.Label>\n            <Autocomplete\n                name=\"fruit\"\n                value={query}\n                placeholder=\"Pick your food\"\n                startSlot={valuesNode}\n                multiline\n                inputAttributes={{ ref: inputRef }}\n                onChange={(args) => setQuery(args.value)}\n                onBackspace={() => {\n                    if (query.length === 0) {\n                        setValues((prev) => prev.slice(0, -1));\n                    }\n                }}\n                onItemSelect={(args) => {\n                    setQuery(\"\");\n                    setValues((prev) => [...prev, args.value]);\n                }}\n            >\n                {options.map((v) => {\n                    if (!v.toLowerCase().includes(query.toLowerCase())) return;\n                    if (values.includes(v)) return;\n\n                    return (\n                        <Autocomplete.Item key={v} value={v}>\n                            {v}\n                        </Autocomplete.Item>\n                    );\n                })}\n            </Autocomplete>\n        </FormControl>\n    );\n};"
 				}
 			],
-			"import": "import Autocomplete from \"components/Autocomplete\";\nimport Badge from \"components/Badge\";\nimport { Example } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";",
+			"import": "import { Autocomplete, Badge, Example, FormControl } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Autocomplete",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Autocomplete/Autocomplete.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Autocomplete/Autocomplete.tsx",
 				"actualName": "Autocomplete",
 				"exportName": "default"
 			}
@@ -158,13 +158,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Avatar\n            src=\"https://images.unsplash.com/photo-1536880756060-98a6a140f0a7?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1600&q=80\"\n            className=\"test-classname\"\n            attributes={{ id: \"test-id\" }}\n            imageAttributes={{ id: \"test-image-id\", alt: \"test image\" }}\n        />\n    </div>\n);"
 				}
 			],
-			"import": "import Avatar from \"components/Avatar\";\nimport { Example } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { Avatar, Example, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Avatar",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Avatar/Avatar.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Avatar/Avatar.tsx",
 				"actualName": "Avatar",
 				"exportName": "default"
 			}
@@ -223,13 +223,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Badge color=\"primary\" className=\"test-classname\" attributes={{ id: \"test-id\" }} />\n    </div>\n);"
 				}
 			],
-			"import": "import Avatar from \"components/Avatar\";\nimport Badge from \"components/Badge\";\nimport Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Icon from \"components/Icon\";\nimport View from \"components/View\";",
+			"import": "import { Avatar, Badge, Button, Example, Icon, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Badge",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Badge/Badge.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Badge/Badge.tsx",
 				"actualName": "Badge",
 				"exportName": "default"
 			}
@@ -276,13 +276,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Breadcrumbs className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Breadcrumbs.Item>Trigger</Breadcrumbs.Item>\n        </Breadcrumbs>\n    </div>\n);"
 				}
 			],
-			"import": "import Badge from \"components/Badge\";\nimport Breadcrumbs from \"components/Breadcrumbs\";\nimport { Example } from \"utilities/storybook\";",
+			"import": "import { Badge, Breadcrumbs, Example } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Breadcrumbs",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Breadcrumbs/Breadcrumbs.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Breadcrumbs/Breadcrumbs.tsx",
 				"actualName": "Breadcrumbs",
 				"exportName": "default"
 			}
@@ -365,13 +365,13 @@
 					"snippet": "const groupClassName = () => (\n    <div data-testid=\"root\">\n        <Button.Group className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Button>Trigger</Button>\n        </Button.Group>\n    </div>\n);"
 				}
 			],
-			"import": "import Avatar from \"components/Avatar\";\nimport Button from \"components/Button\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport Hotkey from \"components/Hotkey\";\nimport Image from \"components/Image\";\nimport View from \"components/View\";",
+			"import": "import { Avatar, Button, Example, Hotkey, Image, Placeholder, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Button",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Button/Button.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Button/Button.tsx",
 				"actualName": "Button",
 				"exportName": "default"
 			}
@@ -422,13 +422,13 @@
 					"snippet": "const keyboardNavigation = () => (\n    <Example>\n        <Example.Item title=\"keyboard navigation\">\n            <Calendar defaultMonth={new Date(2020, 0)} />\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Calendar from \"components/Calendar\";\nimport { Example } from \"utilities/storybook\";",
+			"import": "import { Calendar, Example } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Calendar",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Calendar/Calendar.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Calendar/Calendar.tsx",
 				"actualName": "Calendar",
 				"exportName": "default"
 			}
@@ -475,13 +475,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Card className=\"test-classname\" attributes={{ id: \"test-id\" }} />\n    </div>\n);"
 				}
 			],
-			"import": "import Card from \"components/Card\";\nimport { Example, Placeholder } from \"utilities/storybook\";",
+			"import": "import { Card, Example, Placeholder } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Card",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Card/Card.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Card/Card.tsx",
 				"actualName": "Card",
 				"exportName": "default"
 			}
@@ -520,7 +520,7 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Carousel visibleItems={2} className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Placeholder h={100}>Item 0</Placeholder>\n            <Placeholder h={100}>Item 1</Placeholder>\n            <Placeholder h={100}>Item 2</Placeholder>\n            <Placeholder h={100}>Item 3</Placeholder>\n            <Placeholder h={100}>Item 4</Placeholder>\n            <Placeholder h={100}>Item 5</Placeholder>\n        </Carousel>\n    </div>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport Carousel from \"components/Carousel\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { Button, Carousel, Example, Placeholder, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
@@ -540,7 +540,7 @@
 					}
 				],
 				"displayName": "Carousel",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Carousel/Carousel.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Carousel/Carousel.tsx",
 				"actualName": "Carousel",
 				"exportName": "default"
 			}
@@ -583,13 +583,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Checkbox className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            Content\n        </Checkbox>\n    </div>\n);"
 				}
 			],
-			"import": "import Checkbox from \"components/Checkbox\";\nimport { Example } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { Checkbox, Example, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Checkbox",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Checkbox/Checkbox.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Checkbox/Checkbox.tsx",
 				"actualName": "Checkbox",
 				"exportName": "default"
 			}
@@ -612,13 +612,13 @@
 					"snippet": "const disabled = () => (\n    <CheckboxGroup name=\"test-name\" disabled>\n        <Checkbox value=\"test-value\">Item 1</Checkbox>\n        <Checkbox value=\"test-value-2\">Item 2</Checkbox>\n    </CheckboxGroup>\n);"
 				}
 			],
-			"import": "import Checkbox from \"components/Checkbox\";\nimport CheckboxGroup from \"components/CheckboxGroup\";\nimport View from \"components/View\";",
+			"import": "import { Checkbox, CheckboxGroup, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "CheckboxGroup",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/CheckboxGroup/CheckboxGroup.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/CheckboxGroup/CheckboxGroup.tsx",
 				"actualName": "CheckboxGroup",
 				"exportName": "default"
 			}
@@ -637,13 +637,13 @@
 					"snippet": "const handlers = () => <div style={{ height: 200, overflow: \"auto\" }} data-testid=\"scroll\">\n    <ContextMenu onOpen={fn()} onClose={fn()}>\n        <View\n            height=\"400px\"\n            backgroundColor=\"neutral-faded\"\n            borderRadius=\"medium\"\n            attributes={{ \"data-testid\": \"root\" }} />\n        <ContextMenu.Content>\n            <ContextMenu.Item>Item</ContextMenu.Item>\n        </ContextMenu.Content>\n    </ContextMenu>\n</div>;"
 				}
 			],
-			"import": "import ContextMenu from \"components/ContextMenu\";\nimport { Example } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { ContextMenu, Example, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "ContextMenu",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/ContextMenu/ContextMenu.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/ContextMenu/ContextMenu.tsx",
 				"actualName": "ContextMenu",
 				"exportName": "default"
 			}
@@ -670,13 +670,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Divider className=\"test-classname\" attributes={{ id: \"test-id\" }} />\n    </div>\n);"
 				}
 			],
-			"import": "import Divider from \"components/Divider\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { Divider, Example, Placeholder, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Divider",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Divider/Divider.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Divider/Divider.tsx",
 				"actualName": "Divider",
 				"exportName": "default"
 			}
@@ -723,13 +723,13 @@
 					"snippet": "const testTheme = () => (\n    <Example>\n        <Example.Item title=\"switch color mode while dropdown is active and check that it still works\">\n            <ThemeSwitching />\n        </Example.Item>\n        <Example.Item title=\"dropdown inherits multiple themes\">\n            <ThemeMultiple />\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport DropdownMenu from \"components/DropdownMenu\";\nimport { Example } from \"utilities/storybook\";\nimport Theme from \"components/Theme\";\nimport View from \"components/View\";",
+			"import": "import { Button, DropdownMenu, Example, Theme, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "DropdownMenu",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/DropdownMenu/DropdownMenu.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/DropdownMenu/DropdownMenu.tsx",
 				"actualName": "DropdownMenu",
 				"exportName": "default"
 			}
@@ -760,13 +760,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <FileUpload\n            name=\"name\"\n            className=\"test-classname\"\n            attributes={{ id: \"test-id\" }}\n            inputAttributes={{ id: \"test-input-id\" }}\n        >\n            Content\n        </FileUpload>\n    </div>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport FileUpload from \"components/FileUpload\";\nimport Icon from \"components/Icon\";\nimport Image from \"components/Image\";\nimport Link from \"components/Link\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, FileUpload, Icon, Image, Link, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "FileUpload",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/FileUpload/FileUpload.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/FileUpload/FileUpload.tsx",
 				"actualName": "FileUpload",
 				"exportName": "default"
 			}
@@ -785,13 +785,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Hotkey className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            ⌘K\n        </Hotkey>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport { Hotkey } from \"reshaped\";\nimport TextField from \"components/TextField\";\nimport View from \"components/View\";",
+			"import": "import { Example, Hotkey, TextField, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Hotkey",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Hotkey/Hotkey.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Hotkey/Hotkey.tsx",
 				"actualName": "Hotkey",
 				"exportName": "default"
 			}
@@ -842,13 +842,13 @@
 					"snippet": "const testMultilineInText = () => (\n    <Example>\n        <Example.Item title=\"should wrap inside the text\">\n            <div>\n                Someone asked me to write this text that is boring to ready for everyone and to add&nbsp;\n                <Link href=\"/\">this very very long link</Link> to it.\n            </div>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Link from \"components/Link\";\nimport Text from \"components/Text\";",
+			"import": "import { Example, Link, Text } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Link",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Link/Link.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Link/Link.tsx",
 				"actualName": "Link",
 				"exportName": "default"
 			}
@@ -875,13 +875,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Loader className=\"test-classname\" attributes={{ id: \"test-id\" }} ariaLabel=\"Loading\" />\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Loader from \"components/Loader\";",
+			"import": "import { Example, Loader } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Loader",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Loader/Loader.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Loader/Loader.tsx",
 				"actualName": "Loader",
 				"exportName": "default"
 			}
@@ -944,13 +944,13 @@
 					"snippet": "const alignerClassName = () => (\n    <div data-testid=\"root\">\n        <MenuItem.Aligner className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <MenuItem>Trigger</MenuItem>\n        </MenuItem.Aligner>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example, Placeholder } from \"utilities/storybook\";\nimport Hotkey from \"components/Hotkey\";\nimport MenuItem from \"components/MenuItem\";\nimport Text from \"components/Text\";\nimport View from \"components/View\";",
+			"import": "import { Example, Hotkey, MenuItem, Placeholder, Text, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "MenuItem",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/MenuItem/MenuItem.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/MenuItem/MenuItem.tsx",
 				"actualName": "MenuItem",
 				"exportName": "default"
 			}
@@ -1013,13 +1013,13 @@
 					"snippet": "const trapFocusEdgeCases = () => {\n    const toggle = useToggle();\n\n    return (\n        <Example>\n            <Example.Item title=\"Radio should be navigatable with arrow keys\">\n                <Button onClick={toggle.activate}>Open modal</Button>\n                <Modal active={toggle.active} onClose={toggle.deactivate}>\n                    <View gap={2}>\n                        <Button onClick={() => {}}>Action 1</Button>\n                        <Radio name=\"radio\" value=\"1\">\n                            Option 1\n                        </Radio>\n                        <Radio name=\"radio\" value=\"2\">\n                            Option 2\n                        </Radio>\n                        <Button onClick={() => {}}>Action 2</Button>\n                    </View>\n                </Modal>\n            </Example.Item>\n        </Example>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport Dismissible from \"components/Dismissible\";\nimport DropdownMenu from \"components/DropdownMenu\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport Modal from \"components/Modal\";\nimport Radio from \"components/Radio\";\nimport Switch from \"components/Switch\";\nimport TextField from \"components/TextField\";\nimport View from \"components/View\";",
+			"import": "import {\n    Button,\n    Dismissible,\n    DropdownMenu,\n    Example,\n    Modal,\n    Placeholder,\n    Radio,\n    Switch,\n    TextField,\n    View,\n} from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Modal",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Modal/Modal.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Modal/Modal.tsx",
 				"actualName": "Modal",
 				"exportName": "default"
 			}
@@ -1070,13 +1070,13 @@
 					"snippet": "const valueChanges = () => (\n    <Example>\n        <Example.Item title=\"keyboard\">\n            <NumberField\n                name=\"name\"\n                increaseAriaLabel=\"Increase\"\n                decreaseAriaLabel=\"Decrease\"\n                inputAttributes={{ \"aria-label\": \"Label\" }}\n            />\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";\nimport NumberField from \"components/NumberField\";",
+			"import": "import { Example, FormControl, NumberField } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "NumberField",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/NumberField/NumberField.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/NumberField/NumberField.tsx",
 				"actualName": "NumberField",
 				"exportName": "default"
 			}
@@ -1107,13 +1107,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Pagination\n            className=\"test-classname\"\n            attributes={{ id: \"test-id\" }}\n            total={10}\n            previousAriaLabel=\"Previous\"\n            nextAriaLabel=\"Next\"\n        />\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Pagination from \"components/Pagination\";",
+			"import": "import { Example, Pagination } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Pagination",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Pagination/Pagination.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Pagination/Pagination.tsx",
 				"actualName": "Pagination",
 				"exportName": "default"
 			}
@@ -1164,13 +1164,13 @@
 					"snippet": "const keyboard = () => <PinField name=\"test-name\" inputAttributes={{ \"aria-label\": \"Label\" }} />;"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";\nimport PinField from \"components/PinField\";",
+			"import": "import { Example, FormControl, PinField } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "PinField",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/PinField/PinField.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/PinField/PinField.tsx",
 				"actualName": "PinField",
 				"exportName": "default"
 			}
@@ -1241,13 +1241,13 @@
 					"snippet": "const variant = () => (\n    <Example>\n        <Example.Item title=\"variant: headless\">\n            <Popover variant=\"headless\" defaultActive position=\"bottom-start\">\n                <Popover.Trigger>\n                    {(attributes) => <Button attributes={attributes}>Open</Button>}\n                </Popover.Trigger>\n                <Popover.Content>\n                    <View\n                        height=\"100px\"\n                        width=\"100px\"\n                        borderColor=\"primary\"\n                        borderRadius=\"medium\"\n                        backgroundColor=\"primary-faded\"\n                    />\n                </Popover.Content>\n            </Popover>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport MenuItem from \"components/MenuItem\";\nimport Popover from \"components/Popover\";\nimport ScrollArea from \"components/ScrollArea\";\nimport Tooltip from \"components/Tooltip\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, MenuItem, Popover, ScrollArea, Tooltip, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Popover",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Popover/Popover.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Popover/Popover.tsx",
 				"actualName": "Popover",
 				"exportName": "default"
 			}
@@ -1282,13 +1282,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Progress className=\"test-classname\" attributes={{ id: \"test-id\" }} ariaLabel=\"progress\" />\n    </div>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Progress from \"components/Progress\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, Progress, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Progress",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Progress/Progress.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Progress/Progress.tsx",
 				"actualName": "Progress",
 				"exportName": "default"
 			}
@@ -1315,13 +1315,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <ProgressIndicator total={10} className=\"test-classname\" attributes={{ id: \"test-id\" }} />\n    </div>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport ProgressIndicator from \"components/ProgressIndicator\";\nimport Scrim from \"components/Scrim\";\nimport Text from \"components/Text\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, ProgressIndicator, Scrim, Text, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "ProgressIndicator",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/ProgressIndicator/ProgressIndicator.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/ProgressIndicator/ProgressIndicator.tsx",
 				"actualName": "ProgressIndicator",
 				"exportName": "default"
 			}
@@ -1368,13 +1368,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Radio className=\"test-classname\" attributes={{ id: \"test-id\" }} value=\"value\">\n            Content\n        </Radio>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Radio from \"components/Radio\";\nimport View from \"components/View\";",
+			"import": "import { Example, Radio, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Radio",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Radio/Radio.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Radio/Radio.tsx",
 				"actualName": "Radio",
 				"exportName": "default"
 			}
@@ -1397,13 +1397,13 @@
 					"snippet": "const disabled = () => (\n    <RadioGroup name=\"test-name\" disabled>\n        <Radio value=\"test-value\">Content</Radio>\n    </RadioGroup>\n);"
 				}
 			],
-			"import": "import Radio from \"components/Radio\";\nimport RadioGroup from \"components/RadioGroup\";",
+			"import": "import { Radio, RadioGroup } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "RadioGroup",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/RadioGroup/RadioGroup.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/RadioGroup/RadioGroup.tsx",
 				"actualName": "RadioGroup",
 				"exportName": "default"
 			}
@@ -1438,13 +1438,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Resizable className=\"test-classname\" attributes={{ id: \"test-id\" }} height=\"200px\">\n            <Resizable.Item>\n                <Panel />\n            </Resizable.Item>\n            <Resizable.Handle />\n            <Resizable.Item>\n                <Panel />\n            </Resizable.Item>\n        </Resizable>\n    </div>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Resizable from \"components/Resizable\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, Resizable, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Resizable",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Resizable/Resizable.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Resizable/Resizable.tsx",
 				"actualName": "Resizable",
 				"exportName": "default"
 			}
@@ -1467,13 +1467,13 @@
 					"snippet": "const composition = () => (\n    <Example>\n        <Example.Item title=\"without backgroundSlot, size is based on the parent component\">\n            <div style={{ height: 300, position: \"relative\" }}>\n                <Scrim>Text</Scrim>\n            </div>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import { Example, Placeholder } from \"utilities/storybook\";\nimport Scrim from \"components/Scrim\";",
+			"import": "import { Example, Placeholder, Scrim } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Scrim",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Scrim/Scrim.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Scrim/Scrim.tsx",
 				"actualName": "Scrim",
 				"exportName": "default"
 			}
@@ -1548,13 +1548,13 @@
 					"snippet": "const testComposition = () => (\n    <Example>\n        <Example.Item title=\"custom with options\">\n            <Select.Custom\n                name=\"animal\"\n                id=\"animal\"\n                placeholder=\"Select an animal\"\n                inputAttributes={{\n                    \"aria-label\": \"Select an animal\",\n                }}\n            >\n                <Select.Group>\n                    <Select.Option value=\"dog\">Dog</Select.Option>\n                    <Select.Option value=\"turtle\">Turtle</Select.Option>\n                </Select.Group>\n                <Select.Group>Hello</Select.Group>\n            </Select.Custom>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Badge from \"components/Badge\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";\nimport MenuItem from \"components/MenuItem\";\nimport Modal from \"components/Modal\";\nimport Select from \"components/Select\";\nimport Text from \"components/Text\";",
+			"import": "import { Badge, Example, FormControl, MenuItem, Modal, Placeholder, Select, Text } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Select",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Select/Select.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Select/Select.tsx",
 				"actualName": "Select",
 				"exportName": "default"
 			}
@@ -1577,13 +1577,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Skeleton className=\"test-classname\" attributes={{ id: \"test-id\" }} />\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Skeleton from \"components/Skeleton\";",
+			"import": "import { Example, Skeleton } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Skeleton",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Skeleton/Skeleton.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Skeleton/Skeleton.tsx",
 				"actualName": "Skeleton",
 				"exportName": "default"
 			}
@@ -1646,13 +1646,13 @@
 					"snippet": "const testSwipe = () => {\n    const toggle = useToggle(true);\n\n    return (\n        <Modal active={toggle.active} onClose={toggle.deactivate} position=\"end\">\n            <View gap={4}>\n                <Modal.Title>Modal</Modal.Title>\n                <Slider name=\"slider\" defaultValue={30} />\n            </View>\n        </Modal>\n    );\n};"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Modal from \"components/Modal\";\nimport Slider from \"components/Slider\";\nimport View from \"components/View\";",
+			"import": "import { Example, Modal, Slider, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Slider",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Slider/Slider.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Slider/Slider.tsx",
 				"actualName": "Slider",
 				"exportName": "default"
 			}
@@ -1683,13 +1683,13 @@
 					"snippet": "const edgeCases = () => (\n    <Example>\n        <Example.Item\n            title={[\n                \"multiline subtitle\",\n                \"should wrap the text correctly\",\n                \"should display the connector correctly\",\n            ]}\n        >\n            <Demo\n                activeId={0}\n                subtitle=\"It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy\"\n            />\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport Stepper from \"components/Stepper\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, Placeholder, Stepper, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Stepper",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Stepper/Stepper.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Stepper/Stepper.tsx",
 				"actualName": "Stepper",
 				"exportName": "default"
 			}
@@ -1724,13 +1724,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Switch\n            className=\"test-classname\"\n            attributes={{ id: \"test-id\" }}\n            inputAttributes={{ \"aria-label\": \"test select\", id: \"test-input-id\" }}\n            name=\"name\"\n        >\n            Label\n        </Switch>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Switch from \"components/Switch\";\nimport View from \"components/View\";",
+			"import": "import { Example, Switch, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Switch",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Switch/Switch.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Switch/Switch.tsx",
 				"actualName": "Switch",
 				"exportName": "default"
 			}
@@ -1777,13 +1777,13 @@
 					"snippet": "const examples = () => (\n    <Example>\n        <Example.Item title=\"selectable\">\n            <SelectionDemo />\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Card from \"components/Card\";\nimport Checkbox from \"components/Checkbox\";\nimport { Example } from \"utilities/storybook\";\nimport Table from \"components/Table\";\nimport View from \"components/View\";",
+			"import": "import { Card, Checkbox, Example, Table, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Table",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Table/Table.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Table/Table.tsx",
 				"actualName": "Table",
 				"exportName": "default"
 			}
@@ -1850,13 +1850,13 @@
 					"snippet": "const testEdgeCaseDom = () => {\n    const [activeItem, setActiveItem] = React.useState(\"1\");\n    const sectionsRef = React.useRef(null);\n\n    return (\n        <Example>\n            <Example.Item title=\"active item changes on scroll\">\n                <View justify=\"center\" align=\"center\" padding={10}>\n                    <View width={60} gap={2}>\n                        <Tabs value={activeItem} onChange={(args) => setActiveItem(args.value)}>\n                            <Tabs.List>\n                                <Tabs.Item value=\"1\">Item 1</Tabs.Item>\n                                <Tabs.Item value=\"2\">Item 2</Tabs.Item>\n                                <Tabs.Item value=\"3\">Item 3</Tabs.Item>\n                                <Tabs.Item value=\"4\">Item 4</Tabs.Item>\n                            </Tabs.List>\n                        </Tabs>\n\n                        <ScrollArea\n                            attributes={{ ref: sectionsRef }}\n                            height={70}\n                            onScroll={(args) => {\n                                setActiveItem(Math.min(4, Math.floor(args.y * 10) + 1).toString());\n                            }}\n                        >\n                            <View gap={4}>\n                                <View gap={2}>\n                                    <Text>Section 1</Text>\n\n                                    <View gap={1} direction=\"row\">\n                                        {[...Array(4)].map((_, i) => (\n                                            <View grow height=\"100px\" backgroundColor=\"neutral-faded\" key={i} />\n                                        ))}\n                                    </View>\n                                </View>\n\n                                <View gap={2}>\n                                    <Text>Section 2</Text>\n\n                                    <View gap={1} direction=\"row\">\n                                        {[...Array(4)].map((_, i) => (\n                                            <View key={i} grow height=\"100px\" backgroundColor=\"neutral-faded\" />\n                                        ))}\n                                    </View>\n                                </View>\n\n                                <View gap={2}>\n                                    <Text>Section 3</Text>\n\n                                    <View gap={1} direction=\"row\">\n                                        {[...Array(4)].map((_, i) => (\n                                            <View key={i} grow height=\"100px\" backgroundColor=\"neutral-faded\" />\n                                        ))}\n                                    </View>\n                                </View>\n\n                                <View gap={2}>\n                                    <Text>Section 4</Text>\n\n                                    <View gap={1} direction=\"row\">\n                                        {[...Array(4)].map((_, i) => (\n                                            <View key={i} grow height=\"100px\" backgroundColor=\"neutral-faded\" />\n                                        ))}\n                                    </View>\n                                </View>\n                            </View>\n                        </ScrollArea>\n                    </View>\n                </View>\n            </Example.Item>\n        </Example>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport ScrollArea from \"components/ScrollArea\";\nimport Tabs from \"components/Tabs\";\nimport Text from \"components/Text\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, ScrollArea, Tabs, Text, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Tabs",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Tabs/Tabs.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Tabs/Tabs.tsx",
 				"actualName": "Tabs",
 				"exportName": "default"
 			}
@@ -1923,13 +1923,13 @@
 					"snippet": "const formControl = () => (\n    <Example>\n        <Example.Item title=\"with helper\">\n            <FormControl>\n                <FormControl.Label>Name</FormControl.Label>\n                <TextArea name=\"name\" placeholder=\"Enter your name\" />\n                <FormControl.Helper>Helper</FormControl.Helper>\n                <FormControl.Error>This field is required</FormControl.Error>\n            </FormControl>\n        </Example.Item>\n        <Example.Item title=\"with error\">\n            <FormControl hasError>\n                <FormControl.Label>Name</FormControl.Label>\n                <TextArea name=\"name\" placeholder=\"Enter your name\" />\n                <FormControl.Error>This field is required</FormControl.Error>\n            </FormControl>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";\nimport Text from \"components/Text\";\nimport TextArea from \"components/TextArea\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, FormControl, Text, TextArea, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "TextArea",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/TextArea/TextArea.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/TextArea/TextArea.tsx",
 				"actualName": "TextArea",
 				"exportName": "default"
 			}
@@ -1996,13 +1996,13 @@
 					"snippet": "const formControl = () => (\n    <Example>\n        <Example.Item title=\"with helper\">\n            <FormControl>\n                <FormControl.Label>Name</FormControl.Label>\n                <TextField name=\"name\" placeholder=\"Enter your name\" />\n                <FormControl.Helper>Helper</FormControl.Helper>\n                <FormControl.Error>This field is required</FormControl.Error>\n            </FormControl>\n        </Example.Item>\n        <Example.Item title=\"with error\">\n            <FormControl hasError>\n                <FormControl.Label>Name</FormControl.Label>\n                <TextField name=\"name\" placeholder=\"Enter your name\" />\n                <FormControl.Error>This field is required</FormControl.Error>\n            </FormControl>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Badge from \"components/Badge\";\nimport Button from \"components/Button\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";\nimport Text from \"components/Text\";\nimport TextField from \"components/TextField\";\nimport View from \"components/View\";",
+			"import": "import { Badge, Button, Example, FormControl, Placeholder, Text, TextField, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "TextField",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/TextField/TextField.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/TextField/TextField.tsx",
 				"actualName": "TextField",
 				"exportName": "default"
 			}
@@ -2025,13 +2025,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Timeline className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Timeline.Item className=\"test-item-classname\" attributes={{ id: \"test-item-id\" }}>\n                Content\n            </Timeline.Item>\n            <Timeline.Item>Content</Timeline.Item>\n        </Timeline>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example, Placeholder } from \"utilities/storybook\";\nimport Timeline from \"components/Timeline\";",
+			"import": "import { Example, Placeholder, Timeline } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Timeline",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Timeline/Timeline.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Timeline/Timeline.tsx",
 				"actualName": "Timeline",
 				"exportName": "default"
 			}
@@ -2070,11 +2070,11 @@
 					"snippet": "const edgeCases = () => (\n    <Example>\n        <Example.Item title=\"Multiline, should support dynamic height\">\n            <Multiline />\n        </Example.Item>\n        <Example.Item title=\"Nested ToastProvider\">\n            <ToastProvider>\n                <Nested />\n            </ToastProvider>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport Dismissible from \"components/Dismissible\";\nimport { Example } from \"utilities/storybook\";\nimport Image from \"components/Image\";\nimport Text from \"components/Text\";\nimport { ToastProvider } from \"components/Toast\";\nimport View from \"components/View\";",
+			"import": "import { Button, Dismissible, Example, Image, Text, ToastProvider, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  11 | import { sleep } from \"utilities/helpers\";\n  12 |\n> 13 | export default {\n     | ^\n  14 | \ttitle: \"Components/Toast\",\n  15 | \tparameters: {\n  16 | \t\tiframe: {"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  11 | import { sleep } from \"utilities/helpers\";\n  12 |\n> 13 | export default {\n     | ^\n  14 | \ttitle: \"Components/Toast\",\n  15 | \tparameters: {\n  16 | \t\tiframe: {\n\n./src/components/Toast/tests/Toast.stories.tsx:\nimport { Example } from \"utilities/storybook\";\nimport { useToast, ToastProvider } from \"components/Toast\";\nimport Button from \"components/Button\";\nimport View from \"components/View\";\nimport Image from \"components/Image\";\nimport Text from \"components/Text\";\nimport Dismissible from \"components/Dismissible\";\nimport IconZap from \"icons/Zap\";\nimport { expect, userEvent, waitFor, within } from \"storybook/test\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { sleep } from \"utilities/helpers\";\n\nexport default {\n\ttitle: \"Components/Toast\",\n\tparameters: {\n\t\tiframe: {\n\t\t\turl: \"https://reshaped.so/docs/components/toast\",\n\t\t},\n\t},\n};\n\nconst Size = () => {\n\tconst toast = useToast();\n\tconst props = {\n\t\ticon: IconZap,\n\t\ttitle: \"Hey!\",\n\t\ttext: \"Event completed\",\n\t\tactionsSlot: [<Button>Action</Button>],\n\t};\n\n\treturn (\n\t\t<Example>\n\t\t\t<Example.Item title=\"size: small\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({ ...props });\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"size: medium\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({ ...props, size: \"medium\" });\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"large\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({ ...props, size: \"large\" });\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t);\n};\nexport const size = { name: \"size\", render: () => <Size /> };\n\nconst Position = () => {\n\tconst toast = useToast();\n\treturn (\n\t\t<Example>\n\t\t\t<Example.Item title=\"position: bottom-start\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"bottom-start\",\n\t\t\t\t\t\t\tactionsSlot: <Button onClick={() => toast.hide(id)}>Close</Button>,\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"position: bottom\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"bottom\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"position: bottom-end\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"bottom-end\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"position: top-start\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"top-start\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"position: top\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"top\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"position: top-end\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"top-end\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t);\n};\nexport const position = { name: \"position\", render: () => <Position /> };\n\nconst Color = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<Example>\n\t\t\t<Example.Item title=\"color: inverted\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tcolor: \"inverted\",\n\t\t\t\t\t\t\ttitle: \"Hey!\",\n\t\t\t\t\t\t\ticon: IconZap,\n\t\t\t\t\t\t\tactionsSlot: [\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Undo</Button>,\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Hide</Button>,\n\t\t\t\t\t\t\t],\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"color: neutral\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tcolor: \"neutral\",\n\t\t\t\t\t\t\ttitle: \"Hey!\",\n\t\t\t\t\t\t\ticon: IconZap,\n\t\t\t\t\t\t\tactionsSlot: [\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Undo</Button>,\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Hide</Button>,\n\t\t\t\t\t\t\t],\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"color: primary\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tcolor: \"primary\",\n\t\t\t\t\t\t\ttitle: \"Hey!\",\n\t\t\t\t\t\t\ticon: IconZap,\n\t\t\t\t\t\t\tactionsSlot: [\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Undo</Button>,\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Hide</Button>,\n\t\t\t\t\t\t\t],\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"color: positive\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tcolor: \"positive\",\n\t\t\t\t\t\t\ttitle: \"Hey!\",\n\t\t\t\t\t\t\ticon: IconZap,\n\t\t\t\t\t\t\tactionsSlot: [\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Undo</Button>,\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Hide</Button>,\n\t\t\t\t\t\t\t],\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"color: critical\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tcolor: \"critical\",\n\t\t\t\t\t\t\ttitle: \"Hey!\",\n\t\t\t\t\t\t\ticon: IconZap,\n\t\t\t\t\t\t\tactionsSlot: [\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Undo</Button>,\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Hide</Button>,\n\t\t\t\t\t\t\t],\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"color: warning\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tcolor: \"warning\",\n\t\t\t\t\t\t\ttitle: \"Hey!\",\n\t\t\t\t\t\t\ticon: IconZap,\n\t\t\t\t\t\t\tactionsSlot: [\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Undo</Button>,\n\t\t\t\t\t\t\t\t<Button onClick={() => toast.hide(id)}>Hide</Button>,\n\t\t\t\t\t\t\t],\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t);\n};\n\nexport const color = { name: \"color\", render: () => <Color /> };\n\nconst Timeout = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<Example>\n\t\t\t<Example.Item title=\"timeout: short\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\ttimeout: \"short\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"timeout: long\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\ttimeout: \"long\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"timeout: 0\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\ttimeout: 0,\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t);\n};\nexport const timeout = { name: \"timeout\", render: () => <Timeout /> };\n\nconst Expanded = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<Example>\n\t\t\t<Example.Item title=\"Custom width coming from Reshaped provider for bottom-start\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\ttoast.show({\n\t\t\t\t\t\t\ttext: \"Event completed\",\n\t\t\t\t\t\t\tposition: \"bottom-start\",\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t);\n};\nexport const regionOptions = { name: \"expanded\", render: () => <Expanded /> };\n\nconst Slots = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<Example>\n\t\t\t<Example.Item title=\"always expanded, promotion banner\">\n\t\t\t\t<Button\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\t\tchildren: (\n\t\t\t\t\t\t\t\t<View gap={3} direction=\"row\">\n\t\t\t\t\t\t\t\t\t<View aspectRatio={1}>\n\t\t\t\t\t\t\t\t\t\t<Image\n\t\t\t\t\t\t\t\t\t\t\theight=\"100px\"\n\t\t\t\t\t\t\t\t\t\t\tsrc=\"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80\"\n\t\t\t\t\t\t\t\t\t\t\tborderRadius=\"medium\"\n\t\t\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t\t\t\t<View.Item grow>\n\t\t\t\t\t\t\t\t\t\t<View gap={1}>\n\t\t\t\t\t\t\t\t\t\t\t<Dismissible\n\t\t\t\t\t\t\t\t\t\t\t\tcloseAriaLabel=\"Close notification\"\n\t\t\t\t\t\t\t\t\t\t\t\tonClose={() => toast.hide(id)}\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t<Text variant=\"body-2\" weight=\"bold\">\n\t\t\t\t\t\t\t\t\t\t\t\t\tLook at this gradient!\n\t\t\t\t\t\t\t\t\t\t\t\t</Text>\n\t\t\t\t\t\t\t\t\t\t\t</Dismissible>\n\t\t\t\t\t\t\t\t\t\t\t<Text variant=\"body-3\">\n\t\t\t\t\t\t\t\t\t\t\t\tIf you start using more gradients, your product will become even more\n\t\t\t\t\t\t\t\t\t\t\t\tsuccesful.\n\t\t\t\t\t\t\t\t\t\t\t</Text>\n\t\t\t\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t\t\t\t</View.Item>\n\t\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t\t),\n\t\t\t\t\t\t\tcolor: \"neutral\",\n\t\t\t\t\t\t\tposition: \"bottom-start\",\n\t\t\t\t\t\t\ttimeout: 0,\n\t\t\t\t\t\t});\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tShow toast\n\t\t\t\t</Button>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t);\n};\nexport const slots = { name: \"slots\", render: () => <Slots /> };\n\nexport const base: StoryObj = {\n\tname: \"base\",\n\trender: () => {\n\t\tconst toast = useToast();\n\n\t\treturn (\n\t\t\t<Button\n\t\t\t\tonClick={() => {\n\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\ttitle: \"Title\",\n\t\t\t\t\t\ttext: \"Text\",\n\t\t\t\t\t\tchildren: \"Children\",\n\t\t\t\t\t\tstartSlot: \"Slot\",\n\t\t\t\t\t\tactionsSlot: (\n\t\t\t\t\t\t\t<Button attributes={{ \"data-testid\": \"trigger-id\" }} onClick={() => toast.hide(id)}>\n\t\t\t\t\t\t\t\tTrigger\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t),\n\t\t\t\t\t});\n\t\t\t\t}}\n\t\t\t>\n\t\t\t\tShow toast\n\t\t\t</Button>\n\t\t);\n\t},\n\tplay: async ({ canvasElement }) => {\n\t\tconst canvas = within(canvasElement.ownerDocument.body);\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(button);\n\n\t\tconst title = canvas.getByText(\"Title\");\n\t\tconst text = canvas.getByText(\"Text\");\n\t\tconst children = canvas.getByText(\"Children\");\n\t\tconst slot = canvas.getByText(\"Slot\");\n\t\tconst action = canvas.getByTestId(\"trigger-id\");\n\n\t\texpect(title).toBeInTheDocument();\n\t\texpect(text).toBeInTheDocument();\n\t\texpect(children).toBeInTheDocument();\n\t\texpect(slot).toBeInTheDocument();\n\t\texpect(action).toBeInTheDocument();\n\n\t\tawait userEvent.click(action);\n\n\t\tawait sleep(600);\n\n\t\tawait waitFor(() => {\n\t\t\texpect(title).not.toBeInTheDocument();\n\t\t});\n\t},\n};\n\nconst NestedDemo = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<Button\n\t\t\tonClick={() => {\n\t\t\t\ttoast.show({\n\t\t\t\t\ttext: \"Content\",\n\t\t\t\t});\n\t\t\t}}\n\t\t>\n\t\t\tShow toast\n\t\t</Button>\n\t);\n};\n\nexport const nested: StoryObj = {\n\tname: \"ToastProvider\",\n\trender: () => {\n\t\treturn (\n\t\t\t<div data-testid=\"test-container-id\">\n\t\t\t\t<ToastProvider>\n\t\t\t\t\t<NestedDemo />\n\t\t\t\t</ToastProvider>\n\t\t\t</div>\n\t\t);\n\t},\n\tplay: async ({ canvasElement }) => {\n\t\tconst canvas = within(canvasElement.ownerDocument.body);\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(button);\n\n\t\tconst container = canvas.getByTestId(\"test-container-id\");\n\t\tconst toast = within(container).getByText(\"Content\");\n\n\t\texpect(toast).toBeInTheDocument();\n\t},\n};\n\nexport const className: StoryObj = {\n\tname: \"className, attributes\",\n\trender: () => {\n\t\tconst toast = useToast();\n\n\t\treturn (\n\t\t\t<Button\n\t\t\t\tonClick={() => {\n\t\t\t\t\tconst id = toast.show({\n\t\t\t\t\t\ttext: \"Content\",\n\t\t\t\t\t\tattributes: { \"data-testid\": \"test-id\" },\n\t\t\t\t\t\tclassName: \"test-classname\",\n\t\t\t\t\t});\n\t\t\t\t}}\n\t\t\t>\n\t\t\t\tShow toast\n\t\t\t</Button>\n\t\t);\n\t},\n\tplay: async ({ canvasElement }) => {\n\t\tconst canvas = within(canvasElement.ownerDocument.body);\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(button);\n\n\t\tconst toast = canvas.getByTestId(\"test-id\");\n\n\t\texpect(toast).toBeInTheDocument();\n\t\texpect(toast).toHaveClass(\"test-classname\");\n\t},\n};\n\nconst Multiline = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<Button\n\t\t\tonClick={() => {\n\t\t\t\ttoast.show({\n\t\t\t\t\ttext: \"Very long event completed notification message\",\n\t\t\t\t});\n\t\t\t}}\n\t\t>\n\t\t\tShow toast\n\t\t</Button>\n\t);\n};\n\nconst Nested = () => {\n\tconst toast = useToast();\n\n\treturn (\n\t\t<View height=\"300px\">\n\t\t\t<Button\n\t\t\t\tonClick={() => {\n\t\t\t\t\ttoast.show({\n\t\t\t\t\t\ttext: \"Notification sent\",\n\t\t\t\t\t});\n\t\t\t\t}}\n\t\t\t>\n\t\t\t\tShow toast\n\t\t\t</Button>\n\t\t</View>\n\t);\n};\nexport const edgeCases = {\n\tname: \"test: edge cases\",\n\trender: () => (\n\t\t<Example>\n\t\t\t<Example.Item title=\"Multiline, should support dynamic height\">\n\t\t\t\t<Multiline />\n\t\t\t</Example.Item>\n\t\t\t<Example.Item title=\"Nested ToastProvider\">\n\t\t\t\t<ToastProvider>\n\t\t\t\t\t<Nested />\n\t\t\t\t</ToastProvider>\n\t\t\t</Example.Item>\n\t\t</Example>\n\t),\n};\n"
 			}
 		},
 		"components-togglebutton": {
@@ -2099,13 +2099,13 @@
 					"snippet": "const onClick = () => <ToggleButton onClick={fn()}>Button</ToggleButton>;"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport { ToggleButton } from \"reshaped\";",
+			"import": "import { Example, ToggleButton } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "ToggleButton",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/ToggleButton/ToggleButton.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/ToggleButton/ToggleButton.tsx",
 				"actualName": "ToggleButton",
 				"exportName": "default"
 			}
@@ -2136,13 +2136,13 @@
 					"snippet": "const testIcon = () => (\n    <Example>\n        <Example.Item title=\"icon only\">\n            <ToggleButtonGroup selectedColor=\"primary\">\n                <ToggleButton value=\"1\" icon={IconPlus} />\n                <ToggleButton value=\"2\" icon={IconMinus} />\n                <ToggleButton value=\"3\" icon={IconCheckmark} />\n            </ToggleButtonGroup>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport ToggleButton from \"components/ToggleButton\";\nimport ToggleButtonGroup from \"components/ToggleButtonGroup\";",
+			"import": "import { Example, ToggleButton, ToggleButtonGroup } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "ToggleButtonGroup",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/ToggleButtonGroup/ToggleButtonGroup.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/ToggleButtonGroup/ToggleButtonGroup.tsx",
 				"actualName": "ToggleButtonGroup",
 				"exportName": "default"
 			}
@@ -2169,13 +2169,13 @@
 					"snippet": "const edgeCases = () => (\n    <Example>\n        <Example.Item title=\"responsive visibility\">\n            <DemoResponsive text=\"Responsive\" />\n        </Example.Item>\n\n        <Example.Item title=\"without text\">\n            <Tooltip>{() => <Button>Button</Button>}</Tooltip>\n        </Example.Item>\n\n        <Example.Item title=\"tooltip with popover\">\n            <Tooltip text=\"Tooltip\" position=\"top\">\n                {(attributes) => (\n                    <Popover position=\"bottom\">\n                        <Popover.Trigger>\n                            {(popoverAttributes) => (\n                                <Button attributes={{ ...attributes, ...popoverAttributes }}>Action</Button>\n                            )}\n                        </Popover.Trigger>\n                        <Popover.Content>Popover</Popover.Content>\n                    </Popover>\n                )}\n            </Tooltip>\n        </Example.Item>\n\n        <Example.Item title=\"nested popovers inside a tooltip\">\n            <View direction=\"row\" gap={2}>\n                <Tooltip position=\"top\" text=\"Hello\">\n                    {(tooltipAttributes) => (\n                        <Popover position=\"bottom\" width=\"300px\">\n                            <Popover.Trigger>\n                                {(attributes) => (\n                                    <Button attributes={{ ...tooltipAttributes, ...attributes }}>\n                                        Tooltip with popover\n                                    </Button>\n                                )}\n                            </Popover.Trigger>\n                            <Popover.Content>\n                                <View gap={2} align=\"center\" direction=\"row\" justify=\"space-between\">\n                                    Popover content\n                                    <Popover position=\"bottom\" width=\"300px\">\n                                        <Popover.Trigger>\n                                            {(attributes) => <Button attributes={attributes}>Open</Button>}\n                                        </Popover.Trigger>\n                                        <Popover.Content>\n                                            <Popover.Dismissible align=\"center\" closeAriaLabel=\"Close\">\n                                                Another popover content\n                                            </Popover.Dismissible>\n                                        </Popover.Content>\n                                    </Popover>\n                                </View>\n                            </Popover.Content>\n                        </Popover>\n                    )}\n                </Tooltip>\n                <Tooltip position=\"top\" text=\"Hello\">\n                    {(tooltipAttributes) => <Button attributes={tooltipAttributes}>Just a tooltip</Button>}\n                </Tooltip>\n            </View>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Popover from \"components/Popover\";\nimport Tooltip from \"components/Tooltip\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, Popover, Tooltip, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Tooltip",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Tooltip/Tooltip.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Tooltip/Tooltip.tsx",
 				"actualName": "Tooltip",
 				"exportName": "default"
 			}
@@ -2222,13 +2222,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Accordion className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Accordion.Trigger>\n                <Placeholder>Trigger</Placeholder>\n            </Accordion.Trigger>\n            <Accordion.Content>\n                <View paddingTop={2}>\n                    <Placeholder />\n                </View>\n            </Accordion.Content>\n        </Accordion>\n    </div>\n);"
 				}
 			],
-			"import": "import Accordion from \"components/Accordion\";\nimport Button from \"components/Button\";\nimport { Placeholder } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { Accordion, Button, Placeholder, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Accordion",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Accordion/Accordion.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Accordion/Accordion.tsx",
 				"actualName": "Accordion",
 				"exportName": "default"
 			}
@@ -2279,13 +2279,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Actionable className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            Trigger\n        </Actionable>\n    </div>\n);"
 				}
 			],
-			"import": "import Actionable from \"components/Actionable\";\nimport { Example } from \"utilities/storybook\";\nimport View from \"components/View\";",
+			"import": "import { Actionable, Example, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Actionable",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Actionable/Actionable.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Actionable/Actionable.tsx",
 				"actualName": "Actionable",
 				"exportName": "default"
 			}
@@ -2312,13 +2312,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Container className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            <Placeholder />\n        </Container>\n    </div>\n);"
 				}
 			],
-			"import": "import Container from \"components/Container\";\nimport { Example, Placeholder } from \"utilities/storybook\";",
+			"import": "import { Container, Example, Placeholder } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Container",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Container/Container.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Container/Container.tsx",
 				"actualName": "Container",
 				"exportName": "default"
 			}
@@ -2349,13 +2349,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Dismissible\n            closeAriaLabel=\"Close\"\n            onClose={() => {}}\n            className=\"test-classname\"\n            attributes={{ id: \"test-id\" }}\n        >\n            <Placeholder />\n        </Dismissible>\n    </div>\n);"
 				}
 			],
-			"import": "import Dismissible from \"components/Dismissible\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport Image from \"components/Image\";\nimport View from \"components/View\";",
+			"import": "import { Dismissible, Example, Image, Placeholder, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Dismissible",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Dismissible/Dismissible.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Dismissible/Dismissible.tsx",
 				"actualName": "Dismissible",
 				"exportName": "default"
 			}
@@ -2486,13 +2486,13 @@
 					"snippet": "const testChangeSize = () => {\n    const [position, setPosition] = React.useState<FlyoutProps[\"position\"]>(\"bottom-start\");\n    const [updatedHeight, setUpdatedHeight] = React.useState(false);\n\n    return (\n        <>\n            <View direction=\"row\" gap={4} align=\"center\">\n                <Select\n                    name=\"position\"\n                    options={[\n                        \"bottom-start\",\n                        \"bottom\",\n                        \"bottom-end\",\n                        \"top-start\",\n                        \"top\",\n                        \"top-end\",\n                        \"start-top\",\n                        \"start\",\n                        \"start-bottom\",\n                        \"end-top\",\n                        \"end\",\n                        \"end-bottom\",\n                    ].map((p) => ({ label: p, value: p }))}\n                    onChange={(args) => setPosition(args.value as FlyoutProps[\"position\"])}\n                    value={position}\n                />\n                <Switch name=\"height\" onChange={(args) => setUpdatedHeight(args.checked)}>\n                    Change height\n                </Switch>\n            </View>\n            <div\n                style={{\n                    position: \"fixed\",\n                    top: \"50%\",\n                    left: \"50%\",\n                    transform: \"translate(-50%, -50%)\",\n                }}\n            >\n                <Demo position={position} disableCloseOnOutsideClick active contentHeight={false}>\n                    <View\n                        backgroundColor=\"neutral-faded\"\n                        borderRadius=\"small\"\n                        height={updatedHeight ? 50 : 25}\n                        attributes={{ style: { transition: \"0.2s ease-in-out\" } }}\n                    />\n                </Demo>\n            </div>\n        </>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Flyout from \"components/Flyout\";\nimport Modal from \"components/Modal\";\nimport React from \"react\";\nimport Reshaped from \"components/Reshaped\";\nimport Select from \"components/Select\";\nimport Switch from \"components/Switch\";\nimport TextField from \"components/TextField\";\nimport Theme from \"components/Theme\";\nimport View from \"components/View\";",
+			"import": "import {\n    Button,\n    Example,\n    Flyout,\n    Modal,\n    Reshaped,\n    Select,\n    Switch,\n    TextField,\n    Theme,\n    View,\n} from \"reshaped\";\nimport React from \"react\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Flyout",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Flyout/Flyout.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Flyout/Flyout.tsx",
 				"actualName": "Flyout",
 				"exportName": "default"
 			}
@@ -2531,13 +2531,13 @@
 					"snippet": "const group = () => (\n    <FormControl group>\n        <FormControl.Label>Label</FormControl.Label>\n        <RadioGroup name=\"name\">\n            <View gap={2}>\n                <Radio value=\"1\">One</Radio>\n                <Radio value=\"2\">Two</Radio>\n            </View>\n        </RadioGroup>\n    </FormControl>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport FormControl from \"components/FormControl\";\nimport Radio from \"components/Radio\";\nimport RadioGroup from \"components/RadioGroup\";\nimport TextField from \"components/TextField\";\nimport View from \"components/View\";",
+			"import": "import { Example, FormControl, Radio, RadioGroup, TextField, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "FormControl",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/FormControl/FormControl.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/FormControl/FormControl.tsx",
 				"actualName": "FormControl",
 				"exportName": "default"
 			}
@@ -2576,13 +2576,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Grid className=\"test-class\" attributes={{ id: \"test-id\" }}>\n            <Grid.Item className=\"test-item-class\" attributes={{ id: \"test-item-id\" }}>\n                Content\n            </Grid.Item>\n        </Grid>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Grid from \"components/Grid\";\nimport View from \"components/View\";",
+			"import": "import { Example, Grid, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Grid",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Grid/Grid.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Grid/Grid.tsx",
 				"actualName": "Grid",
 				"exportName": "default"
 			}
@@ -2601,13 +2601,13 @@
 					"snippet": "const as = () => <Hidden as=\"span\">Content</Hidden>;"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Hidden from \"components/Hidden\";",
+			"import": "import { Example, Hidden } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Hidden",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Hidden/Hidden.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Hidden/Hidden.tsx",
 				"actualName": "Hidden",
 				"exportName": "default"
 			}
@@ -2626,13 +2626,13 @@
 					"snippet": "const children = () => <HiddenVisually>Content</HiddenVisually>;"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport HiddenVisually from \"components/HiddenVisually\";",
+			"import": "import { Example, HiddenVisually } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "HiddenVisually",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/HiddenVisually/HiddenVisually.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/HiddenVisually/HiddenVisually.tsx",
 				"actualName": "HiddenVisually",
 				"exportName": "default"
 			}
@@ -2663,13 +2663,13 @@
 					"snippet": "const render = () => (\n    <div data-testid=\"root\">\n        <Icon svg={IconZap} />\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Icon from \"components/Icon\";\nimport Text from \"components/Text\";\nimport View from \"components/View\";",
+			"import": "import { Example, Icon, Text, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Icon",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Icon/Icon.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Icon/Icon.tsx",
 				"actualName": "Icon",
 				"exportName": "default"
 			}
@@ -2720,13 +2720,13 @@
 					"snippet": "const ratio = () => (\n    <Example>\n        <Example.Item title=\"ratio: 16/9\">\n            <View aspectRatio={16 / 9}>\n                <Image src={imgUrl} />\n            </View>\n        </Example.Item>\n        <Example.Item title=\"ratio: 16/9, displayMode: contain\">\n            <View aspectRatio={16 / 9}>\n                <Image src={imgUrl} displayMode=\"contain\" />\n            </View>\n        </Example.Item>\n    </Example>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Icon from \"components/Icon\";\nimport { Image } from \"reshaped\";\nimport View from \"components/View\";",
+			"import": "import { Example, Icon, Image, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Image",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Image/Image.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Image/Image.tsx",
 				"actualName": "Image",
 				"exportName": "default"
 			}
@@ -2769,13 +2769,13 @@
 					"snippet": "const className = () => (\n    <Overlay active className=\"test-classname\" attributes={{ \"data-testid\": \"test-id\" }}>\n        Content\n    </Overlay>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Overlay from \"components/Overlay\";",
+			"import": "import { Button, Example, Overlay } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Overlay",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Overlay/Overlay.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Overlay/Overlay.tsx",
 				"actualName": "Overlay",
 				"exportName": "default"
 			}
@@ -2814,13 +2814,13 @@
 					"snippet": "const keyboardMode = () => (\n    <Reshaped theme=\"reshaped\" defaultColorMode=\"dark\">\n        Hello\n    </Reshaped>\n);"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Reshaped } from \"reshaped\";",
+			"import": "import { Button, Reshaped } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Reshaped",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Reshaped/Reshaped.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Reshaped/Reshaped.tsx",
 				"actualName": "Reshaped",
 				"exportName": "default"
 			}
@@ -2859,13 +2859,13 @@
 					"snippet": "const testDynamicHeight = () => {\n    const [count, setCount] = React.useState(10);\n\n    return (\n        <View gap={4}>\n            <View.Item>\n                <Button onClick={() => setCount((prev) => prev + 10)}>Add more items</Button>\n            </View.Item>\n\n            <ScrollArea height=\"200px\" scrollbarDisplay=\"visible\">\n                <View gap={2}>\n                    {new Array(count).fill(\"\").map((_, i) => (\n                        <View.Item key={i}>Item {i + 1}</View.Item>\n                    ))}\n                </View>\n            </ScrollArea>\n        </View>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport ScrollArea from \"components/ScrollArea\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, ScrollArea, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "ScrollArea",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/ScrollArea/ScrollArea.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/ScrollArea/ScrollArea.tsx",
 				"actualName": "ScrollArea",
 				"exportName": "default"
 			}
@@ -2916,13 +2916,13 @@
 					"snippet": "const className = () => (\n    <div data-testid=\"root\">\n        <Text className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            Content\n        </Text>\n    </div>\n);"
 				}
 			],
-			"import": "import { Example } from \"utilities/storybook\";\nimport Text from \"components/Text\";",
+			"import": "import { Example, Text } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Text",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Text/Text.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Text/Text.tsx",
 				"actualName": "Text",
 				"exportName": "default"
 			}
@@ -2965,13 +2965,13 @@
 					"snippet": "const disabledTransition = () => {\n    const { invertColorMode } = useTheme();\n\n    return (\n        <Example>\n            <Example.Item title=\"should have no transitions while switching color mode\">\n                <View gap={3}>\n                    <Button onClick={invertColorMode}>Invert mode</Button>\n\n                    <MenuItem selected>Test transition</MenuItem>\n\n                    <Card>Default card</Card>\n\n                    <Theme colorMode=\"inverted\">\n                        <Card>Inverted card</Card>\n                    </Theme>\n                </View>\n            </Example.Item>\n        </Example>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport Card from \"components/Card\";\nimport { Example } from \"utilities/storybook\";\nimport MenuItem from \"components/MenuItem\";\nimport Popover from \"components/Popover\";\nimport Theme from \"components/Theme\";\nimport View from \"components/View\";",
+			"import": "import { Button, Card, Example, MenuItem, Popover, Theme, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Theme",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Theme/Theme.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Theme/Theme.tsx",
 				"actualName": "Theme",
 				"exportName": "default"
 			}
@@ -3114,13 +3114,13 @@
 					"snippet": "const itemClassName = () => (\n    <div data-testid=\"root\">\n        <View.Item className=\"test-classname\" attributes={{ id: \"test-id\" }}>\n            Content\n        </View.Item>\n    </div>\n);"
 				}
 			],
-			"import": "import Avatar from \"components/Avatar\";\nimport Button from \"components/Button\";\nimport { Example, Placeholder } from \"utilities/storybook\";\nimport Hidden from \"components/Hidden\";\nimport MenuItem from \"components/MenuItem\";\nimport Tabs from \"components/Tabs\";\nimport Text from \"components/Text\";\nimport View from \"components/View\";",
+			"import": "import { Avatar, Button, Example, Hidden, MenuItem, Placeholder, Tabs, Text, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "View",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/View/View.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/View/View.tsx",
 				"actualName": "View",
 				"exportName": "default"
 			}
@@ -3138,8 +3138,8 @@
 			"import": "",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  3 | import useElementId from \"hooks/useElementId\";\n  4 |\n> 5 | export default {\n    | ^\n  6 | \ttitle: \"Hooks/useElementId\",\n  7 | \tparameters: {\n  8 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  3 | import useElementId from \"hooks/useElementId\";\n  4 |\n> 5 | export default {\n    | ^\n  6 | \ttitle: \"Hooks/useElementId\",\n  7 | \tparameters: {\n  8 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useElementId.stories.tsx:\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, waitFor } from \"storybook/test\";\nimport useElementId from \"hooks/useElementId\";\n\nexport default {\n\ttitle: \"Hooks/useElementId\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nconst Component: React.FC<{ id?: string }> = (props) => {\n\tconst id = useElementId(props.id);\n\n\treturn <div id={id}>{id}</div>;\n};\n\nexport const id: StoryObj = {\n\tname: \"passed id\",\n\trender: () => {\n\t\treturn <Component id=\"hey\" />;\n\t},\n\tplay: async () => {\n\t\twaitFor(() => {\n\t\t\texpect(document.querySelector(\"#hey\")).toBeTruthy();\n\t\t});\n\t},\n};\n"
 			}
 		},
 		"hooks-usehandlerref": {
@@ -3152,11 +3152,11 @@
 					"snippet": "const base = (args) => {\n    const [count, setCount] = React.useState(0);\n\n    // Creating a new handler on each render\n    const handleEffect = () => {\n        args.handleEffect(0);\n    };\n\n    return (\n        <View gap={4}>\n            <Button onClick={() => setCount((prev) => prev + 1)}>Increase count</Button>\n            <Component onEffect={handleEffect} count={count} />\n        </View>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport View from \"components/View\";",
+			"import": "import { Button, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   6 | import useHandlerRef from \"hooks/useHandlerRef\";\n   7 |\n>  8 | export default {\n     | ^\n   9 | \ttitle: \"Hooks/useHandlerRef\",\n  10 | \tparameters: {\n  11 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   6 | import useHandlerRef from \"hooks/useHandlerRef\";\n   7 |\n>  8 | export default {\n     | ^\n   9 | \ttitle: \"Hooks/useHandlerRef\",\n  10 | \tparameters: {\n  11 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useHandlerRef.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, fn, Mock, userEvent } from \"storybook/test\";\nimport Button from \"components/Button\";\nimport View from \"components/View\";\nimport useHandlerRef from \"hooks/useHandlerRef\";\n\nexport default {\n\ttitle: \"Hooks/useHandlerRef\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nconst Component: React.FC<{ onEffect: () => void; count: number }> = (props) => {\n\tconst { onEffect, count } = props;\n\tconst onEffectRef = useHandlerRef(onEffect);\n\n\tReact.useEffect(() => {\n\t\tonEffectRef.current();\n\t}, [onEffectRef]);\n\n\treturn <>Counter: {count}</>;\n};\n\nexport const base: StoryObj<{ handleEffect: Mock }> = {\n\tname: \"base\",\n\targs: {\n\t\thandleEffect: fn(),\n\t},\n\trender: (args) => {\n\t\tconst [count, setCount] = React.useState(0);\n\n\t\t// Creating a new handler on each render\n\t\tconst handleEffect = () => {\n\t\t\targs.handleEffect(0);\n\t\t};\n\n\t\treturn (\n\t\t\t<View gap={4}>\n\t\t\t\t<Button onClick={() => setCount((prev) => prev + 1)}>Increase count</Button>\n\t\t\t\t<Component onEffect={handleEffect} count={count} />\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas, args }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\t// mount, triggerred twice in dev mode\n\t\texpect(args.handleEffect).toHaveBeenCalledTimes(2);\n\n\t\tawait userEvent.click(button);\n\n\t\t// Rerendering the component doesn't re-trigger the effect\n\t\texpect(args.handleEffect).toHaveBeenCalledTimes(2);\n\t},\n};\n"
 			}
 		},
 		"hooks-usehotkeys": {
@@ -3205,11 +3205,11 @@
 					"snippet": "const optionModified = (args) => (\n    <Component hotkeys={{ \"alt+n\": args.handleHotkeyModified, \"alt+shift\": args.handleHotkey }} />\n);"
 				}
 			],
-			"import": "import View from \"components/View\";",
+			"import": "import { View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  4 | import useHotkeys from \"hooks/useHotkeys\";\n  5 |\n> 6 | export default {\n    | ^\n  7 | \ttitle: \"Hooks/useHotkeys\",\n  8 | \tparameters: {\n  9 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  4 | import useHotkeys from \"hooks/useHotkeys\";\n  5 |\n> 6 | export default {\n    | ^\n  7 | \ttitle: \"Hooks/useHotkeys\",\n  8 | \tparameters: {\n  9 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useHotkeys.stories.tsx:\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, fn, userEvent } from \"storybook/test\";\nimport View from \"components/View\";\nimport useHotkeys from \"hooks/useHotkeys\";\n\nexport default {\n\ttitle: \"Hooks/useHotkeys\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nexport const base = {\n\tname: \"base\",\n\trender: () => {\n\t\tconst { checkHotkeyState } = useHotkeys({\n\t\t\t\"shift + b + n\": () => console.log(\"pressed\"),\n\t\t\t\"c + v\": () => console.log(\"c + v\"),\n\t\t\t\"Meta + k\": () => console.log(\"meta + k\"),\n\t\t\t\"Meta + f\": () => console.log(\"meta + f\"),\n\t\t\t\"Meta + v\": () => console.log(\"meta + v\"),\n\t\t\t\"Meta + b\": () => console.log(\"meta + b\"),\n\t\t\t\"control + enter\": () => console.log(\"control + enter\"),\n\t\t\t\"meta + enter\": () => console.log(\"meta + enter\"),\n\t\t\t\"mod + enter\": () => console.log(\"mod + enter\"),\n\t\t\t\"mod + ArrowRight\": () => console.log(\"right\"),\n\t\t\t\"mod + ArrowUp\": () => console.log(\"top\"),\n\t\t\t\"shift + ArrowRight\": () => console.log(\"right\"),\n\t\t\t\"shift + ArrowUp\": () => console.log(\"top\"),\n\t\t\t\"alt+shift+n\": () => console.log(\"alt+shift+n\"),\n\t\t\t\"shift+alt+n\": () => console.log(\"shift+alt+n\"),\n\t\t\t\"alt+shiftLeft+n\": () => console.log(\"alt+shiftLeft+n\"),\n\t\t});\n\t\tconst active = checkHotkeyState(\"shift + b + n\");\n\t\tconst shiftActive = checkHotkeyState(\"shift\");\n\t\tconst bActive = checkHotkeyState(\"b\");\n\t\tconst nActive = checkHotkeyState(\"n\");\n\n\t\treturn (\n\t\t\t<View\n\t\t\t\tanimated\n\t\t\t\tgap={2}\n\t\t\t\tdirection=\"row\"\n\t\t\t\tbackgroundColor={active ? \"positive-faded\" : undefined}\n\t\t\t\tpadding={2}\n\t\t\t\tborderRadius=\"small\"\n\t\t\t>\n\t\t\t\t<View\n\t\t\t\t\tpaddingInline={4}\n\t\t\t\t\tpaddingBlock={2}\n\t\t\t\t\tborderRadius=\"small\"\n\t\t\t\t\tborderColor=\"neutral-faded\"\n\t\t\t\t\tanimated\n\t\t\t\t\tbackgroundColor={shiftActive ? \"neutral-faded\" : \"elevation-raised\"}\n\t\t\t\t\tshadow={shiftActive ? undefined : \"raised\"}\n\t\t\t\t>\n\t\t\t\t\tShift\n\t\t\t\t</View>\n\t\t\t\t<View\n\t\t\t\t\tpaddingInline={4}\n\t\t\t\t\tpaddingBlock={2}\n\t\t\t\t\tborderRadius=\"small\"\n\t\t\t\t\tborderColor=\"neutral-faded\"\n\t\t\t\t\tanimated\n\t\t\t\t\tbackgroundColor={bActive ? \"neutral-faded\" : \"elevation-raised\"}\n\t\t\t\t\tshadow={bActive ? undefined : \"raised\"}\n\t\t\t\t>\n\t\t\t\t\tb\n\t\t\t\t</View>\n\t\t\t\t<View\n\t\t\t\t\tpaddingInline={4}\n\t\t\t\t\tpaddingBlock={2}\n\t\t\t\t\tborderRadius=\"small\"\n\t\t\t\t\tborderColor=\"neutral-faded\"\n\t\t\t\t\tanimated\n\t\t\t\t\tbackgroundColor={nActive ? \"neutral-faded\" : \"elevation-raised\"}\n\t\t\t\t\tshadow={nActive ? undefined : \"raised\"}\n\t\t\t\t>\n\t\t\t\t\tn\n\t\t\t\t</View>\n\t\t\t</View>\n\t\t);\n\t},\n};\n\nconst Component: React.FC<{ hotkeys: Record<string, (() => void) | null> }> = (props) => {\n\tconst { hotkeys } = props;\n\tuseHotkeys(hotkeys);\n\n\treturn <div />;\n};\n\nexport const singleKey: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"single key\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ a: args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"a\");\n\t\tawait userEvent.keyboard(\"b\");\n\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const modKey: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"mod key\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ mod: args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{Meta/}\");\n\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const modKeyHold: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"mod key on hold\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ \"Meta + b\": args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{Meta>}bb{/Meta}\");\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(2);\n\t},\n};\n\nexport const keyList: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"key list\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ \"a,b\": args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"a\");\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\n\t\tawait userEvent.keyboard(\"b\");\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(2);\n\t},\n};\n\nexport const keyCombination: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"key combination\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ \"a+b\": args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{a>}b{/a}\");\n\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const keyCombinationFormat: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"key combination without formatting\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ \"A  + b\": args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{a>}b{/a}\");\n\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const keyCombinationOrder: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"key combination without order\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ \"b+a\": args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{a>}b{/a}\");\n\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const keyCombinationMoreThanRequired: StoryObj<{ handleHotkey: ReturnType<typeof fn> }> = {\n\tname: \"key combination, more keys pressed\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t},\n\trender: (args) => <Component hotkeys={{ \"z + x\": args.handleHotkey }} />,\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{z>}{x>}c{/x}{/z}\");\n\t\t// When c is pressed, it doesn't trigger a+b for the second time\n\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const optionModified: StoryObj<{\n\thandleHotkey: ReturnType<typeof fn>;\n\thandleHotkeyModified: ReturnType<typeof fn>;\n}> = {\n\tname: \"modified with alt/option\",\n\targs: {\n\t\thandleHotkey: fn(),\n\t\thandleHotkeyModified: fn(),\n\t},\n\trender: (args) => (\n\t\t<Component hotkeys={{ \"alt+n\": args.handleHotkeyModified, \"alt+shift\": args.handleHotkey }} />\n\t),\n\tplay: async ({ args }) => {\n\t\tawait userEvent.keyboard(\"{Alt>}n{/Alt}\");\n\t\texpect(args.handleHotkeyModified).toHaveBeenCalledTimes(1);\n\n\t\tawait userEvent.keyboard(\"{Alt>}{Shift}{/Alt}\");\n\t\texpect(args.handleHotkey).toHaveBeenCalledTimes(1);\n\t},\n};\n"
 			}
 		},
 		"hooks-usekeyboardarrownavigation": {
@@ -3238,11 +3238,11 @@
 					"snippet": "const disabled = () => {\n    const ref = useRef<HTMLDivElement>(null);\n\n    useKeyboardArrowNavigation({ ref, disabled: true });\n\n    return (\n        <View gap={2} direction=\"row\" attributes={{ ref }}>\n            <Button onClick={() => {}}>Action 1</Button>\n            <Button onClick={() => {}}>Action 2</Button>\n            <Button onClick={() => {}}>Action 3</Button>\n        </View>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport View from \"components/View\";",
+			"import": "import { Button, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   7 | import useKeyboardArrowNavigation from \"hooks/useKeyboardArrowNavigation\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Hooks/useKeyboardArrowNavigation\",\n  11 | \tparameters: {\n  12 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   7 | import useKeyboardArrowNavigation from \"hooks/useKeyboardArrowNavigation\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Hooks/useKeyboardArrowNavigation\",\n  11 | \tparameters: {\n  12 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useKeyboardArrowNavigation.stories.tsx:\nimport React, { useEffect, useRef, useState } from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, userEvent } from \"storybook/test\";\nimport useRTL from \"hooks/useRTL\";\nimport View from \"components/View\";\nimport Button from \"components/Button\";\nimport useKeyboardArrowNavigation from \"hooks/useKeyboardArrowNavigation\";\n\nexport default {\n\ttitle: \"Hooks/useKeyboardArrowNavigation\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nexport const base: StoryObj = {\n\tname: \"base\",\n\trender: () => {\n\t\tconst ref = useRef<HTMLDivElement>(null);\n\n\t\tuseKeyboardArrowNavigation({ ref });\n\n\t\treturn (\n\t\t\t<View gap={2} direction=\"row\" attributes={{ ref }}>\n\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst buttons = canvas.getAllByRole(\"button\");\n\n\t\tbuttons[0].focus();\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\n\t\texpect(document.activeElement).toBe(buttons[1]);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(buttons[2]);\n\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(buttons[1]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\t},\n};\n\nexport const horizontal: StoryObj = {\n\tname: \"orientation: horizontal\",\n\trender: () => {\n\t\tconst ref = useRef<HTMLDivElement>(null);\n\n\t\tuseKeyboardArrowNavigation({ ref, orientation: \"horizontal\" });\n\n\t\treturn (\n\t\t\t<View gap={2} direction=\"row\" attributes={{ ref }}>\n\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst buttons = canvas.getAllByRole(\"button\");\n\n\t\texpect(buttons[0]).toHaveAttribute(\"tabindex\", \"0\");\n\t\texpect(buttons[1]).toHaveAttribute(\"tabindex\", \"-1\");\n\t\texpect(buttons[2]).toHaveAttribute(\"tabindex\", \"-1\");\n\n\t\tbuttons[0].focus();\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\n\t\texpect(document.activeElement).toBe(buttons[1]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\t},\n};\n\nexport const vertical: StoryObj = {\n\tname: \"orientation: vertical\",\n\trender: () => {\n\t\tconst ref = useRef<HTMLDivElement>(null);\n\n\t\tuseKeyboardArrowNavigation({ ref, orientation: \"vertical\" });\n\n\t\treturn (\n\t\t\t<View gap={2} direction=\"column\" attributes={{ ref }}>\n\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst buttons = canvas.getAllByRole(\"button\");\n\n\t\tbuttons[0].focus();\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\n\t\texpect(document.activeElement).toBe(buttons[1]);\n\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\t},\n};\n\nexport const circular: StoryObj = {\n\tname: \"circular\",\n\trender: () => {\n\t\tconst ref = useRef<HTMLDivElement>(null);\n\n\t\tuseKeyboardArrowNavigation({ ref, circular: true });\n\n\t\treturn (\n\t\t\t<View gap={2} direction=\"row\" attributes={{ ref }}>\n\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst buttons = canvas.getAllByRole(\"button\");\n\n\t\tbuttons[0].focus();\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(buttons[2]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(buttons[2]);\n\t},\n};\n\nexport const disabled: StoryObj = {\n\tname: \"disabled\",\n\trender: () => {\n\t\tconst ref = useRef<HTMLDivElement>(null);\n\n\t\tuseKeyboardArrowNavigation({ ref, disabled: true });\n\n\t\treturn (\n\t\t\t<View gap={2} direction=\"row\" attributes={{ ref }}>\n\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst buttons = canvas.getAllByRole(\"button\");\n\n\t\tbuttons[0].focus();\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(buttons[0]);\n\t\texpect(buttons[0]).not.toHaveAttribute(\"tabindex\");\n\t},\n};\n"
 			}
 		},
 		"hooks-usekeyboardmode": {
@@ -3252,11 +3252,11 @@
 			"stories": [
 				{ "name": "base", "snippet": "const base = () => <Component />;" }
 			],
-			"import": "import Button from \"components/Button\";\nimport View from \"components/View\";",
+			"import": "import { Button, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   5 | import useKeyboardMode from \"hooks/useKeyboardMode\";\n   6 |\n>  7 | export default {\n     | ^\n   8 | \ttitle: \"Hooks/useKeyboardMode\",\n   9 | \tparameters: {\n  10 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   5 | import useKeyboardMode from \"hooks/useKeyboardMode\";\n   6 |\n>  7 | export default {\n     | ^\n   8 | \ttitle: \"Hooks/useKeyboardMode\",\n   9 | \tparameters: {\n  10 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useKeyboardMode.stories.tsx:\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, userEvent } from \"storybook/test\";\nimport Button from \"components/Button\";\nimport View from \"components/View\";\nimport useKeyboardMode from \"hooks/useKeyboardMode\";\n\nexport default {\n\ttitle: \"Hooks/useKeyboardMode\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nconst Component = () => {\n\tconst { activate, deactivate, disable, enable } = useKeyboardMode();\n\n\treturn (\n\t\t<View direction=\"row\" gap={2}>\n\t\t\t<Button onClick={activate}>Activate</Button>\n\t\t\t<Button onClick={deactivate}>Deactivate</Button>\n\t\t\t<Button onClick={disable}>Disable</Button>\n\t\t\t<Button onClick={enable}>Enable</Button>\n\t\t</View>\n\t);\n};\n\nexport const base: StoryObj = {\n\tname: \"base\",\n\trender: () => <Component />,\n\tplay: async ({ canvas }) => {\n\t\tconst attribute = \"data-rs-keyboard\";\n\t\tconst root = document.documentElement;\n\t\tconst activateTrigger = canvas.getAllByRole(\"button\")[0];\n\t\tconst deactivateTrigger = canvas.getAllByRole(\"button\")[1];\n\t\tconst disableTrigger = canvas.getAllByRole(\"button\")[2];\n\t\tconst enableTrigger = canvas.getAllByRole(\"button\")[3];\n\n\t\texpect(root).not.toHaveAttribute(attribute);\n\n\t\tawait userEvent.click(activateTrigger);\n\t\texpect(root).toHaveAttribute(attribute);\n\n\t\tawait userEvent.click(deactivateTrigger);\n\t\texpect(root).not.toHaveAttribute(attribute);\n\n\t\tawait userEvent.click(disableTrigger);\n\t\tawait userEvent.click(activateTrigger);\n\t\texpect(root).not.toHaveAttribute(attribute);\n\n\t\tawait userEvent.click(enableTrigger);\n\t\tawait userEvent.click(activateTrigger);\n\t\texpect(root).toHaveAttribute(attribute);\n\t},\n};\n"
 			}
 		},
 		"hooks-useonclickoutside": {
@@ -3281,11 +3281,11 @@
 					"snippet": "const deps = (args) => {\n    const ref = React.useRef(null);\n    const [count, setCount] = React.useState(0);\n\n    useOnClickOutside([ref], () => {\n        args.handleOutsideClick({ count });\n    });\n\n    return (\n        <Button attributes={{ ref }} onClick={() => setCount((prev) => prev + 1)}>\n            Trigger\n        </Button>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport View from \"components/View\";",
+			"import": "import { Button, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   6 | import View from \"components/View\";\n   7 |\n>  8 | export default {\n     | ^\n   9 | \ttitle: \"Hooks/useOnClickOutside\",\n  10 | \tparameters: {\n  11 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   6 | import View from \"components/View\";\n   7 |\n>  8 | export default {\n     | ^\n   9 | \ttitle: \"Hooks/useOnClickOutside\",\n  10 | \tparameters: {\n  11 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useOnClickOutside.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, fn, userEvent, type Mock } from \"storybook/test\";\nimport Button from \"components/Button\";\nimport useOnClickOutside from \"hooks/useOnClickOutside\";\nimport View from \"components/View\";\n\nexport default {\n\ttitle: \"Hooks/useOnClickOutside\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nexport const base: StoryObj<{ handleOutsideClick: Mock }> = {\n\tname: \"base\",\n\targs: {\n\t\thandleOutsideClick: fn(),\n\t},\n\trender: (args) => {\n\t\tconst ref = React.useRef(null);\n\t\tconst [target, setTarget] = React.useState<\"inside\" | \"outside\" | null>(null);\n\n\t\tuseOnClickOutside([ref], () => {\n\t\t\targs.handleOutsideClick();\n\t\t\tsetTarget(\"outside\");\n\t\t});\n\n\t\treturn (\n\t\t\t<View gap={4} align=\"start\">\n\t\t\t\t<Button attributes={{ ref }} onClick={() => setTarget(\"inside\")}>\n\t\t\t\t\tTrigger\n\t\t\t\t</Button>\n\t\t\t\t{target && `Clicked ${target}`}\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas, args }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(args.handleOutsideClick).not.toHaveBeenCalled();\n\n\t\tawait userEvent.click(document.body);\n\n\t\texpect(args.handleOutsideClick).toHaveBeenCalledTimes(1);\n\t\texpect(args.handleOutsideClick).toHaveBeenCalledWith();\n\t},\n};\n\nexport const refs: StoryObj<{ handleOutsideClick: Mock }> = {\n\tname: \"multiple refs\",\n\targs: {\n\t\thandleOutsideClick: fn(),\n\t},\n\trender: (args) => {\n\t\tconst ref = React.useRef(null);\n\t\tconst ref2 = React.useRef(null);\n\n\t\tuseOnClickOutside([ref, ref2], () => {\n\t\t\targs.handleOutsideClick();\n\t\t});\n\n\t\treturn (\n\t\t\t<View gap={4} align=\"start\">\n\t\t\t\t<Button attributes={{ ref }}>Trigger</Button>\n\t\t\t\t<Button attributes={{ ref: ref2 }}>Trigger 2</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas, args }) => {\n\t\tconst [button, button2] = canvas.getAllByRole(\"button\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(args.handleOutsideClick).not.toHaveBeenCalled();\n\n\t\tawait userEvent.click(button2);\n\n\t\texpect(args.handleOutsideClick).not.toHaveBeenCalled();\n\n\t\tawait userEvent.click(document.body);\n\n\t\texpect(args.handleOutsideClick).toHaveBeenCalledTimes(1);\n\t\texpect(args.handleOutsideClick).toHaveBeenCalledWith();\n\t},\n};\n\nexport const disabled: StoryObj<{ handleOutsideClick: Mock }> = {\n\tname: \"disabled\",\n\targs: {\n\t\thandleOutsideClick: fn(),\n\t},\n\trender: (args) => {\n\t\tconst ref = React.useRef(null);\n\n\t\tuseOnClickOutside(\n\t\t\t[ref],\n\t\t\t() => {\n\t\t\t\targs.handleOutsideClick();\n\t\t\t},\n\t\t\t{\n\t\t\t\tdisabled: true,\n\t\t\t}\n\t\t);\n\n\t\treturn (\n\t\t\t<View gap={4} align=\"start\">\n\t\t\t\t<Button attributes={{ ref }}>Trigger</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ args }) => {\n\t\tawait userEvent.click(document.body);\n\n\t\texpect(args.handleOutsideClick).not.toHaveBeenCalled();\n\t},\n};\n\nexport const deps: StoryObj<{ handleOutsideClick: Mock }> = {\n\tname: \"test: handler uses latest state\",\n\targs: {\n\t\thandleOutsideClick: fn(),\n\t},\n\trender: (args) => {\n\t\tconst ref = React.useRef(null);\n\t\tconst [count, setCount] = React.useState(0);\n\n\t\tuseOnClickOutside([ref], () => {\n\t\t\targs.handleOutsideClick({ count });\n\t\t});\n\n\t\treturn (\n\t\t\t<Button attributes={{ ref }} onClick={() => setCount((prev) => prev + 1)}>\n\t\t\t\tTrigger\n\t\t\t</Button>\n\t\t);\n\t},\n\tplay: async ({ canvas, args }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(document.body);\n\n\t\texpect(args.handleOutsideClick).toHaveBeenLastCalledWith({ count: 0 });\n\n\t\tawait userEvent.click(button);\n\t\tawait userEvent.click(document.body);\n\n\t\texpect(args.handleOutsideClick).toHaveBeenLastCalledWith({ count: 1 });\n\t},\n};\n"
 			}
 		},
 		"hooks-usertl": {
@@ -3298,8 +3298,8 @@
 			"import": "",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  4 | import useRTL from \"hooks/useRTL\";\n  5 |\n> 6 | export default {\n    | ^\n  7 | \ttitle: \"Hooks/useRTL\",\n  8 | \tparameters: {\n  9 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  4 | import useRTL from \"hooks/useRTL\";\n  5 |\n> 6 | export default {\n    | ^\n  7 | \ttitle: \"Hooks/useRTL\",\n  8 | \tparameters: {\n  9 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useRTL.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect } from \"storybook/test\";\nimport useRTL from \"hooks/useRTL\";\n\nexport default {\n\ttitle: \"Hooks/useRTL\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nconst Component = () => {\n\tconst [rtl, setRTL] = useRTL();\n\n\tReact.useEffect(() => {\n\t\tsetRTL(true);\n\t}, [setRTL]);\n\n\treturn <div>{rtl ? \"RTL\" : \"LTR\"}</div>;\n};\n\nexport const setRTL: StoryObj = {\n\tname: \"setRTL\",\n\trender: () => <Component />,\n\tplay: async () => {\n\t\texpect(document.documentElement).toHaveAttribute(\"dir\", \"rtl\");\n\t},\n};\n"
 			}
 		},
 		"hooks-useresponsiveclientvalue": {
@@ -3316,11 +3316,11 @@
 					"snippet": "const boolean = () => {\n    const value = useResponsiveClientValue<boolean>({\n        s: true,\n        l: false,\n    });\n\n    return <div>{value?.toString()}</div>;\n};"
 				}
 			],
-			"import": "import View from \"components/View\";",
+			"import": "import { View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  2 | import View, { type ViewProps } from \"components/View\";\n  3 |\n> 4 | export default {\n    | ^\n  5 | \ttitle: \"Hooks/useResponsiveClientValue\",\n  6 | \tparameters: {\n  7 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  2 | import View, { type ViewProps } from \"components/View\";\n  3 |\n> 4 | export default {\n    | ^\n  5 | \ttitle: \"Hooks/useResponsiveClientValue\",\n  6 | \tparameters: {\n  7 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useResponsiveClientValue.stories.tsx:\nimport useResponsiveClientValue from \"hooks/useResponsiveClientValue\";\nimport View, { type ViewProps } from \"components/View\";\n\nexport default {\n\ttitle: \"Hooks/useResponsiveClientValue\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nexport const base = {\n\tname: \"base\",\n\trender: () => {\n\t\tconst value = useResponsiveClientValue<ViewProps[\"backgroundColor\"]>({\n\t\t\ts: \"neutral\",\n\t\t\tm: \"critical\",\n\t\t\tl: \"positive\",\n\t\t});\n\n\t\treturn <View width={25} height={25} backgroundColor={value} />;\n\t},\n};\n\nexport const boolean = {\n\tname: \"boolean\",\n\tdescribe: \"works with boolean properties\",\n\trender: () => {\n\t\tconst value = useResponsiveClientValue<boolean>({\n\t\t\ts: true,\n\t\t\tl: false,\n\t\t});\n\n\t\treturn <div>{value?.toString()}</div>;\n\t},\n};\n"
 			}
 		},
 		"hooks-usescrolllock": {
@@ -3345,11 +3345,11 @@
 					"snippet": "const testContainerAsync = () => {\n    const containerRef = React.useRef<HTMLDivElement>(null);\n    const globalLock = useScrollLock();\n    const scopedLock = useScrollLock({ containerRef });\n\n    return (\n        <Example>\n            <Example.Item title=\"calling regular lock and lock with a container only requires a single unlock to remove overflow\">\n                <View attributes={{ ref: containerRef }} gap={4} direction=\"row\">\n                    <Button\n                        onClick={globalLock.scrollLocked ? globalLock.unlockScroll : globalLock.lockScroll}\n                    >\n                        Toggle\n                    </Button>\n                    <Button\n                        onClick={scopedLock.scrollLocked ? scopedLock.unlockScroll : scopedLock.lockScroll}\n                    >\n                        Toggle\n                    </Button>\n                </View>\n            </Example.Item>\n        </Example>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport React from \"react\";\nimport View from \"components/View\";",
+			"import": "import { Button, Example, View } from \"reshaped\";\nimport React from \"react\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   7 | import View from \"components/View\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Hooks/useScrollLock\",\n  11 | \tparameters: {\n  12 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   7 | import View from \"components/View\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Hooks/useScrollLock\",\n  11 | \tparameters: {\n  12 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useScrollLock.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, userEvent } from \"storybook/test\";\nimport { Example } from \"utilities/storybook\";\nimport Button from \"components/Button\";\nimport useScrollLock from \"hooks/useScrollLock\";\nimport View from \"components/View\";\n\nexport default {\n\ttitle: \"Hooks/useScrollLock\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nexport const base: StoryObj = {\n\tname: \"base\",\n\trender: () => {\n\t\tconst { lockScroll, unlockScroll, scrollLocked } = useScrollLock();\n\n\t\treturn (\n\t\t\t<React.Fragment>\n\t\t\t\t<Button onClick={scrollLocked ? unlockScroll : lockScroll}>Toggle</Button>\n\t\t\t\t<div style={{ height: \"150vh\" }} />\n\t\t\t</React.Fragment>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(document.body).toHaveStyle(\"overflow: hidden\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(document.body).not.toHaveStyle(\"overflow: hidden\");\n\t},\n};\n\nexport const origin: StoryObj = {\n\tname: \"originRef\",\n\trender: () => {\n\t\tconst originRef = React.useRef<HTMLDivElement>(null);\n\t\tconst { lockScroll, unlockScroll, scrollLocked } = useScrollLock({ originRef });\n\n\t\treturn (\n\t\t\t<View overflow=\"auto\" height={25} attributes={{ ref: originRef, \"data-testid\": \"root\" }}>\n\t\t\t\t<View height={50} padding={4} backgroundColor=\"neutral-faded\" borderRadius=\"medium\">\n\t\t\t\t\t<Button onClick={scrollLocked ? unlockScroll : lockScroll}>Toggle</Button>\n\t\t\t\t</View>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\t\tconst root = canvas.getByTestId(\"root\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(document.body).not.toHaveStyle(\"overflow: hidden\");\n\t\texpect(root).toHaveStyle(\"overflow: hidden\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(root).not.toHaveStyle(\"overflow: hidden\");\n\t},\n};\n\nexport const container: StoryObj = {\n\tname: \"containerRef\",\n\trender: () => {\n\t\tconst containerRef = React.useRef<HTMLDivElement>(null);\n\t\tconst { lockScroll, unlockScroll, scrollLocked } = useScrollLock({ containerRef });\n\n\t\treturn (\n\t\t\t<View height={25} attributes={{ ref: containerRef, \"data-testid\": \"root\" }}>\n\t\t\t\t<Button onClick={scrollLocked ? unlockScroll : lockScroll}>Toggle</Button>\n\t\t\t</View>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\t\tconst root = canvas.getByTestId(\"root\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(document.body).not.toHaveStyle(\"overflow: hidden\");\n\t\texpect(root).toHaveStyle(\"overflow: hidden\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(root).not.toHaveStyle(\"overflow: hidden\");\n\t},\n};\n\nexport const testContainerAsync: StoryObj = {\n\tname: \"test: containerRef locked count\",\n\trender: () => {\n\t\tconst containerRef = React.useRef<HTMLDivElement>(null);\n\t\tconst globalLock = useScrollLock();\n\t\tconst scopedLock = useScrollLock({ containerRef });\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item title=\"calling regular lock and lock with a container only requires a single unlock to remove overflow\">\n\t\t\t\t\t<View attributes={{ ref: containerRef }} gap={4} direction=\"row\">\n\t\t\t\t\t\t<Button\n\t\t\t\t\t\t\tonClick={globalLock.scrollLocked ? globalLock.unlockScroll : globalLock.lockScroll}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tToggle\n\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t<Button\n\t\t\t\t\t\t\tonClick={scopedLock.scrollLocked ? scopedLock.unlockScroll : scopedLock.lockScroll}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tToggle\n\t\t\t\t\t\t</Button>\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst [buttonGlobal, buttonScoped] = canvas.getAllByRole(\"button\");\n\n\t\tawait userEvent.click(buttonGlobal);\n\t\texpect(document.body).toHaveStyle(\"overflow: hidden\");\n\n\t\tawait userEvent.click(buttonScoped);\n\t\tawait userEvent.click(buttonGlobal);\n\n\t\texpect(document.body).not.toHaveStyle(\"overflow: hidden\");\n\t},\n};\n"
 			}
 		},
 		"hooks-usetoggle": {
@@ -3370,11 +3370,11 @@
 					"snippet": "const deactivate = () => {\n    const { deactivate, active } = useToggle(true);\n\n    return (\n        <Button onClick={deactivate} attributes={{ \"data-active\": active }}>\n            Deactivate\n        </Button>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport React from \"react\";",
+			"import": "import { Button } from \"reshaped\";\nimport React from \"react\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   5 | import useToggle from \"hooks/useToggle\";\n   6 |\n>  7 | export default {\n     | ^\n   8 | \ttitle: \"Hooks/useToggle\",\n   9 | \tparameters: {\n  10 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   5 | import useToggle from \"hooks/useToggle\";\n   6 |\n>  7 | export default {\n     | ^\n   8 | \ttitle: \"Hooks/useToggle\",\n   9 | \tparameters: {\n  10 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useToggle.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, userEvent } from \"storybook/test\";\nimport Button from \"components/Button\";\nimport useToggle from \"hooks/useToggle\";\n\nexport default {\n\ttitle: \"Hooks/useToggle\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nexport const toggle: StoryObj = {\n\tname: \"toggle\",\n\trender: () => {\n\t\tconst { toggle, active } = useToggle();\n\n\t\treturn (\n\t\t\t<Button onClick={() => toggle()} attributes={{ \"data-active\": active }}>\n\t\t\t\t{active ? \"Deactivate\" : \"Activate\"}\n\t\t\t</Button>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"false\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"true\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"false\");\n\t},\n};\n\nexport const activate: StoryObj = {\n\tname: \"activate\",\n\trender: () => {\n\t\tconst { activate, active } = useToggle();\n\n\t\treturn (\n\t\t\t<React.Fragment>\n\t\t\t\t<Button onClick={activate} attributes={{ \"data-active\": active }}>\n\t\t\t\t\tActivate\n\t\t\t\t</Button>\n\t\t\t</React.Fragment>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"false\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"true\");\n\t},\n};\n\nexport const deactivate: StoryObj = {\n\tname: \"deactivate\",\n\trender: () => {\n\t\tconst { deactivate, active } = useToggle(true);\n\n\t\treturn (\n\t\t\t<Button onClick={deactivate} attributes={{ \"data-active\": active }}>\n\t\t\t\tDeactivate\n\t\t\t</Button>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst button = canvas.getAllByRole(\"button\")[0];\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"true\");\n\n\t\tawait userEvent.click(button);\n\n\t\texpect(button.getAttribute(\"data-active\")).toBe(\"false\");\n\t},\n};\n"
 			}
 		},
 		"utilities-trapfocus": {
@@ -3419,11 +3419,11 @@
 					"snippet": "const mutationObserver = () => {\n    const rootRef = React.useRef<HTMLDivElement>(null);\n    const trapToggle = useToggle();\n    const [mutated, setMutated] = React.useState(false);\n\n    React.useEffect(() => {\n        if (!trapToggle.active) return;\n        if (!rootRef.current) return;\n\n        const trapFocus = new TrapFocus();\n\n        trapFocus.trap(rootRef.current, {\n            mode: \"dialog\",\n        });\n\n        setTimeout(() => {\n            setMutated(true);\n        }, 50);\n\n        return () => trapFocus.release();\n    }, [trapToggle.active]);\n\n    return (\n        <Example>\n            <Example.Item title={[\"includeTrigger, mode: dialog\"]}>\n                <View gap={4}>\n                    <View gap={4} direction=\"row\">\n                        <Button onClick={trapToggle.activate}>Trap focus</Button>\n                    </View>\n\n                    {trapToggle.active && (\n                        <View\n                            gap={4}\n                            direction=\"row\"\n                            padding={4}\n                            backgroundColor=\"neutral-faded\"\n                            borderRadius=\"medium\"\n                            attributes={{ ref: rootRef }}\n                        >\n                            {!mutated && (\n                                <>\n                                    <Button onClick={() => {}}>Action 1</Button>\n                                    <Button onClick={() => {}}>Action 2</Button>\n                                </>\n                            )}\n                            <Button onClick={() => {}}>Action 3</Button>\n                            <Button onClick={trapToggle.deactivate}>Release</Button>\n                        </View>\n                    )}\n                </View>\n            </Example.Item>\n        </Example>\n    );\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport { Example } from \"utilities/storybook\";\nimport Link from \"components/Link\";\nimport Radio from \"components/Radio\";\nimport RadioGroup from \"components/RadioGroup\";\nimport Select from \"components/Select\";\nimport TextArea from \"components/TextArea\";\nimport TextField from \"components/TextField\";\nimport View from \"components/View\";",
+			"import": "import {\n    Button,\n    Example,\n    Link,\n    Radio,\n    RadioGroup,\n    Select,\n    TextArea,\n    TextField,\n    View,\n} from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  16 | import { sleep } from \"utilities/helpers\";\n  17 |\n> 18 | export default {\n     | ^\n  19 | \ttitle: \"Utilities/TrapFocus\",\n  20 | };\n  21 |"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  16 | import { sleep } from \"utilities/helpers\";\n  17 |\n> 18 | export default {\n     | ^\n  19 | \ttitle: \"Utilities/TrapFocus\",\n  20 | };\n  21 |\n\n./src/utilities/a11y/tests/TrapFocus.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { expect, userEvent } from \"storybook/test\";\nimport { Example } from \"utilities/storybook\";\nimport Button from \"components/Button\";\nimport useToggle from \"hooks/useToggle\";\nimport View from \"components/View\";\nimport TextField from \"components/TextField\";\nimport RadioGroup from \"components/RadioGroup\";\nimport Radio from \"components/Radio\";\nimport * as keys from \"constants/keys\";\nimport TrapFocus from \"../TrapFocus\";\nimport Link from \"components/Link\";\nimport TextArea from \"components/TextArea\";\nimport Select from \"components/Select\";\nimport { sleep } from \"utilities/helpers\";\n\nexport default {\n\ttitle: \"Utilities/TrapFocus\",\n};\n\nconst TrapContent: React.FC<{\n\trootRef: React.RefObject<HTMLDivElement | null>;\n\tonRelease: () => void;\n}> = (props) => {\n\treturn (\n\t\t<View\n\t\t\tgap={4}\n\t\t\tdirection=\"row\"\n\t\t\tpadding={4}\n\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\tborderRadius=\"medium\"\n\t\t\tattributes={{ ref: props.rootRef }}\n\t\t>\n\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t<Button onClick={props.onRelease}>Release</Button>\n\t\t</View>\n\t);\n};\n\nexport const modeDialog: StoryObj = {\n\tname: \"mode: dialog\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, { mode: \"dialog\" });\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item\n\t\t\t\t\ttitle={[\"mode: dialog\", \"tab navigation, always stays inside until released\"]}\n\t\t\t\t>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View.Item>\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t</View.Item>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<TrapContent onRelease={trapToggle.deactivate} rootRef={rootRef} />\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\");\n\t\tconst releaseTrigger = canvas.getAllByRole(\"button\")[3];\n\n\t\t// Test screen reader trap\n\t\t// All elements outside have aria-hidden so they're ignored\n\t\texpect(trapContentActions.includes(trigger)).toBeFalsy();\n\t\texpect(trapContentActions[0].parentNode?.previousSibling).toHaveAttribute(\"aria-hidden\");\n\n\t\texpect(releaseTrigger).toBeInTheDocument();\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\t// Doesn't use arrow keys\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{Enter/}\");\n\t\texpect(document.activeElement).toBe(trigger);\n\t},\n};\n\nexport const modeActionMenu: StoryObj = {\n\tname: \"mode: action-menu\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"action-menu\",\n\t\t\t\tonRelease: () => {\n\t\t\t\t\ttrapToggle.deactivate();\n\t\t\t\t},\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item\n\t\t\t\t\ttitle={[\n\t\t\t\t\t\t\"mode: action-menu\",\n\t\t\t\t\t\t\"up/down arrow navigation, tab and shift+tab release the focus and follows natural tab order\",\n\t\t\t\t\t]}\n\t\t\t\t>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t\t<Button onClick={() => {}}>Next trigger</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<TrapContent onRelease={trapToggle.deactivate} rootRef={rootRef} />\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\t\t// const nextTrigger = canvas.getAllByRole(\"button\")[1];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\").slice(2);\n\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\texpect(document.activeElement).toBe(trigger);\n\n\t\tawait userEvent.click(trigger);\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\n\t\tconsole.log(document.activeElement);\n\n\t\t// FIXME: Storybook moves focus to body\n\t\t// expect(document.activeElement).toBe(nextTrigger);\n\t},\n};\n\nexport const modeActionBar: StoryObj = {\n\tname: \"mode: action-bar\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"action-bar\",\n\t\t\t\tonRelease: () => {\n\t\t\t\t\ttrapToggle.deactivate();\n\t\t\t\t},\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item\n\t\t\t\t\ttitle={[\n\t\t\t\t\t\t\"mode: action-bar\",\n\t\t\t\t\t\t\"left/right arrow navigation, tab and shift+tab release the focus and follows natural tab order\",\n\t\t\t\t\t]}\n\t\t\t\t>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t\t<Button onClick={() => {}}>Next trigger</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<TrapContent onRelease={trapToggle.deactivate} rootRef={rootRef} />\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\t\t// const nextTrigger = canvas.getAllByRole(\"button\")[1];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\").slice(2);\n\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\texpect(document.activeElement).toBe(trigger);\n\n\t\tawait userEvent.click(trigger);\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\n\t\tconsole.log(document.activeElement);\n\n\t\t// FIXME: Storybook moves focus to body\n\t\t// expect(document.activeElement).toBe(nextTrigger);\n\t},\n};\n\nexport const modeContentMenu: StoryObj = {\n\tname: \"mode: content-menu\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"content-menu\",\n\t\t\t\tonRelease: () => {\n\t\t\t\t\ttrapToggle.deactivate();\n\t\t\t\t},\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item\n\t\t\t\t\ttitle={[\n\t\t\t\t\t\t\"mode: content-menu\",\n\t\t\t\t\t\t\"tab navigation, tabbing outside the content will trigger the release\",\n\t\t\t\t\t]}\n\t\t\t\t>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t\t<Button onClick={() => {}}>Next trigger</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<TrapContent onRelease={trapToggle.deactivate} rootRef={rootRef} />\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\t\t// const nextTrigger = canvas.getAllByRole(\"button\")[1];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\").slice(2);\n\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowRight/}\");\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{ArrowLeft/}\");\n\t\tawait userEvent.keyboard(\"{ArrowUp/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[3]);\n\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\texpect(document.activeElement).toBe(trigger);\n\n\t\t// await userEvent.keyboard(\"{Tab/}\");\n\t\t// await userEvent.keyboard(\"{Tab/}\");\n\n\t\t// FIXME: Storybook moves focus to body\n\t\t// expect(document.activeElement).toBe(nextTrigger);\n\t},\n};\n\nexport const includeTrigger: StoryObj = {\n\tname: \"includeTrigger\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"dialog\",\n\t\t\t\tincludeTrigger: true,\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item title={[\"includeTrigger, mode: dialog\"]}>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<TrapContent onRelease={trapToggle.deactivate} rootRef={rootRef} />\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\");\n\n\t\texpect(document.activeElement).toBe(trigger);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Shift>}{Tab/}\");\n\t\texpect(document.activeElement).toBe(trigger);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trigger);\n\t},\n};\n\nexport const initialFocusEl: StoryObj = {\n\tname: \"initialFocusEl\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst initialFocusRef = React.useRef<HTMLButtonElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"dialog\",\n\t\t\t\tinitialFocusEl: initialFocusRef.current,\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item title={[\"includeTrigger, mode: dialog\"]}>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<View\n\t\t\t\t\t\t\t\tgap={4}\n\t\t\t\t\t\t\t\tdirection=\"row\"\n\t\t\t\t\t\t\t\tpadding={4}\n\t\t\t\t\t\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\t\t\t\t\t\tborderRadius=\"medium\"\n\t\t\t\t\t\t\t\tattributes={{ ref: rootRef }}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t\t\t\t\t<Button onClick={() => {}} attributes={{ ref: initialFocusRef }}>\n\t\t\t\t\t\t\t\t\tAction 2\n\t\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t\t\t\t\t\t<Button onClick={trapToggle.deactivate}>Release</Button>\n\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\");\n\n\t\texpect(document.activeElement).toBe(trapContentActions[1]);\n\t},\n};\n\n/**\n * Testing edge cases\n */\n\nconst Editor = () => {\n\tconst pressedCountRef = React.useRef(0);\n\n\tconst handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {\n\t\tif (e.key !== keys.TAB) return;\n\n\t\tpressedCountRef.current += 1;\n\t\tif (pressedCountRef.current % 2) e.preventDefault();\n\t};\n\n\treturn (\n\t\t<View\n\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\tborderColor=\"neutral-faded\"\n\t\t\tborderRadius=\"medium\"\n\t\t\tpadding={4}\n\t\t\tattributes={{\n\t\t\t\tcontentEditable: true,\n\t\t\t\tonKeyDown: handleKeyDown,\n\t\t\t\t\"data-testid\": \"test-contenteditable\",\n\t\t\t}}\n\t\t/>\n\t);\n};\n\nexport const focusableElements: StoryObj = {\n\tname: \"test: focusable elements\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current);\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item title=\"test with all types of focusable elements\">\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View.Item>\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Activate</Button>\n\t\t\t\t\t\t</View.Item>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<View\n\t\t\t\t\t\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\t\t\t\t\t\tborderRadius=\"medium\"\n\t\t\t\t\t\t\t\tpadding={4}\n\t\t\t\t\t\t\t\tgap={4}\n\t\t\t\t\t\t\t\tattributes={{ ref: rootRef }}\n\t\t\t\t\t\t\t\talign=\"start\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<Link href=\"#\" attributes={{ \"data-testid\": \"test-link\" }}>\n\t\t\t\t\t\t\t\t\tLink\n\t\t\t\t\t\t\t\t</Link>\n\n\t\t\t\t\t\t\t\t<TextField\n\t\t\t\t\t\t\t\t\tname=\"input\"\n\t\t\t\t\t\t\t\t\tplaceholder=\"Input\"\n\t\t\t\t\t\t\t\t\tinputAttributes={{ \"data-testid\": \"test-text-field\" }}\n\t\t\t\t\t\t\t\t/>\n\n\t\t\t\t\t\t\t\t<TextArea name=\"textarea\" inputAttributes={{ \"data-testid\": \"test-text-area\" }} />\n\n\t\t\t\t\t\t\t\t<Select\n\t\t\t\t\t\t\t\t\tname=\"select\"\n\t\t\t\t\t\t\t\t\toptions={[\n\t\t\t\t\t\t\t\t\t\t{ label: \"Option 1\", value: \"1\" },\n\t\t\t\t\t\t\t\t\t\t{ label: \"Option 2\", value: \"2\" },\n\t\t\t\t\t\t\t\t\t]}\n\t\t\t\t\t\t\t\t\tinputAttributes={{ \"data-testid\": \"test-select\" }}\n\t\t\t\t\t\t\t\t/>\n\n\t\t\t\t\t\t\t\t<RadioGroup name=\"radio\">\n\t\t\t\t\t\t\t\t\t<Radio value=\"1\" inputAttributes={{ \"data-testid\": \"test-radio-1\" }}>\n\t\t\t\t\t\t\t\t\t\tOption 1\n\t\t\t\t\t\t\t\t\t</Radio>\n\t\t\t\t\t\t\t\t\t<Radio value=\"2\" inputAttributes={{ \"data-testid\": \"test-radio-2\" }}>\n\t\t\t\t\t\t\t\t\t\tOption 2\n\t\t\t\t\t\t\t\t\t</Radio>\n\t\t\t\t\t\t\t\t</RadioGroup>\n\n\t\t\t\t\t\t\t\t<Editor />\n\n\t\t\t\t\t\t\t\t<div tabIndex={0} role=\"button\" data-testid=\"test-tabindex\">\n\t\t\t\t\t\t\t\t\tdiv with tabIndex\n\t\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t<div style={{ display: \"none\" }}>\n\t\t\t\t\t\t\t\t\t<Button onClick={() => {}} attributes={{ \"data-testid\": \"test-hidden-button\" }}>\n\t\t\t\t\t\t\t\t\t\tHidden\n\t\t\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t<Button\n\t\t\t\t\t\t\t\t\tonClick={() => {}}\n\t\t\t\t\t\t\t\t\tattributes={{ tabIndex: -1, \"data-testid\": \"test-button-negative-tabindex\" }}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\tExcluded\n\t\t\t\t\t\t\t\t</Button>\n\n\t\t\t\t\t\t\t\t<input type=\"hidden\" data-testid=\"test-input-hidden\" />\n\n\t\t\t\t\t\t\t\t<Button\n\t\t\t\t\t\t\t\t\tonClick={trapToggle.deactivate}\n\t\t\t\t\t\t\t\t\tattributes={{ \"data-testid\": \"test-button\" }}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\tRelease button\n\t\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst link = canvas.getByTestId(\"test-link\");\n\t\tconst textField = canvas.getByTestId(\"test-text-field\");\n\t\tconst textArea = canvas.getByTestId(\"test-text-area\");\n\t\tconst select = canvas.getByTestId(\"test-select\");\n\t\tconst radio1 = canvas.getByTestId(\"test-radio-1\");\n\t\tconst radio2 = canvas.getByTestId(\"test-radio-2\");\n\t\tconst contentEditable = canvas.getByTestId(\"test-contenteditable\");\n\t\tconst tabIndex = canvas.getByTestId(\"test-tabindex\");\n\t\tconst negativeTabIndex = canvas.getByTestId(\"test-button-negative-tabindex\");\n\t\tconst hiddenButton = canvas.getByTestId(\"test-hidden-button\");\n\t\tconst button = canvas.getByTestId(\"test-button\");\n\n\t\texpect(document.activeElement).toBe(link);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(textField);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(textArea);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(select);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(radio1);\n\n\t\tawait userEvent.keyboard(\"{ArrowDown/}\");\n\t\texpect(document.activeElement).toBe(radio2);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(contentEditable);\n\n\t\t// Stays for the first tab press\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(contentEditable);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(tabIndex);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).not.toBe(negativeTabIndex);\n\t\texpect(document.activeElement).not.toBe(hiddenButton);\n\t\texpect(document.activeElement).toBe(button);\n\t},\n};\n\nexport const nested: StoryObj = {\n\tname: \"test: nested\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst innerRootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\t\tconst innerTrapToggle = useToggle();\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"dialog\",\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!innerTrapToggle.active) return;\n\t\t\tif (!innerRootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(innerRootRef.current, {\n\t\t\t\tmode: \"dialog\",\n\t\t\t});\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [innerTrapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item title={[\"nested, mode: dialog\"]}>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t\t\t<View\n\t\t\t\t\t\t\t\t\tgap={4}\n\t\t\t\t\t\t\t\t\tdirection=\"row\"\n\t\t\t\t\t\t\t\t\tpadding={4}\n\t\t\t\t\t\t\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\t\t\t\t\t\t\tborderRadius=\"medium\"\n\t\t\t\t\t\t\t\t\tattributes={{ ref: rootRef }}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action</Button>\n\t\t\t\t\t\t\t\t\t<Button onClick={innerTrapToggle.activate}>Inner trap focus</Button>\n\t\t\t\t\t\t\t\t\t<Button onClick={trapToggle.deactivate}>Release</Button>\n\t\t\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t\t\t{innerTrapToggle.active && (\n\t\t\t\t\t\t\t\t\t<View\n\t\t\t\t\t\t\t\t\t\tgap={4}\n\t\t\t\t\t\t\t\t\t\tdirection=\"row\"\n\t\t\t\t\t\t\t\t\t\tpadding={4}\n\t\t\t\t\t\t\t\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\t\t\t\t\t\t\t\tborderRadius=\"medium\"\n\t\t\t\t\t\t\t\t\t\tattributes={{ ref: innerRootRef }}\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action</Button>\n\t\t\t\t\t\t\t\t\t\t<Button onClick={innerTrapToggle.deactivate}>Release</Button>\n\t\t\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tconst trapContentActions = canvas.getAllByRole(\"button\");\n\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[1]);\n\n\t\tawait userEvent.click(trapContentActions[1]);\n\n\t\tconst innerTrapContentActions = canvas.getAllByRole(\"button\");\n\n\t\texpect(document.activeElement).toBe(innerTrapContentActions[0]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.click(innerTrapContentActions[1]);\n\n\t\texpect(document.activeElement).toBe(trapContentActions[1]);\n\n\t\tawait userEvent.keyboard(\"{Tab/}\");\n\t\tawait userEvent.click(trapContentActions[2]);\n\n\t\texpect(document.activeElement).toBe(trigger);\n\t},\n};\n\nexport const mutationObserver: StoryObj = {\n\tname: \"test: mutation observer\",\n\trender: () => {\n\t\tconst rootRef = React.useRef<HTMLDivElement>(null);\n\t\tconst trapToggle = useToggle();\n\t\tconst [mutated, setMutated] = React.useState(false);\n\n\t\tReact.useEffect(() => {\n\t\t\tif (!trapToggle.active) return;\n\t\t\tif (!rootRef.current) return;\n\n\t\t\tconst trapFocus = new TrapFocus();\n\n\t\t\ttrapFocus.trap(rootRef.current, {\n\t\t\t\tmode: \"dialog\",\n\t\t\t});\n\n\t\t\tsetTimeout(() => {\n\t\t\t\tsetMutated(true);\n\t\t\t}, 50);\n\n\t\t\treturn () => trapFocus.release();\n\t\t}, [trapToggle.active]);\n\n\t\treturn (\n\t\t\t<Example>\n\t\t\t\t<Example.Item title={[\"includeTrigger, mode: dialog\"]}>\n\t\t\t\t\t<View gap={4}>\n\t\t\t\t\t\t<View gap={4} direction=\"row\">\n\t\t\t\t\t\t\t<Button onClick={trapToggle.activate}>Trap focus</Button>\n\t\t\t\t\t\t</View>\n\n\t\t\t\t\t\t{trapToggle.active && (\n\t\t\t\t\t\t\t<View\n\t\t\t\t\t\t\t\tgap={4}\n\t\t\t\t\t\t\t\tdirection=\"row\"\n\t\t\t\t\t\t\t\tpadding={4}\n\t\t\t\t\t\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\t\t\t\t\t\tborderRadius=\"medium\"\n\t\t\t\t\t\t\t\tattributes={{ ref: rootRef }}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{!mutated && (\n\t\t\t\t\t\t\t\t\t<>\n\t\t\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action 1</Button>\n\t\t\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action 2</Button>\n\t\t\t\t\t\t\t\t\t</>\n\t\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t\t\t<Button onClick={() => {}}>Action 3</Button>\n\t\t\t\t\t\t\t\t<Button onClick={trapToggle.deactivate}>Release</Button>\n\t\t\t\t\t\t\t</View>\n\t\t\t\t\t\t)}\n\t\t\t\t\t</View>\n\t\t\t\t</Example.Item>\n\t\t\t</Example>\n\t\t);\n\t},\n\tplay: async ({ canvas }) => {\n\t\tconst trigger = canvas.getAllByRole(\"button\")[0];\n\n\t\tawait userEvent.click(trigger);\n\n\t\tlet trapContentActions = canvas.getAllByRole(\"button\");\n\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\tawait sleep(100);\n\n\t\ttrapContentActions = canvas.getAllByRole(\"button\");\n\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\t// Check that trap still works after mutation\n\t\tawait userEvent.keyboard(\"{Tab}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[1]);\n\n\t\tawait userEvent.keyboard(\"{Tab}\");\n\t\texpect(document.activeElement).toBe(trapContentActions[0]);\n\n\t\t// Check that it still knows about the original trigger\n\t\tawait userEvent.click(trapContentActions[1]);\n\t\texpect(document.activeElement).toBe(trigger);\n\t},\n};\n"
 			}
 		},
 		"internal-portal": {
@@ -3436,11 +3436,11 @@
 					"snippet": "const base = () => {\n\tconst ref = React.useRef<HTMLDivElement>(null);\n\tconst [mounted, setMounted] = React.useState(false);\n\n\tReact.useEffect(() => {\n\t\tsetMounted(true);\n\t}, []);\n\n\treturn (\n\t\t<>\n\t\t\t<div style={{ border: \"2px solid #333\", padding: 16 }}>\n\t\t\t\tApp\n\t\t\t\t{mounted && <Portal targetRef={ref}>Ported to green</Portal>}\n\t\t\t</div>\n\t\t\t<div ref={ref} style={{ border: \"2px solid green\", padding: 16 }} />\n\t\t</>\n\t);\n};"
 				}
 			],
-			"import": "import Portal from \"components/_private/Portal\";",
+			"import": "import { Portal } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
 				"name": "No component definition found",
-				"message": "Could not find a component definition.\nPrefer relative imports if possible.\nAvoid pointing to transpiled files.\nYou can debug your component file in this playground: https://react-docgen.dev/playground\n\nFile: /Users/jeppe/dev/temp/reshaped/src/components/_private/Portal/index.ts\nimport Portal, { PortalScope } from \"./Portal\";\n\nconst PortalRoot = Portal as typeof Portal & {\n\tScope: typeof PortalScope;\n};\n\nPortalRoot.Scope = PortalScope;\n\nexport default PortalRoot;\nexport type { Props as PortalProps } from \"./Portal.types\";\n\nFile: /Users/jeppe/dev/temp/reshaped/src/components/_private/Portal/Portal.types.ts\nimport React from \"react\";\n\nexport type Props = {\n\tchildren?: React.ReactNode;\n\ttargetRef?: React.RefObject<HTMLElement | ShadowRoot | null>;\n};\n\nexport type ScopeProps<T extends HTMLElement> = {\n\tchildren: (ref: React.RefObject<T | null>) => React.ReactNode;\n};\n\nexport type Context = {\n\tscopeRef: React.RefObject<HTMLElement | null>;\n};\n"
+				"message": "File: /Users/shilman/projects/design-systems/reshaped/src/components/_private/Portal/index.ts\nError:\nNo suitable component definition found.\nYou can debug your component file in this playground: https://react-docgen.dev/playground\nCode:\nimport Portal, { PortalScope } from \"./Portal\";\n\nconst PortalRoot = Portal as typeof Portal & {\n\tScope: typeof PortalScope;\n};\n\nPortalRoot.Scope = PortalScope;\n\nexport default PortalRoot;\nexport type { Props as PortalProps } from \"./Portal.types\";\n\n\nFile: /Users/shilman/projects/design-systems/reshaped/src/components/_private/Portal/Portal.types.ts\nError:\nNo suitable component definition found.\nYou can debug your component file in this playground: https://react-docgen.dev/playground\nCode:\nimport React from \"react\";\n\nexport type Props = {\n\tchildren?: React.ReactNode;\n\ttargetRef?: React.RefObject<HTMLElement | ShadowRoot | null>;\n};\n\nexport type ScopeProps<T extends HTMLElement> = {\n\tchildren: (ref: React.RefObject<T | null>) => React.ReactNode;\n};\n\nexport type Context = {\n\tscopeRef: React.RefObject<HTMLElement | null>;\n};\n"
 			}
 		},
 		"internal-usedrag": {
@@ -3470,11 +3470,11 @@
 					"snippet": "const disabled = () => {\n    return <Demo onDrag={fn()} disabled />;\n};"
 				}
 			],
-			"import": "import Button from \"components/Button\";\nimport View from \"components/View\";",
+			"import": "import { Button, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   7 | import Button from \"components/Button\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Internal/useDrag\",\n  11 | \tparameters: {\n  12 | \t\tchromatic: { disableSnapshot: true },"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   7 | import Button from \"components/Button\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Internal/useDrag\",\n  11 | \tparameters: {\n  12 | \t\tchromatic: { disableSnapshot: true },\n\n./src/hooks/tests/useDrag.stories.tsx:\nimport React from \"react\";\nimport { StoryObj } from \"@storybook/react-vite\";\nimport { fireEvent, fn, expect } from \"storybook/test\";\nimport View from \"components/View\";\nimport useDrag from \"hooks/_private/useDrag\";\nimport useToggle from \"hooks/useToggle\";\nimport Button from \"components/Button\";\n\nexport default {\n\ttitle: \"Internal/useDrag\",\n\tparameters: {\n\t\tchromatic: { disableSnapshot: true },\n\t},\n};\n\nfunction Example() {\n\tconst [state, setState] = React.useState({ x: 0, y: 0 });\n\tconst disabledToggle = useToggle();\n\n\tconst { ref, containerRef, active } = useDrag<HTMLDivElement>(\n\t\t(args) => {\n\t\t\tsetState(args);\n\t\t},\n\t\t{\n\t\t\tdisabled: disabledToggle.active,\n\t\t}\n\t);\n\n\treturn (\n\t\t<View direction=\"row\" gap={4}>\n\t\t\t<View\n\t\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\t\tborderRadius=\"medium\"\n\t\t\t\twidth=\"200px\"\n\t\t\t\theight=\"200px\"\n\t\t\t\tattributes={{ ref: containerRef }}\n\t\t\t>\n\t\t\t\t<View\n\t\t\t\t\theight={8}\n\t\t\t\t\twidth={8}\n\t\t\t\t\tborderRadius=\"small\"\n\t\t\t\t\tanimated\n\t\t\t\t\tbackgroundColor={active ? \"primary\" : \"neutral\"}\n\t\t\t\t\tattributes={{\n\t\t\t\t\t\trole: \"button\",\n\t\t\t\t\t\ttabIndex: 0,\n\t\t\t\t\t\t\"aria-label\": \"Drag\",\n\t\t\t\t\t\tref,\n\t\t\t\t\t\tstyle: { translate: `${state.x}px ${state.y}px`, cursor: active ? \"grabbing\" : \"grab\" },\n\t\t\t\t\t}}\n\t\t\t\t/>\n\t\t\t</View>\n\t\t\t<Button onClick={() => disabledToggle.toggle()}>\n\t\t\t\t{disabledToggle.active ? \"Enable\" : \"Disable\"}\n\t\t\t</Button>\n\t\t</View>\n\t);\n}\n\nexport const base = { name: \"base\", render: () => <Example /> };\n\nconst Demo: React.FC<{\n\tonDrag: ReturnType<typeof fn>;\n\tdisabled?: boolean;\n\torientation?: \"horizontal\" | \"vertical\";\n}> = (props) => {\n\tconst { ref, containerRef } = useDrag<HTMLDivElement>(\n\t\t(options) => {\n\t\t\tprops.onDrag(options);\n\t\t},\n\t\t{\n\t\t\torientation: props.orientation,\n\t\t\tdisabled: props.disabled,\n\t\t}\n\t);\n\n\treturn (\n\t\t<View\n\t\t\tbackgroundColor=\"neutral-faded\"\n\t\t\twidth=\"200px\"\n\t\t\theight=\"200px\"\n\t\t\tattributes={{ ref: containerRef, \"data-testid\": \"test-id\" }}\n\t\t>\n\t\t\t<View\n\t\t\t\theight={8}\n\t\t\t\twidth={8}\n\t\t\t\tbackgroundColor=\"primary\"\n\t\t\t\tattributes={{\n\t\t\t\t\t\"data-testid\": \"test-handle-id\",\n\t\t\t\t\tref,\n\t\t\t\t}}\n\t\t\t/>\n\t\t</View>\n\t);\n};\n\nexport const mouseEvents: StoryObj<{ handleDrag: ReturnType<typeof fn> }> = {\n\tname: \"onDrag, mouse events\",\n\targs: {\n\t\thandleDrag: fn(),\n\t},\n\trender: (args) => {\n\t\treturn <Demo onDrag={args.handleDrag} />;\n\t},\n\tplay: ({ canvas, args }) => {\n\t\tconst trigger = canvas.getByTestId(\"test-handle-id\");\n\n\t\tfireEvent.mouseDown(trigger);\n\t\tfireEvent.mouseMove(document.body, { clientX: 100, clientY: 50 });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(1);\n\t\texpect(args.handleDrag).toHaveBeenCalledWith(expect.objectContaining({ x: 100, y: 50 }));\n\n\t\tfireEvent.mouseUp(trigger);\n\t\tfireEvent.mouseUp(document.body, { clientX: 50, clientY: 100 });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const touchEvents: StoryObj<{ handleDrag: ReturnType<typeof fn> }> = {\n\tname: \"onDrag, touch events\",\n\targs: {\n\t\thandleDrag: fn(),\n\t},\n\trender: (args) => {\n\t\treturn <Demo onDrag={args.handleDrag} />;\n\t},\n\tplay: ({ canvas, args }) => {\n\t\tconst createTouch = (target: HTMLElement, x: number, y: number) => {\n\t\t\treturn new Touch({\n\t\t\t\tidentifier: Date.now(),\n\t\t\t\ttarget,\n\t\t\t\tclientX: x,\n\t\t\t\tclientY: y,\n\t\t\t\tscreenX: x,\n\t\t\t\tscreenY: y,\n\t\t\t\tpageX: x,\n\t\t\t\tpageY: y,\n\t\t\t});\n\t\t};\n\n\t\tconst trigger = canvas.getByTestId(\"test-handle-id\");\n\n\t\tfireEvent.touchStart(trigger, { changedTouches: [createTouch(trigger, 0, 0)] });\n\t\tfireEvent.touchMove(document.body, { changedTouches: [createTouch(trigger, 100, 50)] });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(1);\n\t\texpect(args.handleDrag).toHaveBeenCalledWith(expect.objectContaining({ x: 100, y: 50 }));\n\n\t\tfireEvent.touchEnd(trigger);\n\t\tfireEvent.touchEnd(document.body, { changedTouches: [createTouch(trigger, 100, 50)] });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(1);\n\t},\n};\n\nexport const orientationHorizontal: StoryObj<{ handleDrag: ReturnType<typeof fn> }> = {\n\tname: \"orientation horizontal\",\n\targs: {\n\t\thandleDrag: fn(),\n\t},\n\trender: (args) => {\n\t\treturn <Demo onDrag={args.handleDrag} orientation=\"horizontal\" />;\n\t},\n\tplay: ({ canvas, args }) => {\n\t\tconst trigger = canvas.getByTestId(\"test-handle-id\");\n\n\t\tfireEvent.mouseDown(trigger);\n\t\tfireEvent.mouseMove(document.body, { clientX: 100, clientY: 50 });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(1);\n\t\texpect(args.handleDrag).toHaveBeenCalledWith(expect.objectContaining({ x: 100, y: 0 }));\n\t},\n};\n\nexport const orientationVertical: StoryObj<{ handleDrag: ReturnType<typeof fn> }> = {\n\tname: \"orientation vertical\",\n\targs: {\n\t\thandleDrag: fn(),\n\t},\n\trender: (args) => {\n\t\treturn <Demo onDrag={args.handleDrag} orientation=\"vertical\" />;\n\t},\n\tplay: ({ canvas, args }) => {\n\t\tconst trigger = canvas.getByTestId(\"test-handle-id\");\n\n\t\tfireEvent.mouseDown(trigger);\n\t\tfireEvent.mouseMove(document.body, { clientX: 100, clientY: 50 });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(1);\n\t\texpect(args.handleDrag).toHaveBeenCalledWith(expect.objectContaining({ x: 0, y: 50 }));\n\t},\n};\n\nexport const disabled: StoryObj<{ handleDrag: ReturnType<typeof fn> }> = {\n\tname: \"disabled\",\n\targs: {\n\t\thandleDrag: fn(),\n\t},\n\trender: (args) => {\n\t\treturn <Demo onDrag={args.handleDrag} disabled />;\n\t},\n\tplay: ({ canvas, args }) => {\n\t\tconst trigger = canvas.getByTestId(\"test-handle-id\");\n\n\t\tfireEvent.mouseDown(trigger);\n\t\tfireEvent.mouseMove(document.body, { clientX: 100, clientY: 50 });\n\n\t\texpect(args.handleDrag).toHaveBeenCalledTimes(0);\n\t},\n};\n"
 			}
 		},
 		"internal-shadowdom": {
@@ -3487,11 +3487,11 @@
 					"snippet": "const behavior = () => (\n\t<Example>\n\t\t<Example.Item title=\"base\">\n\t\t\t<Component />\n\t\t</Example.Item>\n\t</Example>\n);"
 				}
 			],
-			"import": "import Autocomplete from \"components/Autocomplete\";\nimport Button from \"components/Button\";\nimport DropdownMenu from \"components/DropdownMenu\";\nimport { Example } from \"utilities/storybook\";\nimport Reshaped from \"components/Reshaped\";\nimport root from \"react-shadow\";\nimport Select from \"components/Select\";\nimport Tooltip from \"components/Tooltip\";\nimport View from \"components/View\";",
+			"import": "import {\n    Autocomplete,\n    Button,\n    DropdownMenu,\n    Example,\n    Reshaped,\n    Select,\n    Tooltip,\n    View,\n} from \"reshaped\";\nimport root from \"react-shadow\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n  10 | import Tooltip from \"components/Tooltip\";\n  11 |\n> 12 | export default {\n     | ^\n  13 | \ttitle: \"Internal/ShadowDOM\",\n  14 | };\n  15 |"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n  10 | import Tooltip from \"components/Tooltip\";\n  11 |\n> 12 | export default {\n     | ^\n  13 | \ttitle: \"Internal/ShadowDOM\",\n  14 | };\n  15 |\n\n./src/tests/ShadowDOM.stories.tsx:\nimport React, { useEffect, useState, useRef, forwardRef } from \"react\";\nimport root from \"react-shadow\";\nimport { Example } from \"utilities/storybook\";\nimport Autocomplete, { type AutocompleteProps } from \"components/Autocomplete\";\nimport View from \"components/View\";\nimport DropdownMenu from \"components/DropdownMenu\";\nimport Reshaped from \"components/Reshaped\";\nimport Select from \"components/Select\";\nimport Button from \"components/Button\";\nimport Tooltip from \"components/Tooltip\";\n\nexport default {\n\ttitle: \"Internal/ShadowDOM\",\n};\n\nconst getStylesData = () => {\n\tconst sourceStylesContainer = document.head;\n\n\treturn Array.from(sourceStylesContainer.children).filter((x) => x instanceof HTMLStyleElement);\n};\n\n// Create a component to render inside the Shadow DOM\nconst ShadowDiv = forwardRef<HTMLDivElement, React.PropsWithChildren>((props, ref) => {\n\tconst shadowRef = useRef<HTMLDivElement>(null);\n\n\t// Load styles\n\tuseEffect(() => {\n\t\tif (!shadowRef?.current) return;\n\n\t\t// Add styles to the shadow DOM\n\t\t// const shadowEl = shadowRef?.current.shadowRoot;\n\t\tconst shadowEl = shadowRef?.current.shadowRoot;\n\n\t\tif (!shadowEl) return;\n\n\t\tconst sourceStylesContainer = document.head;\n\n\t\tconst observer = new MutationObserver(getStylesData);\n\t\tobserver.observe(sourceStylesContainer, {\n\t\t\tcharacterData: true,\n\t\t\tchildList: true,\n\t\t\tsubtree: true,\n\t\t});\n\n\t\tlet styleBlock = shadowEl.getElementById(\"custom-outer-style\");\n\n\t\tif (!styleBlock) {\n\t\t\tstyleBlock = document.createElement(\"span\");\n\t\t\tstyleBlock.id = \"custom-outer-style\";\n\t\t\tshadowEl.appendChild(styleBlock);\n\t\t} else {\n\t\t\tstyleBlock.innerHTML = \"\";\n\t\t}\n\n\t\tstyleBlock.append(\n\t\t\t...getStylesData() // finds all <style> tags containing your web component ID\n\t\t\t\t.map((x) => x.cloneNode(true)) // copies styles into the current instance of your web component. You might need to have multiple instances, so all of them need to track the styles.\n\t\t);\n\n\t\treturn () => observer.disconnect();\n\t}, []);\n\n\treturn (\n\t\t<Reshaped>\n\t\t\t<root.div className=\"quote\" ref={shadowRef}>\n\t\t\t\t<div ref={ref}>\n\t\t\t\t\t{/* \n\t\t\t\t\t\tAdding padding here since otherwise mouseenter won't trigger on contents \n\t\t\t\t\t\twhen mouse is switching from outside the shadow dom\n\t\t\t\t\t*/}\n\t\t\t\t\t<View padding={4}>{props.children}</View>\n\t\t\t\t</div>\n\t\t\t</root.div>\n\t\t</Reshaped>\n\t);\n});\n\n// Main Component\nconst Component: React.FC = () => {\n\tconst [valueAutoShadow, setValueAutoShadow] = useState(\"\");\n\tconst [valueDropdownShadow, setValueDropdownShadow] = useState(\"\");\n\n\tconst optionsAuto = [\"Pizza\", \"Pie\", \"Ice-cream\"];\n\tconst optionsDropdown = [\"Turtle\", \"Cat\", \"Long-necked giraffe\"];\n\n\tconst handleChangeAutoShadow: AutocompleteProps[\"onChange\"] = (args) => {\n\t\tconsole.log(\"Autocomlete shadow value=\", args);\n\t\tsetValueAutoShadow(args.value);\n\t};\n\n\tconst handleChangeDropdownShadow = (val: string) => {\n\t\tconsole.log(\"Dropdown shadow value=\", val);\n\t\tsetValueDropdownShadow(val);\n\t};\n\n\treturn (\n\t\t<View paddingBottom={50}>\n\t\t\t<ShadowDiv>\n\t\t\t\t<View gap={4} direction=\"row\" wrap={false}>\n\t\t\t\t\t<Autocomplete\n\t\t\t\t\t\tname=\"fruit-shadow\"\n\t\t\t\t\t\tplaceholder=\"Pick your food\"\n\t\t\t\t\t\tvalue={valueAutoShadow}\n\t\t\t\t\t\tonChange={handleChangeAutoShadow}\n\t\t\t\t\t\tinputAttributes={{ \"aria-label\": \"Label\" }}\n\t\t\t\t\t>\n\t\t\t\t\t\t{optionsAuto.map((option) => (\n\t\t\t\t\t\t\t<Autocomplete.Item\n\t\t\t\t\t\t\t\tkey={option}\n\t\t\t\t\t\t\t\tvalue={option}\n\t\t\t\t\t\t\t\tonClick={() => handleChangeAutoShadow({ value: option, name: \"fruit-auto\" })}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{option}\n\t\t\t\t\t\t\t</Autocomplete.Item>\n\t\t\t\t\t\t))}\n\t\t\t\t\t</Autocomplete>\n\n\t\t\t\t\t<DropdownMenu>\n\t\t\t\t\t\t<DropdownMenu.Trigger>\n\t\t\t\t\t\t\t{(attributes) => (\n\t\t\t\t\t\t\t\t<Select placeholder=\"Pick your animal\" name=\"font\" inputAttributes={attributes}>\n\t\t\t\t\t\t\t\t\t{valueDropdownShadow}\n\t\t\t\t\t\t\t\t</Select>\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t</DropdownMenu.Trigger>\n\t\t\t\t\t\t<DropdownMenu.Content>\n\t\t\t\t\t\t\t{optionsDropdown.map((option) => (\n\t\t\t\t\t\t\t\t<DropdownMenu.Item onClick={() => handleChangeDropdownShadow(option)} key={option}>\n\t\t\t\t\t\t\t\t\t{option}\n\t\t\t\t\t\t\t\t</DropdownMenu.Item>\n\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t</DropdownMenu.Content>\n\t\t\t\t\t</DropdownMenu>\n\n\t\t\t\t\t<Tooltip text=\"Tooltip for button\">\n\t\t\t\t\t\t{(attributes) => <Button attributes={attributes}>Hover me</Button>}\n\t\t\t\t\t</Tooltip>\n\t\t\t\t</View>\n\t\t\t</ShadowDiv>\n\t\t</View>\n\t);\n};\n\nexport const behavior = () => (\n\t<Example>\n\t\t<Example.Item title=\"base\">\n\t\t\t<Component />\n\t\t</Example.Item>\n\t</Example>\n);\n"
 			}
 		},
 		"internal-themes": {
@@ -3516,13 +3516,13 @@
 					"snippet": "const onColors = () => (\n\t<Example>\n\t\t<Example.Item title=\"custom on color values\">\n\t\t\t<style>{onColorsCss}</style>\n\t\t\t<Theme name=\"on-color\">\n\t\t\t\t<View gap={2} direction=\"row\">\n\t\t\t\t\t<Button color=\"primary\">Primary button</Button>\n\t\t\t\t\t<Button color=\"critical\">Critical button</Button>\n\t\t\t\t</View>\n\t\t\t</Theme>\n\t\t</Example.Item>\n\t\t<Example.Item title=\"custom on color values, apca\">\n\t\t\t<style>{onColorsCssApca}</style>\n\t\t\t<Theme name=\"on-color-apca\">\n\t\t\t\t<View gap={2} direction=\"row\">\n\t\t\t\t\t<Button color=\"primary\">Primary button</Button>\n\t\t\t\t\t<Button color=\"critical\">Critical button</Button>\n\t\t\t\t</View>\n\t\t\t</Theme>\n\t\t</Example.Item>\n\t</Example>\n);"
 				}
 			],
-			"import": "import Actionable from \"components/Actionable\";\nimport Alert from \"components/Alert\";\nimport Avatar from \"components/Avatar\";\nimport Badge from \"components/Badge\";\nimport Button from \"components/Button\";\nimport Card from \"components/Card\";\nimport DropdownMenu from \"components/DropdownMenu\";\nimport { Example } from \"utilities/storybook\";\nimport Link from \"components/Link\";\nimport Switch from \"components/Switch\";\nimport Text from \"components/Text\";\nimport TextField from \"components/TextField\";\nimport Theme from \"components/Theme\";\nimport { ThemePlayground } from \"reshaped\";\nimport View from \"components/View\";",
+			"import": "import {\n    Actionable,\n    Alert,\n    Avatar,\n    Badge,\n    Button,\n    Card,\n    DropdownMenu,\n    Example,\n    Link,\n    Switch,\n    Text,\n    TextField,\n    Theme,\n    ThemePlayground,\n    View,\n} from \"reshaped\";",
 			"jsDocTags": {},
 			"reactDocgen": {
 				"description": "",
 				"methods": [],
 				"displayName": "Theme",
-				"definedInFile": "/Users/jeppe/dev/temp/reshaped/src/components/Theme/Theme.tsx",
+				"definedInFile": "/Users/shilman/projects/design-systems/reshaped/src/components/Theme/Theme.tsx",
 				"actualName": "Theme",
 				"exportName": "default"
 			}
@@ -3537,11 +3537,11 @@
 					"snippet": "const preview = () => {\n\treturn (\n\t\t<Preview>\n\t\t\t<Component />\n\t\t</Preview>\n\t);\n};"
 				}
 			],
-			"import": "import Image from \"components/Image\";\nimport MenuItem from \"components/MenuItem\";\nimport Modal from \"components/Modal\";\nimport Select from \"components/Select\";\nimport View from \"components/View\";",
+			"import": "import { Image, MenuItem, Modal, Select, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
-				"name": "No meta.component specified",
-				"message": "Specify meta.component for the component to be included in the manifest.\n   7 | import MenuItem from \"components/MenuItem\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Sandbox\",\n  11 | \tchromatic: { disableSnapshot: true },\n  12 | };"
+				"name": "No component found",
+				"message": "We could not detect the component from your story file. Specify meta.component.\n   7 | import MenuItem from \"components/MenuItem\";\n   8 |\n>  9 | export default {\n     | ^\n  10 | \ttitle: \"Sandbox\",\n  11 | \tchromatic: { disableSnapshot: true },\n  12 | };\n\n./src/Sandbox.stories.tsx:\nimport View from \"components/View\";\nimport Image from \"components/Image\";\nimport React from \"react\";\nimport Select from \"components/Select\";\nimport useToggle from \"hooks/useToggle\";\nimport Modal from \"components/Modal\";\nimport MenuItem from \"components/MenuItem\";\n\nexport default {\n\ttitle: \"Sandbox\",\n\tchromatic: { disableSnapshot: true },\n};\n\nconst Preview: React.FC<{ children: React.ReactNode }> = (props) => {\n\treturn (\n\t\t<View padding={20} gap={6}>\n\t\t\t<View position=\"absolute\" insetTop={0} insetStart={0}>\n\t\t\t\t<Image src=\"./logo.svg\" />\n\t\t\t</View>\n\n\t\t\t{props.children}\n\t\t</View>\n\t);\n};\n\nexport const preview = () => {\n\treturn (\n\t\t<Preview>\n\t\t\t<Component />\n\t\t</Preview>\n\t);\n};\n\nconst Component = () => {\n\tconst toggle = useToggle();\n\tconst [value, setValue] = React.useState(\"Dog\");\n\n\tconst handleClick = () => {\n\t\ttoggle.toggle();\n\t};\n\n\treturn (\n\t\t<>\n\t\t\t<Select name=\"animal\" placeholder=\"Select an animal\" onClick={handleClick}>\n\t\t\t\t{value}\n\t\t\t</Select>\n\t\t\t<Modal active={toggle.active} onClose={toggle.deactivate} position=\"bottom\" padding={2}>\n\t\t\t\t<MenuItem\n\t\t\t\t\troundedCorners\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tsetValue(\"Dog\");\n\t\t\t\t\t\ttoggle.deactivate();\n\t\t\t\t\t}}\n\t\t\t\t\tattributes={{\n\t\t\t\t\t\trole: \"option\",\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tDog\n\t\t\t\t</MenuItem>\n\t\t\t\t<MenuItem\n\t\t\t\t\troundedCorners\n\t\t\t\t\tattributes={{\n\t\t\t\t\t\trole: \"option\",\n\t\t\t\t\t}}\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tsetValue(\"Turtle\");\n\t\t\t\t\t\ttoggle.deactivate();\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\tTurtle\n\t\t\t\t</MenuItem>\n\t\t\t</Modal>\n\t\t</>\n\t);\n};\n"
 			}
 		}
 	}
