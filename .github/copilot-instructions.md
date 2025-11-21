@@ -122,6 +122,19 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
     - `mcp-endpoint.e2e.test.ts` - MCP protocol and tool tests
     - `check-deps.e2e.test.ts` - Storybook version validation
 
+**Formatting and checks (CRITICAL):**
+
+- **ALWAYS format code after making changes**: Run `pnpm run format` before committing
+- **ALWAYS run checks after formatting**: Run `pnpm run check` to ensure all checks pass
+- **Fix any failing checks**: Analyze check results and fix issues until all checks pass
+- **This is mandatory for every commit** - formatting checks will fail in CI if not done
+- The workflow is:
+  1. Make your code changes
+  2. Run `pnpm run format` to format all files
+  3. Run `pnpm run check` to verify all checks pass
+  4. Fix any failing checks and repeat step 3 until all pass
+  5. Commit your changes
+
 **Type checking:**
 
 - All packages have TypeScript strict mode enabled
