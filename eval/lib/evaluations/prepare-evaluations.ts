@@ -1,12 +1,9 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { addDevDependency } from 'nypm';
-import type { ExperimentArgs } from '../../types';
+import type { ExperimentArgs } from '../../types.ts';
 
-export async function prepareEvaluations({
-	projectPath,
-	evalPath,
-}: ExperimentArgs) {
+export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 	await addDevDependency(
 		[
 			'vitest@catalog:experiments',
@@ -41,15 +38,4 @@ export async function prepareEvaluations({
 		path.join(projectPath, 'package.json'),
 		JSON.stringify(pkgJson, null, 2),
 	);
-
-	await fs
-		.cp(
-			path.join(evalPath, 'expected', 'stories'),
-			path.join(projectPath, 'stories'),
-			{
-				recursive: true,
-				force: true,
-			},
-		)
-		.catch(() => {});
 }

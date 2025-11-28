@@ -2,8 +2,6 @@ import FlightBookingComponent from '../src/components/FlightBooking.tsx';
 import { userEvent, fn, expect, screen, waitFor } from 'storybook/test';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { StepFunction } from 'storybook/internal/csf';
-import React from 'react';
-import 'rsuite/dist/rsuite.min.css';
 
 const meta = {
 	component: FlightBookingComponent,
@@ -241,12 +239,6 @@ export const Submitted: Story = {
 			).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
-			await waitFor(
-				async () =>
-					await userEvent.click(
-						(await looseGetInteractiveElements('ok', 'OK', step))[0],
-					),
-			);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
 		});
 
@@ -265,12 +257,6 @@ export const Submitted: Story = {
 			).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
-			await waitFor(
-				async () =>
-					await userEvent.click(
-						(await looseGetInteractiveElements('ok', 'OK', step))[0],
-					),
-			);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
 		});
 
