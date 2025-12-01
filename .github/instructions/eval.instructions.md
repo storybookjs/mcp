@@ -398,10 +398,6 @@ Directories merge with existing content in `projectPath`, and files overwrite if
 
 For programmatic customization, define hooks in `hooks.ts`:
 
-### Hook Functions
-
-For programmatic customization, define hooks in `hooks.ts`:
-
 ```typescript
 import type { Hooks } from '../../types.ts';
 import * as fs from 'node:fs/promises';
@@ -452,7 +448,6 @@ export default {
 ```
 
 **Execution Order:** For each lifecycle step, the framework first copies files from the hook directory (if it exists), then calls the hook function (if defined).
-```
 
 **Logger Interface:**
 
