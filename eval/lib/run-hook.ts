@@ -58,7 +58,7 @@ export type Logger = ReturnType<typeof taskLog> | TaskLogger;
  * 2. If it exists, copies all contents recursively to projectPath (merging directories, overwriting files)
  * 3. Calls the corresponding hook function if defined
  *
- * @param stepName - The name of the step to run (e.g., 'pre-evaluate', 'post-prepare-experiment')
+ * @param hookName - The name of the step to run (e.g., 'pre-evaluate', 'post-prepare-experiment')
  * @param experimentArgs - The experiment arguments containing paths and hooks
  * @param log - Logger instance for output
  */
