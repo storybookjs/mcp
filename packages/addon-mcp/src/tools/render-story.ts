@@ -70,7 +70,8 @@ export async function addRenderStoryTool(server: McpServer<any, AddonContext>) {
 					uri: 'ui://greeting',
 					content: {
 						type: 'rawHtml',
-						htmlString: renderStoryHtml.replace('__ID__', foundStoryId),
+						// htmlString: renderStoryHtml.replace('__ID__', foundStoryId),
+						htmlString: `<iframe src="http://localhost:6006/iframe.html?id=${foundStoryId}" style="width:100%; height:100%; border:none;"></iframe>`,
 					},
 					encoding: 'text',
 				});
