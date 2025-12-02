@@ -2,6 +2,7 @@ import type { ExperimentArgs } from '../../types.ts';
 import { runScript } from 'nypm';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { dedent } from 'ts-dedent';
 import { x } from 'tinyexec';
 
@@ -94,9 +95,12 @@ export async function uploadToChromatic(
 		experimentArgs.projectPath,
 		'chromatic-diagnostics.json',
 	);
-	const { default: diagnostics } = (await import(diagnosticsPath, {
-		with: { type: 'json' },
-	})) as { default: ChromaticDiagnostics };
+	const { default: diagnostics } = (await import(
+		pathToFileURL(diagnosticsPath).href,
+		{
+			with: { type: 'json' },
+		},
+	)) as { default: ChromaticDiagnostics };
 
 	return diagnostics.storybookUrl;
 }

@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { addDevDependency } from 'nypm';
 import type { ExperimentArgs } from '../../types.ts';
 
@@ -27,10 +28,10 @@ export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 	});
 
 	const { default: pkgJson } = await import(
-		path.join(projectPath, 'package.json'),
+		pathToFileURL(path.join(projectPath, 'package.json')).href,
 		{
 			with: { type: 'json' },
-		}
+		},
 	);
 	// add the storybook script after agent execution, so it does not taint the experiment
 	pkgJson.scripts.storybook = 'storybook dev --port 6006';

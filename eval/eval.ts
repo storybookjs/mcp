@@ -2,6 +2,7 @@ import * as p from '@clack/prompts';
 import { claudeCodeCli } from './lib/agents/claude-code-cli.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import type { ExperimentArgs } from './types.ts';
 import { prepareExperiment } from './lib/prepare-experiment.ts';
 import { evaluate } from './lib/evaluations/evaluate.ts';
@@ -75,7 +76,7 @@ const experimentArgs: ExperimentArgs = {
 	evalName: args.eval,
 	context: args.context,
 	agent: args.agent,
-	hooks: await import(path.join(evalPath, 'hooks.ts'))
+	hooks: await import(pathToFileURL(path.join(evalPath, 'hooks.ts')).href)
 		.then((mod) => mod.default)
 		.catch(() => ({})),
 };

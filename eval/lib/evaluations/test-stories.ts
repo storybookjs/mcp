@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import type { EvaluationSummary, ExperimentArgs } from '../../types';
 import type { JsonTestResults } from 'vitest/reporters';
 import { x } from 'tinyexec';
@@ -37,9 +38,12 @@ export async function testStories({
 	`,
 	);
 
-	const { default: jsonTestResults } = (await import(testResultsPath, {
-		with: { type: 'json' },
-	})) as { default: JsonTestResults };
+	const { default: jsonTestResults } = (await import(
+		pathToFileURL(testResultsPath).href,
+		{
+			with: { type: 'json' },
+		},
+	)) as { default: JsonTestResults };
 
 	// write the file again to pretty-print it
 	await fs.writeFile(testResultsPath, JSON.stringify(jsonTestResults, null, 2));
