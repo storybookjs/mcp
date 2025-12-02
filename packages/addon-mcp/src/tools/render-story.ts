@@ -8,6 +8,7 @@ import type { AddonContext } from '../types.ts';
 import { StoryInput } from '../types.ts';
 import { errorToMCPContent } from '../utils/errors.ts';
 import { fetchStoryIndex } from '../utils/fetch-story-index.ts';
+import { renderStoryHtml } from './render-story.html.ts';
 
 export const RENDER_STORY_NAME = 'render-story';
 
@@ -68,8 +69,8 @@ export async function addRenderStoryTool(server: McpServer<any, AddonContext>) {
 				const uiResource = createUIResource({
 					uri: 'ui://greeting',
 					content: {
-						type: 'externalUrl',
-						iframeUrl: `http://localhost:6006/iframe.html?id=${foundStoryId}`,
+						type: 'rawHtml',
+						htmlString: renderStoryHtml.replace('__ID__', foundStoryId),
 					},
 					encoding: 'text',
 				});
