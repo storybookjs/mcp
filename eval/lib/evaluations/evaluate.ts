@@ -1,4 +1,4 @@
-import type { EvaluationSummary, ExperimentArgs } from '../../types';
+import type { EvaluationSummary, ExperimentArgs } from '../../types.ts';
 import { runESLint } from './lint.ts';
 import { prepareEvaluations } from './prepare-evaluations.ts';
 import { testStories } from './test-stories.ts';
@@ -6,6 +6,7 @@ import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
 import { taskLog, spinner } from '@clack/prompts';
 import { x } from 'tinyexec';
+import { runHook } from '../run-hook.ts';
 
 export type TaskLogger = {
 	start: (title: string) => void;
@@ -70,7 +71,7 @@ export async function evaluate(
 	experimentArgs: ExperimentArgs,
 ): Promise<EvaluationSummary> {
 	const log = createTaskLogger(experimentArgs.verbose, 'Evaluating');
-	await experimentArgs.hooks.preEvaluate?.(experimentArgs, log);
+	await runHook('pre-evaluate', experimentArgs, log);
 
 	log.start('Preparing evaluations');
 	await prepareEvaluations(experimentArgs);
@@ -137,7 +138,7 @@ export async function evaluate(
 		...testResults,
 	};
 
-	await experimentArgs.hooks.postEvaluate?.(experimentArgs, log);
+	await runHook('post-evaluate', experimentArgs, log);
 	log.complete('Evaluation completed');
 
 	return evaluationSummary;

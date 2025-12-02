@@ -2,9 +2,10 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { styleText } from 'node:util';
-import type { Agent } from '../../types';
+import type { Agent } from '../../types.ts';
 import { spinner, taskLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
+import { runHook } from '../run-hook.ts';
 
 interface BaseMessage {
 	session_id: string;
@@ -326,7 +327,7 @@ function getTodoProgress(
 
 export const claudeCodeCli: Agent = {
 	async execute(prompt, experimentArgs, mcpServerConfig) {
-		const { projectPath, resultsPath, verbose, hooks } = experimentArgs;
+		const { projectPath, resultsPath, verbose } = experimentArgs;
 		if (mcpServerConfig) {
 			await fs.writeFile(
 				path.join(projectPath, '.mcp.json'),
@@ -342,7 +343,7 @@ export const claudeCodeCli: Agent = {
 		if (!verbose) {
 			normalLog.start('Agent is working');
 		}
-		await hooks.preExecuteAgent?.(experimentArgs, verboseLog ?? normalLog);
+		await runHook('pre-execute-agent', experimentArgs, verboseLog ?? normalLog);
 
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
 		const model = models['anthropic/claude-sonnet-4.5'];
@@ -430,7 +431,11 @@ export const claudeCodeCli: Agent = {
 			turns: resultMessage.num_turns,
 		};
 		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
-		await hooks.postExecuteAgent?.(experimentArgs, verboseLog ?? normalLog);
+		await runHook(
+			'post-execute-agent',
+			experimentArgs,
+			verboseLog ?? normalLog,
+		);
 		if (verbose) {
 			verboseLog.success(successMessage);
 		} else {

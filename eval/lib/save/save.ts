@@ -7,6 +7,7 @@ import { taskLog } from '@clack/prompts';
 import { saveEnvironment } from './environment.ts';
 import { saveToGoogleSheets } from './google-sheet.ts';
 import { buildStorybook, uploadToChromatic } from './chromatic.ts';
+import { runHook } from '../run-hook.ts';
 
 export async function save(
 	experimentArgs: ExperimentArgs,
@@ -17,13 +18,13 @@ export async function save(
 		title: `Saving ${experimentArgs.upload ? 'and uploading ' : ''}results`,
 		retainLog: experimentArgs.verbose,
 	});
-	await experimentArgs.hooks.preSave?.(experimentArgs, log);
+	await runHook('pre-save', experimentArgs, log);
 
 	log.message('Saving environment');
 	const environment = await saveEnvironment(experimentArgs);
 
 	if (!experimentArgs.upload) {
-		await experimentArgs.hooks.postSave?.(experimentArgs, log);
+		await runHook('post-save', experimentArgs, log);
 		log.success('Save complete, upload disabled!');
 		return undefined;
 	}
@@ -48,7 +49,7 @@ export async function save(
 		storybookUrl,
 	);
 
-	await experimentArgs.hooks.postSave?.(experimentArgs, log);
+	await runHook('post-save', experimentArgs, log);
 	log.success('Upload complete!');
 	return storybookUrl;
 }

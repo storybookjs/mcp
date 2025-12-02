@@ -1,15 +1,16 @@
-import type { ExperimentArgs } from '../types';
+import type { ExperimentArgs } from '../types.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { installDependencies } from 'nypm';
 import { taskLog } from '@clack/prompts';
+import { runHook } from './run-hook.ts';
 
 export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 	const log = taskLog({
 		title: 'Preparing experiment',
 		retainLog: experimentArgs.verbose,
 	});
-	await experimentArgs.hooks.prePrepareExperiment?.(experimentArgs, log);
+	await runHook('pre-prepare-experiment', experimentArgs, log);
 
 	log.message('Creating project from template');
 	await fs.mkdir(path.join(experimentArgs.evalPath, 'experiments'), {
@@ -40,6 +41,6 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 		silent: true,
 	});
 
-	await experimentArgs.hooks.postPrepareExperiment?.(experimentArgs, log);
+	await runHook('post-prepare-experiment', experimentArgs, log);
 	log.success('Experiment prepared');
 }

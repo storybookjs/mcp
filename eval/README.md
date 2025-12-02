@@ -58,7 +58,6 @@ eval/
 │       ├── mcp.config.json         # Optional: MCP server config
 │       ├── extra-prompt-*.md       # Optional: additional context
 │       ├── hooks.ts                # Optional: lifecycle hooks
-│       ├── expected/               # Expected output for comparison
 │       └── experiments/            # Generated experiment runs
 │           └── {context}-{agent}-{timestamp}/
 │               ├── prompt.md       # Full prompt sent to agent
@@ -211,7 +210,6 @@ pnpm storybook
 
 - Use `--verbose` to see detailed agent activity and tool calls
 - Check `full-conversation.js` to debug agent behavior
-- Compare `project/` output with `expected/` directory
 - Use extra prompts to guide agent without modifying main prompt
 - Component manifests work best when agents need library documentation
 

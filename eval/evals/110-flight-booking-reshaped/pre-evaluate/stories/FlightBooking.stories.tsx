@@ -2,22 +2,12 @@ import FlightBookingComponent from '../src/components/FlightBooking.tsx';
 import { userEvent, fn, expect, screen, waitFor } from 'storybook/test';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { StepFunction } from 'storybook/internal/csf';
-import React from 'react';
-import { Reshaped } from 'reshaped';
-import 'reshaped/themes/slate/theme.css';
 
 const meta = {
 	component: FlightBookingComponent,
 	args: {
 		onSubmit: fn(),
 	},
-	decorators: [
-		(Story) => (
-			<Reshaped theme="slate">
-				<Story />
-			</Reshaped>
-		),
-	],
 } satisfies Meta<typeof FlightBookingComponent>;
 
 export default meta;

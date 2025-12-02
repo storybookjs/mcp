@@ -2,37 +2,12 @@ import FlightBookingComponent from '../src/components/FlightBooking.tsx';
 import { userEvent, fn, expect, screen, waitFor } from 'storybook/test';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { StepFunction } from 'storybook/internal/csf';
-import React from 'react';
-
-import '@radix-ui/colors/gray.css';
-import '@radix-ui/colors/blue.css';
-import '@radix-ui/colors/green.css';
-import '@radix-ui/colors/red.css';
-import '@radix-ui/colors/purple.css';
-import '@radix-ui/colors/gray-dark.css';
-import '@radix-ui/colors/blue-dark.css';
-import '@radix-ui/colors/green-dark.css';
-import '@radix-ui/colors/red-dark.css';
-import '@radix-ui/colors/purple-dark.css';
 
 const meta = {
 	component: FlightBookingComponent,
 	args: {
 		onSubmit: fn(),
 	},
-	decorators: [
-		(Story) => (
-			<div
-				style={{
-					padding: '40px',
-					minHeight: '100vh',
-					backgroundColor: '#f5f5f5',
-				}}
-			>
-				<Story />
-			</div>
-		),
-	],
 } satisfies Meta<typeof FlightBookingComponent>;
 
 export default meta;
@@ -264,6 +239,12 @@ export const Submitted: Story = {
 			).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
+			await waitFor(
+				async () =>
+					await userEvent.click(
+						(await looseGetInteractiveElements('ok', 'OK', step))[0],
+					),
+			);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
 		});
 
@@ -282,6 +263,12 @@ export const Submitted: Story = {
 			).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
+			await waitFor(
+				async () =>
+					await userEvent.click(
+						(await looseGetInteractiveElements('ok', 'OK', step))[0],
+					),
+			);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
 		});
 

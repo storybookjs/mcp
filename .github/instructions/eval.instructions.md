@@ -58,7 +58,8 @@ eval/
 │       ├── components.json          # Optional component manifest
 │       ├── mcp.config.json          # Optional MCP server config
 │       ├── *.md                     # Optional additional context
-│       ├── expected/                # Expected output for reference
+│       ├── pre-evaluate/            # Optional files to copy before evaluation
+│       ├── {hook-name}/             # Optional hook directories (see Lifecycle Hooks)
 │       └── experiments/             # Generated experiment runs
 └── templates/
     ├── project/                     # Base Vite + React template
@@ -156,10 +157,11 @@ node eval.ts --help
    } satisfies Hooks;
    ```
 
-5. **Optional: Create `expected/` directory:**
-   - Add reference implementation in `expected/src/components/`
-   - Add expected stories in `expected/stories/`
-   - Used for comparison during evaluation
+5. **Optional: Create hook directories:**
+   - Create directories named after lifecycle hooks in kebab-case
+   - Files in these directories are copied to `projectPath` at that lifecycle point
+   - Example: `pre-evaluate/stories/MyComponent.stories.ts` copies test stories before evaluation
+   - See [Lifecycle Hooks](#lifecycle-hooks) for the full list of supported directories
 
 ### Viewing Results
 
@@ -362,7 +364,39 @@ Each experiment produces comprehensive metrics:
 
 ## Lifecycle Hooks
 
-Evals can define lifecycle hooks in `hooks.ts` to customize behavior:
+Evals can customize behavior at each lifecycle step through two mechanisms:
+
+### Hook Directories
+
+Create directories named after lifecycle hooks (kebab-case) to automatically copy files to `projectPath` at that step:
+
+| Directory | When Contents Are Copied |
+|-----------|-------------------------|
+| `pre-prepare-experiment/` | Before project template is copied |
+| `post-prepare-experiment/` | After dependencies are installed |
+| `pre-execute-agent/` | Before agent starts execution |
+| `post-execute-agent/` | After agent completes |
+| `pre-evaluate/` | Before evaluation runs |
+| `post-evaluate/` | After evaluation completes |
+| `pre-save/` | Before results are saved |
+| `post-save/` | After results are saved |
+
+**Example:** To add test stories that run against agent-generated components:
+```
+evals/200-my-component/
+├── prompt.md
+├── pre-evaluate/
+│   └── stories/
+│       └── MyComponent.stories.ts
+```
+
+The `pre-evaluate/stories/MyComponent.stories.ts` file will be copied to `project/stories/MyComponent.stories.ts` before evaluation runs.
+
+Directories merge with existing content in `projectPath`, and files overwrite if they already exist.
+
+### Hook Functions
+
+For programmatic customization, define hooks in `hooks.ts`:
 
 ```typescript
 import type { Hooks } from '../../types.ts';
@@ -370,42 +404,50 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 export default {
-  // Before project template is copied
+  // Before project template is copied (after pre-prepare-experiment/ is copied)
   prePrepareExperiment: async (args, log) => {
     log.message('Custom pre-preparation');
   },
 
-  // After dependencies are installed
+  // After dependencies are installed (after post-prepare-experiment/ is copied)
   postPrepareExperiment: async (args, log) => {
-    // Copy fixture files
-    await fs.cp(
-      path.join(args.evalPath, 'fixtures'),
-      path.join(args.projectPath, 'public/fixtures'),
-      { recursive: true }
-    );
+    // Install additional dependencies
+    await addDependency('some-package', { cwd: args.projectPath, silent: true });
   },
 
-  // Before agent starts execution
+  // Before agent starts (after pre-execute-agent/ is copied)
   preExecuteAgent: async (args, log) => {
     log.message('Starting agent');
   },
 
-  // After agent completes
+  // After agent completes (after post-execute-agent/ is copied)
   postExecuteAgent: async (args, log) => {
     log.message('Agent finished');
   },
 
-  // Before evaluation runs
+  // Before evaluation runs (after pre-evaluate/ is copied)
   preEvaluate: async (args, log) => {
     log.start('Custom pre-evaluation');
   },
 
-  // After evaluation completes
+  // After evaluation completes (after post-evaluate/ is copied)
   postEvaluate: async (args, log) => {
     log.success('Custom post-evaluation');
+  },
+
+  // Before results are saved (after pre-save/ is copied)
+  preSave: async (args, log) => {
+    log.message('Saving results');
+  },
+
+  // After results are saved (after post-save/ is copied)
+  postSave: async (args, log) => {
+    log.success('All done');
   }
 } satisfies Hooks;
 ```
+
+**Execution Order:** For each lifecycle step, the framework first copies files from the hook directory (if it exists), then calls the hook function (if defined).
 
 **Logger Interface:**
 
@@ -472,7 +514,7 @@ Each experiment's project includes:
 
 ### Expected Stories
 
-Evals should include `expected/stories/*.stories.ts` files that:
+Evals should include `pre-evaluate/stories/*.stories.ts` files that:
 
 1. Import the component
 2. Define basic stories (e.g., Default)
@@ -614,7 +656,7 @@ When using `--context mcp.config.json`, the framework:
 3. **Check `typecheck-output.txt`**: TypeScript issues
 4. **Inspect `lint-output.txt`**: Code quality problems
 5. **Read `test-results.json`**: Test failures and a11y violations
-6. **Compare with `expected/`**: See reference implementation
+6. **Compare with `pre-evaluate/`**: See reference files copied before evaluation
 
 ### Common Issues
 
@@ -633,7 +675,8 @@ When using `--context mcp.config.json`, the framework:
 
 - The framework is designed for reproducibility - same inputs should give comparable outputs
 - Always check `collect-args.ts` for the canonical list of CLI options
-- Hooks are optional - most evals don't need them
+- Hooks are optional - most evals only need `pre-evaluate/` for test stories
+- Hook directories copy files first, then hook functions run
 - Extra prompts are append-only - they don't replace the main prompt
 - The `CONSTRAINTS_PROMPT` is always appended to prevent package manager usage
 - Agent token counting is approximate - uses client-side tokenizer, not actual API response
