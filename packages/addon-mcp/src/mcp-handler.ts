@@ -15,6 +15,7 @@ import { collectTelemetry } from './telemetry.ts';
 import type { AddonContext, AddonOptionsOutput } from './types.ts';
 import { logger } from 'storybook/internal/node-logger';
 import { getManifestStatus } from './tools/is-manifest-available.ts';
+import { addRenderStoryTool } from './tools/render-story.ts';
 
 let transport: HttpTransport<AddonContext> | undefined;
 let origin: string | undefined;
@@ -48,6 +49,7 @@ const initializeMCPServer = async (options: Options) => {
 
 	// Register dev addon tools
 	await addGetStoryUrlsTool(server);
+	await addRenderStoryTool(server);
 	await addGetUIBuildingInstructionsTool(server);
 
 	// Only register the additional tools if the component manifest feature is enabled
