@@ -67,12 +67,11 @@ export async function collectArgs() {
 						}
 						return (
 							await import(
-								pathToFileURL(
-									path.join(EVALS_DIR, parsedEvalPath, filePath),
-								).href,
+								pathToFileURL(path.join(EVALS_DIR, parsedEvalPath, filePath))
+									.href,
 								{
 									with: { type: 'json' },
-								},
+								}
 							)
 						).default;
 					}),
@@ -218,7 +217,7 @@ export async function collectArgs() {
 							pathToFileURL(path.join(evalPath, dirent.name)).href,
 							{
 								with: { type: 'json' },
-							},
+							}
 						);
 						availableManifests[dirent.name] = Object.keys(
 							manifestContent.components || {},

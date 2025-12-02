@@ -99,7 +99,7 @@ export async function uploadToChromatic(
 		pathToFileURL(diagnosticsPath).href,
 		{
 			with: { type: 'json' },
-		},
+		}
 	)) as { default: ChromaticDiagnostics };
 
 	return diagnostics.storybookUrl;

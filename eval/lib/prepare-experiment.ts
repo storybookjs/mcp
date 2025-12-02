@@ -31,7 +31,7 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 		pathToFileURL(packageJsonPath).href,
 		{
 			with: { type: 'json' },
-		},
+		}
 	);
 	packageJson.name =
 		`@storybook/mcp-eval--${experimentArgs.evalName}--${path.basename(experimentArgs.experimentPath)}`.toLowerCase();

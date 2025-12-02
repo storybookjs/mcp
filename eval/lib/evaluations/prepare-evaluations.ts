@@ -31,7 +31,7 @@ export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 		pathToFileURL(path.join(projectPath, 'package.json')).href,
 		{
 			with: { type: 'json' },
-		},
+		}
 	);
 	// add the storybook script after agent execution, so it does not taint the experiment
 	pkgJson.scripts.storybook = 'storybook dev --port 6006';

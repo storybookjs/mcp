@@ -42,7 +42,7 @@ export async function testStories({
 		pathToFileURL(testResultsPath).href,
 		{
 			with: { type: 'json' },
-		},
+		}
 	)) as { default: JsonTestResults };
 
 	// write the file again to pretty-print it
