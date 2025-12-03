@@ -14,9 +14,26 @@ interface BaseMessage {
 	costUSD?: number;
 }
 
+interface McpServer {
+	name: string;
+	status: string;
+}
+
 interface SystemInitMessage extends BaseMessage {
 	type: 'system';
 	subtype: 'init';
+	cwd: string;
+	tools: string[];
+	mcp_servers: McpServer[];
+	model: string;
+	permissionMode: string;
+	slash_commands: string[];
+	apiKeySource: string;
+	claude_code_version: string;
+	output_style: string;
+	agents: string[];
+	skills: string[];
+	plugins: string[];
 }
 
 interface MessageUsage {
