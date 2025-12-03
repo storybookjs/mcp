@@ -298,7 +298,7 @@ export const claudeCodeCli: Agent = {
 			(m): m is ResultMessage => m.type === 'result',
 		);
 		if (!resultMessage) {
-			log.stop('No result message received from Claude Code CLI', 1);
+			log.error('No result message received from Claude Code CLI');
 			process.exit(1);
 		}
 		await claudeProcess;
