@@ -2,9 +2,10 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { Hooks } from '../../types.ts';
 import { addDependency } from 'nypm';
+import { log } from '@clack/prompts';
 
 const hooks: Hooks = {
-	postPrepareExperiment: async (experimentArgs, log) => {
+	postPrepareExperiment: async (experimentArgs) => {
 		log.message('Installing the reshaped package');
 		await addDependency('reshaped@latest', {
 			cwd: experimentArgs.projectPath,

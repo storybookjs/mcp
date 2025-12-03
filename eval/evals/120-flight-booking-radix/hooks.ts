@@ -1,8 +1,9 @@
 import type { Hooks } from '../../types.ts';
 import { addDependency } from 'nypm';
+import { log } from '@clack/prompts';
 
 const hooks: Hooks = {
-	postPrepareExperiment: async (experimentArgs, log) => {
+	postPrepareExperiment: async (experimentArgs) => {
 		log.message('Installing the radix-ui package');
 		const options = {
 			cwd: experimentArgs.projectPath,

@@ -1,9 +1,8 @@
 import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { styleText } from 'node:util';
 import type { Agent } from '../../types.ts';
-import { spinner, taskLog } from '@clack/prompts';
+import { spinner } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 
@@ -136,98 +135,6 @@ type ClaudeCodeStreamMessage =
 	| UserMessage
 	| ResultMessage;
 
-function formatMessageForLog(
-	message: ClaudeCodeStreamMessage,
-	projectPath: string,
-	deltaSeconds?: number,
-): string {
-	const timePrefix =
-		deltaSeconds !== undefined ? `[+${deltaSeconds.toFixed(1)}s] ` : '';
-	const tokenSuffix =
-		message.tokenCount !== undefined ? ` (${message.tokenCount} tokens)` : '';
-	switch (message.type) {
-		case 'system': {
-			const mcpInfo =
-				message.mcp_servers.length > 0
-					? styleText(
-							['cyan'],
-							message.mcp_servers
-								.map((s) => `${s.name}:${s.status}`)
-								.join(', '),
-						)
-					: 'None';
-			return `${timePrefix}[INIT] Model: ${message.model}, Tools: ${message.tools.length}, MCPs: ${mcpInfo}${tokenSuffix}`;
-		}
-		case 'assistant': {
-			const content = message.message.content;
-			const textContent = content.find(
-				(c): c is TextContent => c.type === 'text',
-			);
-			const toolUses = content.filter(
-				(c): c is ToolUseContent => c.type === 'tool_use',
-			);
-
-			if (toolUses.length > 0) {
-				const todoWrite = toolUses.find((t) => t.name === 'TodoWrite');
-				if (todoWrite && todoWrite.input.todos) {
-					const lines = [];
-					lines.push(`${timePrefix}[ASSISTANT] Todo List:`);
-					for (const todo of todoWrite.input.todos) {
-						let checkbox: string;
-						switch (todo.status) {
-							case 'completed':
-								checkbox = '[x]';
-								break;
-							case 'in_progress':
-								checkbox = '[~]';
-								break;
-							default:
-								checkbox = '[ ]';
-						}
-						lines.push(`  ${checkbox} ${todo.content}`);
-					}
-					return lines.join('\n');
-				} else {
-					const toolDescriptions = toolUses.map((t) => {
-						const isMcpTool = t.name.startsWith('mcp__');
-						let toolDesc: string;
-
-						if (
-							(t.name === 'Read' || t.name === 'Write' || t.name === 'Edit') &&
-							t.input.file_path
-						) {
-							const relPath = path.relative(projectPath, t.input.file_path);
-							toolDesc = `${t.name}(./${relPath})`;
-						} else if (t.name === 'Bash' && t.input.command) {
-							const cmd =
-								t.input.command.length > 50
-									? t.input.command.slice(0, 50) + '...'
-									: t.input.command;
-							toolDesc = `Bash(${cmd})`;
-						} else {
-							toolDesc = t.name;
-						}
-
-						return isMcpTool ? styleText('cyan', toolDesc) : toolDesc;
-					});
-					return `${timePrefix}[ASSISTANT] Tools: ${toolDescriptions.join(', ')}${tokenSuffix}`;
-				}
-			} else if (textContent) {
-				const preview = textContent.text.slice(0, 80).replace(/\n/g, ' ');
-				return `${timePrefix}[ASSISTANT] ${preview}${textContent.text.length > 80 ? '...' : ''}${tokenSuffix}`;
-			}
-			return `${timePrefix}[ASSISTANT] (no content)${tokenSuffix}`;
-		}
-		case 'user': {
-			return `${timePrefix}[USER] Tool results: ${message.message.content.length}${tokenSuffix}`;
-		}
-		case 'result':
-			return `${timePrefix}[RESULT] ${message.subtype.toUpperCase()} - ${message.num_turns} turns, ${(message.duration_ms / 1000).toFixed(1)}s, $${message.total_cost_usd.toFixed(4)}${tokenSuffix}`;
-		default:
-			return `${timePrefix}[UNKNOWN MESSAGE TYPE]${tokenSuffix}`;
-	}
-}
-
 interface TodoProgress {
 	current: number;
 	total: number;
@@ -327,23 +234,16 @@ function getTodoProgress(
 
 export const claudeCodeCli: Agent = {
 	async execute(prompt, experimentArgs, mcpServerConfig) {
-		const { projectPath, resultsPath, verbose } = experimentArgs;
+		const { projectPath, resultsPath } = experimentArgs;
 		if (mcpServerConfig) {
 			await fs.writeFile(
 				path.join(projectPath, '.mcp.json'),
 				JSON.stringify({ mcpServers: mcpServerConfig }, null, 2),
 			);
 		}
-		const verboseLog = (verbose &&
-			taskLog({
-				title: `Executing prompt with Claude Code CLI`,
-				retainLog: verbose,
-			})) as ReturnType<typeof taskLog>;
-		const normalLog = (!verbose && spinner()) as ReturnType<typeof spinner>;
-		if (!verbose) {
-			normalLog.start('Agent is working');
-		}
-		await runHook('pre-execute-agent', experimentArgs, verboseLog ?? normalLog);
+		const log = spinner();
+		log.start('Executing prompt with Claude Code CLI');
+		await runHook('pre-execute-agent', experimentArgs);
 
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
 		const model = models['anthropic/claude-sonnet-4.5'];
@@ -386,29 +286,19 @@ export const claudeCodeCli: Agent = {
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
 			messages.push(parsed);
-			if (verbose) {
-				verboseLog.message(
-					formatMessageForLog(parsed, projectPath, deltaMs / 1000),
-				);
-			} else {
-				const todoProgress = getTodoProgress(messages);
-				let progressMessage = `Agent is working, turn ${messages.filter((m) => m.type === 'assistant').length}`;
-				if (todoProgress) {
-					progressMessage += `, todo ${todoProgress.current} / ${todoProgress.total}: ${todoProgress.currentTitle}`;
-				}
-				normalLog.message(progressMessage);
+
+			const todoProgress = getTodoProgress(messages);
+			let progressMessage = `Agent is working, turn ${messages.filter((m) => m.type === 'assistant').length}`;
+			if (todoProgress) {
+				progressMessage += `, todo ${todoProgress.current} / ${todoProgress.total}: ${todoProgress.currentTitle}`;
 			}
+			log.message(progressMessage);
 		}
 		const resultMessage = messages.find(
 			(m): m is ResultMessage => m.type === 'result',
 		);
 		if (!resultMessage) {
-			const errorMessage = 'No result message received from Claude Code CLI';
-			if (verbose) {
-				verboseLog.error(errorMessage);
-			} else {
-				normalLog.stop(errorMessage);
-			}
+			log.error('No result message received from Claude Code CLI');
 			process.exit(1);
 		}
 		await claudeProcess;
@@ -431,16 +321,8 @@ export const claudeCodeCli: Agent = {
 			turns: resultMessage.num_turns,
 		};
 		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
-		await runHook(
-			'post-execute-agent',
-			experimentArgs,
-			verboseLog ?? normalLog,
-		);
-		if (verbose) {
-			verboseLog.success(successMessage);
-		} else {
-			normalLog.stop(successMessage);
-		}
+		await runHook('post-execute-agent', experimentArgs);
+		log.stop(successMessage);
 
 		return result;
 	},

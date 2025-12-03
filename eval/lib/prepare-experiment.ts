@@ -10,7 +10,7 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 		title: 'Preparing experiment',
 		retainLog: experimentArgs.verbose,
 	});
-	await runHook('pre-prepare-experiment', experimentArgs, log);
+	await runHook('pre-prepare-experiment', experimentArgs);
 
 	log.message('Creating project from template');
 	await fs.mkdir(path.join(experimentArgs.evalPath, 'experiments'), {
@@ -41,6 +41,6 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 		silent: true,
 	});
 
-	await runHook('post-prepare-experiment', experimentArgs, log);
+	await runHook('post-prepare-experiment', experimentArgs);
 	log.success('Experiment prepared');
 }

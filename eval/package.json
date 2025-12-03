@@ -12,7 +12,7 @@
 	},
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.30",
-		"@clack/prompts": "1.0.0-alpha.6",
+		"@clack/prompts": "1.0.0-alpha.7",
 		"@radix-ui/colors": "^3.0.0",
 		"@radix-ui/react-popover": "^1.1.15",
 		"@radix-ui/react-toggle": "^1.1.10",
