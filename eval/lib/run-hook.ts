@@ -1,6 +1,4 @@
 import type { ExperimentArgs, Hooks } from '../types.ts';
-import type { taskLog } from '@clack/prompts';
-import type { TaskLogger } from './evaluations/evaluate.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -48,8 +46,6 @@ const HOOK_CONFIG = {
 
 export type HookName = keyof typeof HOOK_CONFIG;
 
-export type Logger = ReturnType<typeof taskLog> | TaskLogger;
-
 /**
  * Runs a lifecycle step for an experiment.
  *
@@ -60,12 +56,10 @@ export type Logger = ReturnType<typeof taskLog> | TaskLogger;
  *
  * @param hookName - The name of the step to run (e.g., 'pre-evaluate', 'post-prepare-experiment')
  * @param experimentArgs - The experiment arguments containing paths and hooks
- * @param log - Logger instance for output
  */
 export async function runHook(
 	hookName: HookName,
 	experimentArgs: ExperimentArgs,
-	log: Logger,
 ): Promise<void> {
 	const config = HOOK_CONFIG[hookName];
 	const hookDir = path.join(experimentArgs.evalPath, config.directory);
@@ -83,5 +77,5 @@ export async function runHook(
 	}
 
 	// Call the hook function if defined
-	await experimentArgs.hooks[config.hookName]?.(experimentArgs, log as any);
+	await experimentArgs.hooks[config.hookName]?.(experimentArgs);
 }

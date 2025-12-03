@@ -18,13 +18,13 @@ export async function save(
 		title: `Saving ${experimentArgs.upload ? 'and uploading ' : ''}results`,
 		retainLog: experimentArgs.verbose,
 	});
-	await runHook('pre-save', experimentArgs, log);
+	await runHook('pre-save', experimentArgs);
 
 	log.message('Saving environment');
 	const environment = await saveEnvironment(experimentArgs);
 
 	if (!experimentArgs.upload) {
-		await runHook('post-save', experimentArgs, log);
+		await runHook('post-save', experimentArgs);
 		log.success('Save complete, upload disabled!');
 		return undefined;
 	}
@@ -49,7 +49,7 @@ export async function save(
 		storybookUrl,
 	);
 
-	await runHook('post-save', experimentArgs, log);
+	await runHook('post-save', experimentArgs);
 	log.success('Upload complete!');
 	return storybookUrl;
 }

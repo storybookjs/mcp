@@ -1,6 +1,4 @@
-import type { taskLog } from '@clack/prompts';
 import * as v from 'valibot';
-import type { TaskLogger } from './lib/evaluations/evaluate';
 
 export type ExperimentArgs = {
 	experimentPath: string;
@@ -78,24 +76,15 @@ export interface Agent {
 	) => Promise<ExecutionSummary>;
 }
 
-export type Hook = (
-	experimentArgs: ExperimentArgs,
-	log: ReturnType<typeof taskLog>,
-) => Promise<void>;
+export type Hook = (experimentArgs: ExperimentArgs) => Promise<void>;
 
 export type Hooks = {
 	prePrepareExperiment?: Hook;
 	postPrepareExperiment?: Hook;
 	preExecuteAgent?: Hook;
 	postExecuteAgent?: Hook;
-	preEvaluate?: (
-		experimentArgs: ExperimentArgs,
-		log: TaskLogger,
-	) => Promise<void>;
-	postEvaluate?: (
-		experimentArgs: ExperimentArgs,
-		log: TaskLogger,
-	) => Promise<void>;
+	preEvaluate?: Hook;
+	postEvaluate?: Hook;
 	preSave?: Hook;
 	postSave?: Hook;
 };

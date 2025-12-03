@@ -2,7 +2,7 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Agent } from '../../types.ts';
-import { taskLog } from '@clack/prompts';
+import { spinner } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 
@@ -224,8 +224,9 @@ export const claudeCodeCli: Agent = {
 				JSON.stringify({ mcpServers: mcpServerConfig }, null, 2),
 			);
 		}
-		const log = taskLog({ title: `Executing prompt with Claude Code CLI` });
-		await runHook('pre-execute-agent', experimentArgs, log);
+		const log = spinner();
+		log.start('Executing prompt with Claude Code CLI');
+		await runHook('pre-execute-agent', experimentArgs);
 
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
 		const model = models['anthropic/claude-sonnet-4.5'];
@@ -280,7 +281,7 @@ export const claudeCodeCli: Agent = {
 			(m): m is ResultMessage => m.type === 'result',
 		);
 		if (!resultMessage) {
-			log.error('No result message received from Claude Code CLI');
+			log.stop('No result message received from Claude Code CLI', 1);
 			process.exit(1);
 		}
 		await claudeProcess;
@@ -303,8 +304,8 @@ export const claudeCodeCli: Agent = {
 			turns: resultMessage.num_turns,
 		};
 		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
-		await runHook('post-execute-agent', experimentArgs, log);
-		log.success(successMessage);
+		await runHook('post-execute-agent', experimentArgs);
+		log.stop(successMessage);
 
 		return result;
 	},
