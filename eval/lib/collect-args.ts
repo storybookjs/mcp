@@ -9,7 +9,16 @@ import {
 	type McpServerConfig,
 } from '../types.ts';
 
-export async function collectArgs() {
+export type CollectedArgs = {
+	agent: string;
+	verbose: boolean;
+	eval: string;
+	context: Context;
+	storybook: boolean | undefined;
+	uploadId: string | undefined;
+};
+
+export async function collectArgs(): Promise<CollectedArgs> {
 	const EVALS_DIR = path.join(process.cwd(), 'evals');
 
 	const nodeParsedArgs = parseArgs({
@@ -18,7 +27,8 @@ export async function collectArgs() {
 			verbose: { type: 'boolean', default: false, short: 'v' },
 			storybook: { type: 'boolean', short: 's' },
 			context: { type: 'string', short: 'c' },
-			upload: { type: 'boolean', short: 'u' },
+			'upload-id': { type: 'string' },
+			upload: { type: 'boolean' },
 		},
 		strict: false,
 		allowPositionals: true,
@@ -39,13 +49,22 @@ export async function collectArgs() {
 		nodeParsedArgs.positionals,
 	);
 
+	// Transform kebab-case to camelCase for CLI args
+	const argValues = {
+		...nodeParsedArgs.values,
+		uploadId: nodeParsedArgs.values['upload-id'],
+		// --no-upload sets upload to false
+		noUpload: nodeParsedArgs.values.upload === false,
+	};
+
 	const ArgValuesSchema = v.objectAsync({
 		agent: v.optional(
 			v.union([v.literal('claude-code'), v.literal('copilot')]),
 		),
 		verbose: v.boolean(),
 		storybook: v.optional(v.boolean()),
-		upload: v.optional(v.boolean()),
+		uploadId: v.optional(v.string()),
+		noUpload: v.boolean(),
 		context: v.optionalAsync(
 			v.unionAsync([
 				// no context
@@ -106,10 +125,7 @@ export async function collectArgs() {
 		),
 	});
 
-	const parsedArgValues = await v.parseAsync(
-		ArgValuesSchema,
-		nodeParsedArgs.values,
-	);
+	const parsedArgValues = await v.parseAsync(ArgValuesSchema, argValues);
 
 	// Build rerun command incrementally
 	const rerunCommandParts: string[] = ['node', 'eval.ts'];
@@ -415,26 +431,34 @@ export async function collectArgs() {
 				}
 				return parsedArgValues.verbose;
 			},
-			upload: async () => {
-				if (parsedArgValues.upload !== undefined) {
-					rerunCommandParts.push(
-						`--${parsedArgValues.upload ? '' : 'no-'}upload`,
-					);
-					return parsedArgValues.upload;
+			uploadId: async () => {
+				// --no-upload explicitly disables upload
+				if (parsedArgValues.noUpload) {
+					rerunCommandParts.push('--no-upload');
+					return undefined;
 				}
 
-				const result = await p.confirm({
+				if (parsedArgValues.uploadId) {
+					rerunCommandParts.push('--upload-id', parsedArgValues.uploadId);
+					return parsedArgValues.uploadId;
+				}
+
+				const result = await p.text({
 					message:
-						'Do you want to upload the results to a public Google Sheet at the end of the run?',
-					initialValue: true,
+						'Enter an Upload ID to upload results to Google Sheet (leave blank to skip upload):',
+					placeholder: 'experiment-batch-1',
 				});
 				if (p.isCancel(result)) {
 					p.cancel('Operation cancelled.');
 					process.exit(0);
 				}
 
-				rerunCommandParts.push(`--${result ? '' : 'no-'}upload`);
-				return result;
+				if (result) {
+					rerunCommandParts.push('--upload-id', result);
+				} else {
+					rerunCommandParts.push('--no-upload');
+				}
+				return result || undefined;
 			},
 		},
 		{
@@ -445,13 +469,13 @@ export async function collectArgs() {
 		},
 	);
 
-	const result = {
-		agent: promptResults.agent,
+	const result: CollectedArgs = {
+		agent: promptResults.agent as string,
 		verbose: promptResults.verbose,
 		eval: evalPromptResult,
-		context: promptResults.context,
+		context: promptResults.context as Context,
 		storybook: parsedArgValues.storybook,
-		upload: promptResults.upload,
+		uploadId: promptResults.uploadId as string | undefined,
 	};
 
 	rerunCommandParts.push(evalPromptResult);

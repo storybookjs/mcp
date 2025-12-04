@@ -15,7 +15,7 @@ export function showHelp(): void {
 	console.log('  node eval.ts\n');
 	console.log('  # Run specific eval with all options');
 	console.log(
-		'  node eval.ts --agent claude-code --context components.json --upload 100-flight-booking-plain\n',
+		'  node eval.ts --agent claude-code --context components.json --upload-id batch-1 100-flight-booking-plain\n',
 	);
 	console.log('  # Run with extra prompts and verbose output');
 	console.log(
@@ -65,10 +65,10 @@ export function showHelp(): void {
 		`      ${styleText('yellow', '--no-storybook')}      Do not auto-start Storybook after evaluation completes`,
 	);
 	console.log(
-		`\n  ${styleText('yellow', '-u, --upload')}           Build Storybook, upload to Chromatic, and save results to Google Sheets (default: true)`,
+		`\n  ${styleText('yellow', '--upload-id <id>')}      Upload results to Google Sheet with this ID for grouping/filtering`,
 	);
 	console.log(
-		`      ${styleText('yellow', '--no-upload')}         Skip uploading results`,
+		`      ${styleText('yellow', '--no-upload')}         Skip uploading results (default if no upload ID provided)`,
 	);
 	console.log(
 		`\n  ${styleText('yellow', '-h, --help')}             Display this help message and exit\n`,
