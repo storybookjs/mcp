@@ -61,7 +61,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	const nodeParsedArgs = parseArgs({
 		options: {
 			agent: { type: 'string', short: 'a' },
-			verbose: { type: 'boolean', default: false, short: 'v' },
+			verbose: { type: 'boolean', short: 'v' },
 			storybook: { type: 'boolean', short: 's' },
 			context: { type: 'string', short: 'c' },
 			'upload-id': { type: 'string' },

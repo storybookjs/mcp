@@ -22,7 +22,7 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 node eval.ts
 
 # With all options specified
-node eval.ts --agent claude-code --context components.json --upload 100-flight-booking-plain
+node eval.ts --agent claude-code --context components.json --upload-id batch-1 100-flight-booking-plain
 ```
 
 ## CLI Options
@@ -33,7 +33,8 @@ node eval.ts --agent claude-code --context components.json --upload 100-flight-b
 | `--context`   | `-c`  | string  | Context type: `false`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
 | `--verbose`   | `-v`  | boolean | Show detailed logs during execution                                                      |
 | `--storybook` | `-s`  | boolean | Auto-start Storybook after completion                                                    |
-| `--upload`    | `-u`  | boolean | Upload results to Google Sheets (default: true)                                          |
+| `--upload-id` |       | string  | Upload results to Google Sheets with this ID for grouping/filtering                      |
+| `--no-upload` |       | -       | Skip uploading results (default if no upload ID provided)                                |
 | `--help`      | `-h`  | -       | Display help information                                                                 |
 
 **Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
