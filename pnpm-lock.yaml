@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.16.0
       version: 1.18.1
     valibot:
-      specifier: 1.1.0
-      version: 1.1.0
+      specifier: 1.2.0
+      version: 1.2.0
     vite:
       specifier: 7.2.2
       version: 7.2.2
@@ -241,7 +241,7 @@ importers:
         version: 2.2.0
       valibot:
         specifier: 'catalog:'
-        version: 1.1.0(typescript@5.9.3)
+        version: 1.2.0(typescript@5.9.3)
       vite:
         specifier: ^7.1.12
         version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
@@ -253,7 +253,7 @@ importers:
         version: link:../mcp
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
-        version: 0.1.4(tmcp@1.18.1(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
+        version: 0.1.4(tmcp@1.18.1(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))
       '@tmcp/transport-http':
         specifier: 'catalog:'
         version: 0.8.0(tmcp@1.18.1(typescript@5.9.3))
@@ -262,7 +262,7 @@ importers:
         version: 1.18.1(typescript@5.9.3)
       valibot:
         specifier: 'catalog:'
-        version: 1.1.0(typescript@5.9.3)
+        version: 1.2.0(typescript@5.9.3)
     devDependencies:
       storybook:
         specifier: 'catalog:'
@@ -272,7 +272,7 @@ importers:
     dependencies:
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
-        version: 0.1.4(tmcp@1.18.1(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))
+        version: 0.1.4(tmcp@1.18.1(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))
       '@tmcp/transport-http':
         specifier: 'catalog:'
         version: 0.8.0(tmcp@1.18.1(typescript@5.9.3))
@@ -281,7 +281,7 @@ importers:
         version: 1.18.1(typescript@5.9.3)
       valibot:
         specifier: 'catalog:'
-        version: 1.1.0(typescript@5.9.3)
+        version: 1.2.0(typescript@5.9.3)
     devDependencies:
       '@tmcp/transport-stdio':
         specifier: 'catalog:'
@@ -4856,8 +4856,8 @@ packages:
   v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
 
-  valibot@1.1.0:
-    resolution: {integrity: sha512-Nk8lX30Qhu+9txPYTwM0cFlWLdPFsFr6LblzqIySfbZph9+BFsAHsNvHOymEviUepeIW6KFHzpX8TKhbptBXXw==}
+  valibot@1.2.0:
+    resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -7494,12 +7494,12 @@ snapshots:
     dependencies:
       '@testing-library/dom': 10.4.1
 
-  '@tmcp/adapter-valibot@0.1.4(tmcp@1.18.1(typescript@5.9.3))(valibot@1.1.0(typescript@5.9.3))':
+  '@tmcp/adapter-valibot@0.1.4(tmcp@1.18.1(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))':
     dependencies:
       '@standard-schema/spec': 1.0.0
-      '@valibot/to-json-schema': 1.3.0(valibot@1.1.0(typescript@5.9.3))
+      '@valibot/to-json-schema': 1.3.0(valibot@1.2.0(typescript@5.9.3))
       tmcp: 1.18.1(typescript@5.9.3)
-      valibot: 1.1.0(typescript@5.9.3)
+      valibot: 1.2.0(typescript@5.9.3)
 
   '@tmcp/session-manager@0.2.0(tmcp@1.18.1(typescript@5.9.3))':
     dependencies:
@@ -7627,9 +7627,9 @@ snapshots:
 
   '@types/resolve@1.20.6': {}
 
-  '@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.9.3))':
+  '@valibot/to-json-schema@1.3.0(valibot@1.2.0(typescript@5.9.3))':
     dependencies:
-      valibot: 1.1.0(typescript@5.9.3)
+      valibot: 1.2.0(typescript@5.9.3)
 
   '@vitejs/plugin-react-swc@4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))':
     dependencies:
@@ -10187,7 +10187,7 @@ snapshots:
       json-rpc-2.0: 1.7.1
       sqids: 0.3.0
       uri-template-matcher: 1.1.1
-      valibot: 1.1.0(typescript@5.9.3)
+      valibot: 1.2.0(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
 
@@ -10405,7 +10405,7 @@ snapshots:
 
   v8-compile-cache-lib@3.0.1: {}
 
-  valibot@1.1.0(typescript@5.9.3):
+  valibot@1.2.0(typescript@5.9.3):
     optionalDependencies:
       typescript: 5.9.3
 
