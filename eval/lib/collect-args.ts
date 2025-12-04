@@ -37,7 +37,7 @@ function loadEnvFileIfExists(): void {
  */
 function getEnvString(name: string): string | undefined {
 	const value = process.env[name];
-	return value && value.trim() !== '' ? value : undefined;
+	return value && value?.trim() !== '' ? value : undefined;
 }
 
 /**
@@ -46,11 +46,27 @@ function getEnvString(name: string): string | undefined {
  */
 function getEnvBoolean(name: string): boolean | undefined {
 	const value = process.env[name]?.toLowerCase().trim();
-	if (value === undefined || value === '') return undefined;
-	if (['true', '1', 'yes'].includes(value)) return true;
-	if (['false', '0', 'no'].includes(value)) return false;
+	if (value === undefined || value === '') {
+		return undefined;
+	}
+	if (['true', '1', 'yes'].includes(value)) {
+		return true;
+	}
+	if (['false', '0', 'no'].includes(value)) {
+		return false;
+	}
 	return undefined;
 }
+
+// Env var names are derived automatically: kebab-case -> SHOUT_CASE (e.g., 'upload-id' -> 'UPLOAD_ID')
+const CLI_OPTIONS = {
+	agent: { type: 'string', short: 'a' },
+	verbose: { type: 'boolean', short: 'v' },
+	storybook: { type: 'boolean', short: 's' },
+	context: { type: 'string', short: 'c' },
+	upload: { type: 'boolean' },
+	'upload-id': { type: 'string', short: 'u' },
+} as const;
 
 export async function collectArgs(): Promise<CollectedArgs> {
 	const EVALS_DIR = path.join(process.cwd(), 'evals');
@@ -59,14 +75,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	loadEnvFileIfExists();
 
 	const nodeParsedArgs = parseArgs({
-		options: {
-			agent: { type: 'string', short: 'a' },
-			verbose: { type: 'boolean', short: 'v' },
-			storybook: { type: 'boolean', short: 's' },
-			context: { type: 'string', short: 'c' },
-			'upload-id': { type: 'string' },
-			upload: { type: 'boolean' },
-		},
+		options: CLI_OPTIONS,
 		strict: false,
 		allowPositionals: true,
 		allowNegative: true,
@@ -86,35 +95,35 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		nodeParsedArgs.positionals,
 	);
 
-	// CLI args override env vars
-	// Env vars are SHOUT_CASE versions: AGENT, VERBOSE, STORYBOOK, CONTEXT, UPLOAD_ID, UPLOAD
-	const cliArgs = nodeParsedArgs.values;
-
-	const argValues = {
-		agent: cliArgs.agent ?? getEnvString('AGENT'),
-		verbose: cliArgs.verbose ?? getEnvBoolean('VERBOSE') ?? false,
-		storybook:
-			cliArgs.storybook !== undefined
-				? cliArgs.storybook
-				: getEnvBoolean('STORYBOOK'),
-		context: cliArgs.context ?? getEnvString('CONTEXT'),
-		uploadId: cliArgs['upload-id'] ?? getEnvString('UPLOAD_ID'),
-		// noUpload: --no-upload CLI flag > UPLOAD env var (inverted)
-		// If CLI says --no-upload, noUpload = true
-		// If env var UPLOAD=false, noUpload = true
-		noUpload:
-			cliArgs.upload === false ||
-			(cliArgs.upload === undefined && getEnvBoolean('UPLOAD') === false),
-	};
+	const argValues = Object.fromEntries(
+		Object.entries(CLI_OPTIONS).map(([name, option]) => {
+			// Convert kebab-case to camelCase for the key (e.g., 'upload-id' -> 'uploadId')
+			const camelCaseKey = name.replace(/-([a-z])/g, (_, char) =>
+				char.toUpperCase(),
+			);
+			const cliValue = nodeParsedArgs.values[name];
+			// For CLI args, use the CLI value if set, otherwise fall back to env var
+			if (cliValue !== undefined) {
+				return [camelCaseKey, cliValue];
+			}
+			// Convert kebab-case to SHOUT_CASE for env var (e.g., 'upload-id' -> 'UPLOAD_ID')
+			const envVarName = name.toUpperCase().replace(/-/g, '_');
+			const envValue =
+				option.type === 'string'
+					? getEnvString(envVarName)
+					: getEnvBoolean(envVarName);
+			return [camelCaseKey, envValue];
+		}),
+	) as Record<string, string | boolean | undefined>;
 
 	const ArgValuesSchema = v.objectAsync({
 		agent: v.optional(
 			v.union([v.literal('claude-code'), v.literal('copilot')]),
 		),
-		verbose: v.boolean(),
+		verbose: v.optional(v.boolean()),
 		storybook: v.optional(v.boolean()),
+		upload: v.optional(v.boolean()),
 		uploadId: v.optional(v.string()),
-		noUpload: v.boolean(),
 		context: v.optionalAsync(
 			v.unionAsync([
 				// no context
@@ -476,14 +485,15 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				throw new Error('Unreachable context selection');
 			},
 			verbose: async () => {
-				if (parsedArgValues.verbose) {
+				const verboseEnabled = parsedArgValues.verbose === true;
+				if (verboseEnabled) {
 					rerunCommandParts.push('--verbose');
 				}
-				return parsedArgValues.verbose;
+				return verboseEnabled;
 			},
 			uploadId: async () => {
 				// --no-upload explicitly disables upload
-				if (parsedArgValues.noUpload) {
+				if (parsedArgValues.upload === false) {
 					rerunCommandParts.push('--no-upload');
 					return undefined;
 				}
