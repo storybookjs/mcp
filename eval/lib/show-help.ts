@@ -74,6 +74,30 @@ export function showHelp(): void {
 		`\n  ${styleText('yellow', '-h, --help')}             Display this help message and exit\n`,
 	);
 
+	console.log(styleText(['bold', 'cyan'], 'ENVIRONMENT VARIABLES'));
+	console.log(
+		`  Environment variables from ${styleText('green', 'eval/.env')} serve as defaults.`,
+	);
+	console.log(`  CLI flags always override environment variables.\n`);
+	console.log(
+		`  ${styleText('yellow', 'AGENT')}               Same as --agent`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'VERBOSE')}             Same as --verbose (true/false/1/0)`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'STORYBOOK')}           Same as --storybook (true/false/1/0)`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'CONTEXT')}             Same as --context`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'UPLOAD_ID')}           Same as --upload-id`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'UPLOAD')}              Set to false to skip upload (same as --no-upload)\n`,
+	);
+
 	console.log(styleText(['bold', 'cyan'], 'CONTEXT MODES'));
 	console.log(
 		`  ${styleText('bold', 'No Context')}          Agent uses only built-in tools`,

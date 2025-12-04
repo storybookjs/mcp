@@ -381,6 +381,144 @@ importers:
         specifier: catalog:experiments
         version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
 
+  eval/evals/100-flight-booking-plain/experiments/no-context-claude-code-2025-12-04T13-51-50/project:
+    dependencies:
+      react:
+        specifier: catalog:experiments
+        version: 19.2.0
+      react-dom:
+        specifier: catalog:experiments
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: catalog:experiments
+        version: 9.39.1
+      '@types/node':
+        specifier: catalog:experiments
+        version: 24.10.1
+      '@types/react':
+        specifier: catalog:experiments
+        version: 19.2.6
+      '@types/react-dom':
+        specifier: catalog:experiments
+        version: 19.2.3(@types/react@19.2.6)
+      '@vitejs/plugin-react-swc':
+        specifier: catalog:experiments
+        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
+      eslint:
+        specifier: catalog:experiments
+        version: 9.39.1(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: catalog:experiments
+        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: catalog:experiments
+        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
+      globals:
+        specifier: catalog:experiments
+        version: 16.5.0
+      typescript:
+        specifier: catalog:experiments
+        version: 5.9.3
+      typescript-eslint:
+        specifier: catalog:experiments
+        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: catalog:experiments
+        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
+
+  eval/evals/100-flight-booking-plain/experiments/no-context-claude-code-2025-12-04T13-59-32/project:
+    dependencies:
+      react:
+        specifier: catalog:experiments
+        version: 19.2.0
+      react-dom:
+        specifier: catalog:experiments
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: catalog:experiments
+        version: 9.39.1
+      '@types/node':
+        specifier: catalog:experiments
+        version: 24.10.1
+      '@types/react':
+        specifier: catalog:experiments
+        version: 19.2.6
+      '@types/react-dom':
+        specifier: catalog:experiments
+        version: 19.2.3(@types/react@19.2.6)
+      '@vitejs/plugin-react-swc':
+        specifier: catalog:experiments
+        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
+      eslint:
+        specifier: catalog:experiments
+        version: 9.39.1(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: catalog:experiments
+        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: catalog:experiments
+        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
+      globals:
+        specifier: catalog:experiments
+        version: 16.5.0
+      typescript:
+        specifier: catalog:experiments
+        version: 5.9.3
+      typescript-eslint:
+        specifier: catalog:experiments
+        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: catalog:experiments
+        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
+
+  eval/evals/100-flight-booking-plain/experiments/no-context-claude-code-2025-12-04T13-59-48/project:
+    dependencies:
+      react:
+        specifier: catalog:experiments
+        version: 19.2.0
+      react-dom:
+        specifier: catalog:experiments
+        version: 19.2.0(react@19.2.0)
+    devDependencies:
+      '@eslint/js':
+        specifier: catalog:experiments
+        version: 9.39.1
+      '@types/node':
+        specifier: catalog:experiments
+        version: 24.10.1
+      '@types/react':
+        specifier: catalog:experiments
+        version: 19.2.6
+      '@types/react-dom':
+        specifier: catalog:experiments
+        version: 19.2.3(@types/react@19.2.6)
+      '@vitejs/plugin-react-swc':
+        specifier: catalog:experiments
+        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
+      eslint:
+        specifier: catalog:experiments
+        version: 9.39.1(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: catalog:experiments
+        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: catalog:experiments
+        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
+      globals:
+        specifier: catalog:experiments
+        version: 16.5.0
+      typescript:
+        specifier: catalog:experiments
+        version: 5.9.3
+      typescript-eslint:
+        specifier: catalog:experiments
+        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: catalog:experiments
+        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
+
   packages/addon-mcp:
     dependencies:
       '@storybook/mcp':

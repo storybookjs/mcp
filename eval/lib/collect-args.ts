@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util';
+import { loadEnvFile } from 'node:process';
 import * as v from 'valibot';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
@@ -18,8 +19,44 @@ export type CollectedArgs = {
 	uploadId: string | undefined;
 };
 
+/**
+ * Load environment variables from .env file in eval directory.
+ * These values serve as defaults; CLI flags will override them.
+ */
+function loadEnvFileIfExists(): void {
+	const envFilePath = path.join(process.cwd(), '.env');
+	try {
+		loadEnvFile(envFilePath);
+	} catch {
+		// File doesn't exist or can't be read - that's fine, env vars are optional
+	}
+}
+
+/**
+ * Get a string environment variable, returning undefined if not set.
+ */
+function getEnvString(name: string): string | undefined {
+	const value = process.env[name];
+	return value && value.trim() !== '' ? value : undefined;
+}
+
+/**
+ * Get a boolean environment variable, returning undefined if not set.
+ * Accepts 'true', '1', 'yes' as truthy; 'false', '0', 'no' as falsy.
+ */
+function getEnvBoolean(name: string): boolean | undefined {
+	const value = process.env[name]?.toLowerCase().trim();
+	if (value === undefined || value === '') return undefined;
+	if (['true', '1', 'yes'].includes(value)) return true;
+	if (['false', '0', 'no'].includes(value)) return false;
+	return undefined;
+}
+
 export async function collectArgs(): Promise<CollectedArgs> {
 	const EVALS_DIR = path.join(process.cwd(), 'evals');
+
+	// Load env file first - CLI args will override these
+	loadEnvFileIfExists();
 
 	const nodeParsedArgs = parseArgs({
 		options: {
@@ -49,12 +86,25 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		nodeParsedArgs.positionals,
 	);
 
-	// Transform kebab-case to camelCase for CLI args
+	// CLI args override env vars
+	// Env vars are SHOUT_CASE versions: AGENT, VERBOSE, STORYBOOK, CONTEXT, UPLOAD_ID, UPLOAD
+	const cliArgs = nodeParsedArgs.values;
+
 	const argValues = {
-		...nodeParsedArgs.values,
-		uploadId: nodeParsedArgs.values['upload-id'],
-		// --no-upload sets upload to false
-		noUpload: nodeParsedArgs.values.upload === false,
+		agent: cliArgs.agent ?? getEnvString('AGENT'),
+		verbose: cliArgs.verbose ?? getEnvBoolean('VERBOSE') ?? false,
+		storybook:
+			cliArgs.storybook !== undefined
+				? cliArgs.storybook
+				: getEnvBoolean('STORYBOOK'),
+		context: cliArgs.context ?? getEnvString('CONTEXT'),
+		uploadId: cliArgs['upload-id'] ?? getEnvString('UPLOAD_ID'),
+		// noUpload: --no-upload CLI flag > UPLOAD env var (inverted)
+		// If CLI says --no-upload, noUpload = true
+		// If env var UPLOAD=false, noUpload = true
+		noUpload:
+			cliArgs.upload === false ||
+			(cliArgs.upload === undefined && getEnvBoolean('UPLOAD') === false),
 	};
 
 	const ArgValuesSchema = v.objectAsync({
