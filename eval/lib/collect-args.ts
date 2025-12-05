@@ -9,9 +9,10 @@ import {
 	type Context,
 	type McpServerConfig,
 } from '../types.ts';
+import { agents } from '../config.ts';
 
 export type CollectedArgs = {
-	agent: string;
+	agent: keyof typeof agents;
 	verbose: boolean;
 	eval: string;
 	context: Context;
@@ -174,7 +175,7 @@ const HELP_EXAMPLES = `
 Examples:
   $ node eval.ts                                    Interactive mode (recommended)
   $ node eval.ts 100-flight-booking-plain           Run specific eval
-  $ node eval.ts --agent claude-code --context components.json 100-flight-booking-plain
+  $ node eval.ts --agent ${Object.keys(agents)[0]} --context components.json 100-flight-booking-plain
   $ node eval.ts --verbose --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
   $ node eval.ts --context mcp.config.json 110-flight-booking-reshaped
 
@@ -206,7 +207,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		.argument('[eval-name]', 'Name of the eval directory in evals/')
 		.addOption(
 			new Option('-a, --agent <name>', 'Which coding agent to use')
-				.choices(['claude-code'])
+				.choices(Object.keys(agents))
 				.env('AGENT'),
 		)
 		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
@@ -251,7 +252,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	await program.parseAsync();
 
 	const opts = program.opts<{
-		agent?: string;
+		agent?: keyof typeof agents;
 		verbose: boolean;
 		storybook?: boolean;
 		context?: string | boolean;
