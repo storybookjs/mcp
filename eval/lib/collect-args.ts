@@ -43,7 +43,6 @@ function parseBooleanEnv(
 	}
 
 	const normalized = envVar.toLowerCase().trim();
-	console.log({ normalized });
 	if (['true', '1', 'yes'].includes(normalized)) {
 		return true;
 	}
