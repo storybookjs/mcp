@@ -14,8 +14,9 @@ export async function save(
 	evaluationSummary: EvaluationSummary,
 	executionSummary: ExecutionSummary,
 ): Promise<string | undefined> {
+	const shouldUpload = !!experimentArgs.uploadId;
 	const log = taskLog({
-		title: `Saving ${experimentArgs.upload ? 'and uploading ' : ''}results`,
+		title: `Saving ${shouldUpload ? 'and uploading ' : ''}results`,
 		retainLog: experimentArgs.verbose,
 	});
 	await runHook('pre-save', experimentArgs);
@@ -23,7 +24,7 @@ export async function save(
 	log.message('Saving environment');
 	const environment = await saveEnvironment(experimentArgs);
 
-	if (!experimentArgs.upload) {
+	if (!shouldUpload) {
 		await runHook('post-save', experimentArgs);
 		log.success('Save complete, upload disabled!');
 		return undefined;

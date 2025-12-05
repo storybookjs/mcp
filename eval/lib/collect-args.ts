@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util';
+import { loadEnvFile } from 'node:process';
 import * as v from 'valibot';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
@@ -9,17 +10,72 @@ import {
 	type McpServerConfig,
 } from '../types.ts';
 
-export async function collectArgs() {
+export type CollectedArgs = {
+	agent: string;
+	verbose: boolean;
+	eval: string;
+	context: Context;
+	storybook: boolean | undefined;
+	uploadId: string | undefined;
+};
+
+/**
+ * Load environment variables from .env file in eval directory.
+ * These values serve as defaults; CLI flags will override them.
+ */
+function loadEnvFileIfExists(): void {
+	const envFilePath = path.join(process.cwd(), '.env');
+	try {
+		loadEnvFile(envFilePath);
+	} catch {
+		// File doesn't exist or can't be read - that's fine, env vars are optional
+	}
+}
+
+/**
+ * Get a string environment variable, returning undefined if not set.
+ */
+function getEnvString(name: string): string | undefined {
+	const value = process.env[name];
+	return value && value?.trim() !== '' ? value : undefined;
+}
+
+/**
+ * Get a boolean environment variable, returning undefined if not set.
+ * Accepts 'true', '1', 'yes' as truthy; 'false', '0', 'no' as falsy.
+ */
+function getEnvBoolean(name: string): boolean | undefined {
+	const value = process.env[name]?.toLowerCase().trim();
+	if (value === undefined || value === '') {
+		return undefined;
+	}
+	if (['true', '1', 'yes'].includes(value)) {
+		return true;
+	}
+	if (['false', '0', 'no'].includes(value)) {
+		return false;
+	}
+	return undefined;
+}
+
+// Env var names are derived automatically: kebab-case -> SHOUT_CASE (e.g., 'upload-id' -> 'UPLOAD_ID')
+const CLI_OPTIONS = {
+	agent: { type: 'string', short: 'a' },
+	verbose: { type: 'boolean', short: 'v' },
+	storybook: { type: 'boolean', short: 's' },
+	context: { type: 'string', short: 'c' },
+	upload: { type: 'boolean' },
+	'upload-id': { type: 'string', short: 'u' },
+} as const;
+
+export async function collectArgs(): Promise<CollectedArgs> {
 	const EVALS_DIR = path.join(process.cwd(), 'evals');
 
+	// Load env file first - CLI args will override these
+	loadEnvFileIfExists();
+
 	const nodeParsedArgs = parseArgs({
-		options: {
-			agent: { type: 'string', short: 'a' },
-			verbose: { type: 'boolean', default: false, short: 'v' },
-			storybook: { type: 'boolean', short: 's' },
-			context: { type: 'string', short: 'c' },
-			upload: { type: 'boolean', short: 'u' },
-		},
+		options: CLI_OPTIONS,
 		strict: false,
 		allowPositionals: true,
 		allowNegative: true,
@@ -39,13 +95,35 @@ export async function collectArgs() {
 		nodeParsedArgs.positionals,
 	);
 
+	const argValues = Object.fromEntries(
+		Object.entries(CLI_OPTIONS).map(([name, option]) => {
+			// Convert kebab-case to camelCase for the key (e.g., 'upload-id' -> 'uploadId')
+			const camelCaseKey = name.replace(/-([a-z])/g, (_, char) =>
+				char.toUpperCase(),
+			);
+			const cliValue = nodeParsedArgs.values[name];
+			// For CLI args, use the CLI value if set, otherwise fall back to env var
+			if (cliValue !== undefined) {
+				return [camelCaseKey, cliValue];
+			}
+			// Convert kebab-case to SHOUT_CASE for env var (e.g., 'upload-id' -> 'UPLOAD_ID')
+			const envVarName = name.toUpperCase().replace(/-/g, '_');
+			const envValue =
+				option.type === 'string'
+					? getEnvString(envVarName)
+					: getEnvBoolean(envVarName);
+			return [camelCaseKey, envValue];
+		}),
+	) as Record<string, string | boolean | undefined>;
+
 	const ArgValuesSchema = v.objectAsync({
 		agent: v.optional(
 			v.union([v.literal('claude-code'), v.literal('copilot')]),
 		),
-		verbose: v.boolean(),
+		verbose: v.optional(v.boolean()),
 		storybook: v.optional(v.boolean()),
 		upload: v.optional(v.boolean()),
+		uploadId: v.optional(v.string()),
 		context: v.optionalAsync(
 			v.unionAsync([
 				// no context
@@ -106,10 +184,7 @@ export async function collectArgs() {
 		),
 	});
 
-	const parsedArgValues = await v.parseAsync(
-		ArgValuesSchema,
-		nodeParsedArgs.values,
-	);
+	const parsedArgValues = await v.parseAsync(ArgValuesSchema, argValues);
 
 	// Build rerun command incrementally
 	const rerunCommandParts: string[] = ['node', 'eval.ts'];
@@ -410,31 +485,40 @@ export async function collectArgs() {
 				throw new Error('Unreachable context selection');
 			},
 			verbose: async () => {
-				if (parsedArgValues.verbose) {
+				const verboseEnabled = parsedArgValues.verbose === true;
+				if (verboseEnabled) {
 					rerunCommandParts.push('--verbose');
 				}
-				return parsedArgValues.verbose;
+				return verboseEnabled;
 			},
-			upload: async () => {
-				if (parsedArgValues.upload !== undefined) {
-					rerunCommandParts.push(
-						`--${parsedArgValues.upload ? '' : 'no-'}upload`,
-					);
-					return parsedArgValues.upload;
+			uploadId: async () => {
+				// --no-upload explicitly disables upload
+				if (parsedArgValues.upload === false) {
+					rerunCommandParts.push('--no-upload');
+					return undefined;
 				}
 
-				const result = await p.confirm({
+				if (parsedArgValues.uploadId) {
+					rerunCommandParts.push('--upload-id', parsedArgValues.uploadId);
+					return parsedArgValues.uploadId;
+				}
+
+				const result = await p.text({
 					message:
-						'Do you want to upload the results to a public Google Sheet at the end of the run?',
-					initialValue: true,
+						'Enter an Upload ID to upload results to Google Sheet (leave blank to skip upload):',
+					placeholder: 'experiment-batch-1',
 				});
 				if (p.isCancel(result)) {
 					p.cancel('Operation cancelled.');
 					process.exit(0);
 				}
 
-				rerunCommandParts.push(`--${result ? '' : 'no-'}upload`);
-				return result;
+				if (result) {
+					rerunCommandParts.push('--upload-id', result);
+				} else {
+					rerunCommandParts.push('--no-upload');
+				}
+				return result || undefined;
 			},
 		},
 		{
@@ -445,13 +529,13 @@ export async function collectArgs() {
 		},
 	);
 
-	const result = {
-		agent: promptResults.agent,
+	const result: CollectedArgs = {
+		agent: promptResults.agent as string,
 		verbose: promptResults.verbose,
 		eval: evalPromptResult,
-		context: promptResults.context,
+		context: promptResults.context as Context,
 		storybook: parsedArgValues.storybook,
-		upload: promptResults.upload,
+		uploadId: promptResults.uploadId as string | undefined,
 	};
 
 	rerunCommandParts.push(evalPromptResult);
