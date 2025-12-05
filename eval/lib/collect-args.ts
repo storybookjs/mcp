@@ -29,26 +29,27 @@ export type CollectedArgs = {
  *   - Returns false for "false", "0", "no" (case-insensitive).
  *   - Returns undefined if the environment variable is unset or set to an unrecognized value.
  */
-function parseBooleanEnv(
-	value: boolean | undefined,
-	envName: string,
+function parseBoolean(
+	value: boolean | string | undefined,
 ): boolean | undefined {
-	if (value !== undefined) {
-		// don't read from env if value is set by CLI flag
+	if (typeof value === 'boolean') {
 		return value;
 	}
-	const envVar = process.env[envName];
-	if (!envVar) {
+
+	if (value === undefined) {
 		return undefined;
 	}
 
-	const normalized = envVar.toLowerCase().trim();
+	const normalized = value.toLowerCase().trim();
+
 	if (['true', '1', 'yes'].includes(normalized)) {
 		return true;
 	}
+
 	if (['false', '0', 'no'].includes(normalized)) {
 		return false;
 	}
+
 	return undefined;
 }
 /**
@@ -216,13 +217,17 @@ export async function collectArgs(): Promise<CollectedArgs> {
 			new Option(
 				'-v, --verbose',
 				'Show detailed logs during execution (env: VERBOSE)',
-			).env('VERBOSE'),
+			)
+				.env('VERBOSE')
+				.argParser(parseBoolean),
 		)
 		.addOption(
 			new Option(
 				'-s, --storybook',
 				'Auto-start Storybook after evaluation (env: STORYBOOK)',
-			).env('STORYBOOK'),
+			)
+				.env('STORYBOOK')
+				.argParser(parseBoolean),
 		)
 		.addOption(
 			new Option(
@@ -290,7 +295,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					return opts.agent;
 				}
 
-				const result = await p.select({
+				const result = await p.select<keyof typeof agents>({
 					message: 'Which coding agent do you want to use?',
 					options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
 				});
@@ -519,13 +524,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				throw new Error('Unreachable context selection');
 			},
 			uploadId: async () => {
-				// --no-upload-id explicitly disables upload
-				if (opts.uploadId === false) {
-					return false;
-				}
-
-				// --upload-id <id> uses that value
-				if (typeof opts.uploadId === 'string') {
+				if (opts.uploadId !== undefined) {
 					return opts.uploadId;
 				}
 
@@ -542,8 +541,6 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				return result || false;
 			},
-			storybook: async () => parseBooleanEnv(opts.storybook, 'STORYBOOK'),
-			verbose: async () => parseBooleanEnv(opts.verbose, 'VERBOSE'),
 		},
 		{
 			onCancel: () => {
@@ -555,6 +552,8 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 	const result: CollectedArgs = {
 		...promptResults,
+		verbose: opts.verbose ?? false,
+		storybook: opts.storybook,
 		eval: evalName,
 	};
 
