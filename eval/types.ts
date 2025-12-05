@@ -7,7 +7,7 @@ export type ExperimentArgs = {
 	resultsPath: string;
 	verbose: boolean;
 	hooks: Hooks;
-	uploadId?: string;
+	uploadId: string | false;
 	evalName: string;
 	context: Context;
 	agent: string;
