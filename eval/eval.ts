@@ -81,7 +81,7 @@ await prepareExperiment(experimentArgs);
 const prompt = await generatePrompt(evalPath, args.context);
 await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 
-const agent = agents[args.agent as keyof typeof agents];
+const agent = agents[args.agent];
 const promptSummary = await agent.execute(
 	prompt,
 	experimentArgs,
