@@ -27,11 +27,6 @@ function parseBooleanEnv(
 	value: boolean | undefined,
 	envName: string,
 ): boolean | undefined {
-	console.log('parsing', {
-		value,
-		envName,
-		env: process.env[envName],
-	});
 	if (value !== undefined) {
 		// don't read from env if value is set by CLI flag
 		return value;
