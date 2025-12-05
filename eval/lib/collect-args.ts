@@ -175,7 +175,7 @@ Examples:
   $ node eval.ts                                    Interactive mode (recommended)
   $ node eval.ts 100-flight-booking-plain           Run specific eval
   $ node eval.ts --agent claude-code --context components.json 100-flight-booking-plain
-  $ node eval.ts -v --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
+  $ node eval.ts --verbose --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
   $ node eval.ts --context mcp.config.json 110-flight-booking-reshaped
 
 Context Modes:

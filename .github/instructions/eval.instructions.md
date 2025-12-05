@@ -109,7 +109,7 @@ node eval.ts
 
 **Non-interactive mode:**
 ```bash
-node eval.ts --agent claude-code --context components.json -u batch-1 --no-storybook 100-flight-booking-plain
+node eval.ts --agent claude-code --context components.json --upload-id batch-1 --no-storybook 100-flight-booking-plain
 ```
 
 **IMPORTANT**: Always use the `--no-storybook` flag when running evals to prevent the process from hanging at the end waiting for user input about starting Storybook.
