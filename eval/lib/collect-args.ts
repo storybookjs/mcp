@@ -214,17 +214,14 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		)
 		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
 		.addOption(
-			new Option(
-				'-v, --verbose',
-				'Show detailed logs during execution (env: VERBOSE)',
-			)
+			new Option('-v, --verbose <value>', 'Show detailed logs during execution')
 				.env('VERBOSE')
 				.argParser(parseBoolean),
 		)
 		.addOption(
 			new Option(
-				'-s, --storybook',
-				'Auto-start Storybook after evaluation (env: STORYBOOK)',
+				'-s, --storybook <value>',
+				'Auto-start Storybook after evaluation',
 			)
 				.env('STORYBOOK')
 				.argParser(parseBoolean),
@@ -232,7 +229,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		.addOption(
 			new Option(
 				'--no-storybook',
-				'Do not auto-start Storybook after evaluation (env: STORYBOOK)',
+				'Do not auto-start Storybook after evaluation',
 			),
 		)
 		.addOption(
