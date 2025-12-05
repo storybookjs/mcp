@@ -20,8 +20,13 @@ export type CollectedArgs = {
 };
 
 /**
- * Parse a string value as a boolean.
- * Returns true for "true", "1", "yes"; false for "false", "0", "no"; undefined otherwise.
+ * Parses a boolean value from a CLI flag or environment variable.
+ *
+ * If the CLI value is provided (not undefined), it is returned directly.
+ * Otherwise, the environment variable with the given name is checked:
+ *   - Returns true for "true", "1", "yes" (case-insensitive).
+ *   - Returns false for "false", "0", "no" (case-insensitive).
+ *   - Returns undefined if the environment variable is unset or set to an unrecognized value.
  */
 function parseBooleanEnv(
 	value: boolean | undefined,
