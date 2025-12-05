@@ -29,27 +29,27 @@ export type CollectedArgs = {
  *   - Returns false for "false", "0", "no" (case-insensitive).
  *   - Returns undefined if the environment variable is unset or set to an unrecognized value.
  */
-function parseBoolean(
-	value: boolean | string | undefined,
+function parseBooleanEnv(
+	value: boolean | undefined,
+	envName: string,
 ): boolean | undefined {
-	if (typeof value === 'boolean') {
+	if (value !== undefined) {
+		// don't read from env if value is set by CLI flag
 		return value;
 	}
-
-	if (value === undefined) {
+	const envVar = process.env[envName];
+	if (!envVar) {
 		return undefined;
 	}
 
-	const normalized = value.toLowerCase().trim();
-
+	const normalized = envVar.toLowerCase().trim();
+	console.log({ normalized });
 	if (['true', '1', 'yes'].includes(normalized)) {
 		return true;
 	}
-
 	if (['false', '0', 'no'].includes(normalized)) {
 		return false;
 	}
-
 	return undefined;
 }
 /**
@@ -214,22 +214,21 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		)
 		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
 		.addOption(
-			new Option('-v, --verbose <value>', 'Show detailed logs during execution')
-				.env('VERBOSE')
-				.argParser(parseBoolean),
+			new Option(
+				'-v, --verbose',
+				'Show detailed logs during execution (env: VERBOSE)',
+			),
 		)
 		.addOption(
 			new Option(
-				'-s, --storybook <value>',
-				'Auto-start Storybook after evaluation',
-			)
-				.env('STORYBOOK')
-				.argParser(parseBoolean),
+				'-s, --storybook',
+				'Auto-start Storybook after evaluation (env: STORYBOOK)',
+			),
 		)
 		.addOption(
 			new Option(
 				'--no-storybook',
-				'Do not auto-start Storybook after evaluation',
+				'Do not auto-start Storybook after evaluation (env: STORYBOOK)',
 			),
 		)
 		.addOption(
@@ -538,6 +537,8 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				return result || false;
 			},
+			storybook: async () => parseBooleanEnv(opts.storybook, 'STORYBOOK'),
+			verbose: async () => parseBooleanEnv(opts.verbose, 'VERBOSE'),
 		},
 		{
 			onCancel: () => {
@@ -549,8 +550,6 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 	const result: CollectedArgs = {
 		...promptResults,
-		verbose: opts.verbose ?? false,
-		storybook: opts.storybook,
 		eval: evalName,
 	};
 
