@@ -109,7 +109,7 @@ node eval.ts
 
 **Non-interactive mode:**
 ```bash
-node eval.ts --agent claude-code --context components.json --upload --no-storybook 100-flight-booking-plain
+node eval.ts --agent claude-code --context components.json -u batch-1 --no-storybook 100-flight-booking-plain
 ```
 
 **IMPORTANT**: Always use the `--no-storybook` flag when running evals to prevent the process from hanging at the end waiting for user input about starting Storybook.
@@ -202,21 +202,37 @@ pnpm storybook
 
 ### Argument Parsing Pattern
 
-The `collect-args.ts` module demonstrates a robust pattern for handling CLI arguments:
+The `collect-args.ts` module uses Commander for CLI argument parsing:
 
-1. Parse raw args with `node:util.parseArgs`
-2. Validate with Valibot schemas (including async transformations)
-3. Prompt for missing values using `@clack/prompts`
-4. Build rerun command incrementally for user convenience
-5. Return fully-resolved arguments
+1. Load `.env` file using `loadEnvFile` from `node:process`
+2. Configure Commander with options, including `.env()` for environment variable support
+3. Parse async context values (may involve file loading)
+4. Prompt for missing values using `@clack/prompts`
+5. Build rerun command for user convenience
+6. Return fully-resolved arguments
+
+**Note:** Boolean environment variables (VERBOSE, STORYBOOK) are parsed manually via `parseBooleanEnv()` because Commander's built-in env handling coerces "false" strings to `true`.
 
 **Example:**
 ```typescript
-const parsedArgValues = await v.parseAsync(ArgValuesSchema, nodeParsedArgs.values);
+const program = new Command()
+  .name('eval.ts')
+  .argument('[eval-name]', 'Name of the eval directory')
+  .addOption(
+    new Option('-a, --agent <name>', 'Which coding agent to use')
+      .choices(['claude-code'])
+      .env('AGENT')
+  )
+  .addOption(
+    new Option('-v, --verbose', 'Show detailed logs (env: VERBOSE)')
+  );
+
+await program.parseAsync();
+const opts = program.opts();
 
 const result = await p.group({
   agent: async () => {
-    if (parsedArgValues.agent) return parsedArgValues.agent;
+    if (opts.agent) return opts.agent;
     return await p.select({ message: '...', options: [...] });
   }
 });
@@ -317,7 +333,7 @@ To add support for a new coding agent:
    };
    ```
 3. Add to `agents` object in `eval.ts`
-4. Update `ArgValuesSchema` in `collect-args.ts` to include new agent option
+4. Update Commander options in `collect-args.ts` to include new agent choice
 
 ## Evaluation Metrics
 
@@ -556,8 +572,9 @@ The framework uses `@storybook/addon-a11y` which runs Axe checks on all stories:
 
 ### Framework Dependencies
 
+- `commander` - CLI argument parsing with environment variable support
 - `@clack/prompts` - Interactive CLI prompts
-- `valibot` - Schema validation
+- `valibot` - Schema validation (for MCP config and context types)
 - `tinyexec` - Command execution
 - `nypm` - Package manager detection and operations
 - `ai-tokenizer` - Token counting for Claude
@@ -580,7 +597,7 @@ The framework can optionally upload results to Google Sheets for tracking experi
 1. Uses Google Apps Script web app as proxy
 2. Appends row with metrics to spreadsheet
 3. Includes git branch/commit for context
-4. Respects `--upload` / `--no-upload` flag
+4. Respects `--upload-id` / `--no-upload-id` flags
 
 **Setup** (for maintainers):
 
@@ -669,7 +686,7 @@ When using `--context mcp.config.json`, the framework:
 
 - Evaluations run in parallel (build, typecheck, lint, test)
 - Use `--verbose` only for debugging (slower)
-- Skip `--upload` for faster local iteration
+- Skip `--upload-id` for faster local iteration
 
 ## Notes for AI Assistants
 

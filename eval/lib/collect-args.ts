@@ -1,9 +1,9 @@
-import { parseArgs } from 'node:util';
 import { loadEnvFile } from 'node:process';
-import * as v from 'valibot';
+import { Command, Option } from 'commander';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as v from 'valibot';
 import {
 	McpServerConfigSchema,
 	type Context,
@@ -16,180 +16,253 @@ export type CollectedArgs = {
 	eval: string;
 	context: Context;
 	storybook: boolean | undefined;
-	uploadId: string | undefined;
+	uploadId: string | false;
 };
 
 /**
- * Load environment variables from .env file in eval directory.
- * These values serve as defaults; CLI flags will override them.
+ * Parse a string value as a boolean.
+ * Returns true for "true", "1", "yes"; false for "false", "0", "no"; undefined otherwise.
  */
-function loadEnvFileIfExists(): void {
-	const envFilePath = path.join(process.cwd(), '.env');
-	try {
-		loadEnvFile(envFilePath);
-	} catch {
-		// File doesn't exist or can't be read - that's fine, env vars are optional
+function parseBooleanEnv(
+	value: boolean | undefined,
+	envName: string,
+): boolean | undefined {
+	console.log('parsing', {
+		value,
+		envName,
+		env: process.env[envName],
+	});
+	if (value !== undefined) {
+		// don't read from env if value is set by CLI flag
+		return value;
 	}
-}
-
-/**
- * Get a string environment variable, returning undefined if not set.
- */
-function getEnvString(name: string): string | undefined {
-	const value = process.env[name];
-	return value && value?.trim() !== '' ? value : undefined;
-}
-
-/**
- * Get a boolean environment variable, returning undefined if not set.
- * Accepts 'true', '1', 'yes' as truthy; 'false', '0', 'no' as falsy.
- */
-function getEnvBoolean(name: string): boolean | undefined {
-	const value = process.env[name]?.toLowerCase().trim();
-	if (value === undefined || value === '') {
+	const envVar = process.env[envName];
+	if (!envVar) {
 		return undefined;
 	}
-	if (['true', '1', 'yes'].includes(value)) {
+
+	const normalized = envVar.toLowerCase().trim();
+	if (['true', '1', 'yes'].includes(normalized)) {
 		return true;
 	}
-	if (['false', '0', 'no'].includes(value)) {
+	if (['false', '0', 'no'].includes(normalized)) {
 		return false;
 	}
 	return undefined;
 }
+/**
+ * Intermediate parsed context before full resolution.
+ * For components-manifest, we store the path temporarily before converting to mcpServerConfig.
+ */
+type ParsedContext =
+	| { type: false }
+	| { type: 'extra-prompts'; prompts: string[] }
+	| { type: 'mcp-server'; mcpServerConfig: McpServerConfig }
+	| { type: 'components-manifest'; manifestPath: string };
 
-// Env var names are derived automatically: kebab-case -> SHOUT_CASE (e.g., 'upload-id' -> 'UPLOAD_ID')
-const CLI_OPTIONS = {
-	agent: { type: 'string', short: 'a' },
-	verbose: { type: 'boolean', short: 'v' },
-	storybook: { type: 'boolean', short: 's' },
-	context: { type: 'string', short: 'c' },
-	upload: { type: 'boolean' },
-	'upload-id': { type: 'string', short: 'u' },
-} as const;
+/**
+ * Parse a raw context string value into a ParsedContext object.
+ * Returns undefined if no context was provided (will trigger interactive prompt).
+ */
+async function parseContextValue(
+	rawContext: string | boolean | undefined,
+	evalName: string | undefined,
+): Promise<ParsedContext | undefined> {
+	const EVALS_DIR = path.join(process.cwd(), 'evals');
+
+	// --no-context sets context to false
+	if (rawContext === false) {
+		return { type: false };
+	}
+
+	// No context provided
+	if (rawContext === undefined || rawContext === true) {
+		return undefined;
+	}
+
+	// Try to parse as JSON (inline MCP config)
+	try {
+		const parsed = JSON.parse(rawContext);
+		const validated = v.parse(McpServerConfigSchema, parsed);
+		return { type: 'mcp-server', mcpServerConfig: validated };
+	} catch {
+		// Not valid JSON, continue with other patterns
+	}
+
+	// MCP config file (contains "mcp" and ends with .json)
+	if (rawContext.includes('mcp') && rawContext.endsWith('.json')) {
+		if (!evalName) {
+			throw new Error(
+				'To set an MCP config file as the context, you must also set the eval as a positional argument',
+			);
+		}
+		const configPath = path.join(EVALS_DIR, evalName, rawContext);
+		const { default: config } = await import(configPath, {
+			with: { type: 'json' },
+		});
+		const validated = v.parse(McpServerConfigSchema, config);
+		return { type: 'mcp-server', mcpServerConfig: validated };
+	}
+
+	// Components manifest file (ends with .json but no "mcp")
+	if (rawContext.endsWith('.json')) {
+		return { type: 'components-manifest', manifestPath: rawContext };
+	}
+
+	// Extra prompts (ends with .md, can be comma-separated)
+	if (rawContext.endsWith('.md')) {
+		const prompts = rawContext.split(',').map((p) => p.trim());
+		return { type: 'extra-prompts', prompts };
+	}
+
+	throw new Error(`Unable to parse context value: ${rawContext}`);
+}
+
+/**
+ * Build a rerun command from the final collected arguments.
+ */
+function buildRerunCommand(args: CollectedArgs): string {
+	const parts: string[] = ['node', 'eval.ts'];
+
+	parts.push('--agent', args.agent);
+
+	if (args.verbose) {
+		parts.push('--verbose');
+	}
+
+	if (args.storybook !== undefined) {
+		parts.push(args.storybook ? '--storybook' : '--no-storybook');
+	}
+
+	switch (args.context.type) {
+		case false:
+			parts.push('--no-context');
+			break;
+		case 'mcp-server':
+			parts.push(`--context='${JSON.stringify(args.context.mcpServerConfig)}'`);
+			break;
+		case 'components-manifest': {
+			// Extract the manifest path from the mcpServerConfig args
+			const serverConfig = args.context.mcpServerConfig['storybook-mcp'];
+			const manifestArg =
+				serverConfig?.type === 'stdio'
+					? serverConfig.args?.find((arg: string) => arg.endsWith('.json'))
+					: undefined;
+			if (manifestArg) {
+				const manifestFileName = path.basename(manifestArg);
+				parts.push(`--context=${manifestFileName}`);
+			}
+			break;
+		}
+		case 'extra-prompts':
+			parts.push(`--context=${args.context.prompts.join(',')}`);
+			break;
+	}
+
+	if (args.uploadId) {
+		parts.push(`--upload-id=${args.uploadId}`);
+	} else {
+		parts.push('--no-upload-id');
+	}
+
+	parts.push(args.eval);
+
+	return parts.join(' ');
+}
+
+const HELP_EXAMPLES = `
+Examples:
+  $ node eval.ts                                    Interactive mode (recommended)
+  $ node eval.ts 100-flight-booking-plain           Run specific eval
+  $ node eval.ts --agent claude-code --context components.json 100-flight-booking-plain
+  $ node eval.ts -v --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
+  $ node eval.ts --context mcp.config.json 110-flight-booking-reshaped
+
+Context Modes:
+  None                Agent uses only built-in tools (--no-context)
+  Component Manifest  Provides component docs via @storybook/mcp (--context file.json)
+  MCP Server          Custom MCP server config (--context mcp.config.json or inline JSON)
+  Extra Prompts       Append markdown instructions (--context file1.md,file2.md)
+
+Learn More: eval/README.md
+`;
 
 export async function collectArgs(): Promise<CollectedArgs> {
 	const EVALS_DIR = path.join(process.cwd(), 'evals');
 
-	// Load env file first - CLI args will override these
-	loadEnvFileIfExists();
+	// Load .env file - CLI args will override these
+	try {
+		loadEnvFile(path.join(process.cwd(), '.env'));
+	} catch {
+		// File doesn't exist or can't be read - that's fine, env vars are optional
+	}
 
-	const nodeParsedArgs = parseArgs({
-		options: CLI_OPTIONS,
-		strict: false,
-		allowPositionals: true,
-		allowNegative: true,
-	});
+	// Configure Commander program
+	const program = new Command()
+		.name('eval.ts')
+		.description(
+			'A CLI tool for testing AI coding agents with Storybook and MCP tools.',
+		)
+		.argument('[eval-name]', 'Name of the eval directory in evals/')
+		.addOption(
+			new Option('-a, --agent <name>', 'Which coding agent to use')
+				.choices(['claude-code'])
+				.env('AGENT'),
+		)
+		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
+		.addOption(
+			new Option(
+				'-v, --verbose',
+				'Show detailed logs during execution (env: VERBOSE)',
+			),
+		)
+		.addOption(
+			new Option(
+				'-s, --storybook',
+				'Auto-start Storybook after evaluation (env: STORYBOOK)',
+			),
+		)
+		.addOption(
+			new Option(
+				'--no-storybook',
+				'Do not auto-start Storybook after evaluation (env: STORYBOOK)',
+			),
+		)
+		.addOption(
+			new Option(
+				'-c, --context <value>',
+				'Additional context for the agent (file path or JSON)',
+			).env('CONTEXT'),
+		)
+		.addOption(
+			new Option('--no-context', 'No additional context beyond the prompt'),
+		)
+		.addOption(
+			new Option(
+				'-u, --upload-id <id>',
+				'Upload results to Google Sheet with this ID',
+			)
+				.env('UPLOAD_ID')
+				.argParser((value) => (value === 'false' ? false : value)),
+		)
+		.addOption(new Option('--no-upload-id', 'Skip uploading results'))
+		.addHelpText('after', HELP_EXAMPLES);
 
-	// We only support one eval at a time currently
-	const ArgPositionalsSchema = v.optional(
-		v.pipe(
-			v.array(v.string()),
-			v.maxLength(1),
-			v.transform((arr) => arr[0]),
-		),
-	);
+	await program.parseAsync();
 
-	const parsedEvalPath = v.parse(
-		ArgPositionalsSchema,
-		nodeParsedArgs.positionals,
-	);
+	const opts = program.opts<{
+		agent?: string;
+		verbose: boolean;
+		storybook?: boolean;
+		context?: string | boolean;
+		uploadId?: boolean | string;
+	}>();
+	const evalNameArg = program.args[0];
 
-	const argValues = Object.fromEntries(
-		Object.entries(CLI_OPTIONS).map(([name, option]) => {
-			// Convert kebab-case to camelCase for the key (e.g., 'upload-id' -> 'uploadId')
-			const camelCaseKey = name.replace(/-([a-z])/g, (_, char) =>
-				char.toUpperCase(),
-			);
-			const cliValue = nodeParsedArgs.values[name];
-			// For CLI args, use the CLI value if set, otherwise fall back to env var
-			if (cliValue !== undefined) {
-				return [camelCaseKey, cliValue];
-			}
-			// Convert kebab-case to SHOUT_CASE for env var (e.g., 'upload-id' -> 'UPLOAD_ID')
-			const envVarName = name.toUpperCase().replace(/-/g, '_');
-			const envValue =
-				option.type === 'string'
-					? getEnvString(envVarName)
-					: getEnvBoolean(envVarName);
-			return [camelCaseKey, envValue];
-		}),
-	) as Record<string, string | boolean | undefined>;
+	// Parse context value (may involve async file loading)
+	const parsedContext = await parseContextValue(opts.context, evalNameArg);
 
-	const ArgValuesSchema = v.objectAsync({
-		agent: v.optional(
-			v.union([v.literal('claude-code'), v.literal('copilot')]),
-		),
-		verbose: v.optional(v.boolean()),
-		storybook: v.optional(v.boolean()),
-		upload: v.optional(v.boolean()),
-		uploadId: v.optional(v.string()),
-		context: v.optionalAsync(
-			v.unionAsync([
-				// no context
-				v.pipe(
-					v.literal(false),
-					v.transform(() => ({ type: false as const })),
-				),
-				// the context can be a path to a .json mcp server config if the string includes "mcp"
-				v.pipeAsync(
-					v.string(),
-					v.includes('mcp'),
-					v.endsWith('.json'),
-					v.transformAsync(async (filePath) => {
-						if (!parsedEvalPath) {
-							throw new TypeError(
-								'To set an mcp config file as the context, you must also set the eval as a positional argument',
-							);
-						}
-						return (
-							await import(path.join(EVALS_DIR, parsedEvalPath, filePath), {
-								with: { type: 'json' },
-							})
-						).default;
-					}),
-					McpServerConfigSchema,
-					v.transform((config) => ({
-						type: 'mcp-server' as const,
-						mcpServerConfig: config,
-					})),
-				),
-				// ... or the mcp server config directly inline
-				v.pipe(
-					v.string(),
-					v.parseJson(),
-					McpServerConfigSchema,
-					v.transform((config) => ({
-						type: 'mcp-server' as const,
-						mcpServerConfig: config,
-					})),
-				),
-				// ... or a component manifest to be used with @storybook/mcp
-				v.pipe(
-					v.pipe(v.string(), v.endsWith('.json')),
-					v.transform((manifestPath) => ({
-						type: 'components-manifest' as const,
-						manifestPath,
-					})),
-				),
-				// ... or one or more comma-separated extra prompts from the eval root
-				v.pipe(
-					v.pipe(v.string(), v.endsWith('.md')),
-					v.transform((prompts) => ({
-						type: 'extra-prompts' as const,
-						prompts: prompts.split(',').map((p) => p.trim()),
-					})),
-				),
-			]),
-		),
-	});
-
-	const parsedArgValues = await v.parseAsync(ArgValuesSchema, argValues);
-
-	// Build rerun command incrementally
-	const rerunCommandParts: string[] = ['node', 'eval.ts'];
-
-	// Get available eval directories
+	// Get available eval directories for prompts
 	const availableEvals = await fs.readdir(EVALS_DIR, { withFileTypes: true });
 	const evalOptions = availableEvals
 		.filter((dirent) => dirent.isDirectory())
@@ -198,8 +271,9 @@ export async function collectArgs(): Promise<CollectedArgs> {
 			label: dirent.name,
 		}));
 
-	const evalPromptResult =
-		parsedEvalPath ??
+	// Prompt for eval name if not provided
+	const evalName =
+		evalNameArg ??
 		(
 			await p.select({
 				message: 'Which eval do you want to run?',
@@ -207,23 +281,21 @@ export async function collectArgs(): Promise<CollectedArgs> {
 			})
 		).toString();
 
-	if (parsedArgValues.storybook !== undefined) {
-		rerunCommandParts.push(
-			`--${parsedArgValues.storybook ? '' : 'no-'}storybook`,
-		);
+	if (p.isCancel(evalName)) {
+		p.cancel('Operation cancelled.');
+		process.exit(0);
 	}
 
 	// Prompt for missing arguments
 	const promptResults = await p.group(
 		{
 			agent: async () => {
-				if (parsedArgValues.agent) {
-					rerunCommandParts.push('--agent', parsedArgValues.agent);
-					return parsedArgValues.agent;
+				if (opts.agent) {
+					return opts.agent;
 				}
 
 				const result = await p.select({
-					message: 'Which coding agents do you want to use?',
+					message: 'Which coding agent do you want to use?',
 					options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
 				});
 
@@ -232,48 +304,26 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					process.exit(0);
 				}
 
-				rerunCommandParts.push('--agent', result.toString());
 				return result;
 			},
 			context: async function (): Promise<Context> {
-				const evalPath = path.resolve(path.join('evals', evalPromptResult));
+				const evalPath = path.resolve(path.join('evals', evalName));
 
-				if (parsedArgValues.context !== undefined) {
-					switch (parsedArgValues.context.type) {
-						case 'mcp-server': {
-							rerunCommandParts.push(
-								'--context',
-								`'${JSON.stringify(parsedArgValues.context.mcpServerConfig)}'`,
-							);
-							break;
-						}
-						case 'extra-prompts': {
-							rerunCommandParts.push(
-								'--context',
-								parsedArgValues.context.prompts.join(','),
-							);
-							break;
-						}
-						case 'components-manifest': {
-							rerunCommandParts.push(
-								'--context',
-								JSON.stringify(parsedArgValues.context.manifestPath),
-							);
-							return {
-								type: 'components-manifest',
-								mcpServerConfig: manifestPathToMcpServerConfig(
-									path.join(evalPath, parsedArgValues.context.manifestPath),
-								),
-							};
-						}
-						case false: {
-							rerunCommandParts.push('--no-context');
-							break;
-						}
+				// If context was already parsed from CLI, use it
+				if (parsedContext !== undefined) {
+					// For components-manifest, we need to convert the manifestPath to full mcpServerConfig
+					if (parsedContext.type === 'components-manifest') {
+						return {
+							type: 'components-manifest',
+							mcpServerConfig: manifestPathToMcpServerConfig(
+								path.join(evalPath, parsedContext.manifestPath),
+							),
+						};
 					}
-					return parsedArgValues.context;
+					return parsedContext;
 				}
 
+				// Discover available files for context options
 				const availableExtraPrompts: Record<string, string> = {};
 				const availableManifests: Record<string, string[]> = {};
 				for (const dirent of await fs.readdir(evalPath, {
@@ -338,9 +388,13 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					],
 				});
 
+				if (p.isCancel(mainSelection)) {
+					p.cancel('Operation cancelled.');
+					process.exit(0);
+				}
+
 				switch (mainSelection) {
 					case false: {
-						rerunCommandParts.push('--no-context');
 						return { type: false };
 					}
 					case 'components-manifest': {
@@ -362,7 +416,6 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							process.exit(0);
 						}
 
-						rerunCommandParts.push('--context', selectedManifestPath);
 						return {
 							type: mainSelection,
 							mcpServerConfig: manifestPathToMcpServerConfig(
@@ -414,10 +467,6 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							const config: McpServerConfig = {
 								[mcpServerName]: { type: 'http', url: mcpServerUrl },
 							};
-							rerunCommandParts.push(
-								'--context',
-								`'${JSON.stringify(config)}'`,
-							);
 							return {
 								type: mainSelection,
 								mcpServerConfig: config,
@@ -441,10 +490,6 @@ export async function collectArgs(): Promise<CollectedArgs> {
 									args: argsParts.length > 0 ? argsParts : undefined,
 								},
 							};
-							rerunCommandParts.push(
-								'--context',
-								`'${JSON.stringify(config)}'`,
-							);
 							return {
 								type: mainSelection,
 								mcpServerConfig: config,
@@ -471,41 +516,27 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							process.exit(0);
 						}
 
-						for (const name of selectedExtraPromptNames) {
-							rerunCommandParts.push('--context', name);
-						}
 						return { type: mainSelection, prompts: selectedExtraPromptNames };
 					}
 				}
 
-				if (p.isCancel(mainSelection)) {
-					p.cancel('Operation cancelled.');
-					process.exit(0);
-				}
 				throw new Error('Unreachable context selection');
 			},
-			verbose: async () => {
-				const verboseEnabled = parsedArgValues.verbose === true;
-				if (verboseEnabled) {
-					rerunCommandParts.push('--verbose');
-				}
-				return verboseEnabled;
-			},
 			uploadId: async () => {
-				// --no-upload explicitly disables upload
-				if (parsedArgValues.upload === false) {
-					rerunCommandParts.push('--no-upload');
-					return undefined;
+				// --no-upload-id explicitly disables upload
+				if (opts.uploadId === false) {
+					return false;
 				}
 
-				if (parsedArgValues.uploadId) {
-					rerunCommandParts.push('--upload-id', parsedArgValues.uploadId);
-					return parsedArgValues.uploadId;
+				// --upload-id <id> uses that value
+				if (typeof opts.uploadId === 'string') {
+					return opts.uploadId;
 				}
 
+				// No flag specified, prompt the user
 				const result = await p.text({
 					message:
-						'Enter an Upload ID to upload results to Google Sheet (leave blank to skip upload):',
+						'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
 					placeholder: 'experiment-batch-1',
 				});
 				if (p.isCancel(result)) {
@@ -513,13 +544,10 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					process.exit(0);
 				}
 
-				if (result) {
-					rerunCommandParts.push('--upload-id', result);
-				} else {
-					rerunCommandParts.push('--no-upload');
-				}
-				return result || undefined;
+				return result || false;
 			},
+			storybook: async () => parseBooleanEnv(opts.storybook, 'STORYBOOK'),
+			verbose: async () => parseBooleanEnv(opts.verbose, 'VERBOSE'),
 		},
 		{
 			onCancel: () => {
@@ -530,18 +558,13 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	);
 
 	const result: CollectedArgs = {
-		agent: promptResults.agent as string,
-		verbose: promptResults.verbose,
-		eval: evalPromptResult,
-		context: promptResults.context as Context,
-		storybook: parsedArgValues.storybook,
-		uploadId: promptResults.uploadId as string | undefined,
+		...promptResults,
+		eval: evalName,
 	};
 
-	rerunCommandParts.push(evalPromptResult);
 	p.log.message([
 		'To re-run this experiment, call:',
-		rerunCommandParts.join(' '),
+		buildRerunCommand(result),
 	]);
 
 	return result;

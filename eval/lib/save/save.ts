@@ -14,7 +14,7 @@ export async function save(
 	evaluationSummary: EvaluationSummary,
 	executionSummary: ExecutionSummary,
 ): Promise<string | undefined> {
-	const shouldUpload = !!experimentArgs.uploadId;
+	const shouldUpload = experimentArgs.uploadId !== false;
 	const log = taskLog({
 		title: `Saving ${shouldUpload ? 'and uploading ' : ''}results`,
 		retainLog: experimentArgs.verbose,

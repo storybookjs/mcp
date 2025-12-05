@@ -64,8 +64,12 @@ export async function saveToGoogleSheets(
 ): Promise<void> {
 	const { experimentPath, evalName, context, uploadId } = experimentArgs;
 
+	if (!uploadId) {
+		throw new Error('saveToGoogleSheets called without an uploadId');
+	}
+
 	const data: SheetsData = {
-		uploadId: uploadId || '',
+		uploadId,
 		timestamp: new Date().toISOString().replace('Z', ''),
 		evalName,
 		chromaticUrl: chromaticUrl || '',
