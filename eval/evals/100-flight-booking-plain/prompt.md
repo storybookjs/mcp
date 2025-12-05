@@ -33,4 +33,5 @@ The calendar widget shouldn't allow selecting dates in the past and the return f
 10. The (optional) element to open the Return Date date select SHOULD have "Return Date" as its initial content and SHOULD have data-testid="date-trigger-return"
 11. Each date in the date selects SHOULD the day of month as its only content and SHOULD have data-testid="date-{DAY}" (e.g., "date-27", "date-15")
 12. The submit button SHOULD have "Search Flights" as its only content and SHOULD have data-testid="search-flights"
-    </technical_requirements>
+
+</technical_requirements>

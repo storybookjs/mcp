@@ -1,0 +1,6 @@
+{
+	"storybook-dev-mcp": {
+		"type": "http",
+		"url": "http://localhost:13007/mcp"
+	}
+}

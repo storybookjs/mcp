@@ -242,9 +242,9 @@ export const claudeCodeCli: Agent = {
 			);
 		}
 		const log = spinner();
-		log.start('Executing prompt with Claude Code CLI');
 		await runHook('pre-execute-agent', experimentArgs);
 
+		log.start('Executing prompt with Claude Code CLI');
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
 		const model = models['anthropic/claude-sonnet-4.5'];
 		const tokenizer = new Tokenizer(claudeEncoding);
