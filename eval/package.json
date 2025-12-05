@@ -1,5 +1,5 @@
 {
-	"name": "@storybook/mcp-eval",
+	"name": "@storybook/mcp-eval-root",
 	"version": "0.0.0",
 	"private": true,
 	"description": "The project for evaluating UI component development with and without Storybook MCP",

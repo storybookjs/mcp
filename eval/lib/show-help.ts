@@ -15,7 +15,7 @@ export function showHelp(): void {
 	console.log('  node eval.ts\n');
 	console.log('  # Run specific eval with all options');
 	console.log(
-		'  node eval.ts --agent claude-code --context components.json --upload 100-flight-booking-plain\n',
+		'  node eval.ts --agent claude-code --context components.json --upload-id batch-1 100-flight-booking-plain\n',
 	);
 	console.log('  # Run with extra prompts and verbose output');
 	console.log(
@@ -65,13 +65,37 @@ export function showHelp(): void {
 		`      ${styleText('yellow', '--no-storybook')}      Do not auto-start Storybook after evaluation completes`,
 	);
 	console.log(
-		`\n  ${styleText('yellow', '-u, --upload')}           Build Storybook, upload to Chromatic, and save results to Google Sheets (default: true)`,
+		`\n  ${styleText('yellow', '--upload-id <id>')}      Upload results to Google Sheet with this ID for grouping/filtering`,
 	);
 	console.log(
-		`      ${styleText('yellow', '--no-upload')}         Skip uploading results`,
+		`      ${styleText('yellow', '--no-upload')}         Skip uploading results (default if no upload ID provided)`,
 	);
 	console.log(
 		`\n  ${styleText('yellow', '-h, --help')}             Display this help message and exit\n`,
+	);
+
+	console.log(styleText(['bold', 'cyan'], 'ENVIRONMENT VARIABLES'));
+	console.log(
+		`  Environment variables from ${styleText('green', 'eval/.env')} serve as defaults.`,
+	);
+	console.log(`  CLI flags always override environment variables.\n`);
+	console.log(
+		`  ${styleText('yellow', 'AGENT')}               Same as --agent`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'VERBOSE')}             Same as --verbose (true/false/1/0)`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'STORYBOOK')}           Same as --storybook (true/false/1/0)`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'CONTEXT')}             Same as --context`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'UPLOAD_ID')}           Same as --upload-id`,
+	);
+	console.log(
+		`  ${styleText('yellow', 'UPLOAD')}              Set to false to skip upload (same as --no-upload)\n`,
 	);
 
 	console.log(styleText(['bold', 'cyan'], 'CONTEXT MODES'));

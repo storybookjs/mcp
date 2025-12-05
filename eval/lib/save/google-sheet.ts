@@ -11,6 +11,7 @@ const GOOGLE_SHEETS_URL =
 	'https://script.google.com/macros/s/AKfycbwAbn91zsf9V2UKyLqtJb-NQ1CFbqqEyed_lc-AhauGu4zWflET_NDwMkD02xzvKVjCow/exec';
 
 type SheetsData = {
+	uploadId: string;
 	timestamp: string;
 	evalName: string;
 	chromaticUrl: string;
@@ -61,9 +62,10 @@ export async function saveToGoogleSheets(
 	environment: { branch: string; commit: string },
 	chromaticUrl?: string,
 ): Promise<void> {
-	const { experimentPath, evalName, context } = experimentArgs;
+	const { experimentPath, evalName, context, uploadId } = experimentArgs;
 
 	const data: SheetsData = {
+		uploadId: uploadId || '',
 		timestamp: new Date().toISOString().replace('Z', ''),
 		evalName,
 		chromaticUrl: chromaticUrl || '',
