@@ -4,6 +4,7 @@ import * as v from 'valibot';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import {
 	McpServerConfigSchema,
 	type Context,
@@ -143,9 +144,13 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							);
 						}
 						return (
-							await import(path.join(EVALS_DIR, parsedEvalPath, filePath), {
-								with: { type: 'json' },
-							})
+							await import(
+								pathToFileURL(path.join(EVALS_DIR, parsedEvalPath, filePath))
+									.href,
+								{
+									with: { type: 'json' },
+								}
+							)
 						).default;
 					}),
 					McpServerConfigSchema,
@@ -284,7 +289,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					}
 					if (dirent.name.endsWith('.json') && !dirent.name.includes('mcp')) {
 						const { default: manifestContent } = await import(
-							path.join(evalPath, dirent.name),
+							pathToFileURL(path.join(evalPath, dirent.name)).href,
 							{
 								with: { type: 'json' },
 							}

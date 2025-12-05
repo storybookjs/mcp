@@ -1,6 +1,7 @@
 import type { ExperimentArgs } from '../types.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { installDependencies } from 'nypm';
 import { taskLog } from '@clack/prompts';
 import { runHook } from './run-hook.ts';
@@ -26,9 +27,12 @@ export async function prepareExperiment(experimentArgs: ExperimentArgs) {
 	});
 
 	const packageJsonPath = path.join(experimentArgs.projectPath, 'package.json');
-	const { default: packageJson } = await import(packageJsonPath, {
-		with: { type: 'json' },
-	});
+	const { default: packageJson } = await import(
+		pathToFileURL(packageJsonPath).href,
+		{
+			with: { type: 'json' },
+		}
+	);
 	packageJson.name =
 		`@storybook/mcp-eval--${experimentArgs.evalName}--${path.basename(experimentArgs.experimentPath)}`.toLowerCase();
 

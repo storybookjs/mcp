@@ -254,7 +254,6 @@ export const claudeCodeCli: Agent = {
 			'--dangerously-skip-permissions',
 			'--output-format=stream-json',
 			'--verbose',
-			prompt,
 		];
 
 		if (mcpServerConfig) {
@@ -264,12 +263,15 @@ export const claudeCodeCli: Agent = {
 		const claudeProcess = x('claude', args, {
 			nodeOptions: {
 				cwd: projectPath,
-				stdio: ['pipe', 'pipe', 'pipe'], // pipe stdin to send "yes" for MCP prompts
+				stdio: ['pipe', 'pipe', 'pipe'], // pipe stdin to send prompt and "yes" for MCP prompts
 			},
 		});
 		// Auto-approve MCP server trust prompt by sending "1" (Yes, proceed)
+		// Then send the prompt through stdin
 		if (claudeProcess.process?.stdin) {
 			claudeProcess.process?.stdin.write('1\n');
+			claudeProcess.process?.stdin.write(prompt);
+			claudeProcess.process?.stdin.write('\n');
 			claudeProcess.process?.stdin.end();
 		}
 		const messages: ClaudeCodeStreamMessage[] = [];
