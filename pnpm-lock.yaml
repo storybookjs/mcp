@@ -146,6 +146,9 @@ importers:
       '@clack/prompts':
         specifier: 1.0.0-alpha.7
         version: 1.0.0-alpha.7
+      '@commander-js/extra-typings':
+        specifier: ^14.0.0
+        version: 14.0.0(commander@14.0.1)
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
@@ -194,6 +197,9 @@ importers:
       chromatic:
         specifier: ^13.3.3
         version: 13.3.3
+      commander:
+        specifier: ^14.0.0
+        version: 14.0.1
       envinfo:
         specifier: ^7.20.0
         version: 7.20.0
@@ -489,6 +495,11 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       rollup: 3.x || 4.x
+
+  '@commander-js/extra-typings@14.0.0':
+    resolution: {integrity: sha512-hIn0ncNaJRLkZrxBIp5AsW/eXEHNKYQBh0aPdoUqNgD+Io3NIykQqpKFyKcuasZhicGaEZJX/JBSIkZ4e5x8Dg==}
+    peerDependencies:
+      commander: ~14.0.0
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -5402,6 +5413,10 @@ snapshots:
       '@codecov/bundler-plugin-core': 1.9.1
       rollup: 4.52.5
       unplugin: 1.16.1
+
+  '@commander-js/extra-typings@14.0.0(commander@14.0.1)':
+    dependencies:
+      commander: 14.0.1
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

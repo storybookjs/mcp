@@ -1,5 +1,4 @@
 import * as p from '@clack/prompts';
-import { claudeCodeCli } from './lib/agents/claude-code-cli.ts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { ExperimentArgs } from './types.ts';
@@ -10,12 +9,7 @@ import { collectArgs } from './lib/collect-args.ts';
 import { generatePrompt } from './lib/generate-prompt.ts';
 import { x } from 'tinyexec';
 import { styleText } from 'node:util';
-import { showHelp } from './lib/show-help.ts';
-
-// Check for --help flag before any processing
-if (process.argv.includes('--help') || process.argv.includes('-h')) {
-	showHelp();
-}
+import { agents } from './config.ts';
 
 p.intro('🧪 Storybook MCP Eval');
 
@@ -87,10 +81,7 @@ await prepareExperiment(experimentArgs);
 const prompt = await generatePrompt(evalPath, args.context);
 await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 
-const agents = {
-	'claude-code': claudeCodeCli,
-};
-const agent = agents[args.agent as keyof typeof agents];
+const agent = agents[args.agent];
 const promptSummary = await agent.execute(
 	prompt,
 	experimentArgs,
