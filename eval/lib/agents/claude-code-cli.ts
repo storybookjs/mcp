@@ -2,7 +2,7 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Agent } from '../../types.ts';
-import { spinner } from '@clack/prompts';
+import { spinner, log as clackLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 
@@ -286,6 +286,25 @@ export const claudeCodeCli: Agent = {
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
 			messages.push(parsed);
+
+			// Check for MCP server status in init message
+			if (
+				parsed.type === 'system' &&
+				parsed.subtype === 'init' &&
+				parsed.mcp_servers &&
+				parsed.mcp_servers.length > 0
+			) {
+				for (const server of parsed.mcp_servers) {
+					if (server.status === 'connected') {
+						clackLog.success(`MCP server "${server.name}" connected`);
+					} else {
+						clackLog.error(
+							`MCP server "${server.name}" failed to connect (status: ${server.status})`,
+						);
+						process.exit(1);
+					}
+				}
+			}
 
 			const todoProgress = getTodoProgress(messages);
 			let progressMessage = `Agent is working, turn ${messages.filter((m) => m.type === 'assistant').length}`;
