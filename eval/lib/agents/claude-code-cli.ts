@@ -295,6 +295,8 @@ export const claudeCodeCli: Agent = {
 				parsed.mcp_servers.length > 0
 			) {
 				for (const server of parsed.mcp_servers) {
+					// this is the connection status reported by the agent, that inits connections to all MCP servers when the session starts
+					// if the MCP server is not connected by now, the agent will not be able to use it
 					if (server.status === 'connected') {
 						clackLog.success(`MCP server "${server.name}" connected`);
 					} else {

@@ -6,13 +6,15 @@ import { taskLog } from '@clack/prompts';
 import { runHook } from './run-hook.ts';
 import { startStorybookDevServer } from './storybook-dev-server.ts';
 
-const STORYBOOK_PACKAGES = [
-	'storybook@catalog:',
-	'@storybook/addon-a11y@catalog:',
-	'@storybook/addon-docs@catalog:',
-	'@storybook/addon-vitest@catalog:',
-	'@storybook/react-vite@catalog:',
+const STORYBOOK_DEV_PACKAGES = [
+	'vitest@catalog:experiments',
+	'@vitest/browser-playwright@catalog:experiments',
+	'storybook@catalog:experiments',
+	'@storybook/addon-docs@catalog:experiments',
+	'@storybook/addon-a11y@catalog:experiments',
 	'@storybook/addon-mcp@workspace:*',
+	'@storybook/addon-vitest@catalog:experiments',
+	'@storybook/react-vite@catalog:experiments',
 ];
 
 export type PrepareExperimentResult = {
@@ -57,6 +59,8 @@ export async function prepareExperiment(
 		silent: true,
 	});
 
+	let result: PrepareExperimentResult = {};
+
 	// For storybook-mcp-dev context, install Storybook packages and copy evaluation template
 	if (experimentArgs.context.type === 'storybook-mcp-dev') {
 		log.message('Setting up Storybook for Storybook Dev MCP context');
@@ -75,8 +79,8 @@ export async function prepareExperiment(
 			'export default {};\n',
 		);
 
-		// Install Storybook packages
-		await addDependency(STORYBOOK_PACKAGES, {
+		// Install packages required for a Storybook dev setup
+		await addDependency(STORYBOOK_DEV_PACKAGES, {
 			cwd: experimentArgs.projectPath,
 			silent: true,
 		});
@@ -107,21 +111,18 @@ export async function prepareExperiment(
 		log.message(`Storybook dev server running on port ${devServer.port}`);
 
 		// Build MCP config for the agent (agent is responsible for writing .mcp.json)
-		const mcpServerConfig: McpServerConfig = {
-			'storybook-dev-mcp': {
-				type: 'http',
-				url: `http://localhost:${devServer.port}/mcp`,
+		result = {
+			mcpServerConfig: {
+				'storybook-dev-mcp': {
+					type: 'http',
+					url: `http://localhost:${devServer.port}/mcp`,
+				},
 			},
 		};
-
-		await runHook('post-prepare-experiment', experimentArgs);
-		log.success('Experiment prepared');
-
-		return { mcpServerConfig };
 	}
 
 	await runHook('post-prepare-experiment', experimentArgs);
 	log.success('Experiment prepared');
 
-	return {};
+	return result;
 }
