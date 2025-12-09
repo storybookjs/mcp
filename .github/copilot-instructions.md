@@ -317,6 +317,37 @@ pnpm changeset       # Create a changeset for your changes
 pnpm release         # Build and publish (CI handles this)
 ```
 
+**Creating Changesets (MANDATORY for user-facing changes):**
+
+When making changes to `@storybook/mcp` or `@storybook/addon-mcp` that affect users (bug fixes, features, breaking changes, dependency updates), you **MUST** create a changeset:
+
+1. Create a new `.md` file in `.changeset/` directory
+2. Use naming convention: `<random-word>-<random-word>-<random-word>.md` (e.g., `brave-wolves-swim.md`)
+3. File format:
+
+   ```markdown
+   ---
+   '@storybook/mcp': patch
+   '@storybook/addon-mcp': patch
+   ---
+
+   Brief description of what changed
+
+   More details about why the change was made and any migration notes if needed.
+   ```
+
+4. Version bump types:
+   - `patch`: Bug fixes, security updates, dependency updates (non-breaking)
+   - `minor`: New features (backward compatible)
+   - `major`: Breaking changes
+
+5. Include in changeset description:
+   - **WHAT** the change is
+   - **WHY** the change was made
+   - **HOW** consumers should update their code (if applicable)
+
+6. Only include packages that have actual user-facing changes (ignore internal packages like `@storybook/mcp-internal-storybook`)
+
 ## Testing with Internal Storybook
 
 The `apps/internal-storybook` provides a real Storybook instance:

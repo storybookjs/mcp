@@ -1,5 +1,5 @@
 import { loadEnvFile } from 'node:process';
-import { Command, Option } from 'commander';
+import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
@@ -9,9 +9,10 @@ import {
 	type Context,
 	type McpServerConfig,
 } from '../types.ts';
+import { agents } from '../config.ts';
 
 export type CollectedArgs = {
-	agent: string;
+	agent: keyof typeof agents;
 	verbose: boolean;
 	eval: string;
 	context: Context;
@@ -217,8 +218,9 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		.argument('[eval-name]', 'Name of the eval directory in evals/')
 		.addOption(
 			new Option('-a, --agent <name>', 'Which coding agent to use')
-				.choices(['claude-code'])
-				.env('AGENT'),
+				.choices(Object.keys(agents))
+				.env('AGENT')
+				.argParser((value) => value as keyof typeof agents),
 		)
 		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
 		.addOption(
@@ -261,13 +263,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 	await program.parseAsync();
 
-	const opts = program.opts<{
-		agent?: string;
-		verbose: boolean;
-		storybook?: boolean;
-		context?: string | boolean;
-		uploadId?: boolean | string;
-	}>();
+	const opts = program.opts();
 	const evalNameArg = program.args[0];
 
 	// Parse context value (may involve async file loading)
@@ -305,7 +301,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					return opts.agent;
 				}
 
-				const result = await p.select({
+				const result = await p.select<keyof typeof agents>({
 					message: 'Which coding agent do you want to use?',
 					options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
 				});
@@ -542,13 +538,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				throw new Error('Unreachable context selection');
 			},
 			uploadId: async () => {
-				// --no-upload-id explicitly disables upload
-				if (opts.uploadId === false) {
-					return false;
-				}
-
-				// --upload-id <id> uses that value
-				if (typeof opts.uploadId === 'string') {
+				if (opts.uploadId !== undefined) {
 					return opts.uploadId;
 				}
 
