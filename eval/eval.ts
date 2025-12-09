@@ -96,7 +96,12 @@ const promptSummary = await agent.execute(
 		: preparedMcpConfig,
 );
 
-await teardownExperiment(experimentArgs);
+try {
+	await teardownExperiment(experimentArgs);
+} catch (error) {
+	p.log.error(`Failed to teardown experiment: ${error}`);
+	// Continue with evaluation despite teardown failure
+}
 
 const evaluationSummary = await evaluate(experimentArgs);
 
