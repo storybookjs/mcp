@@ -6,10 +6,6 @@ import { taskLog } from '@clack/prompts';
 import { runHook } from './run-hook.ts';
 import { startStorybookDevServer } from './storybook-dev-server.ts';
 
-/**
- * Storybook packages required for the storybook-mcp-dev context.
- * Using catalog: prefix for version resolution via pnpm catalog.
- */
 const STORYBOOK_PACKAGES = [
 	'storybook@catalog:',
 	'@storybook/addon-a11y@catalog:',
@@ -19,10 +15,6 @@ const STORYBOOK_PACKAGES = [
 	'@storybook/addon-mcp@workspace:*',
 ];
 
-/**
- * Result of preparing an experiment, including any MCP server config
- * that should be used for the agent.
- */
 export type PrepareExperimentResult = {
 	mcpServerConfig?: McpServerConfig;
 };
@@ -78,7 +70,6 @@ export async function prepareExperiment(
 			force: true,
 		});
 
-		// Write a minimal preview.ts (evaluation template's main.ts skipped by prepare-evaluations)
 		await fs.writeFile(
 			path.join(experimentArgs.projectPath, '.storybook', 'preview.ts'),
 			'export default {};\n',
