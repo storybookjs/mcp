@@ -66,6 +66,9 @@ export type Context =
 	| {
 			type: 'components-manifest';
 			mcpServerConfig: McpServerConfig;
+	  }
+	| {
+			type: 'storybook-mcp-dev';
 	  };
 
 export interface Agent {

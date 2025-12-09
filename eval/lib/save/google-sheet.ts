@@ -40,6 +40,8 @@ function getContextDetails(context: Context): string {
 			return context.prompts.join(', ');
 		case 'mcp-server':
 			return Object.keys(context.mcpServerConfig).join(', ');
+		case 'storybook-mcp-dev':
+			return 'Storybook Dev Server';
 		case 'components-manifest': {
 			// Extract manifest path from MCP server config args
 			const mcpConfig = Object.values(context.mcpServerConfig)[0];
