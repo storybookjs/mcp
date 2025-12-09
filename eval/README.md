@@ -27,26 +27,27 @@ node eval.ts --agent claude-code --context components.json --upload-id batch-1 1
 
 ## CLI Options
 
-| Option           | Short | Type    | Description                                                                              |
-| ---------------- | ----- | ------- | ---------------------------------------------------------------------------------------- |
-| `--agent`        | `-a`  | string  | Which agent to use (`claude-code`)                                                       |
-| `--context`      | `-c`  | string  | Context type: `false`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
-| `--verbose`      | `-v`  | boolean | Show detailed logs during execution                                                      |
-| `--storybook`    | `-s`  | boolean | Auto-start Storybook after completion                                                    |
-| `--upload-id`    | `-u`  | string  | Upload results to Google Sheets with this ID for grouping/filtering                      |
-| `--no-upload-id` |       | -       | Skip uploading results (default if no upload ID provided)                                |
-| `--help`         | `-h`  | -       | Display help information                                                                 |
+| Option           | Short | Type    | Description                                                                                               |
+| ---------------- | ----- | ------- | --------------------------------------------------------------------------------------------------------- |
+| `--agent`        | `-a`  | string  | Which agent to use (`claude-code`)                                                                        |
+| `--context`      | `-c`  | string  | Context type: `false`, `storybook-dev`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
+| `--verbose`      | `-v`  | boolean | Show detailed logs during execution                                                                       |
+| `--storybook`    | `-s`  | boolean | Auto-start Storybook after completion                                                                     |
+| `--upload-id`    | `-u`  | string  | Upload results to Google Sheets with this ID for grouping/filtering                                       |
+| `--no-upload-id` |       | -       | Skip uploading results (default if no upload ID provided)                                                 |
+| `--help`         | `-h`  | -       | Display help information                                                                                  |
 
 **Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
 
 ### Context Types
 
-The framework supports four context modes:
+The framework supports five context modes:
 
 1. **No context** (`--no-context`): Agent uses only default tools
-2. **Component manifest** (`--context components.json`): Provides component documentation via the `@storybook/mcp` package
-3. **MCP server config** (`--context mcp.config.json` or inline JSON): Custom MCP server setup (use this for fully custom MCP servers, not for Storybook MCP)
-4. **Extra prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`): Additional markdown files appended to main prompt
+2. **Storybook MCP - Dev** (`--context storybook-dev`): Sets up local Storybook dev server with MCP endpoint
+3. **Storybook MCP - Docs** (`--context components.json`): Provides component documentation via the `@storybook/mcp` package
+4. **MCP server config** (`--context mcp.config.json` or inline JSON): Custom MCP server setup (use this for fully custom MCP servers, not for Storybook MCP)
+5. **Extra prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`): Additional markdown files appended to main prompt
 
 ## Project Structure
 
