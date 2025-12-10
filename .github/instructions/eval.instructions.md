@@ -23,7 +23,7 @@ This is an evaluation framework for testing AI coding agents' ability to build U
 ### Key Components
 
 - **CLI Interface**: Interactive and non-interactive modes via `eval.ts`
-- **Context System**: Four context modes (none, component manifest, MCP server, extra prompts)
+- **Context System**: Five context modes (none, Storybook MCP - Dev, Storybook MCP - Docs, custom MCP server, extra prompts)
 - **Agent Abstraction**: Pluggable agent implementations (currently Claude Code CLI)
 - **Evaluation Pipeline**: Parallel execution of multiple quality checks
 - **Hooks System**: Lifecycle hooks for custom experiment logic
@@ -40,6 +40,8 @@ eval/
 │   ├── show-help.ts                 # Help text formatting
 │   ├── generate-prompt.ts           # Combines prompt parts
 │   ├── prepare-experiment.ts        # Project template setup
+│   ├── teardown-experiment.ts       # Experiment cleanup (stop dev servers, etc.)
+│   ├── storybook-dev-server.ts      # Storybook dev server management
 │   ├── agents/
 │   │   └── claude-code-cli.ts       # Claude Code CLI agent implementation
 │   └── evaluations/
@@ -68,25 +70,32 @@ eval/
 
 ### Context Modes
 
-The framework supports four distinct context types:
+The framework supports five distinct context types:
 
 1. **No Context** (`--no-context`):
    - Agent uses only built-in tools
    - Tests baseline agent capabilities
 
-2. **Component Manifest** (`--context components.json`):
+2. **Storybook MCP - Dev** (`--context storybook-dev`):
+   - Sets up Storybook in the experiment project with `@storybook/addon-mcp`
+   - Starts a local Storybook dev server
+   - Configures the MCP server endpoint (`/mcp`) for the agent
+   - Best for testing agents in a live development environment
+   - Includes automatic setup and teardown of the dev server
+
+3. **Storybook MCP - Docs** (`--context components.json`):
    - Provides component documentation via `@storybook/mcp` package
    - Uses stdio transport with `packages/mcp/bin.ts`
    - Best for testing agents with library/component documentation
    - This uses the Storybook MCP server, not a custom MCP server
 
-3. **MCP Server** (`--context mcp.config.json` or inline JSON):
+4. **MCP Server** (`--context mcp.config.json` or inline JSON):
    - Custom MCP server configuration (HTTP or stdio)
    - Supports multiple named servers
    - Flexible for testing different MCP tool combinations
-   - Use this for fully custom MCP servers; use components.json for Storybook MCP
+   - Use this for fully custom MCP servers; use components.json for Storybook MCP - Docs
 
-4. **Extra Prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`):
+5. **Extra Prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`):
    - Appends additional markdown files to main prompt
    - Useful for providing supplementary instructions
    - Keeps main prompt clean while testing variations
@@ -110,6 +119,9 @@ node eval.ts
 **Non-interactive mode:**
 ```bash
 node eval.ts --agent claude-code --context components.json --upload-id batch-1 --no-storybook 100-flight-booking-plain
+
+# With Storybook MCP - Dev context (starts local dev server)
+node eval.ts --agent claude-code --context storybook-dev --no-storybook 200-build-ui-with-storybook
 ```
 
 **IMPORTANT**: Always use the `--no-storybook` flag when running evals to prevent the process from hanging at the end waiting for user input about starting Storybook.
@@ -625,7 +637,28 @@ The `conversation-viewer.html` file provides a web-based interface for viewing a
 
 ## MCP Server Configuration
 
-### Component Manifest Pattern
+### Storybook MCP - Dev Pattern
+
+When using `--context storybook-dev`, the framework:
+
+1. Copies the evaluation template with `.storybook` config (includes `@storybook/addon-mcp`)
+2. Installs Storybook packages in the experiment project
+3. Starts a Storybook dev server on a random available port
+4. Provides MCP config to the agent:
+   ```json
+   {
+     "mcpServers": {
+       "storybook-dev-mcp": {
+         "type": "http",
+         "url": "http://localhost:{PORT}/mcp"
+       }
+     }
+   }
+   ```
+5. Agent receives MCP tools from `@storybook/addon-mcp`
+6. On teardown, the dev server is automatically stopped
+
+### Storybook MCP - Docs Pattern (Component Manifest)
 
 When using `--context components.json`, the framework:
 

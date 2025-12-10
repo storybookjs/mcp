@@ -11,6 +11,7 @@ export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 			'storybook@catalog:experiments',
 			'@storybook/addon-docs@catalog:experiments',
 			'@storybook/addon-a11y@catalog:experiments',
+			'@storybook/addon-mcp@workspace:*',
 			'@storybook/addon-vitest@catalog:experiments',
 			'@storybook/react-vite@catalog:experiments',
 			'eslint-plugin-storybook@catalog:experiments',

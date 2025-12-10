@@ -2,7 +2,7 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Agent } from '../../types.ts';
-import { spinner } from '@clack/prompts';
+import { spinner, log as clackLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 
@@ -242,9 +242,9 @@ export const claudeCodeCli: Agent = {
 			);
 		}
 		const log = spinner();
-		log.start('Executing prompt with Claude Code CLI');
 		await runHook('pre-execute-agent', experimentArgs);
 
+		log.start('Executing prompt with Claude Code CLI');
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
 		const model = models['anthropic/claude-sonnet-4.5'];
 		const tokenizer = new Tokenizer(claudeEncoding);
@@ -286,6 +286,27 @@ export const claudeCodeCli: Agent = {
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
 			messages.push(parsed);
+
+			// Check for MCP server status in init message
+			if (
+				parsed.type === 'system' &&
+				parsed.subtype === 'init' &&
+				parsed.mcp_servers &&
+				parsed.mcp_servers.length > 0
+			) {
+				for (const server of parsed.mcp_servers) {
+					// this is the connection status reported by the agent, that inits connections to all MCP servers when the session starts
+					// if the MCP server is not connected by now, the agent will not be able to use it
+					if (server.status === 'connected') {
+						clackLog.success(`MCP server "${server.name}" connected`);
+					} else {
+						clackLog.error(
+							`MCP server "${server.name}" failed to connect (status: ${server.status})`,
+						);
+						process.exit(1);
+					}
+				}
+			}
 
 			const todoProgress = getTodoProgress(messages);
 			let progressMessage = `Agent is working, turn ${messages.filter((m) => m.type === 'assistant').length}`;

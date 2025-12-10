@@ -1,0 +1,5 @@
+{
+	"rules": {
+		"typescript/switch-exhaustiveness-check": "error"
+	}
+}

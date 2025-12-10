@@ -59,7 +59,8 @@ type ParsedContext =
 	| { type: false }
 	| { type: 'extra-prompts'; prompts: string[] }
 	| { type: 'mcp-server'; mcpServerConfig: McpServerConfig }
-	| { type: 'components-manifest'; manifestPath: string };
+	| { type: 'components-manifest'; manifestPath: string }
+	| { type: 'storybook-mcp-dev' };
 
 /**
  * Parse a raw context string value into a ParsedContext object.
@@ -88,6 +89,11 @@ async function parseContextValue(
 		return { type: 'mcp-server', mcpServerConfig: validated };
 	} catch {
 		// Not valid JSON, continue with other patterns
+	}
+
+	// Storybook MCP dev mode (--context=storybook-dev)
+	if (rawContext === 'storybook-dev') {
+		return { type: 'storybook-mcp-dev' };
 	}
 
 	// MCP config file (contains "mcp" and ends with .json)
@@ -155,6 +161,9 @@ function buildRerunCommand(args: CollectedArgs): string {
 			}
 			break;
 		}
+		case 'storybook-mcp-dev':
+			parts.push('--context=storybook-dev');
+			break;
 		case 'extra-prompts':
 			parts.push(`--context=${args.context.prompts.join(',')}`);
 			break;
@@ -178,12 +187,14 @@ Examples:
   $ node eval.ts --agent ${Object.keys(agents)[0]} --context components.json 100-flight-booking-plain
   $ node eval.ts --verbose --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
   $ node eval.ts --context mcp.config.json 110-flight-booking-reshaped
+  $ node eval.ts --context storybook-dev 200-build-ui-with-storybook
 
 Context Modes:
-  None                Agent uses only built-in tools (--no-context)
-  Component Manifest  Provides component docs via @storybook/mcp (--context file.json)
-  MCP Server          Custom MCP server config (--context mcp.config.json or inline JSON)
-  Extra Prompts       Append markdown instructions (--context file1.md,file2.md)
+  None                  Agent uses only built-in tools (--no-context)
+  Storybook MCP - Dev   Runs local Storybook dev server with MCP (--context storybook-dev)
+  Storybook MCP - Docs  Provides component docs via @storybook/mcp (--context file.json)
+  MCP Server            Custom MCP server config (--context mcp.config.json or inline JSON)
+  Extra Prompts         Append markdown instructions (--context file1.md,file2.md)
 
 Learn More: eval/README.md
 `;
@@ -359,7 +370,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							value: false,
 						},
 						{
-							label: 'Storybook MCP server',
+							label: 'Storybook MCP - Dev',
+							hint: 'Run local Storybook dev server with MCP endpoint',
+							value: 'storybook-mcp-dev',
+						},
+						{
+							label: 'Storybook MCP - Docs',
 							hint:
 								Object.keys(availableManifests).length > 0
 									? 'Add a Storybook MCP server based on a components manifest file'
@@ -392,6 +408,9 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				switch (mainSelection) {
 					case false: {
 						return { type: false };
+					}
+					case 'storybook-mcp-dev': {
+						return { type: 'storybook-mcp-dev' };
 					}
 					case 'components-manifest': {
 						const manifestOptions = Object.entries(availableManifests).map(

@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { ExperimentArgs } from './types.ts';
 import { prepareExperiment } from './lib/prepare-experiment.ts';
+import { teardownExperiment } from './lib/teardown-experiment.ts';
 import { evaluate } from './lib/evaluations/evaluate.ts';
 import { save } from './lib/save/save.ts';
 import { collectArgs } from './lib/collect-args.ts';
@@ -53,6 +54,9 @@ switch (args.context.type) {
 	case 'components-manifest':
 		contextPrefix = 'components-manifest';
 		break;
+	case 'storybook-mcp-dev':
+		contextPrefix = 'storybook-mcp-dev';
+		break;
 }
 
 const experimentDirName = `${contextPrefix}-${args.agent}-${localDateTimestamp}`;
@@ -76,7 +80,8 @@ const experimentArgs: ExperimentArgs = {
 
 p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
 
-await prepareExperiment(experimentArgs);
+const { mcpServerConfig: preparedMcpConfig } =
+	await prepareExperiment(experimentArgs);
 
 const prompt = await generatePrompt(evalPath, args.context);
 await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
@@ -88,8 +93,15 @@ const promptSummary = await agent.execute(
 	args.context.type === 'mcp-server' ||
 		args.context.type === 'components-manifest'
 		? args.context.mcpServerConfig
-		: undefined,
+		: preparedMcpConfig,
 );
+
+try {
+	await teardownExperiment(experimentArgs);
+} catch (error) {
+	p.log.error(`Failed to teardown experiment: ${error}`);
+	// Continue with evaluation despite teardown failure
+}
 
 const evaluationSummary = await evaluate(experimentArgs);
 
