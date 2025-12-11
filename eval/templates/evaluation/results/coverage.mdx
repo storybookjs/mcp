@@ -1,0 +1,10 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import summaryData from '../../results/coverage/coverage-summary.json';
+import fileData from '../../results/coverage/coverage-final.json';
+import { Coverage } from '../../../../../../templates/result-docs/coverage.tsx';
+
+<Meta title="Coverage" />
+
+<Unstyled>
+	<Coverage total={summaryData.total} files={fileData} />
+</Unstyled>

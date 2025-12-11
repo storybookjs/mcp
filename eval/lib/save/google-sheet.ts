@@ -24,6 +24,7 @@ type SheetsData = {
 	duration: number;
 	durationApi: number;
 	turns: number;
+	coverageLines: number | null;
 	contextType: string;
 	contextDetails: string;
 	agent: string;
@@ -92,6 +93,7 @@ export async function saveToGoogleSheets(
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
 		experimentPath: path.relative(process.cwd(), experimentPath),
+		coverageLines: evaluationSummary.coverage?.lines ?? null,
 	};
 
 	try {

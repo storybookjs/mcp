@@ -18,6 +18,8 @@
 		"clean-experiments.ts",
 		"lib",
 		"templates/result-docs",
-		"google-apps-script.js"
+		"templates/evaluation",
+		"google-apps-script.js",
+		"types"
 	]
 }

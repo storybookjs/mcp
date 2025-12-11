@@ -124,8 +124,9 @@ Each experiment produces:
 - **Build success**: Can the project build without errors?
 - **Type check**: TypeScript compilation errors count
 - **Lint**: ESLint errors count
-- **Tests**: Storybook test results (passed/failed)
+- **Tests**: Storybook story results (passed/failed) including play functions
 - **Accessibility**: Axe violations count
+- **Coverage**: Vite/Vitest coverage summary (lines/statements/branches/functions)
 - **Cost**: API usage cost in USD
 - **Duration**: Total time and API time in seconds
 - **Turns**: Number of agent conversation turns
@@ -145,7 +146,13 @@ Complete metrics from execution and evaluation:
 	"typeCheckErrors": 0,
 	"lintErrors": 0,
 	"test": { "passed": 3, "failed": 0 },
-	"a11y": { "violations": 1 }
+	"a11y": { "violations": 1 },
+	"coverage": {
+		"lines": 87.5,
+		"statements": 86.9,
+		"branches": 75.0,
+		"functions": 80.0
+	}
 }
 ```
 

@@ -145,6 +145,15 @@ if (
 	);
 }
 
+const cov = evaluationSummary.coverage;
+const formatCov = (v: number | null | undefined) =>
+	typeof v === 'number' ? `${v}%` : '–';
+p.log.message(
+	cov
+		? `📊 Coverage: lines ${formatCov(cov.lines)}, statements ${formatCov(cov.statements)}, branches ${formatCov(cov.branches)}, functions ${formatCov(cov.functions)}`
+		: '📊 Coverage: (not collected)',
+);
+
 p.log.message(
 	`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
 );

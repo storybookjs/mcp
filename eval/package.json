@@ -40,11 +40,13 @@
 		"radix-ui": "^1.4.3",
 		"react": "^19.1.1",
 		"react-dom": "^19.1.1",
+		"react-syntax-highlighter": "^16.1.0",
 		"reshaped": "^3.8.8",
 		"rsuite": "^5.83.4",
 		"storybook": "catalog:",
 		"storybook-addon-test-codegen": "^3.0.0",
 		"tinyexec": "^1.0.1",
+		"istanbul-lib-coverage": "^3.2.0",
 		"ts-dedent": "^2.2.0",
 		"valibot": "catalog:",
 		"vite": "^7.1.12"
