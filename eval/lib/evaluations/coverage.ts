@@ -84,30 +84,28 @@ export async function computeCoverage(
 			statements: { pct: summary.statements.pct },
 		};
 
-		if (normalizedTotal) {
-			coverage = {
-				branches: normalizedTotal.branches?.pct ?? null,
-				functions: normalizedTotal.functions?.pct ?? null,
-				lines: normalizedTotal.lines?.pct ?? null,
-				statements: normalizedTotal.statements?.pct ?? null,
-			};
+		coverage = {
+			branches: normalizedTotal.branches?.pct ?? null,
+			functions: normalizedTotal.functions?.pct ?? null,
+			lines: normalizedTotal.lines?.pct ?? null,
+			statements: normalizedTotal.statements?.pct ?? null,
+		};
 
-			const targetCoveragePath = path.join(
-				resultsPath,
-				'coverage',
-				'coverage-summary.json',
-			);
-			await fs.mkdir(path.dirname(targetCoveragePath), { recursive: true });
-			await fs.writeFile(
-				targetCoveragePath,
-				JSON.stringify({ total: normalizedTotal }, null, 2),
-			);
+		const targetCoveragePath = path.join(
+			resultsPath,
+			'coverage',
+			'coverage-summary.json',
+		);
+		await fs.mkdir(path.dirname(targetCoveragePath), { recursive: true });
+		await fs.writeFile(
+			targetCoveragePath,
+			JSON.stringify({ total: normalizedTotal }, null, 2),
+		);
 
-			await fs.writeFile(
-				path.join(resultsPath, 'coverage', 'coverage-final.json'),
-				JSON.stringify(coverageFiles, null, 2),
-			);
-		}
+		await fs.writeFile(
+			path.join(resultsPath, 'coverage', 'coverage-final.json'),
+			JSON.stringify(coverageFiles, null, 2),
+		);
 	} catch {
 		coverage = undefined;
 		coverageFiles = undefined;
