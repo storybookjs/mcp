@@ -105,7 +105,7 @@ export async function computeCoverage(
 
 			await fs.writeFile(
 				path.join(resultsPath, 'coverage', 'coverage-final.json'),
-				JSON.stringify(coverageFiles ?? {}, null, 2),
+				JSON.stringify(coverageFiles, null, 2),
 			);
 		}
 	} catch {
