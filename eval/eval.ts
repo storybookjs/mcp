@@ -147,10 +147,10 @@ if (
 
 const cov = evaluationSummary.coverage;
 const formatCov = (v: number | null | undefined) =>
-	typeof v === 'number' ? v : '–';
+	typeof v === 'number' ? `${v}%` : '–';
 p.log.message(
 	cov
-		? `📊 Coverage: lines ${formatCov(cov.lines)}%, statements ${formatCov(cov.statements)}%, branches ${formatCov(cov.branches)}%, functions ${formatCov(cov.functions)}%`
+		? `📊 Coverage: lines ${formatCov(cov.lines)}, statements ${formatCov(cov.statements)}, branches ${formatCov(cov.branches)}, functions ${formatCov(cov.functions)}`
 		: '📊 Coverage: (not collected)',
 );
 
