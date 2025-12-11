@@ -13,6 +13,12 @@ interface SummaryProps {
 	a11y: {
 		violations: number;
 	};
+	coverage?: {
+		branches: number | null;
+		functions: number | null;
+		lines: number | null;
+		statements: number | null;
+	};
 }
 
 const StatusBadge = ({
@@ -109,6 +115,11 @@ const formatDuration = (seconds: number): string => {
 	return `${mins}m ${secs}s`;
 };
 
+const formatPct = (value: number | null | undefined): string => {
+	if (value === null || value === undefined || Number.isNaN(value)) return '–';
+	return `${value.toFixed(1)}%`;
+};
+
 export const Summary = (props: SummaryProps) => {
 	const typeCheckStatus =
 		props.typeCheckErrors === 0
@@ -199,6 +210,13 @@ export const Summary = (props: SummaryProps) => {
 				/>
 				<MetricCard title="Cost" value={`$${props.cost.toFixed(4)}`} />
 				<MetricCard title="Turns" value={props.turns} />
+				{props.coverage && (
+					<MetricCard
+						title="Coverage (lines)"
+						value={formatPct(props.coverage.lines)}
+						subvalue={`Statements ${formatPct(props.coverage.statements)}, Branches ${formatPct(props.coverage.branches)}`}
+					/>
+				)}
 			</div>
 		</div>
 	);
