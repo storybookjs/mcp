@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import type { EvaluationSummary } from '../../types';
 import type { CoverageFiles, CoverageSummary } from './result-types';
 import { createCoverageMap } from 'istanbul-lib-coverage';
+import { log } from '@clack/prompts';
 
 export async function computeCoverage(
 	projectPath: string,
@@ -64,7 +65,7 @@ export async function computeCoverage(
 					}
 				}
 			} catch {
-				// ignore
+				log.warning(`Failed to get branch coverage for file ${filePath}`);
 			}
 
 			coverageFiles[filePath] = {
@@ -107,6 +108,7 @@ export async function computeCoverage(
 			JSON.stringify(coverageFiles, null, 2),
 		);
 	} catch {
+		log.warning(`Failed to compute coverage for project ${projectPath}`);
 		coverage = undefined;
 		coverageFiles = undefined;
 	}
