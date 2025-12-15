@@ -24,7 +24,9 @@ export async function computeCoverage(
 	try {
 		let normalizedTotal: CoverageSummary | undefined;
 
-		const { default: coverageData } = await import(finalCoveragePath, { type: 'json' });
+		const { default: coverageData } = await import(finalCoveragePath, {
+			with: { type: 'json' },
+		});
 
 		// Derive from coverage-final using istanbul-lib-coverage
 		const coverageMap = createCoverageMap(coverageData);
