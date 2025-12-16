@@ -2,8 +2,12 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import type { EvaluationSummary } from '../../types';
 import type { CoverageFiles, CoverageSummary } from './result-types';
-import { createCoverageMap } from 'istanbul-lib-coverage';
+import istanbulCoverage from 'istanbul-lib-coverage';
 import { log } from '@clack/prompts';
+
+const { createCoverageMap } = istanbulCoverage as unknown as {
+	createCoverageMap: typeof import('istanbul-lib-coverage').createCoverageMap;
+};
 
 export async function computeCoverage(
 	projectPath: string,

@@ -4,6 +4,8 @@ import { runTests } from './run-tests';
 import { parseTestResults } from './parse-tests';
 import { writeStoryArtifacts } from './write-story-artifacts';
 import { computeCoverage } from './coverage';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 export async function testStories({
 	projectPath,
@@ -25,6 +27,18 @@ export async function testStories({
 	const { coverage } = isDevEval
 		? await computeCoverage(projectPath, resultsPath)
 		: { coverage: undefined };
+
+	if (coverage) {
+		const templateCoverageMdxPath = path.resolve(
+			path.join('templates', 'evaluation', 'results', 'coverage.mdx'),
+		);
+		const projectCoverageMdxPath = path.join(
+			projectPath,
+			'results',
+			'coverage.mdx',
+		);
+		await fs.copyFile(templateCoverageMdxPath, projectCoverageMdxPath);
+	}
 
 	return {
 		test: testSummary,
