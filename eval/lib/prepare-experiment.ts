@@ -5,6 +5,7 @@ import { addDependency, installDependencies } from 'nypm';
 import { taskLog } from '@clack/prompts';
 import { runHook } from './run-hook.ts';
 import { startStorybookDevServer } from './storybook-dev-server.ts';
+import { isDevEvaluation } from './context-utils.ts';
 
 const STORYBOOK_DEV_PACKAGES = [
 	'vitest@catalog:experiments',
@@ -52,6 +53,18 @@ export async function prepareExperiment(
 
 	await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
+	let result: PrepareExperimentResult = {};
+
+	if (isDevEvaluation(experimentArgs.context)) {
+		packageJson.scripts = {
+			...packageJson.scripts,
+			storybook: 'storybook dev',
+			'build-storybook': 'storybook build',
+		};
+	}
+
+	await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
 	log.message('Installing dependencies in project');
 	await installDependencies({
 		cwd: experimentArgs.projectPath,
@@ -59,10 +72,7 @@ export async function prepareExperiment(
 		silent: true,
 	});
 
-	let result: PrepareExperimentResult = {};
-
-	// For storybook-mcp-dev context, install Storybook packages and copy evaluation template
-	if (experimentArgs.context.type === 'storybook-mcp-dev') {
+	if (isDevEvaluation(experimentArgs.context)) {
 		log.message('Setting up Storybook for Storybook Dev MCP context');
 
 		// Copy evaluation template (includes .storybook config with addon-mcp, vitest setup, etc.)
@@ -72,6 +82,10 @@ export async function prepareExperiment(
 		await fs.cp(evaluationTemplatePath, experimentArgs.projectPath, {
 			recursive: true,
 			force: true,
+			filter: (source) =>
+				// Only include coverage docs once coverage JSON exists; otherwise Storybook will
+				// error on the static imports inside `results/coverage.mdx`.
+				!source.endsWith(path.join('results', 'coverage.mdx')),
 		});
 
 		await fs.writeFile(
@@ -85,32 +99,11 @@ export async function prepareExperiment(
 			silent: true,
 		});
 
-		// Add storybook scripts to package.json
-		const sbPackageJsonPath = path.join(
-			experimentArgs.projectPath,
-			'package.json',
-		);
-		const { default: sbPackageJson } = await import(sbPackageJsonPath, {
-			with: { type: 'json' },
-		});
-		sbPackageJson.scripts = {
-			...sbPackageJson.scripts,
-			storybook: 'storybook dev',
-			'build-storybook': 'storybook build',
-		};
-		await fs.writeFile(
-			sbPackageJsonPath,
-			JSON.stringify(sbPackageJson, null, 2),
-		);
-
 		log.message('Storybook packages and config installed');
-
-		// Start Storybook dev server and return MCP config for agent to use
 		log.message('Starting Storybook dev server...');
 		const devServer = await startStorybookDevServer(experimentArgs.projectPath);
 		log.message(`Storybook dev server running on port ${devServer.port}`);
 
-		// Build MCP config for the agent (agent is responsible for writing .mcp.json)
 		result = {
 			mcpServerConfig: {
 				'storybook-dev-mcp': {
