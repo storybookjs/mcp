@@ -83,6 +83,7 @@ export async function saveToGoogleSheets(
 			evaluationSummary.test.passed /
 			(evaluationSummary.test.passed + evaluationSummary.test.failed),
 		a11yViolations: evaluationSummary.a11y.violations,
+		coverageLines: evaluationSummary.coverage?.lines ?? null,
 		cost: executionSummary.cost,
 		duration: executionSummary.duration,
 		durationApi: executionSummary.durationApi,
@@ -93,7 +94,6 @@ export async function saveToGoogleSheets(
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
 		experimentPath: path.relative(process.cwd(), experimentPath),
-		coverageLines: evaluationSummary.coverage?.lines ?? null,
 	};
 
 	try {
