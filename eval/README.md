@@ -15,6 +15,13 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 > [!NOTE]
 > All eval results that are uploaded (opt-outable) are publicly available in [this Google Sheet](https://docs.google.com/spreadsheets/d/1TAvPyK6S6J-Flc1-gNrQpwmd6NWVXoTrQhaQ35y13vw/edit?usp=sharing).
 
+## Requirements
+
+- Node.js 24+
+- pnpm 10.19.0+
+- Playwright (`npx playwright install`)
+- Claude Code CLI (`npm install -g claude-code`)
+
 ## Quick Start
 
 ```bash
@@ -221,9 +228,3 @@ pnpm storybook
 - Check `full-conversation.js` to debug agent behavior
 - Use extra prompts to guide agent without modifying main prompt
 - Component manifests work best when agents need library documentation
-
-## Requirements
-
-- Node.js 24+
-- pnpm 10.19.0+
-- Claude Code CLI (`npm install -g claude-code`)
