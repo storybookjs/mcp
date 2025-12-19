@@ -5,13 +5,18 @@ import * as fs from 'node:fs/promises';
 import * as v from 'valibot';
 import {
 	McpServerConfigSchema,
+	SUPPORTED_MODELS,
+	CLAUDE_MODELS,
+	COPILOT_MODELS,
 	type Context,
 	type McpServerConfig,
+	type SupportedModel,
 } from '../types.ts';
 import { agents } from '../config.ts';
 
 export type CollectedArgs = {
 	agent: keyof typeof agents;
+	model: SupportedModel;
 	verbose: boolean;
 	eval: string;
 	context: Context;
@@ -131,6 +136,7 @@ function buildRerunCommand(args: CollectedArgs): string {
 	const parts: string[] = ['node', 'eval.ts'];
 
 	parts.push('--agent', args.agent);
+	parts.push('--model', args.model);
 
 	if (args.verbose) {
 		parts.push('--verbose');
@@ -221,6 +227,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				.env('AGENT')
 				.argParser((value) => value as keyof typeof agents),
 		)
+		.addOption(
+			new Option('-m, --model <name>', 'Which model to use for the agent')
+				.choices([...SUPPORTED_MODELS])
+				.env('MODEL')
+				.argParser((value) => value as SupportedModel),
+		)
 		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
 		.addOption(
 			new Option(
@@ -302,7 +314,41 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				const result = await p.select<keyof typeof agents>({
 					message: 'Which coding agent do you want to use?',
-					options: [{ value: 'claude-code', label: 'Claude Code CLI' }],
+					options: [
+						{ value: 'claude-code', label: 'Claude Code CLI' },
+						{ value: 'copilot-cli', label: 'GitHub Copilot CLI' },
+					],
+				});
+
+				if (p.isCancel(result)) {
+					p.cancel('Operation cancelled.');
+					process.exit(0);
+				}
+
+				return result;
+			},
+			model: async ({ results }): Promise<SupportedModel> => {
+				// Determine available models based on selected agent
+				const selectedAgent = results.agent;
+				const availableModels: readonly SupportedModel[] =
+					selectedAgent === 'claude-code' ? CLAUDE_MODELS : COPILOT_MODELS;
+
+				if (opts.model) {
+					// Validate that the provided model is valid for the selected agent
+					if (!availableModels.includes(opts.model)) {
+						throw new Error(
+							`Model "${opts.model}" is not supported by ${selectedAgent}. Available models: ${availableModels.join(', ')}`,
+						);
+					}
+					return opts.model;
+				}
+
+				const result = await p.select<SupportedModel>({
+					message: 'Which model should the agent use?',
+					options: availableModels.map((model) => ({
+						value: model,
+						label: model,
+					})),
 				});
 
 				if (p.isCancel(result)) {
@@ -566,7 +612,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	);
 
 	const result: CollectedArgs = {
-		...promptResults,
+		agent: promptResults.agent,
+		model: promptResults.model as SupportedModel,
+		context: promptResults.context as Context,
+		uploadId: promptResults.uploadId,
+		storybook: promptResults.storybook,
+		verbose: promptResults.verbose,
 		eval: evalName,
 	};
 
@@ -580,7 +631,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 function manifestPathToMcpServerConfig(manifestPath: string): McpServerConfig {
 	return {
-		'storybook-mcp': {
+		'storybook-docs-mcp': {
 			type: 'stdio',
 			command: 'node',
 			args: [
