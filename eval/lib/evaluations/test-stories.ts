@@ -1,9 +1,9 @@
-import { isDevEvaluation } from '../context-utils';
-import type { EvaluationSummary, ExperimentArgs } from '../../types';
-import { runTests } from './run-tests';
-import { parseTestResults } from './parse-tests';
-import { writeStoryArtifacts } from './write-story-artifacts';
-import { computeCoverage } from './coverage';
+import { isDevEvaluation } from '../context-utils.ts';
+import type { EvaluationSummary, ExperimentArgs } from '../../types.ts';
+import { runTests } from './run-tests.ts';
+import { parseTestResults } from './parse-tests.ts';
+import { writeStoryArtifacts } from './write-story-artifacts.ts';
+import { computeCoverage } from './coverage.ts';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 

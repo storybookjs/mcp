@@ -4,7 +4,7 @@ A CLI-based evaluation framework for testing AI coding agents' ability to build 
 
 ## What is this?
 
-This framework runs automated experiments where AI coding agents (like Claude Code CLI) are given prompts to build UI components. Each experiment:
+This framework runs automated experiments where AI coding agents (Claude Code CLI or GitHub Copilot CLI) are given prompts to build UI components. Each experiment:
 
 1. **Prepares** a fresh Vite + React + Storybook project
 2. **Executes** the agent with a prompt and optional context (MCP servers, component manifests, or extra prompts)
@@ -20,7 +20,8 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 - Node.js 24+
 - pnpm 10.19.0+
 - Playwright (`npx playwright install`)
-- Claude Code CLI (`npm install -g claude-code`)
+- Claude Code CLI (`npm install -g @anthropic-ai/claude-code`) - for `claude-code` agent
+- GitHub Copilot CLI (`gh extension install github/gh-copilot`) - for `copilot-cli` agent
 
 ## Quick Start
 
@@ -29,14 +30,15 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 node eval.ts
 
 # With all options specified
-node eval.ts --agent claude-code --context components.json --upload-id batch-1 100-flight-booking-plain
+node eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.json --upload-id batch-1 100-flight-booking-plain
 ```
 
 ## CLI Options
 
 | Option           | Short | Type    | Description                                                                                               |
 | ---------------- | ----- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `--agent`        | `-a`  | string  | Which agent to use (`claude-code`)                                                                        |
+| `--agent`        | `-a`  | string  | Which agent to use (`claude-code` or `copilot-cli`)                                                       |
+| `--model`        | `-m`  | string  | Which model to use (see [Model Selection](#model-selection) below)                                        |
 | `--context`      | `-c`  | string  | Context type: `false`, `storybook-dev`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
 | `--verbose`      | `-v`  | boolean | Show detailed logs during execution                                                                       |
 | `--storybook`    | `-s`  | boolean | Auto-start Storybook after completion                                                                     |
@@ -45,6 +47,40 @@ node eval.ts --agent claude-code --context components.json --upload-id batch-1 1
 | `--help`         | `-h`  | -       | Display help information                                                                                  |
 
 **Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
+
+### Model Selection
+
+Different agents support different models:
+
+| Model               | Claude Code CLI | Copilot CLI |
+| ------------------- | :-------------: | :---------: |
+| `claude-sonnet-4.5` |       ✅        |     ✅      |
+| `claude-opus-4.5`   |       ✅        |     ✅      |
+| `claude-haiku-4.5`  |       ✅        |     ❌      |
+| `gpt-5.1-codex-max` |       ❌        |     ✅      |
+| `gpt-5.2`           |       ❌        |     ✅      |
+
+**Example usage:**
+
+```bash
+# Claude Code with Opus
+node eval.ts --agent claude-code --model claude-opus-4.5 100-flight-booking-plain
+
+# Copilot CLI with GPT-5.2
+node eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
+```
+
+> [!IMPORTANT]
+> **GitHub Copilot CLI Model Configuration**
+>
+> To use models other than `claude-sonnet-4.5` with the Copilot CLI, you must first enable them in your GitHub account settings:
+>
+> 1. Go to [GitHub Copilot Features Settings](https://github.com/settings/copilot/features)
+> 2. Enable the models you want to use (e.g., GPT-5.1 Codex Max, GPT-5.2, Claude Opus 4.5)
+> 3. Save your settings
+> 4. Wait up to 30 minutes
+>
+> Without enabling these models, the Copilot CLI will fail when attempting to use them.
 
 ### Context Types
 

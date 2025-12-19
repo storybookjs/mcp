@@ -59,7 +59,7 @@ switch (args.context.type) {
 		break;
 }
 
-const experimentDirName = `${contextPrefix}-${args.agent}-${localDateTimestamp}`;
+const experimentDirName = `${contextPrefix}-${args.agent}-${args.model}-${localDateTimestamp}`;
 const experimentPath = path.join(evalPath, 'experiments', experimentDirName);
 const projectPath = path.join(experimentPath, 'project');
 const resultsPath = path.join(experimentPath, 'results');
@@ -73,12 +73,15 @@ const experimentArgs: ExperimentArgs = {
 	evalName: args.eval,
 	context: args.context,
 	agent: args.agent,
+	model: args.model,
 	hooks: await import(path.join(evalPath, 'hooks.ts'))
 		.then((mod) => mod.default)
 		.catch(() => ({})),
 };
 
-p.log.info(`Running experiment '${args.eval}' with agent '${args.agent}'`);
+p.log.info(
+	`Running experiment '${args.eval}' with agent '${args.agent}' and model '${args.model}'`,
+);
 
 const { mcpServerConfig: preparedMcpConfig } =
 	await prepareExperiment(experimentArgs);

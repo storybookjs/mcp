@@ -192,8 +192,8 @@ importers:
         specifier: ^4.2.0
         version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
       ai-tokenizer:
-        specifier: ^1.0.3
-        version: 1.0.4
+        specifier: ^1.0.6
+        version: 1.0.6
       chromatic:
         specifier: ^13.3.3
         version: 13.3.3
@@ -2468,8 +2468,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ai-tokenizer@1.0.4:
-    resolution: {integrity: sha512-BHOUljsmH0SEO9bULQL3sz6pJ4jv00r+NHxX3kR6tn1suAAj6DDN4njSk+sqCOI5Cm6FqizUhDfoYZ0R+5/WVQ==}
+  ai-tokenizer@1.0.6:
+    resolution: {integrity: sha512-GaakQFxen0pRH/HIA4v68ZM40llCH27HUYUSBLK+gVuZ57e53pYJe1xFvSTj4sJJjbWU92m1X6NjPWyeWkFDow==}
     peerDependencies:
       ai: ^5.0.0
     peerDependenciesMeta:
@@ -7998,7 +7998,7 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  ai-tokenizer@1.0.4: {}
+  ai-tokenizer@1.0.6: {}
 
   ajv-formats@2.1.1(ajv@8.17.1):
     optionalDependencies:

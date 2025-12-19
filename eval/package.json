@@ -29,7 +29,7 @@
 		"@types/node": "^24.10.1",
 		"@types/react": "^18.3.26",
 		"@vitejs/plugin-react-swc": "^4.2.0",
-		"ai-tokenizer": "^1.0.3",
+		"ai-tokenizer": "^1.0.6",
 		"chromatic": "^13.3.3",
 		"envinfo": "^7.20.0",
 		"eslint": "^9.36.0",
