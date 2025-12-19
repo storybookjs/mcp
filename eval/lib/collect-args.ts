@@ -1,4 +1,3 @@
-import { loadEnvFile } from 'node:process';
 import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
@@ -204,7 +203,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 	// Load .env file - CLI args will override these
 	try {
-		loadEnvFile(path.join(process.cwd(), '.env'));
+		process.loadEnvFile(path.join(process.cwd(), '.env'));
 	} catch {
 		// File doesn't exist or can't be read - that's fine, env vars are optional
 	}
