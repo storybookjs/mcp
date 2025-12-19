@@ -15,6 +15,13 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 > [!NOTE]
 > All eval results that are uploaded (opt-outable) are publicly available in [this Google Sheet](https://docs.google.com/spreadsheets/d/1TAvPyK6S6J-Flc1-gNrQpwmd6NWVXoTrQhaQ35y13vw/edit?usp=sharing).
 
+## Requirements
+
+- Node.js 24+
+- pnpm 10.19.0+
+- Playwright (`npx playwright install`)
+- Claude Code CLI (`npm install -g claude-code`)
+
 ## Quick Start
 
 ```bash
@@ -124,8 +131,9 @@ Each experiment produces:
 - **Build success**: Can the project build without errors?
 - **Type check**: TypeScript compilation errors count
 - **Lint**: ESLint errors count
-- **Tests**: Storybook test results (passed/failed)
+- **Tests**: Storybook story results (passed/failed) including play functions
 - **Accessibility**: Axe violations count
+- **Coverage**: Vite/Vitest coverage summary (lines/statements/branches/functions)
 - **Cost**: API usage cost in USD
 - **Duration**: Total time and API time in seconds
 - **Turns**: Number of agent conversation turns
@@ -145,7 +153,13 @@ Complete metrics from execution and evaluation:
 	"typeCheckErrors": 0,
 	"lintErrors": 0,
 	"test": { "passed": 3, "failed": 0 },
-	"a11y": { "violations": 1 }
+	"a11y": { "violations": 1 },
+	"coverage": {
+		"lines": 87.5,
+		"statements": 86.9,
+		"branches": 75.0,
+		"functions": 80.0
+	}
 }
 ```
 
@@ -214,9 +228,3 @@ pnpm storybook
 - Check `full-conversation.js` to debug agent behavior
 - Use extra prompts to guide agent without modifying main prompt
 - Component manifests work best when agents need library documentation
-
-## Requirements
-
-- Node.js 24+
-- pnpm 10.19.0+
-- Claude Code CLI (`npm install -g claude-code`)

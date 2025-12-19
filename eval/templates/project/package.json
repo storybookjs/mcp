@@ -10,6 +10,7 @@
 		"eval:lint": "eslint .",
 		"preview": "vite preview",
 		"eval:test": "vitest run --reporter json --outputFile ../results/tests.json",
+		"eval:test:coverage": "pnpm run eval:test --coverage",
 		"eval:typecheck": "tsc --noEmit --project ./tsconfig.app.json"
 	},
 	"dependencies": {

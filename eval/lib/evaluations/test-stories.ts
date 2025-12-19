@@ -1,80 +1,48 @@
-import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
+import { isDevEvaluation } from '../context-utils';
 import type { EvaluationSummary, ExperimentArgs } from '../../types';
-import type { JsonTestResults } from 'vitest/reporters';
-import { x } from 'tinyexec';
-import { dedent } from 'ts-dedent';
+import { runTests } from './run-tests';
+import { parseTestResults } from './parse-tests';
+import { writeStoryArtifacts } from './write-story-artifacts';
+import { computeCoverage } from './coverage';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 export async function testStories({
 	projectPath,
 	resultsPath,
-}: ExperimentArgs): Promise<Pick<EvaluationSummary, 'test' | 'a11y'>> {
-	const testResultsPath = path.join(resultsPath, 'tests.json');
+	context,
+}: ExperimentArgs): Promise<
+	Pick<EvaluationSummary, 'test' | 'a11y' | 'coverage'>
+> {
+	const isDevEval = isDevEvaluation(context);
+	const testScript = isDevEval ? 'eval:test:coverage' : 'eval:test';
 
-	const result = await x('pnpm', ['eval:test'], {
-		nodeOptions: {
-			cwd: projectPath,
-		},
-	});
+	await runTests({ projectPath, resultsPath } as ExperimentArgs, testScript);
 
-	await fs.writeFile(
-		path.join(resultsPath, 'tests.md'),
-		dedent`# Test Results
-	
-	**Exit Code:** ${result.exitCode}
+	const { testSummary, a11y, storyResults } =
+		await parseTestResults(resultsPath);
 
-	## stdout
-	
-	\`\`\`sh
-	${result.stdout}
-	\`\`\`
-	
-	## stderr
-	
-	\`\`\`
-	${result.stderr}
-	\`\`\`
-	`,
-	);
+	await writeStoryArtifacts(resultsPath, storyResults, a11y);
 
-	const { default: jsonTestResults } = (await import(testResultsPath, {
-		with: { type: 'json' },
-	})) as { default: JsonTestResults };
+	const { coverage } = isDevEval
+		? await computeCoverage(projectPath, resultsPath)
+		: { coverage: undefined };
 
-	// write the file again to pretty-print it
-	await fs.writeFile(testResultsPath, JSON.stringify(jsonTestResults, null, 2));
-
-	// Extract a11y violations per story
-	const a11yViolations: Record<string, any[]> = {};
-
-	for (const jsonTestResult of Object.values(jsonTestResults.testResults)) {
-		for (const assertionResult of jsonTestResult.assertionResults ?? []) {
-			const storyId = (assertionResult.meta as any)?.storyId;
-			if (!storyId) {
-				continue;
-			}
-
-			for (const report of (assertionResult.meta as any).reports ?? []) {
-				if (report.type === 'a11y' && report.result?.violations?.length > 0) {
-					a11yViolations[storyId] = report.result.violations;
-				}
-			}
-		}
+	if (coverage) {
+		const templateCoverageMdxPath = path.resolve(
+			path.join('templates', 'evaluation', 'results', 'coverage.mdx'),
+		);
+		const projectCoverageMdxPath = path.join(
+			projectPath,
+			'results',
+			'coverage.mdx',
+		);
+		await fs.copyFile(templateCoverageMdxPath, projectCoverageMdxPath);
 	}
 
-	const a11yViolationsPath = path.join(resultsPath, 'a11y-violations.json');
-	await fs.writeFile(
-		a11yViolationsPath,
-		JSON.stringify(a11yViolations, null, 2),
-	);
-
 	return {
-		test: {
-			passed: jsonTestResults.numPassedTests,
-			failed: jsonTestResults.numFailedTests,
-		},
-		a11y: {
-			violations: Object.keys(a11yViolations).length,
-		},
+		test: testSummary,
+		a11y: { violations: Object.keys(a11y).length },
+		coverage: isDevEval ? coverage : undefined,
 	};
 }

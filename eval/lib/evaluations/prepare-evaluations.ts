@@ -24,17 +24,18 @@ export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 	await fs.cp(evaluationTemplateDir, projectPath, {
 		recursive: true,
 		filter: (source) =>
-			!source.includes('node_modules') && !source.includes('dist'),
+			!source.includes('node_modules') &&
+			!source.includes('dist') &&
+			// Only include coverage docs once coverage JSON exists; otherwise Storybook will
+			// error on the static imports inside `results/coverage.mdx`.
+			!source.endsWith(path.join('results', 'coverage.mdx')),
 	});
 
-	const { default: pkgJson } = await import(
-		path.join(projectPath, 'package.json'),
-		{
-			with: { type: 'json' },
-		}
-	);
+	const pkgJsonPath = path.join(projectPath, 'package.json');
+	const pkgJson = JSON.parse(await fs.readFile(pkgJsonPath, 'utf8'));
 	// add the storybook script after agent execution, so it does not taint the experiment
 	pkgJson.scripts.storybook = 'storybook dev --port 6006';
+
 	await fs.writeFile(
 		path.join(projectPath, 'package.json'),
 		JSON.stringify(pkgJson, null, 2),

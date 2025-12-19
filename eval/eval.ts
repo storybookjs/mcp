@@ -99,7 +99,8 @@ const promptSummary = await agent.execute(
 try {
 	await teardownExperiment(experimentArgs);
 } catch (error) {
-	p.log.error(`Failed to teardown experiment: ${error}`);
+	const message = error instanceof Error ? error.message : String(error);
+	p.log.error(`Failed to teardown experiment: ${message}`);
 	// Continue with evaluation despite teardown failure
 }
 
@@ -143,6 +144,38 @@ if (
 	p.log.message(
 		`🦾 Accessibility: ${evaluationSummary.a11y.violations === 0 ? '✅' : styleText('yellow', `⚠️  ${evaluationSummary.a11y.violations} violations`)}`,
 	);
+}
+
+const cov = evaluationSummary.coverage;
+const COVERAGE_THRESHOLDS = {
+	failBelow: 70,
+	warnBelow: 90,
+} as const;
+
+const formatPct = (v: number) => `${Math.round(v)}`;
+const isNumber = (v: unknown): v is number => typeof v === 'number';
+
+const getCoverageBadge = (v: number) => {
+	return v >= COVERAGE_THRESHOLDS.warnBelow
+		? '✅'
+		: v >= COVERAGE_THRESHOLDS.failBelow
+			? '⚠️'
+			: '❌';
+};
+
+if (cov) {
+	if (isNumber(cov.lines)) {
+		const overall = cov.lines;
+		const badge = getCoverageBadge(overall);
+
+		p.log.message(`Coverage: ${badge} ${formatPct(overall)} %`);
+
+		if (args.verbose) {
+			p.log.message(
+				`📊 Coverage details: lines ${cov.lines ?? '–'}%, statements ${cov.statements ?? '–'}%, branches ${cov.branches ?? '–'}%, functions ${cov.functions ?? '–'}%`,
+			);
+		}
+	}
 }
 
 p.log.message(

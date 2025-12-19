@@ -31,6 +31,12 @@ export type EvaluationSummary = {
 	a11y: {
 		violations: number;
 	};
+	coverage?: {
+		branches: number | null;
+		functions: number | null;
+		lines: number | null;
+		statements: number | null;
+	};
 };
 
 export const McpServerConfigSchema = v.record(

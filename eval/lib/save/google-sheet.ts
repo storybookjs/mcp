@@ -24,6 +24,7 @@ type SheetsData = {
 	duration: number;
 	durationApi: number;
 	turns: number;
+	coverageLines: number | null;
 	contextType: string;
 	contextDetails: string;
 	agent: string;
@@ -82,6 +83,9 @@ export async function saveToGoogleSheets(
 			evaluationSummary.test.passed /
 			(evaluationSummary.test.passed + evaluationSummary.test.failed),
 		a11yViolations: evaluationSummary.a11y.violations,
+		coverageLines: evaluationSummary.coverage?.lines
+			? evaluationSummary.coverage.lines / 100
+			: null,
 		cost: executionSummary.cost,
 		duration: executionSummary.duration,
 		durationApi: executionSummary.durationApi,

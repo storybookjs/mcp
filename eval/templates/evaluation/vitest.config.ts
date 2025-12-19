@@ -1,7 +1,9 @@
+// @ts-nocheck
+/* eslint-disable */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { defineConfig } from 'vitest/config';
+import { defineConfig, defaultExclude } from 'vitest/config';
 
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 
@@ -18,6 +20,9 @@ export default defineConfig({
 		include: ['react/jsx-dev-runtime'],
 	},
 	test: {
+		coverage: {
+			exclude: ['preview.ts', '**/*.{css,scss,sass}', ...defaultExclude],
+		},
 		projects: [
 			{
 				extends: true,
