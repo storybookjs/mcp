@@ -291,9 +291,7 @@ export const claudeCodeCli: Agent = {
 			const getConversationMessage = (
 				message: ClaudeCodeStreamMessage,
 			): ConversationMessage => {
-				if (message.type !== 'assistant') {
-					return message;
-				} else {
+				if (message.type === 'assistant') {
 					return {
 						...message,
 						message: {
@@ -304,6 +302,13 @@ export const claudeCodeCli: Agent = {
 							})),
 						},
 					};
+				} else if (message.type === 'system') {
+					return {
+						...message,
+						agent: `Claude Code v${message.claude_code_version}`,
+					};
+				} else {
+					return message;
 				}
 			};
 

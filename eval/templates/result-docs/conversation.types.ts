@@ -46,11 +46,11 @@ export interface UserMessage {
 export interface SystemMessage {
 	type: 'system';
 	subtype: 'init';
+	agent: string;
 	model: string;
 	tools: string[];
 	mcp_servers: Array<{ name: string; status: string }>;
 	cwd: string;
-	claude_code_version?: string;
 	ms: number;
 	tokenCount?: number;
 	costUSD?: number;

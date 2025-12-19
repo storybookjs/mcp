@@ -47,6 +47,7 @@ export const copilotCli: Agent = {
 			{
 				type: 'system',
 				subtype: 'init',
+				agent: 'Copilot CLI',
 				model: DEFAULT_MODEL,
 				tools: [],
 				mcp_servers: (mcpServerConfig ? Object.keys(mcpServerConfig) : []).map(
@@ -168,6 +169,12 @@ export const copilotCli: Agent = {
 			}
 		}
 
+		// Parse token usage from the output
+		const tokenUsage = parseTokenUsage(out);
+		const totalTokens = tokenUsage
+			? tokenUsage.input + tokenUsage.output
+			: undefined;
+
 		const isError = err.trim().length > 0;
 		const resultMessage: ResultMessage = {
 			type: 'result',
@@ -177,6 +184,7 @@ export const copilotCli: Agent = {
 			num_turns: Math.max(blockCount, 1) + toolCount * 2,
 			ms: wallMs,
 			total_cost_usd: 0,
+			...(totalTokens !== undefined && { tokenCount: totalTokens }),
 		};
 
 		messages.push(resultMessage);
@@ -296,6 +304,38 @@ function parseDurationSeconds(text: string, regex: RegExp): number | null {
 	const seconds = Number(match[2] || 0);
 	if (Number.isNaN(minutes) || Number.isNaN(seconds)) return null;
 	return minutes * 60 + seconds;
+}
+
+/**
+ * Parses token counts from Copilot CLI output.
+ * Example format:
+ * Usage by model:
+ * claude-sonnet-4.5    163.2k input, 6.0k output, 100.6k cache read (Est. 1 Premium request)
+ *
+ * Returns { input, output } token counts, or null if not found.
+ */
+function parseTokenUsage(
+	text: string,
+): { input: number; output: number } | null {
+	// Match patterns like "163.2k input" or "6.0k output" or "1234 input"
+	const inputMatch = text.match(/([0-9.]+)k?\s+input/i);
+	const outputMatch = text.match(/([0-9.]+)k?\s+output/i);
+
+	if (!inputMatch && !outputMatch) return null;
+
+	const parseTokenValue = (match: RegExpMatchArray | null): number => {
+		if (!match || !match[1]) return 0;
+		const value = Number.parseFloat(match[1]);
+		if (Number.isNaN(value)) return 0;
+		// Check if it's in "k" format (e.g., "163.2k")
+		const hasK = match[0].toLowerCase().includes('k');
+		return hasK ? Math.round(value * 1000) : Math.round(value);
+	};
+
+	return {
+		input: parseTokenValue(inputMatch),
+		output: parseTokenValue(outputMatch),
+	};
 }
 
 async function writeCopilotMcpConfig(

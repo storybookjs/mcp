@@ -518,9 +518,7 @@ export const Conversation = (props: ConversationProps) => {
 		metadataCards.push({
 			title: 'Model',
 			value: systemTurn.model || 'N/A',
-			subvalue: systemTurn.claude_code_version
-				? `Claude Code ${systemTurn.claude_code_version}`
-				: '',
+			subvalue: systemTurn.agent ?? '',
 		});
 
 		if (systemTurn.tools) {
