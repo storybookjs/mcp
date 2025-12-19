@@ -221,6 +221,7 @@ export const Button = ({ label, onClick }: ButtonProps) => {
   return <button onClick={onClick}>{label}</button>;
 };`,
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -298,6 +299,7 @@ export const WithEditTool: Story = {
   variant?: 'primary' | 'secondary';
 }`,
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -364,6 +366,7 @@ export const WithMCPTool: Story = {
 							id: 'tool_1',
 							name: 'mcp__storybook_list-all-components',
 							input: {},
+							isMCP: true,
 						},
 					],
 					usage: {
@@ -443,6 +446,7 @@ export const WithBashTool: Story = {
 							input: {
 								command: 'npm test',
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -634,6 +638,7 @@ export const WithReadTool: Story = {
 							input: {
 								file_path: '/Users/dev/project/src/components/Button.tsx',
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -704,6 +709,7 @@ export const WithGlobTool: Story = {
 							input: {
 								pattern: 'src/components/**/*.tsx',
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -798,6 +804,7 @@ export const ComplexConversation: Story = {
 							id: 'tool_1',
 							name: 'mcp__storybook_list-all-components',
 							input: {},
+							isMCP: true,
 						},
 					],
 					usage: {
@@ -859,6 +866,7 @@ export const ComplexConversation: Story = {
 							type: 'tool_use',
 							id: 'tool_2',
 							name: 'Write',
+							isMCP: false,
 							input: {
 								file_path: 'src/components/FlightBookingForm.tsx',
 								content: `import { Form } from './Form';
@@ -927,6 +935,7 @@ export const FlightBookingForm = () => {
 							type: 'tool_use',
 							id: 'tool_3',
 							name: 'Write',
+							isMCP: false,
 							input: {
 								file_path: 'src/hooks/useFlightValidation.ts',
 								content: `export const useFlightValidation = () => {
@@ -1008,6 +1017,7 @@ export const MCPToolWithError: Story = {
 							input: {
 								componentId: 'nonexistent',
 							},
+							isMCP: true,
 						},
 					],
 					usage: {

@@ -268,6 +268,11 @@ const result = await p.group({
   - Parses tool calls and todo lists
   - Calculates token counts using `ai-tokenizer`
   - Tracks conversation for debugging
+- `lib/agents/copilot-cli.ts` - GitHub Copilot CLI wrapper
+  - Runs `copilot -p "<prompt>" --allow-all-tools` from `projectPath`
+  - Captures plain stdout/stderr (no structured tool events)
+  - Writes `conversation.json` with minimal metadata (no token/cost)
+  - Requires global CLI install/auth (`npm i -g @github/copilot`, `copilot login`)
 
 ### Evaluation Pipeline
 
@@ -325,6 +330,22 @@ const promptCost = 0.0123;
 const messages = [...]; // All messages with metadata
 globalThis.loadConversation?.({ prompt, promptTokenCount, promptCost, messages });
 ```
+
+### Copilot CLI Integration
+
+The Copilot CLI agent (`lib/agents/copilot-cli.ts`) provides a simpler, best-effort integration:
+
+**Key Behaviors:**
+
+1. **Programmatic mode:** Executes `copilot -p "<prompt>" --allow-all-tools` in the experiment `projectPath`.
+2. **Plain-text output:** Captures stdout/stderr only (Copilot CLI does not expose a stream-JSON format). Tool calls are not structured in the log.
+3. **Conversation logging:** Writes `conversation.json` with a synthetic init message, one assistant text message (captured stdout/stderr), and a result message. Token counts and costs are zeroed.
+4. **No MCP plumbing:** MCP servers/config are ignored because the Copilot CLI currently lacks a streaming JSON interface for tool metadata.
+
+**Requirements:**
+
+- Global install and auth: `npm i -g @github/copilot` then `copilot login`.
+- Availability: Copilot CLI must be on PATH for the agent to run; otherwise the agent will report the failure in stderr.
 
 ### Adding a New Agent
 
