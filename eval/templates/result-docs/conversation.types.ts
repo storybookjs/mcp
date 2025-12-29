@@ -49,7 +49,10 @@ export interface SystemMessage {
 	agent: string;
 	model: string;
 	tools: string[];
-	mcp_servers: Array<{ name: string; status: string }>;
+	mcp_servers: Array<{
+		name: string;
+		status: 'connected' | 'disconnected' | 'unknown';
+	}>;
 	cwd: string;
 	ms: number;
 	tokenCount?: number;

@@ -8,7 +8,7 @@ import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 import type {
 	ConversationMessage,
-	ToolUseContent as ConverstationToolUseContent,
+	ToolUseContent as ConversationToolUseContent,
 } from '../../templates/result-docs/conversation.types.ts';
 
 /**
@@ -217,7 +217,7 @@ function getTodoProgress(messages: ConversationMessage[]): TodoProgress | null {
 	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
-				(c): c is ConverstationToolUseContent =>
+				(c): c is ConversationToolUseContent =>
 					c.type === 'tool_use' && c.name === 'TodoWrite',
 			);
 			if (todoWrite?.input.todos) {
@@ -344,6 +344,10 @@ export const claudeCodeCli: Agent = {
 					return {
 						...message,
 						agent: `Claude Code v${message.claude_code_version}`,
+						mcp_servers: message.mcp_servers.map((s) => ({
+							name: s.name,
+							status: s.status as 'connected' | 'disconnected' | 'unknown',
+						})),
 					};
 				} else {
 					return message;

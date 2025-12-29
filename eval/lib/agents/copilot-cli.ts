@@ -61,7 +61,7 @@ export const copilotCli: Agent = {
 				model: copilotModel,
 				tools: [],
 				mcp_servers: (mcpServerConfig ? Object.keys(mcpServerConfig) : []).map(
-					(name) => ({ name, status: 'connected' }),
+					(name) => ({ name, status: 'unknown' }),
 				),
 				cwd: projectPath,
 				ms: 0,
@@ -360,32 +360,36 @@ async function writeCopilotMcpConfig(
 		const server = mcpServers[name];
 		if (!server) continue;
 
-		if (server.type === 'http') {
-			const httpServer = server;
-			converted[name] = {
-				type: 'http',
-				url: httpServer.url,
-				headers: httpServer.headers ?? {},
-				tools: (httpServer as any).tools ?? ['*'],
-			};
-		} else if (server.type === 'stdio') {
-			const stdioServer = server;
-			converted[name] = {
-				type: 'local',
-				command: stdioServer.command,
-				args: stdioServer.args ?? [],
-				tools: ['*'],
-			};
-		} else {
-			clackLog.warn(
-				`Copilot CLI MCP config: skipping unsupported server "${name}" (type: ${(server as any).type}).`,
-			);
+		switch (server.type) {
+			case 'http': {
+				converted[name] = {
+					type: 'http',
+					url: server.url,
+					headers: server.headers ?? {},
+					tools: (server as any).tools ?? ['*'],
+				};
+				break;
+			}
+			case 'stdio': {
+				converted[name] = {
+					type: 'local',
+					command: server.command,
+					args: server.args ?? [],
+					tools: ['*'],
+				};
+				break;
+			}
+			default: {
+				const unsupportedServer: never = server;
+				throw new Error(
+					`Unsupported server type: ${(unsupportedServer as any).type}`,
+				);
+			}
 		}
 	}
 
-	const config = {
-		mcpServers: converted,
-	};
-
-	await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+	await fs.writeFile(
+		configPath,
+		JSON.stringify({ mcpServers: converted }, null, 2),
+	);
 }
