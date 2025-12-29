@@ -7,7 +7,7 @@ import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 import type {
 	ConversationMessage,
-	ToolUseContent as ConverstationToolUseContent,
+	ToolUseContent as ConversationToolUseContent,
 } from '../../templates/result-docs/conversation.types.ts';
 
 interface BaseMessage {
@@ -198,7 +198,7 @@ function getTodoProgress(messages: ConversationMessage[]): TodoProgress | null {
 	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
-				(c): c is ConverstationToolUseContent =>
+				(c): c is ConversationToolUseContent =>
 					c.type === 'tool_use' && c.name === 'TodoWrite',
 			);
 			if (todoWrite?.input.todos) {
