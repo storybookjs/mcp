@@ -51,7 +51,7 @@ export const copilotCli: Agent = {
 				model: DEFAULT_MODEL,
 				tools: [],
 				mcp_servers: (mcpServerConfig ? Object.keys(mcpServerConfig) : []).map(
-					(name) => ({ name, status: 'connected' }),
+					(name) => ({ name, status: 'unknown' }),
 				),
 				cwd: projectPath,
 				ms: 0,

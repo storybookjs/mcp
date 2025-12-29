@@ -538,7 +538,7 @@ export const Conversation = (props: ConversationProps) => {
 					.map(
 						(s) =>
 							`<div style="display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; background-color: #f3f4f6; border-radius: 9999px; font-size: 0.875rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
-								<span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${s.status === 'connected' ? '#10b981' : '#ef4444'}; margin-right: 0.5rem;"></span>
+								<span title="${s.status}" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${s.status === 'connected' ? '#10b981' : s.status === 'unknown' ? '#6b7280' : '#ef4444'}; margin-right: 0.5rem;"></span>
 								${s.name}
 							</div>`,
 					)
