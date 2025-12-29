@@ -14,7 +14,7 @@ export type ExperimentArgs = {
 };
 
 export type ExecutionSummary = {
-	cost: number;
+	cost?: number;
 	duration: number;
 	durationApi: number;
 	turns: number;

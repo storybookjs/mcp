@@ -5,6 +5,10 @@ import type { Agent } from '../../types.ts';
 import { spinner, log as clackLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
+import type {
+	ConversationMessage,
+	ToolUseContent as ConversationToolUseContent,
+} from '../../templates/result-docs/conversation.types.ts';
 
 interface BaseMessage {
 	session_id: string;
@@ -189,14 +193,12 @@ function calculateMessageTokenCount(
 	return { tokens: 0, cost: 0 };
 }
 
-function getTodoProgress(
-	messages: ClaudeCodeStreamMessage[],
-): TodoProgress | null {
+function getTodoProgress(messages: ConversationMessage[]): TodoProgress | null {
 	// Find the most recent TodoWrite message
 	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
-				(c): c is ToolUseContent =>
+				(c): c is ConversationToolUseContent =>
 					c.type === 'tool_use' && c.name === 'TodoWrite',
 			);
 			if (todoWrite?.input.todos) {
@@ -272,7 +274,7 @@ export const claudeCodeCli: Agent = {
 			claudeProcess.process?.stdin.write('1\n');
 			claudeProcess.process?.stdin.end();
 		}
-		const messages: ClaudeCodeStreamMessage[] = [];
+		const messages: ConversationMessage[] = [];
 		let previousMs = Date.now();
 		for await (const message of claudeProcess) {
 			const parsed = JSON.parse(message) as ClaudeCodeStreamMessage;
@@ -285,7 +287,36 @@ export const claudeCodeCli: Agent = {
 			const tokenData = calculateMessageTokenCount(parsed, tokenizer, model);
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
-			messages.push(parsed);
+
+			const getConversationMessage = (
+				message: ClaudeCodeStreamMessage,
+			): ConversationMessage => {
+				if (message.type === 'assistant') {
+					return {
+						...message,
+						message: {
+							...message.message,
+							content: message.message.content.map((c) => ({
+								...c,
+								isMCP: c.type === 'tool_use' && c.name?.startsWith('mcp__'),
+							})),
+						},
+					};
+				} else if (message.type === 'system') {
+					return {
+						...message,
+						agent: `Claude Code v${message.claude_code_version}`,
+						mcp_servers: message.mcp_servers.map((s) => ({
+							name: s.name,
+							status: s.status as 'connected' | 'disconnected' | 'unknown',
+						})),
+					};
+				} else {
+					return message;
+				}
+			};
+
+			messages.push(getConversationMessage(parsed));
 
 			// Check for MCP server status in init message
 			if (

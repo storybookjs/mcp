@@ -20,7 +20,7 @@ type SheetsData = {
 	lintErrors: number;
 	testsPassed: number;
 	a11yViolations: number;
-	cost: number;
+	cost: number | 'unknown';
 	duration: number;
 	durationApi: number;
 	turns: number;
@@ -86,7 +86,8 @@ export async function saveToGoogleSheets(
 		coverageLines: evaluationSummary.coverage?.lines
 			? evaluationSummary.coverage.lines / 100
 			: null,
-		cost: executionSummary.cost,
+		cost: executionSummary.cost ?? 'unknown',
+
 		duration: executionSummary.duration,
 		durationApi: executionSummary.durationApi,
 		turns: executionSummary.turns,

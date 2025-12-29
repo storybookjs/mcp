@@ -181,7 +181,9 @@ if (cov) {
 p.log.message(
 	`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
 );
-p.log.message(`💰 Cost: $${promptSummary.cost}`);
+p.log.message(
+	`💰 Cost: ${promptSummary.cost ? `$${promptSummary.cost}` : 'unknown'}`,
+);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
 
 const chromaticUrl = await save(
