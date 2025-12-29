@@ -516,9 +516,13 @@ export const Conversation = (props: ConversationProps) => {
 
 	if (systemTurn) {
 		metadataCards.push({
+			title: 'Agent',
+			value: systemTurn.agent || 'N/A',
+		});
+
+		metadataCards.push({
 			title: 'Model',
 			value: systemTurn.model || 'N/A',
-			subvalue: systemTurn.agent ?? '',
 		});
 
 		if (systemTurn.tools) {

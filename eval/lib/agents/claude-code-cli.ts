@@ -309,6 +309,8 @@ export const claudeCodeCli: Agent = {
 			claudeProcess.process?.stdin.end();
 		}
 		const messages: ConversationMessage[] = [];
+		let agentName = '';
+		let modelName = '';
 		let previousMs = Date.now();
 		for await (const message of claudeProcess) {
 			const parsed = JSON.parse(message) as ClaudeCodeStreamMessage;
@@ -341,6 +343,8 @@ export const claudeCodeCli: Agent = {
 						},
 					};
 				} else if (message.type === 'system') {
+					agentName = `Claude Code v${message.claude_code_version}`;
+					modelName = message.model;
 					return {
 						...message,
 						agent: `Claude Code v${message.claude_code_version}`,
@@ -405,6 +409,8 @@ export const claudeCodeCli: Agent = {
 			JSON.stringify({ prompt, promptTokenCount, messages }, null, 2),
 		);
 		const result = {
+			agent: agentName,
+			model: modelName,
 			cost: Number(resultMessage.total_cost_usd.toFixed(4)),
 			duration: Math.round(resultMessage.duration_ms / 1000),
 			durationApi: Math.round(resultMessage.duration_api_ms / 1000),

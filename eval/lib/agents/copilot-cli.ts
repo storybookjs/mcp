@@ -220,6 +220,8 @@ export const copilotCli: Agent = {
 		log.stop(successMessage);
 
 		return {
+			agent: 'Copilot CLI',
+			model: copilotModel,
 			duration: Math.round(elapsedMs / 1000),
 			durationApi: Math.round(apiMs / 1000),
 			turns: Math.max(blockCount, 1) + toolCount * 2,

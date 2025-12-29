@@ -57,6 +57,8 @@ export type ExperimentArgs = {
 };
 
 export type ExecutionSummary = {
+	agent: string;
+	model: string;
 	cost?: number;
 	duration: number;
 	durationApi: number;

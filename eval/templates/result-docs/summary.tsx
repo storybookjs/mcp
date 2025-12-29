@@ -1,4 +1,6 @@
 interface SummaryProps {
+	agent: string;
+	model: string;
 	cost?: number;
 	duration: number;
 	durationApi: number;
@@ -203,6 +205,8 @@ export const Summary = (props: SummaryProps) => {
 					gap: '1rem',
 				}}
 			>
+				<MetricCard title="Agent" value={props.agent} />
+				<MetricCard title="Model" value={props.model} />
 				<MetricCard
 					title="Duration"
 					value={formatDuration(props.duration)}

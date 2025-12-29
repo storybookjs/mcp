@@ -18,6 +18,8 @@ type Story = StoryObj<typeof meta>;
  */
 export const AllPassing: Story = {
 	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
 		cost: 0.2543,
 		duration: 245,
 		durationApi: 198,
@@ -40,6 +42,8 @@ export const AllPassing: Story = {
  */
 export const BuildFailure: Story = {
 	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
 		cost: 0.1234,
 		duration: 120,
 		durationApi: 95,
@@ -62,6 +66,8 @@ export const BuildFailure: Story = {
  */
 export const TypeCheckErrors: Story = {
 	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
 		cost: 0.3421,
 		duration: 312,
 		durationApi: 245,
@@ -84,6 +90,8 @@ export const TypeCheckErrors: Story = {
  */
 export const LintErrors: Story = {
 	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
 		cost: 0.2876,
 		duration: 267,
 		durationApi: 213,
@@ -106,6 +114,8 @@ export const LintErrors: Story = {
  */
 export const TestsFailedToRun: Story = {
 	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
 		cost: 0.1567,
 		duration: 156,
 		durationApi: 124,
@@ -128,6 +138,8 @@ export const TestsFailedToRun: Story = {
  */
 export const SomeTestsFailed: Story = {
 	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
 		cost: 0.4123,
 		duration: 389,
 		durationApi: 312,
@@ -150,6 +162,8 @@ export const SomeTestsFailed: Story = {
  */
 export const AccessibilityViolations: Story = {
 	args: {
+		agent: 'Copilot CLI',
+		model: 'gpt-5.1-codex-max',
 		cost: 0.3298,
 		duration: 298,
 		durationApi: 234,
@@ -172,6 +186,8 @@ export const AccessibilityViolations: Story = {
  */
 export const MultipleFailures: Story = {
 	args: {
+		agent: 'Copilot CLI',
+		model: 'claude-opus-4.5',
 		cost: 0.5621,
 		duration: 512,
 		durationApi: 423,
