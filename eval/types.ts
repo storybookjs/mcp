@@ -9,7 +9,9 @@ export const SUPPORTED_MODELS = [
 	'claude-opus-4.5',
 	'claude-haiku-4.5',
 	'gpt-5.1-codex-max',
+	'gpt-5.1-codex',
 	'gpt-5.2',
+	'gemini-3-pro-preview',
 ] as const;
 
 export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
@@ -31,8 +33,11 @@ export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
 export const COPILOT_MODELS = [
 	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-haiku-4.5',
 	'gpt-5.1-codex-max',
+	'gpt-5.1-codex',
 	'gpt-5.2',
+	'gemini-3-pro-preview',
 ] as const satisfies readonly SupportedModel[];
 
 export type CopilotModel = (typeof COPILOT_MODELS)[number];
