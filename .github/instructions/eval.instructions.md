@@ -340,7 +340,7 @@ The Copilot CLI agent (`lib/agents/copilot-cli.ts`) provides a simpler, best-eff
 1. **Programmatic mode:** Executes `copilot -p "<prompt>" --allow-all-tools` in the experiment `projectPath`.
 2. **Plain-text output:** Captures stdout/stderr only (Copilot CLI does not expose a stream-JSON format). Tool calls are not structured in the log.
 3. **Conversation logging:** Writes `conversation.json` with a synthetic init message, one assistant text message (captured stdout/stderr), and a result message. Token counts and costs are zeroed.
-4. **No MCP plumbing:** MCP servers/config are ignored because the Copilot CLI currently lacks a streaming JSON interface for tool metadata.
+4. **MCP configuration support:** When `mcpServerConfig` is provided, the agent writes MCP config to `.copilot/mcp-config.json`, sets `XDG_CONFIG_HOME` so Copilot CLI can discover and use MCP servers, and converts both HTTP and stdio MCP server definitions to Copilot's format. Output remains plain text (no streaming JSON/tool metadata).
 
 **Requirements:**
 
