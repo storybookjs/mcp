@@ -788,9 +788,7 @@ const TurnRenderer = ({
 	const isMCP =
 		turn.type === 'assistant' &&
 		'message' in turn &&
-		turn.message?.content?.some(
-			(c) => c.type === 'tool_use' && 'name' in c && c.isMCP,
-		);
+		turn.message?.content?.some((c) => c.type === 'tool_use' && c.isMCP);
 
 	const title = getTurnTitle(turn);
 	const percentage =
