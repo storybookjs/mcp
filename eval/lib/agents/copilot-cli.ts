@@ -2,7 +2,8 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { spinner, log as clackLog } from '@clack/prompts';
-import type { Agent, McpServerConfig } from '../../types.ts';
+import type { Agent, McpServerConfig, CopilotModel } from '../../types.ts';
+import { COPILOT_MODELS } from '../../types.ts';
 import { runHook } from '../run-hook.ts';
 import type {
 	AssistantMessage,
@@ -25,17 +26,26 @@ type StreamEvent =
 const BLOCK_GAP_MS = 500;
 const USAGE_0 = { input_tokens: 0, output_tokens: 0 } as const;
 const TOOL_LINE_REGEX = /^([✓✗])\s+(\S+)\s*(.*)$/;
-const DEFAULT_MODEL = 'claude-sonnet-4.5';
 
 export const copilotCli: Agent = {
 	async execute(prompt, experimentArgs, mcpServerConfig) {
-		const { projectPath, resultsPath } = experimentArgs;
+		const { projectPath, resultsPath, model: selectedModel } = experimentArgs;
+
+		// Validate that the model is supported by Copilot CLI
+		if (!COPILOT_MODELS.includes(selectedModel as CopilotModel)) {
+			throw new Error(
+				`Model "${selectedModel}" is not supported by Copilot CLI. Available models: ${COPILOT_MODELS.join(', ')}`,
+			);
+		}
+		const copilotModel = selectedModel as CopilotModel;
 
 		const log = spinner();
 
 		await runHook('pre-execute-agent', experimentArgs);
 
-		log.start('Executing prompt with GitHub Copilot CLI');
+		log.start(
+			`Executing prompt with GitHub Copilot CLI (model: ${copilotModel})`,
+		);
 
 		const copilotConfigDir = path.join(projectPath, '.copilot');
 
@@ -48,7 +58,7 @@ export const copilotCli: Agent = {
 				type: 'system',
 				subtype: 'init',
 				agent: 'Copilot CLI',
-				model: DEFAULT_MODEL,
+				model: copilotModel,
 				tools: [],
 				mcp_servers: (mcpServerConfig ? Object.keys(mcpServerConfig) : []).map(
 					(name) => ({ name, status: 'unknown' }),
@@ -58,7 +68,7 @@ export const copilotCli: Agent = {
 			},
 		];
 
-		const args = ['-p', prompt, '--allow-all-tools', '--model', DEFAULT_MODEL];
+		const args = ['-p', prompt, '--allow-all-tools', '--model', copilotModel];
 		const t0 = Date.now();
 		let out = '';
 		let err = '';
@@ -210,6 +220,8 @@ export const copilotCli: Agent = {
 		log.stop(successMessage);
 
 		return {
+			agent: 'Copilot CLI',
+			model: copilotModel,
 			duration: Math.round(elapsedMs / 1000),
 			durationApi: Math.round(apiMs / 1000),
 			turns: Math.max(blockCount, 1) + toolCount * 2,
