@@ -47,7 +47,7 @@ function getContextDetails(context: Context): string {
 			// Extract manifest path from MCP server config args
 			const mcpConfig = Object.values(context.mcpServerConfig)[0];
 			if (mcpConfig?.type === 'stdio' && mcpConfig.args) {
-				const manifestIndex = mcpConfig.args.indexOf('--manifestPath');
+				const manifestIndex = mcpConfig.args.indexOf('--componentManifestPath');
 				const manifestIndexValue = mcpConfig.args[manifestIndex + 1];
 				if (manifestIndex !== -1 && manifestIndexValue) {
 					return path.basename(manifestIndexValue);

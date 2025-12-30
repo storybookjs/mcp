@@ -75,7 +75,7 @@ describe('bin.ts stdio MCP server', () => {
 			'./fixtures/full-manifest.fixture.json',
 		);
 
-		const proc = x('node', [binPath, '--manifestPath', fixturePath]);
+		const proc = x('node', [binPath, '--componentManifestPath', fixturePath]);
 
 		child = proc.process as ChildProcess;
 

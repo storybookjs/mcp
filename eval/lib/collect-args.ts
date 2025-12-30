@@ -579,6 +579,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	return result;
 }
 
+// TODO: add support for docs manifests too
 function manifestPathToMcpServerConfig(manifestPath: string): McpServerConfig {
 	return {
 		'storybook-mcp': {
@@ -586,7 +587,7 @@ function manifestPathToMcpServerConfig(manifestPath: string): McpServerConfig {
 			command: 'node',
 			args: [
 				path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
-				'--manifestPath',
+				'--componentManifestPath',
 				manifestPath,
 			],
 		},
