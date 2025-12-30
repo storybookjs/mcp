@@ -102,7 +102,7 @@ export const McpServerConfigSchema = v.record(
 );
 export type McpServerConfig = v.InferOutput<typeof McpServerConfigSchema>;
 
-export type Context =
+export type ContextItem =
 	| {
 			type: false;
 	  }
@@ -121,6 +121,8 @@ export type Context =
 	| {
 			type: 'storybook-mcp-dev';
 	  };
+
+export type Context = ContextItem[];
 
 export interface Agent {
 	execute: (
