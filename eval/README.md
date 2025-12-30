@@ -52,13 +52,15 @@ node eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.
 
 Different agents support different models:
 
-| Model               | Claude Code CLI | Copilot CLI |
-| ------------------- | :-------------: | :---------: |
-| `claude-sonnet-4.5` |       ✅        |     ✅      |
-| `claude-opus-4.5`   |       ✅        |     ✅      |
-| `claude-haiku-4.5`  |       ✅        |     ❌      |
-| `gpt-5.1-codex-max` |       ❌        |     ✅      |
-| `gpt-5.2`           |       ❌        |     ✅      |
+| Model                  | Claude Code CLI | Copilot CLI |
+| ---------------------- | :-------------: | :---------: |
+| `claude-sonnet-4.5`    |       ✅        |     ✅      |
+| `claude-opus-4.5`      |       ✅        |     ✅      |
+| `claude-haiku-4.5`     |       ✅        |     ✅      |
+| `gpt-5.1-codex`        |       ❌        |     ✅      |
+| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
+| `gpt-5.2`              |       ❌        |     ✅      |
+| `gemini-3-pro-preview` |       ❌        |     ✅      |
 
 **Example usage:**
 
