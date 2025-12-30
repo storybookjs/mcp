@@ -17,7 +17,10 @@ export {
 } from './tools/get-component-documentation.ts';
 
 // Export manifest constants
-export { MANIFEST_PATH } from './utils/get-manifest.ts';
+export {
+	COMPONENT_MANIFEST_PATH,
+	DOCS_MANIFEST_PATH,
+} from './utils/get-manifest.ts';
 
 // Export types for reuse
 export type { StorybookContext } from './types.ts';

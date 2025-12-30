@@ -54,21 +54,34 @@ export type StorybookContext = {
 
 const JSDocTag = v.record(v.string(), v.array(v.string()));
 
+const Error = v.object({
+	name: v.string(),
+	message: v.string(),
+});
+
 const BaseManifest = v.object({
 	name: v.string(),
 	description: v.optional(v.string()),
 	jsDocTags: v.optional(JSDocTag),
-	error: v.optional(
-		v.object({
-			name: v.string(),
-			message: v.string(),
-		}),
-	),
+	error: v.optional(Error),
 });
 
 const Story = v.object({
 	...BaseManifest.entries,
 	snippet: v.optional(v.string()),
+});
+
+/**
+ * A docs entry represents MDX documentation that can be attached to a component
+ * or standalone (unattached).
+ */
+const Doc = v.object({
+	id: v.string(),
+	name: v.string(),
+	title: v.string(),
+	path: v.string(),
+	content: v.string(),
+	error: v.optional(Error),
 });
 
 export const ComponentManifest = v.object({
@@ -80,6 +93,7 @@ export const ComponentManifest = v.object({
 	stories: v.optional(v.array(Story)),
 	// loose schema for react-docgen types, as they are pretty complex
 	reactDocgen: v.optional(v.custom<Documentation>(() => true)),
+	docs: v.optional(v.record(v.string(), Doc)),
 });
 export type ComponentManifest = v.InferOutput<typeof ComponentManifest>;
 
@@ -88,3 +102,13 @@ export const ComponentManifestMap = v.object({
 	components: v.record(v.string(), ComponentManifest),
 });
 export type ComponentManifestMap = v.InferOutput<typeof ComponentManifestMap>;
+
+/**
+ * Manifest for unattached/standalone documentation entries.
+ * Served at /manifests/docs.json
+ */
+export const DocsManifestMap = v.object({
+	v: v.number(),
+	docs: v.record(v.string(), Doc),
+});
+export type DocsManifestMap = v.InferOutput<typeof DocsManifestMap>;
