@@ -25,7 +25,7 @@ const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
  */
 const TOKENIZER_MODEL_MAP: Record<ClaudeModel, keyof typeof models> = {
 	'claude-sonnet-4.5': 'anthropic/claude-sonnet-4.5',
-	'claude-opus-4.5': 'anthropic/claude-opus-4.1',
+	'claude-opus-4.5': 'anthropic/claude-opus-4.5',
 	'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
 };
 
