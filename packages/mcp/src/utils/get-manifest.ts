@@ -1,4 +1,8 @@
-import { ComponentManifestMap, DocsManifestMap } from '../types.ts';
+import {
+	ComponentManifestMap,
+	DocsManifestMap,
+	type AllManifests,
+} from '../types.ts';
 import * as v from 'valibot';
 
 /**
@@ -103,10 +107,7 @@ export async function getManifests(
 		request: Request | undefined,
 		path: string,
 	) => Promise<string>,
-): Promise<{
-	componentManifest: ComponentManifestMap;
-	docsManifest?: DocsManifestMap;
-}> {
+): Promise<AllManifests> {
 	const provider = manifestProvider ?? defaultManifestProvider;
 
 	// Fetch both component and docs manifests in parallel

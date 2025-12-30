@@ -1,7 +1,7 @@
 import type { McpServer } from 'tmcp';
 import type { StorybookContext } from '../types.ts';
-import { getManifest, errorToMCPContent } from '../utils/get-manifest.ts';
-import { formatComponentManifestMapToList } from '../utils/format-manifest.ts';
+import { getManifests, errorToMCPContent } from '../utils/get-manifest.ts';
+import { formatManifestsToLists as formatManifestsToLists } from '../utils/format-manifest.ts';
 
 export const LIST_TOOL_NAME = 'list-all-components';
 
@@ -19,27 +19,24 @@ export async function addListAllComponentsTool(
 		},
 		async () => {
 			try {
-				const manifest = await getManifest(
+				const manifests = await getManifests(
 					server.ctx.custom?.request,
 					server.ctx.custom?.manifestProvider,
 				);
 
 				const format = server.ctx.custom?.format ?? 'markdown';
-				const componentList = formatComponentManifestMapToList(
-					manifest,
-					format,
-				);
+				const lists = formatManifestsToLists(manifests, format);
 
 				await server.ctx.custom?.onListAllComponents?.({
 					context: server.ctx.custom,
-					manifest,
+					manifests,
 				});
 
 				return {
 					content: [
 						{
 							type: 'text',
-							text: componentList,
+							text: lists,
 						},
 					],
 				};

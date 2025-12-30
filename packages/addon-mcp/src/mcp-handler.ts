@@ -103,21 +103,23 @@ export const mcpServerHandler = async ({
 		request: webRequest,
 		// Telemetry handlers for component manifest tools
 		...(!disableTelemetry && {
-			onListAllComponents: async ({ manifest }) => {
+			onListAllComponents: async ({ manifests }) => {
 				await collectTelemetry({
 					event: 'tool:listAllComponents',
 					server,
 					toolset: 'docs',
-					componentCount: Object.keys(manifest.components).length,
+					componentCount: Object.keys(manifests.componentManifest.components)
+						.length,
+					docsCount: Object.keys(manifests.docsManifest?.docs || {}).length,
 				});
 			},
-			onGetComponentDocumentation: async ({ input, foundComponent }) => {
+			onGetDocumentation: async ({ input, foundDocumentation }) => {
 				await collectTelemetry({
 					event: 'tool:getComponentDocumentation',
 					server,
 					toolset: 'docs',
-					componentId: input.componentId,
-					found: !!foundComponent,
+					componentId: input.id,
+					found: !!foundDocumentation,
 				});
 			},
 		}),

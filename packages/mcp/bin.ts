@@ -17,7 +17,7 @@ import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { StdioTransport } from '@tmcp/transport-stdio';
 import pkgJson from './package.json' with { type: 'json' };
 import { addListAllComponentsTool } from './src/tools/list-all-components.ts';
-import { addGetComponentDocumentationTool } from './src/tools/get-component-documentation.ts';
+import { addGetDocumentationTool } from './src/tools/get-documentation.ts';
 import type { StorybookContext, OutputFormat } from './src/types.ts';
 import { parseArgs } from 'node:util';
 import * as fs from 'node:fs/promises';
@@ -38,7 +38,7 @@ const server = new McpServer(
 ).withContext<StorybookContext>();
 
 await addListAllComponentsTool(server);
-await addGetComponentDocumentationTool(server);
+await addGetDocumentationTool(server);
 
 const transport = new StdioTransport(server);
 const args = parseArgs({

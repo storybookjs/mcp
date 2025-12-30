@@ -73,7 +73,7 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllComponents`: Called when the list-all-components tool is invoked
-  - `onGetComponentDocumentation`: Called when the get-component-documentation tool is invoked
+  - `onGetDocumentation`: Called when the get-component-documentation tool is invoked
 - **Output Format**: The `format` property in context controls output format:
   - `'markdown'` (default): Token-efficient markdown with adaptive formatting
   - `'xml'`: Legacy XML format
@@ -268,7 +268,7 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - **Optional handlers for tracking**:
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
   - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
-  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input with componentId, and optional foundComponent
+  - `onGetDocumentation`: Called when get tool is invoked, receives context, input with id, and optional foundDocumentation
   - Addon-mcp uses these handlers to collect telemetry on tool usage
 
 **Storybook internals used:**

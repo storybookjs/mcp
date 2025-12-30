@@ -430,25 +430,23 @@ The addon collects anonymous usage data:
 
 **For addon-specific tools**: Telemetry is collected directly in the tool implementation using `collectTelemetry()`.
 
-**For reused tools from `@storybook/mcp`**: The addon uses optional handlers (`onListAllComponents`, `onGetComponentDocumentation`) provided by the `StorybookContext` to track usage. These handlers are passed in the context when calling `transport.respond()` in `mcp-handler.ts`:
+**For reused tools from `@storybook/mcp`**: The addon uses optional handlers (`onListAllComponents`, `onGetDocumentation`) provided by the `StorybookContext` to track usage. These handlers are passed in the context when calling `transport.respond()` in `mcp-handler.ts`:
 
 ```typescript
 const addonContext: AddonContext = {
 	// ... other context properties
-	onListAllComponents: async ({ manifest }) => {
+	onListAllComponents: async ({ manifests }) => {
 		if (!disableTelemetry && server) {
 			await collectTelemetry({
 				event: 'tool:listAllComponents',
 				server,
-				componentCount: Object.keys(manifest.components).length,
+				componentCount: Object.keys(manifests.componentManifest.components)
+					.length,
+				docsCount: Object.keys(manifests.docsManifest.docs).length,
 			});
 		}
 	},
-	onGetComponentDocumentation: async ({
-		input,
-		foundComponents,
-		notFoundIds,
-	}) => {
+	onGetDocumentation: async ({ input, foundComponents, notFoundIds }) => {
 		if (!disableTelemetry && server) {
 			await collectTelemetry({
 				event: 'tool:getComponentDocumentation',

@@ -17,7 +17,7 @@ This is a Model Context Protocol (MCP) server for Storybook that serves knowledg
 - **Component Manifest**: Parses and formats component documentation including React prop information from react-docgen
 - **Schema Validation**: Uses Valibot for JSON schema validation via `@tmcp/adapter-valibot`
 - **HTTP Transport**: Provides HTTP-based MCP communication via `@tmcp/transport-http`
-- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetComponentDocumentation`) that are called at various points when provided. The `onGetComponentDocumentation` handler receives a single `componentId` input and an optional `foundComponent` result.
+- **Context System**: `StorybookContext` allows passing optional handlers (`onSessionInitialize`, `onListAllComponents`, `onGetDocumentation`) that are called at various points when provided. The `onGetDocumentation` handler receives a single `id` input and an optional `foundDocumentation` result.
 
 ### File Structure
 

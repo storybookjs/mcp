@@ -39,16 +39,16 @@ export type StorybookContext = {
 	 */
 	onListAllComponents?: (params: {
 		context: StorybookContext;
-		manifest: ComponentManifestMap;
+		manifests: AllManifests;
 	}) => void | Promise<void>;
 	/**
 	 * Optional handler called when get-component-documentation tool is invoked.
 	 * Receives the context, input parameters, and the found component (if any).
 	 */
-	onGetComponentDocumentation?: (params: {
+	onGetDocumentation?: (params: {
 		context: StorybookContext;
-		input: { componentId: string };
-		foundComponent?: ComponentManifest;
+		input: { id: string };
+		foundDocumentation?: ComponentManifest | Doc;
 	}) => void | Promise<void>;
 };
 
@@ -83,6 +83,7 @@ const Doc = v.object({
 	content: v.string(),
 	error: v.optional(Error),
 });
+export type Doc = v.InferOutput<typeof Doc>;
 
 export const ComponentManifest = v.object({
 	...BaseManifest.entries,
@@ -112,3 +113,8 @@ export const DocsManifestMap = v.object({
 	docs: v.record(v.string(), Doc),
 });
 export type DocsManifestMap = v.InferOutput<typeof DocsManifestMap>;
+
+export type AllManifests = {
+	componentManifest: ComponentManifestMap;
+	docsManifest?: DocsManifestMap;
+};

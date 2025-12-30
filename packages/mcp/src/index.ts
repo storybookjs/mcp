@@ -3,7 +3,7 @@ import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { HttpTransport } from '@tmcp/transport-http';
 import pkgJson from '../package.json' with { type: 'json' };
 import { addListAllComponentsTool } from './tools/list-all-components.ts';
-import { addGetComponentDocumentationTool } from './tools/get-component-documentation.ts';
+import { addGetDocumentationTool } from './tools/get-documentation.ts';
 import type { StorybookContext } from './types.ts';
 
 // Export tools for reuse by addon-mcp
@@ -12,9 +12,9 @@ export {
 	LIST_TOOL_NAME,
 } from './tools/list-all-components.ts';
 export {
-	addGetComponentDocumentationTool,
+	addGetDocumentationTool as addGetComponentDocumentationTool,
 	GET_TOOL_NAME,
-} from './tools/get-component-documentation.ts';
+} from './tools/get-documentation.ts';
 
 // Export manifest constants
 export {
@@ -94,7 +94,7 @@ export const createStorybookMcpHandler = async (
 	}
 
 	await addListAllComponentsTool(server);
-	await addGetComponentDocumentationTool(server);
+	await addGetDocumentationTool(server);
 
 	const transport = new HttpTransport(server, { path: null });
 
@@ -105,9 +105,8 @@ export const createStorybookMcpHandler = async (
 			manifestProvider: context?.manifestProvider ?? options.manifestProvider,
 			onListAllComponents:
 				context?.onListAllComponents ?? options.onListAllComponents,
-			onGetComponentDocumentation:
-				context?.onGetComponentDocumentation ??
-				options.onGetComponentDocumentation,
+			onGetDocumentation:
+				context?.onGetDocumentation ?? options.onGetDocumentation,
 		});
 	}) as Handler;
 };

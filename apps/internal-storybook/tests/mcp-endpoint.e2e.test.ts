@@ -222,21 +222,21 @@ describe('MCP Endpoint E2E Tests', () => {
 				    "title": "List All Components",
 				  },
 				  {
-				    "description": "Get detailed documentation for a specific UI component",
+				    "description": "Get detailed documentation for a specific UI component or docs entry",
 				    "inputSchema": {
 				      "$schema": "http://json-schema.org/draft-07/schema#",
 				      "properties": {
-				        "componentId": {
+				        "id": {
 				          "type": "string",
 				        },
 				      },
 				      "required": [
-				        "componentId",
+				        "id",
 				      ],
 				      "type": "object",
 				    },
-				    "name": "get-component-documentation",
-				    "title": "Get Documentation for Component",
+				    "name": "get-documentation",
+				    "title": "Get Documentation",
 				  },
 				]
 			`);
@@ -335,7 +335,7 @@ describe('MCP Endpoint E2E Tests', () => {
 		});
 	});
 
-	describe('Tool: get-component-documentation', () => {
+	describe('Tool: get-documentation', () => {
 		it('should return documentation for a specific component', async () => {
 			// First, get the list to find a valid component ID
 			const listResponse = await mcpRequest('tools/call', {
@@ -351,9 +351,9 @@ describe('MCP Endpoint E2E Tests', () => {
 
 			// Now get documentation for that component
 			const response = await mcpRequest('tools/call', {
-				name: 'get-component-documentation',
+				name: 'get-documentation',
 				arguments: {
-					componentId,
+					id: componentId,
 				},
 			});
 
@@ -436,9 +436,9 @@ describe('MCP Endpoint E2E Tests', () => {
 
 		it('should return error for non-existent component', async () => {
 			const response = await mcpRequest('tools/call', {
-				name: 'get-component-documentation',
+				name: 'get-documentation',
 				arguments: {
-					componentId: 'non-existent-component-id',
+					id: 'non-existent-component-id',
 				},
 			});
 
@@ -446,7 +446,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				{
 				  "content": [
 				    {
-				      "text": "Component not found: "non-existent-component-id". Use the list-all-components tool to see available components.",
+				      "text": "Component or Docs Entry not found: \"non-existent-component-id\". Use the list-all-components tool to see available components and documentation entries.",
 				      "type": "text",
 				    },
 				  ],
@@ -500,7 +500,7 @@ describe('MCP Endpoint E2E Tests', () => {
 			expect(toolNames).toMatchInlineSnapshot(`
 				[
 				  "list-all-components",
-				  "get-component-documentation",
+				  "get-documentation",
 				]
 			`);
 		});

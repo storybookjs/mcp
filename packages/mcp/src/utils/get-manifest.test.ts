@@ -196,11 +196,9 @@ describe('getManifest', () => {
 			});
 
 			const request = createMockRequest('https://example.com/mcp');
-			await expect(
-				getManifests(request),
-			).rejects.toThrowErrorMatchingInlineSnapshot(
-				`[ManifestGetError: Failed to parse component manifest: Invalid key: Expected "v" but received undefined]`,
-			);
+			await expect(getManifests(request)).rejects
+				.toThrowErrorMatchingInlineSnapshot(`[ManifestGetError: Failed to parse component manifest:
+Invalid key: Expected "v" but received undefined]`);
 		});
 
 		it('should throw ManifestGetError when components object is empty', async () => {

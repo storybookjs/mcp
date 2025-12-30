@@ -151,7 +151,7 @@ describe('bin.ts stdio MCP server', () => {
 						name: 'list-all-components',
 					}),
 					expect.objectContaining({
-						name: 'get-component-documentation',
+						name: 'get-documentation',
 					}),
 				]),
 			},
