@@ -67,24 +67,13 @@ type ParsedContext =
 	| { type: 'storybook-mcp-dev' };
 
 /**
- * Parse a raw context string value into a ParsedContext object.
- * Returns undefined if no context was provided (will trigger interactive prompt).
+ * Parse a single context string value into a ParsedContext object.
  */
-async function parseContextValue(
-	rawContext: string | boolean | undefined,
+async function parseSingleContextValue(
+	rawContext: string,
 	evalName: string | undefined,
-): Promise<ParsedContext | undefined> {
+): Promise<ParsedContext> {
 	const EVALS_DIR = path.join(process.cwd(), 'evals');
-
-	// --no-context sets context to false
-	if (rawContext === false) {
-		return { type: false };
-	}
-
-	// No context provided
-	if (rawContext === undefined || rawContext === true) {
-		return undefined;
-	}
 
 	// Try to parse as JSON (inline MCP config)
 	try {
@@ -120,13 +109,42 @@ async function parseContextValue(
 		return { type: 'components-manifest', manifestPath: rawContext };
 	}
 
-	// Extra prompts (ends with .md, can be comma-separated)
+	// Extra prompts (ends with .md)
 	if (rawContext.endsWith('.md')) {
-		const prompts = rawContext.split(',').map((p) => p.trim());
-		return { type: 'extra-prompts', prompts };
+		return { type: 'extra-prompts', prompts: [rawContext] };
 	}
 
 	throw new Error(`Unable to parse context value: ${rawContext}`);
+}
+
+/**
+ * Parse a raw context string value into an array of ParsedContext objects.
+ * Returns undefined if no context was provided (will trigger interactive prompt).
+ */
+async function parseContextValue(
+	rawContext: string | boolean | undefined,
+	evalName: string | undefined,
+): Promise<ParsedContext[] | undefined> {
+	// --no-context sets context to false
+	if (rawContext === false) {
+		return [{ type: false }];
+	}
+
+	// No context provided
+	if (rawContext === undefined || rawContext === true) {
+		return undefined;
+	}
+
+	// Handle comma-separated contexts
+	const contextStrings = rawContext.split(',').map((s) => s.trim());
+	const parsedContexts: ParsedContext[] = [];
+
+	for (const contextStr of contextStrings) {
+		const parsed = await parseSingleContextValue(contextStr, evalName);
+		parsedContexts.push(parsed);
+	}
+
+	return parsedContexts;
 }
 
 /**
@@ -146,32 +164,46 @@ function buildRerunCommand(args: CollectedArgs): string {
 		parts.push(args.storybook ? '--storybook' : '--no-storybook');
 	}
 
-	switch (args.context.type) {
-		case false:
-			parts.push('--no-context');
-			break;
-		case 'mcp-server':
-			parts.push(`--context='${JSON.stringify(args.context.mcpServerConfig)}'`);
-			break;
-		case 'components-manifest': {
-			// Extract the manifest path from the mcpServerConfig args
-			const serverConfig = args.context.mcpServerConfig['storybook-mcp'];
-			const manifestArg =
-				serverConfig?.type === 'stdio'
-					? serverConfig.args?.find((arg: string) => arg.endsWith('.json'))
-					: undefined;
-			if (manifestArg) {
-				const manifestFileName = path.basename(manifestArg);
-				parts.push(`--context=${manifestFileName}`);
+	// Handle context array
+	if (args.context.length === 0) {
+		parts.push('--no-context');
+	} else if (args.context.length === 1 && args.context[0]!.type === false) {
+		parts.push('--no-context');
+	} else {
+		const contextStrings: string[] = [];
+		for (const context of args.context) {
+			if (context.type === false) {
+				// Skip false contexts when there are other contexts
+				continue;
 			}
-			break;
+			switch (context.type) {
+				case 'mcp-server':
+					contextStrings.push(`'${JSON.stringify(context.mcpServerConfig)}'`);
+					break;
+				case 'components-manifest': {
+					// Extract the manifest path from the mcpServerConfig args
+					const serverConfig = context.mcpServerConfig['storybook-docs-mcp'];
+					const manifestArg =
+						serverConfig?.type === 'stdio'
+							? serverConfig.args?.find((arg: string) => arg.endsWith('.json'))
+							: undefined;
+					if (manifestArg) {
+						const manifestFileName = path.basename(manifestArg);
+						contextStrings.push(manifestFileName);
+					}
+					break;
+				}
+				case 'storybook-mcp-dev':
+					contextStrings.push('storybook-dev');
+					break;
+				case 'extra-prompts':
+					contextStrings.push(...context.prompts);
+					break;
+			}
 		}
-		case 'storybook-mcp-dev':
-			parts.push('--context=storybook-dev');
-			break;
-		case 'extra-prompts':
-			parts.push(`--context=${args.context.prompts.join(',')}`);
-			break;
+		if (contextStrings.length > 0) {
+			parts.push(`--context=${contextStrings.join(',')}`);
+		}
 	}
 
 	if (args.uploadId) {
@@ -361,18 +393,29 @@ export async function collectArgs(): Promise<CollectedArgs> {
 			context: async function (): Promise<Context> {
 				const evalPath = path.resolve(path.join('evals', evalName));
 
-				// If context was already parsed from CLI, use it
+				// If context was already parsed from CLI, convert to Context array
 				if (parsedContext !== undefined) {
-					// For components-manifest, we need to convert the manifestPath to full mcpServerConfig
-					if (parsedContext.type === 'components-manifest') {
-						return {
-							type: 'components-manifest',
-							mcpServerConfig: manifestPathToMcpServerConfig(
-								path.join(evalPath, parsedContext.manifestPath),
-							),
-						};
+					const contexts: Context = [];
+					for (const parsed of parsedContext) {
+						// For components-manifest, we need to convert the manifestPath to full mcpServerConfig
+						if (parsed.type === 'components-manifest') {
+							contexts.push({
+								type: 'components-manifest',
+								mcpServerConfig: manifestPathToMcpServerConfig(
+									path.join(evalPath, parsed.manifestPath),
+								),
+							});
+						} else if (parsed.type === 'extra-prompts') {
+							contexts.push(parsed);
+						} else if (parsed.type === 'mcp-server') {
+							contexts.push(parsed);
+						} else if (parsed.type === 'storybook-mcp-dev') {
+							contexts.push(parsed);
+						} else if (parsed.type === false) {
+							contexts.push(parsed);
+						}
 					}
-					return parsedContext;
+					return contexts;
 				}
 
 				// Discover available files for context options
@@ -406,14 +449,10 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					}
 				}
 
-				const mainSelection = await p.select<false | string>({
-					message: 'Which additional context should the agent have?',
+				const selectedContextTypes = await p.multiselect<string>({
+					message:
+						'Which additional contexts should the agent have? (select multiple)',
 					options: [
-						{
-							label: 'None',
-							hint: 'No additional context beyond the prompt and default tools',
-							value: false,
-						},
 						{
 							label: 'Storybook MCP - Dev',
 							hint: 'Run local Storybook dev server with MCP endpoint',
@@ -445,142 +484,155 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					],
 				});
 
-				if (p.isCancel(mainSelection)) {
+				if (p.isCancel(selectedContextTypes)) {
 					p.cancel('Operation cancelled.');
 					process.exit(0);
 				}
 
-				switch (mainSelection) {
-					case false: {
-						return { type: false };
-					}
-					case 'storybook-mcp-dev': {
-						return { type: 'storybook-mcp-dev' };
-					}
-					case 'components-manifest': {
-						const manifestOptions = Object.entries(availableManifests).map(
-							([manifestPath, componentNames]) => ({
-								label: manifestPath,
-								hint: `${componentNames.length} components: ${componentNames.slice(0, 5).join(', ')}...`,
-								value: manifestPath,
-							}),
-						);
+				// If nothing selected, return array with false
+				if (selectedContextTypes.length === 0) {
+					return [{ type: false }];
+				}
 
-						const selectedManifestPath = await p.select({
-							message:
-								'Which components manifest should be used for the Storybook MCP?',
-							options: manifestOptions,
-						});
-						if (p.isCancel(selectedManifestPath)) {
-							p.cancel('Operation cancelled.');
-							process.exit(0);
+				const contexts: Context = [];
+
+				for (const contextType of selectedContextTypes) {
+					switch (contextType) {
+						case 'storybook-mcp-dev': {
+							contexts.push({ type: 'storybook-mcp-dev' });
+							break;
 						}
+						case 'components-manifest': {
+							const manifestOptions = Object.entries(availableManifests).map(
+								([manifestPath, componentNames]) => ({
+									label: manifestPath,
+									hint: `${componentNames.length} components: ${componentNames.slice(0, 5).join(', ')}...`,
+									value: manifestPath,
+								}),
+							);
 
-						return {
-							type: mainSelection,
-							mcpServerConfig: manifestPathToMcpServerConfig(
-								path.join(evalPath, selectedManifestPath),
-							),
-						};
-					}
-
-					case 'mcp-server': {
-						const mcpServerName = await p.text({
-							message: 'What name should be used for the MCP server?',
-							initialValue: 'storybook-mcp',
-						});
-						if (p.isCancel(mcpServerName)) {
-							p.cancel('Operation cancelled.');
-							process.exit(0);
-						}
-
-						const mcpServerType = await p.select({
-							message: 'What type of MCP server is this?',
-							options: [
-								{
-									label: 'HTTP',
-									hint: 'Server exposed over HTTP (e.g., http://localhost:6006/mcp)',
-									value: 'http',
-								},
-								{
-									label: 'stdio',
-									hint: 'Server running as a subprocess with stdio communication',
-									value: 'stdio',
-								},
-							],
-						});
-						if (p.isCancel(mcpServerType)) {
-							p.cancel('Operation cancelled.');
-							process.exit(0);
-						}
-
-						if (mcpServerType === 'http') {
-							const mcpServerUrl = await p.text({
+							const selectedManifestPath = await p.select({
 								message:
-									'What is the URL for the MCP server? (http://localhost:6006/mcp)',
-								initialValue: 'http://localhost:6006/mcp',
+									'Which components manifest should be used for the Storybook MCP?',
+								options: manifestOptions,
 							});
-							if (p.isCancel(mcpServerUrl)) {
+							if (p.isCancel(selectedManifestPath)) {
 								p.cancel('Operation cancelled.');
 								process.exit(0);
 							}
-							const config: McpServerConfig = {
-								[mcpServerName]: { type: 'http', url: mcpServerUrl },
-							};
-							return {
-								type: mainSelection,
-								mcpServerConfig: config,
-							};
-						} else {
-							const mcpServerCommand = await p.text({
-								message:
-									'What is the full command to run the MCP server? (command AND any args)',
-								placeholder: 'node server.js --port 8080',
+
+							contexts.push({
+								type: 'components-manifest',
+								mcpServerConfig: manifestPathToMcpServerConfig(
+									path.join(evalPath, selectedManifestPath),
+								),
 							});
-							if (p.isCancel(mcpServerCommand)) {
+							break;
+						}
+
+						case 'mcp-server': {
+							const mcpServerName = await p.text({
+								message: 'What name should be used for the MCP server?',
+								initialValue: 'storybook-mcp',
+							});
+							if (p.isCancel(mcpServerName)) {
 								p.cancel('Operation cancelled.');
 								process.exit(0);
 							}
-							const [command, ...argsParts] = mcpServerCommand.split(' ');
 
-							const config: McpServerConfig = {
-								[mcpServerName]: {
-									type: 'stdio',
-									command: command!,
-									args: argsParts.length > 0 ? argsParts : undefined,
-								},
-							};
-							return {
-								type: mainSelection,
-								mcpServerConfig: config,
-							};
+							const mcpServerType = await p.select({
+								message: 'What type of MCP server is this?',
+								options: [
+									{
+										label: 'HTTP',
+										hint: 'Server exposed over HTTP (e.g., http://localhost:6006/mcp)',
+										value: 'http',
+									},
+									{
+										label: 'stdio',
+										hint: 'Server running as a subprocess with stdio communication',
+										value: 'stdio',
+									},
+								],
+							});
+							if (p.isCancel(mcpServerType)) {
+								p.cancel('Operation cancelled.');
+								process.exit(0);
+							}
+
+							if (mcpServerType === 'http') {
+								const mcpServerUrl = await p.text({
+									message:
+										'What is the URL for the MCP server? (http://localhost:6006/mcp)',
+									initialValue: 'http://localhost:6006/mcp',
+								});
+								if (p.isCancel(mcpServerUrl)) {
+									p.cancel('Operation cancelled.');
+									process.exit(0);
+								}
+								const config: McpServerConfig = {
+									[mcpServerName]: { type: 'http', url: mcpServerUrl },
+								};
+								contexts.push({
+									type: 'mcp-server',
+									mcpServerConfig: config,
+								});
+							} else {
+								const mcpServerCommand = await p.text({
+									message:
+										'What is the full command to run the MCP server? (command AND any args)',
+									placeholder: 'node server.js --port 8080',
+								});
+								if (p.isCancel(mcpServerCommand)) {
+									p.cancel('Operation cancelled.');
+									process.exit(0);
+								}
+								const [command, ...argsParts] = mcpServerCommand.split(' ');
+
+								const config: McpServerConfig = {
+									[mcpServerName]: {
+										type: 'stdio',
+										command: command!,
+										args: argsParts.length > 0 ? argsParts : undefined,
+									},
+								};
+								contexts.push({
+									type: 'mcp-server',
+									mcpServerConfig: config,
+								});
+							}
+							break;
 						}
-					}
-					case 'extra-prompts': {
-						const extraPromptOptions = Object.entries(
-							availableExtraPrompts,
-						).map(([name, content]) => ({
-							label: name,
-							hint:
-								content.slice(0, 100).replace(/\n/g, ' ') +
-								(content.length > 100 ? '...' : ''),
-							value: name,
-						}));
+						case 'extra-prompts': {
+							const extraPromptOptions = Object.entries(
+								availableExtraPrompts,
+							).map(([name, content]) => ({
+								label: name,
+								hint:
+									content.slice(0, 100).replace(/\n/g, ' ') +
+									(content.length > 100 ? '...' : ''),
+								value: name,
+							}));
 
-						const selectedExtraPromptNames = await p.multiselect({
-							message: 'Which extra prompts should be included as context?',
-							options: extraPromptOptions,
-						});
-						if (p.isCancel(selectedExtraPromptNames)) {
-							p.cancel('Operation cancelled.');
-							process.exit(0);
+							const selectedExtraPromptNames = await p.multiselect({
+								message: 'Which extra prompts should be included as context?',
+								options: extraPromptOptions,
+							});
+							if (p.isCancel(selectedExtraPromptNames)) {
+								p.cancel('Operation cancelled.');
+								process.exit(0);
+							}
+
+							contexts.push({
+								type: 'extra-prompts',
+								prompts: selectedExtraPromptNames,
+							});
+							break;
 						}
-
-						return { type: mainSelection, prompts: selectedExtraPromptNames };
 					}
 				}
 
-				throw new Error('Unreachable context selection');
+				return contexts;
 			},
 			uploadId: async () => {
 				if (opts.uploadId !== undefined) {

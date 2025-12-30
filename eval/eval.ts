@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import type { ExperimentArgs } from './types.ts';
+import type { ExperimentArgs, McpServerConfig } from './types.ts';
 import { prepareExperiment } from './lib/prepare-experiment.ts';
 import { teardownExperiment } from './lib/teardown-experiment.ts';
 import { evaluate } from './lib/evaluations/evaluate.ts';
@@ -35,28 +35,45 @@ const localDateTimestamp = new Date(
 	.replace(/[:.]/g, '-');
 
 let contextPrefix = '';
-switch (args.context.type) {
-	case false:
-		contextPrefix = 'no-context';
-		break;
-	case 'extra-prompts':
-		contextPrefix = args.context.prompts
-			.map((prompt) =>
-				path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'),
-			)
-			.join('-');
-		break;
-	case 'mcp-server':
-		contextPrefix = Object.keys(args.context.mcpServerConfig)
-			.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
-			.join('-');
-		break;
-	case 'components-manifest':
-		contextPrefix = 'components-manifest';
-		break;
-	case 'storybook-mcp-dev':
-		contextPrefix = 'storybook-mcp-dev';
-		break;
+if (
+	args.context.length === 0 ||
+	(args.context.length === 1 && args.context[0]!.type === false)
+) {
+	contextPrefix = 'no-context';
+} else {
+	const prefixes: string[] = [];
+	for (const context of args.context) {
+		if (context.type === false) {
+			continue;
+		}
+		switch (context.type) {
+			case 'extra-prompts':
+				prefixes.push(
+					context.prompts
+						.map((prompt) =>
+							path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'),
+						)
+						.join('-'),
+				);
+				break;
+			case 'mcp-server':
+				prefixes.push(
+					Object.keys(context.mcpServerConfig)
+						.map((mcpServerName) =>
+							mcpServerName.toLowerCase().replace(/\s+/g, '-'),
+						)
+						.join('-'),
+				);
+				break;
+			case 'components-manifest':
+				prefixes.push('components-manifest');
+				break;
+			case 'storybook-mcp-dev':
+				prefixes.push('storybook-mcp-dev');
+				break;
+		}
+	}
+	contextPrefix = prefixes.join('-');
 }
 
 const experimentDirName = `${contextPrefix}-${args.agent}-${args.model}-${localDateTimestamp}`;
@@ -89,14 +106,22 @@ const { mcpServerConfig: preparedMcpConfig } =
 const prompt = await generatePrompt(evalPath, args.context);
 await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 
+// Merge all MCP server configs from contexts
+let mergedMcpConfig: McpServerConfig | undefined = preparedMcpConfig;
+for (const context of args.context) {
+	if (context.type === 'mcp-server' || context.type === 'components-manifest') {
+		if (!mergedMcpConfig) {
+			mergedMcpConfig = {};
+		}
+		mergedMcpConfig = { ...mergedMcpConfig, ...context.mcpServerConfig };
+	}
+}
+
 const agent = agents[args.agent];
 const promptSummary = await agent.execute(
 	prompt,
 	experimentArgs,
-	args.context.type === 'mcp-server' ||
-		args.context.type === 'components-manifest'
-		? args.context.mcpServerConfig
-		: preparedMcpConfig,
+	mergedMcpConfig,
 );
 
 try {

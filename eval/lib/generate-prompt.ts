@@ -12,12 +12,17 @@ export async function generatePrompt(
 ): Promise<string> {
 	const promptParts: string[] = [];
 	promptParts.push(await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8'));
-	if (context.type === 'extra-prompts') {
-		for (const prompt of context.prompts) {
-			const content = await fs.readFile(path.join(evalPath, prompt), 'utf8');
-			promptParts.push(content);
+
+	// Collect all extra prompts from all contexts
+	for (const ctx of context) {
+		if (ctx.type === 'extra-prompts') {
+			for (const prompt of ctx.prompts) {
+				const content = await fs.readFile(path.join(evalPath, prompt), 'utf8');
+				promptParts.push(content);
+			}
 		}
 	}
+
 	promptParts.push(CONSTRAINTS_PROMPT);
 
 	return promptParts.join('\n');
