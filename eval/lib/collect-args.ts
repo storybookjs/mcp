@@ -336,6 +336,16 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		process.exit(0);
 	}
 
+	const evalPath = path.resolve(path.join('evals', evalName));
+	const promptPath = path.join(evalPath, 'prompt.md');
+	let promptIsEmpty = false;
+	try {
+		const promptContent = await fs.readFile(promptPath, 'utf8');
+		promptIsEmpty = promptContent.trim().length === 0;
+	} catch (error) {
+		promptIsEmpty = true;
+	}
+
 	// Prompt for missing arguments
 	const promptResults = await p.group(
 		{
@@ -391,8 +401,6 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				return result;
 			},
 			context: async function (): Promise<Context> {
-				const evalPath = path.resolve(path.join('evals', evalName));
-
 				// If context was already parsed from CLI, convert to Context array
 				if (parsedContext !== undefined) {
 					const contexts: Context = [];
@@ -414,6 +422,16 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						} else if (parsed.type === false) {
 							contexts.push(parsed);
 						}
+					}
+					if (
+						promptIsEmpty &&
+						!contexts.some(
+							(ctx) => ctx.type === 'extra-prompts' && ctx.prompts.length > 0,
+						)
+					) {
+						throw new Error(
+							`prompt.md is empty for eval "${evalName}". Please include at least one extra prompt via --context <file>.md.`,
+						);
 					}
 					return contexts;
 				}
@@ -447,6 +465,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						);
 						availableExtraPrompts[dirent.name] = content;
 					}
+				}
+
+				if (promptIsEmpty && Object.keys(availableExtraPrompts).length === 0) {
+					throw new Error(
+						`prompt.md is empty for eval "${evalName}" and no extra prompts were found. Add at least one extra prompt .md file to this eval directory.`,
+					);
 				}
 
 				const selectedContextTypes = await p.multiselect<string>({
@@ -487,6 +511,14 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				if (p.isCancel(selectedContextTypes)) {
 					p.cancel('Operation cancelled.');
 					process.exit(0);
+				}
+
+				if (
+					promptIsEmpty &&
+					!selectedContextTypes.includes('extra-prompts') &&
+					Object.keys(availableExtraPrompts).length > 0
+				) {
+					selectedContextTypes.push('extra-prompts');
 				}
 
 				// If nothing selected, return array with false
@@ -621,6 +653,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							if (p.isCancel(selectedExtraPromptNames)) {
 								p.cancel('Operation cancelled.');
 								process.exit(0);
+							}
+
+							if (promptIsEmpty && selectedExtraPromptNames.length === 0) {
+								throw new Error(
+									`prompt.md is empty for eval "${evalName}". You must select at least one extra prompt.`,
+								);
 							}
 
 							contexts.push({
