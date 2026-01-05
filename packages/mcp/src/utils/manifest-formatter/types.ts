@@ -1,9 +1,4 @@
-import type {
-	AllManifests,
-	ComponentManifest,
-	ComponentManifestMap,
-	Doc,
-} from '../../types.ts';
+import type { AllManifests, ComponentManifest, Doc } from '../../types.ts';
 
 /**
  * Maximum length for a summary before truncation.

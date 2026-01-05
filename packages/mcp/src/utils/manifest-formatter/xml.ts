@@ -1,4 +1,3 @@
-import type { ComponentManifest, ComponentManifestMap } from '../../types.ts';
 import { MAX_SUMMARY_LENGTH, type ManifestFormatter } from './types.ts';
 import { extractDocsSummary } from './extract-docs-summary.ts';
 import { dedent } from '../dedent.ts';

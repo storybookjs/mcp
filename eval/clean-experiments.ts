@@ -2,7 +2,7 @@ import { glob, rm } from 'node:fs/promises';
 import * as path from 'node:path';
 import { installDependencies } from 'nypm';
 
-const experimentsPaths = await glob('evals/*/experiments');
+const experimentsPaths = glob('evals/*/experiments');
 
 for await (const experimentsPath of experimentsPaths) {
 	const relativePath = path.relative(process.cwd(), experimentsPath);

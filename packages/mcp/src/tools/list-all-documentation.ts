@@ -1,7 +1,7 @@
 import type { McpServer } from 'tmcp';
 import type { StorybookContext } from '../types.ts';
 import { getManifests, errorToMCPContent } from '../utils/get-manifest.ts';
-import { formatManifestsToLists as formatManifestsToLists } from '../utils/format-manifest.ts';
+import { formatManifestsToLists } from '../utils/format-manifest.ts';
 
 export const LIST_TOOL_NAME = 'list-all-documentation';
 

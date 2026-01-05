@@ -1,9 +1,7 @@
 import type {
 	AllManifests,
 	ComponentManifest,
-	ComponentManifestMap,
 	Doc,
-	DocsManifestMap,
 	OutputFormat,
 } from '../types.ts';
 import type { ManifestFormatter } from './manifest-formatter/types.ts';

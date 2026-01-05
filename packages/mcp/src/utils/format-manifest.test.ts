@@ -3,11 +3,7 @@ import {
 	formatComponentManifest,
 	formatManifestsToLists,
 } from './format-manifest';
-import type {
-	AllManifests,
-	ComponentManifest,
-	ComponentManifestMap,
-} from '../types';
+import type { AllManifests, ComponentManifest } from '../types';
 
 describe('formatComponentManifest', () => {
 	const manifest: ComponentManifest = {
