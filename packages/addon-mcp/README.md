@@ -191,7 +191,7 @@ export default {
 };
 ```
 
-#### 3. List All Components (`list-all-components`)
+#### 3. List All Documentation (`list-all-documentation`)
 
 Returns a list of all available UI components in your component library. Useful for the LLM as discovery and understanding what components are available to use.
 

@@ -89,8 +89,8 @@ describe('createStorybookMcpHandler', () => {
 		expect(tools.tools).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					name: 'list-all-components',
-					title: 'List All Components',
+					name: 'list-all-documentation',
+					title: 'List All Documentation',
 				}),
 				expect.objectContaining({
 					name: 'get-documentation',
@@ -119,7 +119,7 @@ describe('createStorybookMcpHandler', () => {
 		);
 	});
 
-	it('should use manifestProvider when calling list-all-components', async () => {
+	it('should use manifestProvider when calling list-all-documentation', async () => {
 		const manifestProvider = createManifestProviderMock();
 
 		const handler = await createStorybookMcpHandler({
@@ -128,7 +128,7 @@ describe('createStorybookMcpHandler', () => {
 		await setupClient(handler);
 
 		const result = await client.callTool({
-			name: 'list-all-components',
+			name: 'list-all-documentation',
 			arguments: {},
 		});
 
@@ -143,23 +143,23 @@ describe('createStorybookMcpHandler', () => {
 		});
 	});
 
-	it('should call onListAllComponents handler when tool is invoked', async () => {
-		const onListAllComponents = vi.fn();
+	it('should call onListAllDocumentation handler when tool is invoked', async () => {
+		const onListAllDocumentation = vi.fn();
 		const manifestProvider = createManifestProviderMock();
 
 		const handler = await createStorybookMcpHandler({
 			manifestProvider,
-			onListAllComponents,
+			onListAllDocumentation,
 		});
 		await setupClient(handler);
 
 		await client.callTool({
-			name: 'list-all-components',
+			name: 'list-all-documentation',
 			arguments: {},
 		});
 
-		expect(onListAllComponents).toHaveBeenCalledTimes(1);
-		expect(onListAllComponents).toHaveBeenCalledWith({
+		expect(onListAllDocumentation).toHaveBeenCalledTimes(1);
+		expect(onListAllDocumentation).toHaveBeenCalledWith({
 			context: expect.objectContaining({
 				request: expect.any(Request),
 			}),
@@ -208,7 +208,7 @@ describe('createStorybookMcpHandler', () => {
 		await setupClient(handler);
 
 		const result = await client.callTool({
-			name: 'list-all-components',
+			name: 'list-all-documentation',
 			arguments: {},
 		});
 
@@ -253,7 +253,7 @@ describe('createStorybookMcpHandler', () => {
 	});
 
 	describe('with docs manifest', () => {
-		it('should return docs entries in list-all-components when docs manifest is available', async () => {
+		it('should return docs entries in list-all-documentation when docs manifest is available', async () => {
 			const manifestProvider = createManifestProviderMockWithDocs();
 
 			const handler = await createStorybookMcpHandler({
@@ -262,7 +262,7 @@ describe('createStorybookMcpHandler', () => {
 			await setupClient(handler);
 
 			const result = await client.callTool({
-				name: 'list-all-components',
+				name: 'list-all-documentation',
 				arguments: {},
 			});
 
@@ -282,23 +282,23 @@ describe('createStorybookMcpHandler', () => {
 			expect(text).toContain('Getting Started');
 		});
 
-		it('should include docs manifest in onListAllComponents handler', async () => {
-			const onListAllComponents = vi.fn();
+		it('should include docs manifest in onListAllDocumentation handler', async () => {
+			const onListAllDocumentation = vi.fn();
 			const manifestProvider = createManifestProviderMockWithDocs();
 
 			const handler = await createStorybookMcpHandler({
 				manifestProvider,
-				onListAllComponents,
+				onListAllDocumentation,
 			});
 			await setupClient(handler);
 
 			await client.callTool({
-				name: 'list-all-components',
+				name: 'list-all-documentation',
 				arguments: {},
 			});
 
-			expect(onListAllComponents).toHaveBeenCalledTimes(1);
-			expect(onListAllComponents).toHaveBeenCalledWith({
+			expect(onListAllDocumentation).toHaveBeenCalledTimes(1);
+			expect(onListAllDocumentation).toHaveBeenCalledWith({
 				context: expect.objectContaining({
 					request: expect.any(Request),
 				}),

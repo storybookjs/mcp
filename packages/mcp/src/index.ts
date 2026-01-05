@@ -2,17 +2,17 @@ import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { HttpTransport } from '@tmcp/transport-http';
 import pkgJson from '../package.json' with { type: 'json' };
-import { addListAllComponentsTool } from './tools/list-all-components.ts';
+import { addListAllDocumentationTool } from './tools/list-all-documentation.ts';
 import { addGetDocumentationTool } from './tools/get-documentation.ts';
 import type { StorybookContext } from './types.ts';
 
 // Export tools for reuse by addon-mcp
 export {
-	addListAllComponentsTool,
+	addListAllDocumentationTool,
 	LIST_TOOL_NAME,
-} from './tools/list-all-components.ts';
+} from './tools/list-all-documentation.ts';
 export {
-	addGetDocumentationTool as addGetComponentDocumentationTool,
+	addGetDocumentationTool,
 	GET_TOOL_NAME,
 } from './tools/get-documentation.ts';
 
@@ -93,7 +93,7 @@ export const createStorybookMcpHandler = async (
 		server.on('initialize', options.onSessionInitialize);
 	}
 
-	await addListAllComponentsTool(server);
+	await addListAllDocumentationTool(server);
 	await addGetDocumentationTool(server);
 
 	const transport = new HttpTransport(server, { path: null });
@@ -103,8 +103,8 @@ export const createStorybookMcpHandler = async (
 			request: req,
 			format: context?.format ?? options.format ?? 'markdown',
 			manifestProvider: context?.manifestProvider ?? options.manifestProvider,
-			onListAllComponents:
-				context?.onListAllComponents ?? options.onListAllComponents,
+			onListAllDocumentation:
+				context?.onListAllDocumentation ?? options.onListAllDocumentation,
 			onGetDocumentation:
 				context?.onGetDocumentation ?? options.onGetDocumentation,
 		});

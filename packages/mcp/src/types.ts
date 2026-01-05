@@ -34,10 +34,10 @@ export type StorybookContext = {
 		path: string,
 	) => Promise<string>;
 	/**
-	 * Optional handler called when list-all-components tool is invoked.
+	 * Optional handler called when list-all-documentation tool is invoked.
 	 * Receives the context and the component manifest.
 	 */
-	onListAllComponents?: (params: {
+	onListAllDocumentation?: (params: {
 		context: StorybookContext;
 		manifests: AllManifests;
 	}) => void | Promise<void>;

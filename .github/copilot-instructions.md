@@ -34,7 +34,7 @@ The addon supports configuring which toolsets are enabled:
     options: {
       toolsets: {
         dev: true,      // get-story-urls, get-ui-building-instructions
-        docs: true,  // list-all-components, get-component-documentation
+        docs: true,  // list-all-documentation, get-component-documentation
       },
       experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
@@ -72,7 +72,7 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
   - Returns the manifest JSON as a string
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
-  - `onListAllComponents`: Called when the list-all-components tool is invoked
+  - `onListAllDocumentation`: Called when the list-all-documentation tool is invoked
   - `onGetDocumentation`: Called when the get-component-documentation tool is invoked
 - **Output Format**: The `format` property in context controls output format:
   - `'markdown'` (default): Token-efficient markdown with adaptive formatting
@@ -262,12 +262,12 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - Component manifest tools are conditionally registered based on feature flags:
   - Checks `features.experimentalComponentsManifest` flag
   - Checks for `experimental_manifests` preset
-  - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
+  - Only registers `addListAllDocumentationTool` and `addGetDocumentationTool` when enabled
 - Context includes `request` (HTTP Request object) which tools use to determine manifest location
 - Default manifest URL is constructed from request origin, replacing `/mcp` with `/manifests/components.json`
 - **Optional handlers for tracking**:
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
-  - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
+  - `onListAllDocumentation`: Called when list tool is invoked, receives context and manifest
   - `onGetDocumentation`: Called when get tool is invoked, receives context, input with id, and optional foundDocumentation
   - Addon-mcp uses these handlers to collect telemetry on tool usage
 

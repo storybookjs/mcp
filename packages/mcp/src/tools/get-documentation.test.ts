@@ -114,7 +114,7 @@ describe('getDocumentationTool', () => {
 			{
 			  "content": [
 			    {
-			      "text": "Component or Docs Entry not found: "nonexistent". Use the list-all-components tool to see available components and documentation entries.",
+			      "text": "Component or Docs Entry not found: "nonexistent". Use the list-all-documentation tool to see available components and documentation entries.",
 			      "type": "text",
 			    },
 			  ],

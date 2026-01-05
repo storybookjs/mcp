@@ -2,15 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import {
-	addListAllComponentsTool,
+	addListAllDocumentationTool,
 	LIST_TOOL_NAME,
-} from './list-all-components.ts';
+} from './list-all-documentation.ts';
 import type { StorybookContext } from '../types.ts';
 import smallManifestFixture from '../../fixtures/small-manifest.fixture.json' with { type: 'json' };
 import smallDocsManifestFixture from '../../fixtures/small-docs-manifest.fixture.json' with { type: 'json' };
 import * as getManifest from '../utils/get-manifest.ts';
 
-describe('listAllComponentsTool', () => {
+describe('listAllDocumentationTool', () => {
 	let server: McpServer<any, StorybookContext>;
 	let getManifestsSpy: any;
 
@@ -44,7 +44,7 @@ describe('listAllComponentsTool', () => {
 			},
 			{ sessionId: 'test-session' },
 		);
-		await addListAllComponentsTool(server);
+		await addListAllDocumentationTool(server);
 
 		// Mock getManifests to return the fixture
 		getManifestsSpy = vi.spyOn(getManifest, 'getManifests');
@@ -152,7 +152,7 @@ describe('listAllComponentsTool', () => {
 		`);
 	});
 
-	it('should call onListAllComponents handler when provided', async () => {
+	it('should call onListAllDocumentation handler when provided', async () => {
 		const handler = vi.fn();
 
 		const request = {
@@ -168,14 +168,14 @@ describe('listAllComponentsTool', () => {
 		const mockHttpRequest = new Request('https://example.com/mcp');
 		// Pass the handler and request in the context for this specific request
 		await server.receive(request, {
-			custom: { request: mockHttpRequest, onListAllComponents: handler },
+			custom: { request: mockHttpRequest, onListAllDocumentation: handler },
 		});
 
 		expect(handler).toHaveBeenCalledTimes(1);
 		expect(handler).toHaveBeenCalledWith({
 			context: expect.objectContaining({
 				request: mockHttpRequest,
-				onListAllComponents: handler,
+				onListAllDocumentation: handler,
 			}),
 			manifests: {
 				componentManifest: smallManifestFixture,
@@ -344,7 +344,7 @@ describe('listAllComponentsTool', () => {
 			`);
 		});
 
-		it('should include docs manifest in onListAllComponents handler call', async () => {
+		it('should include docs manifest in onListAllDocumentation handler call', async () => {
 			const handler = vi.fn();
 
 			const request = {
@@ -359,14 +359,14 @@ describe('listAllComponentsTool', () => {
 
 			const mockHttpRequest = new Request('https://example.com/mcp');
 			await server.receive(request, {
-				custom: { request: mockHttpRequest, onListAllComponents: handler },
+				custom: { request: mockHttpRequest, onListAllDocumentation: handler },
 			});
 
 			expect(handler).toHaveBeenCalledTimes(1);
 			expect(handler).toHaveBeenCalledWith({
 				context: expect.objectContaining({
 					request: mockHttpRequest,
-					onListAllComponents: handler,
+					onListAllDocumentation: handler,
 				}),
 				manifests: {
 					componentManifest: smallManifestFixture,

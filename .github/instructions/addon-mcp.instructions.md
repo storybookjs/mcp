@@ -29,7 +29,7 @@ The addon supports two toolsets that can be enabled/disabled:
    - `get-ui-building-instructions`: Provide UI development guidelines
 
 2. **`docs`** (default: true)
-   - `list-all-components`: List all available components from manifest
+   - `list-all-documentation`: List all available components from manifest
    - `get-component-documentation`: Get detailed component documentation
    - Requires experimental feature flag `features.experimentalComponentsManifest`
 
@@ -430,15 +430,15 @@ The addon collects anonymous usage data:
 
 **For addon-specific tools**: Telemetry is collected directly in the tool implementation using `collectTelemetry()`.
 
-**For reused tools from `@storybook/mcp`**: The addon uses optional handlers (`onListAllComponents`, `onGetDocumentation`) provided by the `StorybookContext` to track usage. These handlers are passed in the context when calling `transport.respond()` in `mcp-handler.ts`:
+**For reused tools from `@storybook/mcp`**: The addon uses optional handlers (`onListAllDocumentation`, `onGetDocumentation`) provided by the `StorybookContext` to track usage. These handlers are passed in the context when calling `transport.respond()` in `mcp-handler.ts`:
 
 ```typescript
 const addonContext: AddonContext = {
 	// ... other context properties
-	onListAllComponents: async ({ manifests }) => {
+	onListAllDocumentation: async ({ manifests }) => {
 		if (!disableTelemetry && server) {
 			await collectTelemetry({
-				event: 'tool:listAllComponents',
+				event: 'tool:listAllDocumentation',
 				server,
 				componentCount: Object.keys(manifests.componentManifest.components)
 					.length,
@@ -446,14 +446,13 @@ const addonContext: AddonContext = {
 			});
 		}
 	},
-	onGetDocumentation: async ({ input, foundComponents, notFoundIds }) => {
+	onGetDocumentation: async ({ input, foundDocumentation }) => {
 		if (!disableTelemetry && server) {
 			await collectTelemetry({
-				event: 'tool:getComponentDocumentation',
+				event: 'tool:getDocumentation',
 				server,
-				inputComponentCount: input.componentIds.length,
-				foundCount: foundComponents.length,
-				notFoundCount: notFoundIds.length,
+				id: input.id,
+				found: !!foundDocumentation,
 			});
 		}
 	},

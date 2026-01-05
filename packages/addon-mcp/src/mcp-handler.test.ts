@@ -386,7 +386,7 @@ describe('mcpServerHandler', () => {
 
 		// Verify component manifest tools are included
 		const toolNames = parsedResponse.result.tools.map((t: any) => t.name);
-		expect(toolNames).toContain('list-all-components');
+		expect(toolNames).toContain('list-all-documentation');
 		expect(toolNames).toContain('get-documentation');
 	});
 });

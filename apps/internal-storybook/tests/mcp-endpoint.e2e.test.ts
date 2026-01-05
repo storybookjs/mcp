@@ -213,13 +213,13 @@ describe('MCP Endpoint E2E Tests', () => {
 				    "title": "UI Component Building Instructions",
 				  },
 				  {
-				    "description": "List all available UI components from the component library",
+				    "description": "List all available UI components and documentation entries from the Storybook",
 				    "inputSchema": {
 				      "properties": {},
 				      "type": "object",
 				    },
-				    "name": "list-all-components",
-				    "title": "List All Components",
+				    "name": "list-all-documentation",
+				    "title": "List All Documentation",
 				  },
 				  {
 				    "description": "Get detailed documentation for a specific UI component or docs entry",
@@ -310,10 +310,10 @@ describe('MCP Endpoint E2E Tests', () => {
 		});
 	});
 
-	describe('Tool: list-all-components', () => {
-		it('should list all components from manifest', async () => {
+	describe('Tool: list-all-documentation', () => {
+		it('should list all documentation from manifest', async () => {
 			const response = await mcpRequest('tools/call', {
-				name: 'list-all-components',
+				name: 'list-all-documentation',
 				arguments: {},
 			});
 
@@ -343,7 +343,7 @@ describe('MCP Endpoint E2E Tests', () => {
 		it('should return documentation for a specific component', async () => {
 			// First, get the list to find a valid component ID
 			const listResponse = await mcpRequest('tools/call', {
-				name: 'list-all-components',
+				name: 'list-all-documentation',
 				arguments: {},
 			});
 
@@ -450,7 +450,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				{
 				  "content": [
 				    {
-				      "text": "Component or Docs Entry not found: \"non-existent-component-id\". Use the list-all-components tool to see available components and documentation entries.",
+				      "text": "Component or Docs Entry not found: "non-existent-component-id". Use the list-all-documentation tool to see available components and documentation entries.",
 				      "type": "text",
 				    },
 				  ],
@@ -503,7 +503,7 @@ describe('MCP Endpoint E2E Tests', () => {
 
 			expect(toolNames).toMatchInlineSnapshot(`
 				[
-				  "list-all-components",
+				  "list-all-documentation",
 				  "get-documentation",
 				]
 			`);

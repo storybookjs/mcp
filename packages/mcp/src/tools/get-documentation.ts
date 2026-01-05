@@ -6,7 +6,7 @@ import {
 	formatComponentManifest,
 	formatDocsManifest,
 } from '../utils/format-manifest.ts';
-import { LIST_TOOL_NAME } from './list-all-components.ts';
+import { LIST_TOOL_NAME } from './list-all-documentation.ts';
 
 export const GET_TOOL_NAME = 'get-documentation';
 
