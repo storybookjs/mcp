@@ -34,28 +34,47 @@ type SheetsData = {
 };
 
 function getContextDetails(context: Context): string {
-	switch (context.type) {
-		case false:
-			return 'None';
-		case 'extra-prompts':
-			return context.prompts.join(', ');
-		case 'mcp-server':
-			return Object.keys(context.mcpServerConfig).join(', ');
-		case 'storybook-mcp-dev':
-			return 'Storybook Dev Server';
-		case 'components-manifest': {
-			// Extract manifest path from MCP server config args
-			const mcpConfig = Object.values(context.mcpServerConfig)[0];
-			if (mcpConfig?.type === 'stdio' && mcpConfig.args) {
-				const manifestIndex = mcpConfig.args.indexOf('--manifestPath');
-				const manifestIndexValue = mcpConfig.args[manifestIndex + 1];
-				if (manifestIndex !== -1 && manifestIndexValue) {
-					return path.basename(manifestIndexValue);
+	if (
+		context.length === 0 ||
+		(context.length === 1 && context[0]!.type === false)
+	) {
+		return 'None';
+	}
+
+	const details: string[] = [];
+	for (const ctx of context) {
+		if (ctx.type === false) {
+			continue;
+		}
+		switch (ctx.type) {
+			case 'extra-prompts':
+				details.push(`Extra prompts: ${ctx.prompts.join(', ')}`);
+				break;
+			case 'mcp-server':
+				details.push(`MCP: ${Object.keys(ctx.mcpServerConfig).join(', ')}`);
+				break;
+			case 'storybook-mcp-dev':
+				details.push('Storybook Dev Server');
+				break;
+			case 'components-manifest': {
+				// Extract manifest path from MCP server config args
+				const mcpConfig = Object.values(ctx.mcpServerConfig)[0];
+				if (mcpConfig?.type === 'stdio' && mcpConfig.args) {
+					const manifestIndex = mcpConfig.args.indexOf('--manifestPath');
+					const manifestIndexValue = mcpConfig.args[manifestIndex + 1];
+					if (manifestIndex !== -1 && manifestIndexValue) {
+						details.push(`Manifest: ${path.basename(manifestIndexValue)}`);
+					} else {
+						details.push('unknown manifest name');
+					}
+				} else {
+					details.push('unknown manifest name');
 				}
+				break;
 			}
-			return 'unknown manifest name';
 		}
 	}
+	return details.join('; ');
 }
 
 export async function saveToGoogleSheets(
@@ -91,7 +110,13 @@ export async function saveToGoogleSheets(
 		duration: executionSummary.duration,
 		durationApi: executionSummary.durationApi,
 		turns: executionSummary.turns,
-		contextType: context.type === false ? 'none' : context.type,
+		contextType:
+			context.length === 0 ||
+			(context.length === 1 && context[0]!.type === false)
+				? 'none'
+				: context
+						.map((ctx) => (ctx.type === false ? 'none' : ctx.type))
+						.join('-'),
 		contextDetails: getContextDetails(context),
 		agent: experimentArgs.agent,
 		gitBranch: environment.branch,
