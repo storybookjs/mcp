@@ -328,7 +328,7 @@ describe('mcpServerHandler', () => {
 			if (key === 'features') {
 				return { experimentalComponentsManifest: true };
 			}
-			if (key === 'experimental_componentManifestGenerator') {
+			if (key === 'experimental_manifests') {
 				return vi.fn();
 			}
 			return defaultValue;

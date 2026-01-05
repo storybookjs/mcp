@@ -19,7 +19,7 @@ function createMockOptions({
 						? { experimentalComponentsManifest: featureFlag }
 						: {};
 				}
-				if (key === 'experimental_componentManifestGenerator') {
+				if (key === 'experimental_manifests') {
 					return hasManifests ? vi.fn() : undefined;
 				}
 				return undefined;

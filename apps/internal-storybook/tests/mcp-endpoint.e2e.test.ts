@@ -326,7 +326,11 @@ describe('MCP Endpoint E2E Tests', () => {
 				- Button (example-button): A customizable button component for user interactions.
 				- Header (header)
 				- Page (page)
-				- Card (other-ui-card): Card component with title, image, content, and action button",
+				- Card (other-ui-card): Card component with title, image, content, and action button
+
+				# Docs
+
+				- getting-started (getting-started--docs): # Getting Started This is the getting started documentation of this design system. ## Usag...",
 				      "type": "text",
 				    },
 				  ],
@@ -374,7 +378,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				\`\`\`
 				import { Button } from "@my-org/my-component-library";
 
-				const Primary = () => <Button onClick={fn()} primary label="Button"></Button>;
+				const Primary = () => <Button onClick={fn()} primary label="Button" />;
 				\`\`\`
 
 				### Secondary
@@ -382,7 +386,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				\`\`\`
 				import { Button } from "@my-org/my-component-library";
 
-				const Secondary = () => <Button onClick={fn()} label="Button"></Button>;
+				const Secondary = () => <Button onClick={fn()} label="Button" />;
 				\`\`\`
 
 				### Large
@@ -390,7 +394,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				\`\`\`
 				import { Button } from "@my-org/my-component-library";
 
-				const Large = () => <Button onClick={fn()} size="large" label="Button"></Button>;
+				const Large = () => <Button onClick={fn()} size="large" label="Button" />;
 				\`\`\`
 
 				### Small
@@ -398,7 +402,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				\`\`\`
 				import { Button } from "@my-org/my-component-library";
 
-				const Small = () => <Button onClick={fn()} size="small" label="Button"></Button>;
+				const Small = () => <Button onClick={fn()} size="small" label="Button" />;
 				\`\`\`
 
 				## Props

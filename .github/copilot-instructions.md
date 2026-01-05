@@ -261,7 +261,7 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - `AddonContext` extends `StorybookContext` to ensure type compatibility
 - Component manifest tools are conditionally registered based on feature flags:
   - Checks `features.experimentalComponentsManifest` flag
-  - Checks for `experimental_componentManifestGenerator` preset
+  - Checks for `experimental_manifests` preset
   - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
 - Context includes `request` (HTTP Request object) which tools use to determine manifest location
 - Default manifest URL is constructed from request origin, replacing `/mcp` with `/manifests/components.json`
@@ -278,7 +278,7 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - `storybook/internal/node-logger` - Logging utilities
 - Framework detection via `options.presets.apply('framework')`
 - Feature flags via `options.presets.apply('features')`
-- Component manifest generator via `options.presets.apply('experimental_componentManifestGenerator')`
+- Component manifest generator via `options.presets.apply('experimental_manifests')`
 
 **Story URL generation:**
 
