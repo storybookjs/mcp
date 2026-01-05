@@ -11,7 +11,7 @@ export async function teardownExperiment(
 	});
 
 	// Stop storybook dev server if it was started for storybook-mcp-dev context
-	if (experimentArgs.context.type === 'storybook-mcp-dev') {
+	if (experimentArgs.context.some((ctx) => ctx.type === 'storybook-mcp-dev')) {
 		log.message('Stopping Storybook dev server...');
 		stopStorybookDevServer();
 		log.message('Storybook dev server stopped');

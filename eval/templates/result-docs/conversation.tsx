@@ -1,86 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-
-interface TextContent {
-	type: 'text';
-	text: string;
-}
-
-interface ToolUseContent {
-	type: 'tool_use';
-	id: string;
-	name: string;
-	input: Record<string, any>;
-}
-
-interface ToolResultContent {
-	tool_use_id: string;
-	type: 'tool_result';
-	content: string | Array<{ type: string; text?: string; isError?: boolean }>;
-}
-
-interface MessageUsage {
-	input_tokens: number;
-	output_tokens: number;
-}
-
-interface AssistantMessage {
-	type: 'assistant';
-	message: {
-		content: (TextContent | ToolUseContent)[];
-		usage: MessageUsage;
-	};
-	ms: number;
-	tokenCount?: number;
-	costUSD?: number;
-}
-
-interface UserMessage {
-	type: 'user';
-	message: {
-		content: ToolResultContent[];
-	};
-	ms: number;
-	tokenCount?: number;
-	costUSD?: number;
-}
-
-interface SystemMessage {
-	type: 'system';
-	subtype: 'init';
-	model: string;
-	tools: string[];
-	mcp_servers: Array<{ name: string; status: string }>;
-	cwd: string;
-	claude_code_version?: string;
-	ms: number;
-	tokenCount?: number;
-	costUSD?: number;
-}
-
-interface ResultMessage {
-	type: 'result';
-	subtype: 'success' | 'error';
-	duration_ms: number;
-	duration_api_ms: number;
-	num_turns: number;
-	total_cost_usd: number;
-	ms: number;
-	tokenCount?: number;
-	costUSD?: number;
-}
-
-type ConversationMessage =
-	| AssistantMessage
-	| UserMessage
-	| SystemMessage
-	| ResultMessage;
-
-interface ConversationProps {
-	prompt: string;
-	promptTokenCount: number;
-	promptCost: number;
-	messages: ConversationMessage[];
-}
+import type {
+	AssistantMessage,
+	ConversationMessage,
+	ConversationProps,
+	ResultMessage,
+	SystemMessage,
+	TextContent,
+	ToolResultContent,
+	ToolUseContent,
+	UserMessage,
+} from './conversation.types';
 
 const formatJsonWithPreservedWhitespace = (obj: any): string => {
 	return JSON.stringify(obj, null, 2)
@@ -587,19 +516,22 @@ export const Conversation = (props: ConversationProps) => {
 
 	if (systemTurn) {
 		metadataCards.push({
+			title: 'Agent',
+			value: systemTurn.agent || 'N/A',
+		});
+
+		metadataCards.push({
 			title: 'Model',
 			value: systemTurn.model || 'N/A',
-			subvalue: systemTurn.claude_code_version
-				? `Claude Code ${systemTurn.claude_code_version}`
-				: '',
 		});
 
 		if (systemTurn.tools) {
-			const mcpTools = systemTurn.tools.filter((t) => t.startsWith('mcp__'));
+			const mcpTools = systemTurn.tools.filter((t) => t.includes('mcp'));
 			metadataCards.push({
 				title: 'Available Tools',
 				value: systemTurn.tools.length,
-				subvalue: mcpTools.length > 0 ? `${mcpTools.length} MCP tools` : '',
+				subvalue:
+					mcpTools.length > 0 ? `${mcpTools.length} MCP tools` : 'unknown',
 			});
 		}
 
@@ -610,7 +542,7 @@ export const Conversation = (props: ConversationProps) => {
 					.map(
 						(s) =>
 							`<div style="display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; background-color: #f3f4f6; border-radius: 9999px; font-size: 0.875rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">
-								<span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${s.status === 'connected' ? '#10b981' : '#ef4444'}; margin-right: 0.5rem;"></span>
+								<span title="${s.status}" style="width: 8px; height: 8px; border-radius: 50%; background-color: ${s.status === 'connected' ? '#10b981' : s.status === 'unknown' ? '#6b7280' : '#ef4444'}; margin-right: 0.5rem;"></span>
 								${s.name}
 							</div>`,
 					)
@@ -822,7 +754,7 @@ const ToolCallGroup = ({
 		(c) => c.type === 'tool_use',
 	) as ToolUseContent;
 	const toolName = toolUse?.name || 'Unknown Tool';
-	const isMCP = toolName.startsWith('mcp__');
+	const isMCP = toolUse?.isMCP;
 
 	const additionalInfo = extractToolAdditionalInfo(toolUse, toolName, cwd);
 
@@ -860,10 +792,7 @@ const TurnRenderer = ({
 	const isMCP =
 		turn.type === 'assistant' &&
 		'message' in turn &&
-		turn.message?.content?.some(
-			(c) =>
-				c.type === 'tool_use' && 'name' in c && c.name?.startsWith('mcp__'),
-		);
+		turn.message?.content?.some((c) => c.type === 'tool_use' && c.isMCP);
 
 	const title = getTurnTitle(turn);
 	const percentage =

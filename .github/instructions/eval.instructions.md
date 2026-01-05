@@ -268,6 +268,11 @@ const result = await p.group({
   - Parses tool calls and todo lists
   - Calculates token counts using `ai-tokenizer`
   - Tracks conversation for debugging
+- `lib/agents/copilot-cli.ts` - GitHub Copilot CLI wrapper
+  - Runs `copilot -p "<prompt>" --allow-all-tools` from `projectPath`
+  - Captures plain stdout/stderr (no structured tool events)
+  - Writes `conversation.json` with minimal metadata (no token/cost)
+  - Requires global CLI install/auth (`npm i -g @github/copilot`, `copilot login`)
 
 ### Evaluation Pipeline
 
@@ -325,6 +330,22 @@ const promptCost = 0.0123;
 const messages = [...]; // All messages with metadata
 globalThis.loadConversation?.({ prompt, promptTokenCount, promptCost, messages });
 ```
+
+### Copilot CLI Integration
+
+The Copilot CLI agent (`lib/agents/copilot-cli.ts`) provides a simpler, best-effort integration:
+
+**Key Behaviors:**
+
+1. **Programmatic mode:** Executes `copilot -p "<prompt>" --allow-all-tools` in the experiment `projectPath`.
+2. **Text-mode CLI output:** Captures stdout/stderr from the Copilot CLI (which currently does not expose a streaming JSON format) and parses it using regex patterns to detect tool calls (for example, lines like `✓ tool_name args`) and their outputs.
+3. **Conversation logging:** Writes `conversation.json` with a synthetic init message and reconstructs a full conversation timeline, including assistant/user messages and structured `tool_use` / `tool_result` messages synthesized from the parsed CLI output. Token counts and costs are currently zeroed.
+4. **No direct MCP transport:** There is no live MCP session over a structured streaming protocol; instead, tool metadata is inferred from the Copilot CLI's plain-text output rather than received as JSON.
+
+**Requirements:**
+
+- Global install and auth: `npm i -g @github/copilot` then `copilot login`.
+- Availability: Copilot CLI must be on PATH for the agent to run; otherwise the agent will report the failure in stderr.
 
 ### Adding a New Agent
 
@@ -670,7 +691,7 @@ When using `--context components.json`, the framework:
        "storybook-mcp": {
          "type": "stdio",
          "command": "node",
-         "args": ["../../packages/mcp/bin.ts", "--manifestPath", "/path/to/components.json"]
+         "args": ["../../packages/mcp/bin.ts", "--componentManifestPath", "/path/to/components.json"]
        }
      }
    }

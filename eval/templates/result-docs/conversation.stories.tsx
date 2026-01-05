@@ -29,7 +29,7 @@ export const MinimalConversation: Story = {
 				tools: ['Read', 'Write', 'Bash'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
-				claude_code_version: '0.1.0',
+				agent: 'Claude Code v0.1.0',
 				ms: 120,
 				tokenCount: 1500,
 			},
@@ -86,7 +86,7 @@ export const WithMCPServer: Story = {
 				],
 				mcp_servers: [{ name: 'storybook', status: 'connected' }],
 				cwd: '/Users/dev/project',
-				claude_code_version: '0.1.0',
+				agent: 'Claude Code v0.1.0',
 				ms: 150,
 				tokenCount: 2000,
 			},
@@ -147,7 +147,7 @@ export const MultipleServersWithFailure: Story = {
 					{ name: 'database', status: 'connected' },
 				],
 				cwd: '/Users/dev/project',
-				claude_code_version: '0.1.0',
+				agent: 'Claude Code v0.1.0',
 				ms: 180,
 				tokenCount: 2500,
 			},
@@ -198,7 +198,7 @@ export const WithWriteTool: Story = {
 				tools: ['Read', 'Write', 'Bash'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
-				claude_code_version: '0.1.0',
+				agent: 'Claude Code v0.1.0',
 				ms: 100,
 				tokenCount: 1500,
 			},
@@ -221,6 +221,7 @@ export const Button = ({ label, onClick }: ButtonProps) => {
   return <button onClick={onClick}>{label}</button>;
 };`,
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -275,6 +276,7 @@ export const WithEditTool: Story = {
 				tools: ['Read', 'Write', 'Edit', 'Bash'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 110,
 				tokenCount: 1600,
 			},
@@ -298,6 +300,7 @@ export const WithEditTool: Story = {
   variant?: 'primary' | 'secondary';
 }`,
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -352,6 +355,7 @@ export const WithMCPTool: Story = {
 				tools: ['Read', 'Write', 'mcp__storybook_list-all-documentation'],
 				mcp_servers: [{ name: 'storybook', status: 'connected' }],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 130,
 				tokenCount: 1800,
 			},
@@ -364,6 +368,7 @@ export const WithMCPTool: Story = {
 							id: 'tool_1',
 							name: 'mcp__storybook_list-all-documentation',
 							input: {},
+							isMCP: true,
 						},
 					],
 					usage: {
@@ -429,6 +434,7 @@ export const WithBashTool: Story = {
 				tools: ['Read', 'Write', 'Bash'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 95,
 				tokenCount: 1400,
 			},
@@ -443,6 +449,7 @@ export const WithBashTool: Story = {
 							input: {
 								command: 'npm test',
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -503,6 +510,7 @@ export const WithErrorResult: Story = {
 				tools: ['Read', 'Write', 'Bash'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 105,
 				tokenCount: 1550,
 			},
@@ -553,6 +561,7 @@ export const WithLongElapsedTimes: Story = {
 				tools: ['Read', 'Write', 'Bash'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 100,
 				tokenCount: 1500,
 			},
@@ -620,6 +629,7 @@ export const WithReadTool: Story = {
 				tools: ['Read', 'Write'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 90,
 				tokenCount: 1450,
 			},
@@ -634,6 +644,7 @@ export const WithReadTool: Story = {
 							input: {
 								file_path: '/Users/dev/project/src/components/Button.tsx',
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -690,6 +701,7 @@ export const WithGlobTool: Story = {
 				tools: ['Read', 'Write', 'Glob'],
 				mcp_servers: [],
 				cwd: '/Users/dev/project',
+				agent: 'Claude Code v0.1.0',
 				ms: 88,
 				tokenCount: 1420,
 			},
@@ -704,6 +716,7 @@ export const WithGlobTool: Story = {
 							input: {
 								pattern: 'src/components/**/*.tsx',
 							},
+							isMCP: false,
 						},
 					],
 					usage: {
@@ -768,7 +781,7 @@ export const ComplexConversation: Story = {
 				],
 				mcp_servers: [{ name: 'storybook', status: 'connected' }],
 				cwd: '/Users/dev/project',
-				claude_code_version: '0.1.0',
+				agent: 'Claude Code v0.1.0',
 				ms: 150,
 				tokenCount: 2500,
 			},
@@ -798,6 +811,7 @@ export const ComplexConversation: Story = {
 							id: 'tool_1',
 							name: 'mcp__storybook_list-all-documentation',
 							input: {},
+							isMCP: true,
 						},
 					],
 					usage: {
@@ -859,6 +873,7 @@ export const ComplexConversation: Story = {
 							type: 'tool_use',
 							id: 'tool_2',
 							name: 'Write',
+							isMCP: false,
 							input: {
 								file_path: 'src/components/FlightBookingForm.tsx',
 								content: `import { Form } from './Form';
@@ -927,6 +942,7 @@ export const FlightBookingForm = () => {
 							type: 'tool_use',
 							id: 'tool_3',
 							name: 'Write',
+							isMCP: false,
 							input: {
 								file_path: 'src/hooks/useFlightValidation.ts',
 								content: `export const useFlightValidation = () => {
@@ -991,6 +1007,7 @@ export const MCPToolWithError: Story = {
 				type: 'system',
 				subtype: 'init',
 				model: 'claude-sonnet-4-20250514',
+				agent: 'Claude Code v0.1.0',
 				tools: ['mcp__storybook_get-component-documentation'],
 				mcp_servers: [{ name: 'storybook', status: 'connected' }],
 				cwd: '/Users/dev/project',
@@ -1008,6 +1025,7 @@ export const MCPToolWithError: Story = {
 							input: {
 								componentId: 'nonexistent',
 							},
+							isMCP: true,
 						},
 					],
 					usage: {

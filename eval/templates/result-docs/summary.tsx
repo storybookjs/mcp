@@ -1,5 +1,7 @@
 interface SummaryProps {
-	cost: number;
+	agent: string;
+	model: string;
+	cost?: number;
 	duration: number;
 	durationApi: number;
 	turns: number;
@@ -203,12 +205,17 @@ export const Summary = (props: SummaryProps) => {
 					gap: '1rem',
 				}}
 			>
+				<MetricCard title="Agent" value={props.agent} />
+				<MetricCard title="Model" value={props.model} />
 				<MetricCard
 					title="Duration"
 					value={formatDuration(props.duration)}
 					subvalue={`API: ${formatDuration(props.durationApi)}`}
 				/>
-				<MetricCard title="Cost" value={`$${props.cost.toFixed(4)}`} />
+				<MetricCard
+					title="Cost"
+					value={`${props.cost ? `$${props.cost.toFixed(4)}` : 'unknown'}`}
+				/>
 				<MetricCard title="Turns" value={props.turns} />
 				{props.coverage && (
 					<MetricCard

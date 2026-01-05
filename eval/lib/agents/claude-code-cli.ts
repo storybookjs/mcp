@@ -1,10 +1,33 @@
 import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { Agent } from '../../types.ts';
+import type { Agent, ClaudeModel } from '../../types.ts';
+import { CLAUDE_MODELS } from '../../types.ts';
 import { spinner, log as clackLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
+import type {
+	ConversationMessage,
+	ToolUseContent as ConversationToolUseContent,
+} from '../../templates/result-docs/conversation.types.ts';
+
+/**
+ * Mapping from our standard model names to Claude CLI --model flag values.
+ */
+const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
+	'claude-sonnet-4.5': 'Sonnet',
+	'claude-opus-4.5': 'Opus',
+	'claude-haiku-4.5': 'Haiku',
+};
+
+/**
+ * Mapping from standard model names to ai-tokenizer model keys.
+ */
+const TOKENIZER_MODEL_MAP: Record<ClaudeModel, keyof typeof models> = {
+	'claude-sonnet-4.5': 'anthropic/claude-sonnet-4.5',
+	'claude-opus-4.5': 'anthropic/claude-opus-4.5',
+	'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
+};
 
 interface BaseMessage {
 	session_id: string;
@@ -189,14 +212,12 @@ function calculateMessageTokenCount(
 	return { tokens: 0, cost: 0 };
 }
 
-function getTodoProgress(
-	messages: ClaudeCodeStreamMessage[],
-): TodoProgress | null {
+function getTodoProgress(messages: ConversationMessage[]): TodoProgress | null {
 	// Find the most recent TodoWrite message
 	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
-				(c): c is ToolUseContent =>
+				(c): c is ConversationToolUseContent =>
 					c.type === 'tool_use' && c.name === 'TodoWrite',
 			);
 			if (todoWrite?.input.todos) {
@@ -234,7 +255,16 @@ function getTodoProgress(
 
 export const claudeCodeCli: Agent = {
 	async execute(prompt, experimentArgs, mcpServerConfig) {
-		const { projectPath, resultsPath } = experimentArgs;
+		const { projectPath, resultsPath, model: selectedModel } = experimentArgs;
+
+		// Validate that the model is supported by Claude CLI
+		if (!CLAUDE_MODELS.includes(selectedModel as ClaudeModel)) {
+			throw new Error(
+				`Model "${selectedModel}" is not supported by Claude Code CLI. Available models: ${CLAUDE_MODELS.join(', ')}`,
+			);
+		}
+		const claudeModel = selectedModel as ClaudeModel;
+
 		if (mcpServerConfig) {
 			await fs.writeFile(
 				path.join(projectPath, '.mcp.json'),
@@ -244,16 +274,22 @@ export const claudeCodeCli: Agent = {
 		const log = spinner();
 		await runHook('pre-execute-agent', experimentArgs);
 
-		log.start('Executing prompt with Claude Code CLI');
+		log.start(`Executing prompt with Claude Code CLI (model: ${claudeModel})`);
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
-		const model = models['anthropic/claude-sonnet-4.5'];
+		const tokenizerModelKey = TOKENIZER_MODEL_MAP[claudeModel];
+		const tokenizerModel = models[tokenizerModelKey];
 		const tokenizer = new Tokenizer(claudeEncoding);
+
+		// Map our model name to Claude CLI --model flag value
+		const claudeCliModelFlag = CLAUDE_MODEL_MAP[claudeModel];
 
 		const args = [
 			'--print',
 			'--dangerously-skip-permissions',
 			'--output-format=stream-json',
 			'--verbose',
+			'--model',
+			claudeCliModelFlag,
 			prompt,
 		];
 
@@ -272,7 +308,9 @@ export const claudeCodeCli: Agent = {
 			claudeProcess.process?.stdin.write('1\n');
 			claudeProcess.process?.stdin.end();
 		}
-		const messages: ClaudeCodeStreamMessage[] = [];
+		const messages: ConversationMessage[] = [];
+		let agentName = '';
+		let modelName = '';
 		let previousMs = Date.now();
 		for await (const message of claudeProcess) {
 			const parsed = JSON.parse(message) as ClaudeCodeStreamMessage;
@@ -282,10 +320,45 @@ export const claudeCodeCli: Agent = {
 			previousMs = Date.now();
 
 			parsed.ms = deltaMs;
-			const tokenData = calculateMessageTokenCount(parsed, tokenizer, model);
+			const tokenData = calculateMessageTokenCount(
+				parsed,
+				tokenizer,
+				tokenizerModel,
+			);
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
-			messages.push(parsed);
+
+			const getConversationMessage = (
+				message: ClaudeCodeStreamMessage,
+			): ConversationMessage => {
+				if (message.type === 'assistant') {
+					return {
+						...message,
+						message: {
+							...message.message,
+							content: message.message.content.map((c) => ({
+								...c,
+								isMCP: c.type === 'tool_use' && c.name?.startsWith('mcp__'),
+							})),
+						},
+					};
+				} else if (message.type === 'system') {
+					agentName = `Claude Code v${message.claude_code_version}`;
+					modelName = message.model;
+					return {
+						...message,
+						agent: `Claude Code v${message.claude_code_version}`,
+						mcp_servers: message.mcp_servers?.map((s) => ({
+							name: s.name,
+							status: s.status as 'connected' | 'disconnected' | 'unknown',
+						})),
+					};
+				} else {
+					return message;
+				}
+			};
+
+			messages.push(getConversationMessage(parsed));
 
 			// Check for MCP server status in init message
 			if (
@@ -336,6 +409,8 @@ export const claudeCodeCli: Agent = {
 			JSON.stringify({ prompt, promptTokenCount, messages }, null, 2),
 		);
 		const result = {
+			agent: agentName,
+			model: modelName,
 			cost: Number(resultMessage.total_cost_usd.toFixed(4)),
 			duration: Math.round(resultMessage.duration_ms / 1000),
 			durationApi: Math.round(resultMessage.duration_api_ms / 1000),

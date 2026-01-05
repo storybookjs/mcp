@@ -1,5 +1,47 @@
 import * as v from 'valibot';
 
+/**
+ * Supported models for the eval CLI.
+ * These names are used consistently across agents - each agent maps them to their native format.
+ */
+export const SUPPORTED_MODELS = [
+	'claude-sonnet-4.5',
+	'claude-opus-4.5',
+	'claude-haiku-4.5',
+	'gpt-5.1-codex-max',
+	'gpt-5.1-codex',
+	'gpt-5.2',
+	'gemini-3-pro-preview',
+] as const;
+
+export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
+
+/**
+ * Models that are supported by the Claude Code CLI.
+ */
+export const CLAUDE_MODELS = [
+	'claude-sonnet-4.5',
+	'claude-opus-4.5',
+	'claude-haiku-4.5',
+] as const satisfies readonly SupportedModel[];
+
+export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
+
+/**
+ * Models that are supported by the Copilot CLI.
+ */
+export const COPILOT_MODELS = [
+	'claude-sonnet-4.5',
+	'claude-opus-4.5',
+	'claude-haiku-4.5',
+	'gpt-5.1-codex-max',
+	'gpt-5.1-codex',
+	'gpt-5.2',
+	'gemini-3-pro-preview',
+] as const satisfies readonly SupportedModel[];
+
+export type CopilotModel = (typeof COPILOT_MODELS)[number];
+
 export type ExperimentArgs = {
 	experimentPath: string;
 	evalPath: string;
@@ -11,10 +53,13 @@ export type ExperimentArgs = {
 	evalName: string;
 	context: Context;
 	agent: string;
+	model: SupportedModel;
 };
 
 export type ExecutionSummary = {
-	cost: number;
+	agent: string;
+	model: string;
+	cost?: number;
 	duration: number;
 	durationApi: number;
 	turns: number;
@@ -57,7 +102,7 @@ export const McpServerConfigSchema = v.record(
 );
 export type McpServerConfig = v.InferOutput<typeof McpServerConfigSchema>;
 
-export type Context =
+export type ContextItem =
 	| {
 			type: false;
 	  }
@@ -76,6 +121,8 @@ export type Context =
 	| {
 			type: 'storybook-mcp-dev';
 	  };
+
+export type Context = ContextItem[];
 
 export interface Agent {
 	execute: (
