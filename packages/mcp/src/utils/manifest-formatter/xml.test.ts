@@ -894,6 +894,102 @@ describe('XmlFormatter - formatManifestsToLists', () => {
 
 			expect(result).not.toContain('<docs>');
 		});
+
+		it('should use doc.summary when provided instead of extracting from content', () => {
+			const manifests: AllManifests = {
+				componentManifest: {
+					v: 1,
+					components: {
+						button: {
+							id: 'button',
+							name: 'Button',
+							path: 'src/components/Button.tsx',
+						},
+					},
+				},
+				docsManifest: {
+					v: 1,
+					docs: {
+						'custom-summary': {
+							id: 'custom-summary',
+							name: 'Custom Summary',
+							title: 'Custom Summary Doc',
+							path: 'docs/custom-summary.mdx',
+							content:
+								'This is a very long content that would normally be extracted and truncated.',
+							summary: 'This is a custom summary',
+						},
+					},
+				},
+			};
+
+			const result = xmlFormatter.formatManifestsToLists(manifests);
+
+			expect(result).toMatchInlineSnapshot(`
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>
+				</components>
+				<docs>
+				<doc>
+				<id>custom-summary</id>
+				<title>Custom Summary Doc</title>
+				<summary>
+				This is a custom summary
+				</summary>
+				</doc>
+				</docs>"
+			`);
+		});
+
+		it('should extract summary from content when doc.summary is not provided', () => {
+			const manifests: AllManifests = {
+				componentManifest: {
+					v: 1,
+					components: {
+						button: {
+							id: 'button',
+							name: 'Button',
+							path: 'src/components/Button.tsx',
+						},
+					},
+				},
+				docsManifest: {
+					v: 1,
+					docs: {
+						'auto-summary': {
+							id: 'auto-summary',
+							name: 'Auto Summary',
+							title: 'Auto Summary Doc',
+							path: 'docs/auto-summary.mdx',
+							content: 'This content will be extracted automatically.',
+						},
+					},
+				},
+			};
+
+			const result = xmlFormatter.formatManifestsToLists(manifests);
+
+			expect(result).toMatchInlineSnapshot(`
+				"<components>
+				<component>
+				<id>button</id>
+				<name>Button</name>
+				</component>
+				</components>
+				<docs>
+				<doc>
+				<id>auto-summary</id>
+				<title>Auto Summary Doc</title>
+				<summary>
+				This content will be extracted automatically.
+				</summary>
+				</doc>
+				</docs>"
+			`);
+		});
 	});
 
 	describe('with-errors fixture', () => {

@@ -148,7 +148,7 @@ export const markdownFormatter: ManifestFormatter = {
 		parts.push('');
 
 		for (const doc of Object.values(manifests.docsManifest.docs)) {
-			const summary = extractDocsSummary(doc.content);
+			const summary = doc.summary ?? extractDocsSummary(doc.content);
 			parts.push(`- ${doc.title} (${doc.id})${summary ? `: ${summary}` : ''}`);
 		}
 

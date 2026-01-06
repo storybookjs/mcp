@@ -755,5 +755,85 @@ describe('MarkdownFormatter - formatManifestsToLists', () => {
 
 			expect(result).not.toContain('# Docs');
 		});
+
+		it('should use doc.summary when provided instead of extracting from content', () => {
+			const manifests: AllManifests = {
+				componentManifest: {
+					v: 1,
+					components: {
+						button: {
+							id: 'button',
+							name: 'Button',
+							path: 'src/components/Button.tsx',
+						},
+					},
+				},
+				docsManifest: {
+					v: 1,
+					docs: {
+						'custom-summary': {
+							id: 'custom-summary',
+							name: 'Custom Summary',
+							title: 'Custom Summary Doc',
+							path: 'docs/custom-summary.mdx',
+							content:
+								'This is a very long content that would normally be extracted and truncated.',
+							summary: 'This is a custom summary',
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatManifestsToLists(manifests);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button)
+
+				# Docs
+
+				- Custom Summary Doc (custom-summary): This is a custom summary"
+			`);
+		});
+
+		it('should extract summary from content when doc.summary is not provided', () => {
+			const manifests: AllManifests = {
+				componentManifest: {
+					v: 1,
+					components: {
+						button: {
+							id: 'button',
+							name: 'Button',
+							path: 'src/components/Button.tsx',
+						},
+					},
+				},
+				docsManifest: {
+					v: 1,
+					docs: {
+						'auto-summary': {
+							id: 'auto-summary',
+							name: 'Auto Summary',
+							title: 'Auto Summary Doc',
+							path: 'docs/auto-summary.mdx',
+							content: 'This content will be extracted automatically.',
+						},
+					},
+				},
+			};
+
+			const result = markdownFormatter.formatManifestsToLists(manifests);
+
+			expect(result).toMatchInlineSnapshot(`
+				"# Components
+
+				- Button (button)
+
+				# Docs
+
+				- Auto Summary Doc (auto-summary): This content will be extracted automatically."
+			`);
+		});
 	});
 });

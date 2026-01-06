@@ -81,6 +81,7 @@ const Doc = v.object({
 	title: v.string(),
 	path: v.string(),
 	content: v.string(),
+	summary: v.optional(v.string()),
 	error: v.optional(Error),
 });
 export type Doc = v.InferOutput<typeof Doc>;

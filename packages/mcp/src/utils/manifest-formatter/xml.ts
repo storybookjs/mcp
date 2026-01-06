@@ -143,7 +143,7 @@ export const xmlFormatter: ManifestFormatter = {
 		parts.push('<docs>');
 
 		for (const doc of Object.values(manifests.docsManifest.docs)) {
-			const summary = extractDocsSummary(doc.content);
+			const summary = doc.summary ?? extractDocsSummary(doc.content);
 			parts.push(dedent`<doc>
 				<id>${doc.id}</id>
 				<title>${doc.title}</title>`);
