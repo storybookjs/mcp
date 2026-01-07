@@ -737,6 +737,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					message:
 						'Which system prompts should be included? (will be merged into Claude.md)',
 					options: systemPromptOptions,
+					required: false,
 				});
 
 				if (p.isCancel(selectedSystemPromptNames)) {
@@ -744,7 +745,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					process.exit(0);
 				}
 
-				return selectedSystemPromptNames;
+				return selectedSystemPromptNames ?? [];
 			},
 			uploadId: async () => {
 				if (opts.uploadId !== undefined) {
