@@ -20,6 +20,7 @@ export type CollectedArgs = {
 	verbose: boolean;
 	eval: string;
 	context: Context;
+	systemPrompts: string[];
 	storybook: boolean | undefined;
 	uploadId: string | false;
 };
@@ -206,6 +207,10 @@ function buildRerunCommand(args: CollectedArgs): string {
 		}
 	}
 
+	if (args.systemPrompts.length > 0) {
+		parts.push(`--system-prompts=${args.systemPrompts.join(',')}`);
+	}
+
 	if (args.uploadId) {
 		parts.push(`--upload-id=${args.uploadId}`);
 	} else {
@@ -292,6 +297,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		)
 		.addOption(
 			new Option('--no-context', 'No additional context beyond the prompt'),
+		)
+		.addOption(
+			new Option(
+				'--system-prompts <files>',
+				'System prompt files to merge into Claude.md (comma-separated, e.g., system.base.md,system.strict.md)',
+			).env('SYSTEM_PROMPTS'),
 		)
 		.addOption(
 			new Option(
@@ -438,6 +449,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				// Discover available files for context options
 				const availableExtraPrompts: Record<string, string> = {};
+				const availableSystemPrompts: Record<string, string> = {};
 				const availableManifests: Record<string, string[]> = {};
 				for (const dirent of await fs.readdir(evalPath, {
 					withFileTypes: true,
@@ -456,8 +468,18 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							manifestContent.components || {},
 						);
 					} else if (
+						dirent.name.startsWith('system.') &&
+						dirent.name.endsWith('.md')
+					) {
+						const content = await fs.readFile(
+							path.join(evalPath, dirent.name),
+							'utf8',
+						);
+						availableSystemPrompts[dirent.name] = content;
+					} else if (
 						dirent.name.endsWith('.md') &&
-						dirent.name !== 'prompt.md'
+						dirent.name !== 'prompt.md' &&
+						!dirent.name.startsWith('system.')
 					) {
 						const content = await fs.readFile(
 							path.join(evalPath, dirent.name),
@@ -672,6 +694,59 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				return contexts;
 			},
+			systemPrompts: async () => {
+				// If system prompts were provided via CLI, use them
+				if (opts.systemPrompts) {
+					return opts.systemPrompts.split(',').map((s: string) => s.trim());
+				}
+
+				// Discover system.*.md files if not already discovered
+				const availableSystemPrompts: Record<string, string> = {};
+				for (const dirent of await fs.readdir(evalPath, {
+					withFileTypes: true,
+				})) {
+					if (
+						dirent.isFile() &&
+						dirent.name.startsWith('system.') &&
+						dirent.name.endsWith('.md')
+					) {
+						const content = await fs.readFile(
+							path.join(evalPath, dirent.name),
+							'utf8',
+						);
+						availableSystemPrompts[dirent.name] = content;
+					}
+				}
+
+				// If no system prompts found, return empty array
+				if (Object.keys(availableSystemPrompts).length === 0) {
+					return [];
+				}
+
+				const systemPromptOptions = Object.entries(availableSystemPrompts).map(
+					([name, content]) => ({
+						label: name,
+						hint:
+							content.slice(0, 100).replace(/\n/g, ' ') +
+							(content.length > 100 ? '...' : ''),
+						value: name,
+					}),
+				);
+
+				const selectedSystemPromptNames = await p.multiselect({
+					message:
+						'Which system prompts should be included? (will be merged into Claude.md)',
+					options: systemPromptOptions,
+					required: false,
+				});
+
+				if (p.isCancel(selectedSystemPromptNames)) {
+					p.cancel('Operation cancelled.');
+					process.exit(0);
+				}
+
+				return selectedSystemPromptNames ?? [];
+			},
 			uploadId: async () => {
 				if (opts.uploadId !== undefined) {
 					return opts.uploadId;
@@ -705,6 +780,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		agent: promptResults.agent,
 		model: promptResults.model as SupportedModel,
 		context: promptResults.context as Context,
+		systemPrompts: promptResults.systemPrompts as string[],
 		uploadId: promptResults.uploadId,
 		storybook: promptResults.storybook,
 		verbose: promptResults.verbose,

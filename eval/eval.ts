@@ -8,6 +8,7 @@ import { evaluate } from './lib/evaluations/evaluate.ts';
 import { save } from './lib/save/save.ts';
 import { collectArgs } from './lib/collect-args.ts';
 import { generatePrompt } from './lib/generate-prompt.ts';
+import { generateSystemPrompt } from './lib/generate-system-prompt.ts';
 import { x } from 'tinyexec';
 import { styleText } from 'node:util';
 import { agents } from './config.ts';
@@ -105,6 +106,12 @@ const { mcpServerConfig: preparedMcpConfig } =
 
 const prompt = await generatePrompt(evalPath, args.context);
 await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
+
+// Generate and write system prompt to Claude.md if system prompts are selected
+if (args.systemPrompts.length > 0) {
+	const systemPrompt = await generateSystemPrompt(evalPath, args.systemPrompts);
+	await fs.writeFile(path.join(projectPath, 'Claude.md'), systemPrompt);
+}
 
 // Merge all MCP server configs from contexts
 let mergedMcpConfig: McpServerConfig | undefined = preparedMcpConfig;

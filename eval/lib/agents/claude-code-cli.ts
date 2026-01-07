@@ -348,7 +348,7 @@ export const claudeCodeCli: Agent = {
 					return {
 						...message,
 						agent: `Claude Code v${message.claude_code_version}`,
-						mcp_servers: message.mcp_servers.map((s) => ({
+						mcp_servers: message.mcp_servers?.map((s) => ({
 							name: s.name,
 							status: s.status as 'connected' | 'disconnected' | 'unknown',
 						})),
