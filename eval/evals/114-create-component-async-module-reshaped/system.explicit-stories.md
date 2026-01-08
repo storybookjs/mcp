@@ -1,2 +1,1 @@
-Create `InventoryList` (default export in `src/components/InventoryList.tsx`) that imports `getInventory()` from `src/services/inventoryApi.ts`, renders loading/empty/error states, and includes `data-testid="inventory-list"` and `data-testid="inventory-item"`. Add Storybook stories in `stories/InventoryList.stories.tsx` for loaded, empty, and error cases that mock the `getInventory` module (no live calls).
-
+Add Storybook stories in `stories/InventoryList.stories.tsx` for loaded, empty, and error cases that mock the `getInventory` module (no live calls).
