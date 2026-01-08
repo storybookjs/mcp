@@ -29,4 +29,3 @@ export const LowRating: Story = {
 		comment: 'Functionality is okay, but performance can be improved.',
 	},
 };
-
