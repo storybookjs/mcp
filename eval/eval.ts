@@ -65,11 +65,11 @@ if (
 						.join('-'),
 				);
 				break;
-			case 'components-manifest':
-				prefixes.push('components-manifest');
-				break;
 			case 'storybook-mcp-dev':
 				prefixes.push('storybook-mcp-dev');
+				break;
+			case 'storybook-mcp-docs':
+				prefixes.push('storybook-mcp-docs');
 				break;
 		}
 	}
@@ -109,7 +109,7 @@ await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
 // Merge all MCP server configs from contexts
 let mergedMcpConfig: McpServerConfig | undefined = preparedMcpConfig;
 for (const context of args.context) {
-	if (context.type === 'mcp-server' || context.type === 'components-manifest') {
+	if (context.type === 'mcp-server') {
 		if (!mergedMcpConfig) {
 			mergedMcpConfig = {};
 		}

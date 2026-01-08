@@ -681,9 +681,9 @@ When using `--context storybook-dev`, the framework:
 
 ### Storybook MCP - Docs Pattern (Component Manifest)
 
-When using `--context components.json`, the framework:
+When using `--context storybook-docs`, the framework:
 
-1. Reads the manifest file from the eval directory
+1. Reads the manifest files from the eval directory, components.json and optionally docs.json
 2. Creates `.mcp.json` in project with stdio server config:
    ```json
    {
@@ -691,7 +691,7 @@ When using `--context components.json`, the framework:
        "storybook-mcp": {
          "type": "stdio",
          "command": "node",
-         "args": ["../../packages/mcp/bin.ts", "--manifestPath", "/path/to/components.json"]
+         "args": ["../../packages/mcp/bin.ts", "--manifestsDir", "/path/to/manifests/dir/"]
        }
      }
    }
