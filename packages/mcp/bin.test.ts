@@ -70,12 +70,9 @@ describe('bin.ts stdio MCP server', () => {
 	beforeAll(() => {
 		const currentDir = dirname(fileURLToPath(import.meta.url));
 		const binPath = resolve(currentDir, './bin.ts');
-		const fixturePath = resolve(
-			currentDir,
-			'./fixtures/full-manifest.fixture.json',
-		);
+		const fixturePath = resolve(currentDir, './fixtures/default');
 
-		const proc = x('node', [binPath, '--componentManifestPath', fixturePath]);
+		const proc = x('node', [binPath, '--manifestsDir', fixturePath]);
 
 		child = proc.process as ChildProcess;
 

@@ -1,17 +1,14 @@
 /**
  * This is a way to start the @storybook/mcp server as a stdio MCP server, which is sometimes easier for testing.
  * You can run it like this:
- *   node bin.ts --componentManifestPath ./path/to/components.json --format markdown
- *
- * Optionally, you can also provide a docs manifest:
- *   node bin.ts --componentManifestPath ./path/to/components.json --docsManifestPath ./path/to/docs.json
+ *   node bin.ts --manifestsDir ./path/to/manifests/dir/ --format markdown
  *
  * Or when configuring it as an MCP server:
  * {
  *   "storybook-mcp": {
  *     "type": "stdio",
  *     "command": "node",
- *     "args": ["bin.ts", "--componentManifestPath", "./path/to/components.json", "--format", "markdown"]
+ *     "args": ["bin.ts", "--manifestsDir", "./path/to/manifests/dir/", "--format", "markdown"]
  *   }
  * }
  */
@@ -24,6 +21,7 @@ import { addGetDocumentationTool } from './src/tools/get-documentation.ts';
 import type { StorybookContext, OutputFormat } from './src/types.ts';
 import { parseArgs } from 'node:util';
 import * as fs from 'node:fs/promises';
+import { basename } from 'node:path';
 
 const adapter = new ValibotJsonSchemaAdapter();
 const server = new McpServer(
@@ -46,12 +44,9 @@ await addGetDocumentationTool(server);
 const transport = new StdioTransport(server);
 const args = parseArgs({
 	options: {
-		componentManifestPath: {
+		manifestsDir: {
 			type: 'string',
-			default: './fixtures/full-manifest.fixture.json',
-		},
-		docsManifestPath: {
-			type: 'string',
+			default: './fixtures/default',
 		},
 		format: {
 			type: 'string',
@@ -62,33 +57,19 @@ const args = parseArgs({
 
 const format = args.values.format as OutputFormat;
 
-async function readManifest(manifestPath: string): Promise<string> {
-	if (
-		manifestPath.startsWith('http://') ||
-		manifestPath.startsWith('https://')
-	) {
-		const res = await fetch(manifestPath);
-		return await res.text();
-	}
-	return await fs.readFile(manifestPath, 'utf-8');
-}
-
 transport.listen({
 	format,
 	manifestProvider: async (_request, path) => {
-		const { componentManifestPath, docsManifestPath } = args.values;
+		const { manifestsDir } = args.values;
+		const fullPath = `${manifestsDir}/${basename(path)}`;
 
-		// Determine which manifest to load based on the requested path
-		if (path.includes('docs')) {
-			if (!docsManifestPath) {
-				throw new Error(
-					'Docs manifest requested but --docsManifestPath was not provided',
-				);
-			}
-			return await readManifest(docsManifestPath);
+		if (
+			manifestsDir.startsWith('http://') ||
+			manifestsDir.startsWith('https://')
+		) {
+			const res = await fetch(fullPath);
+			return await res.text();
 		}
-
-		// Default to component manifest
-		return await readManifest(componentManifestPath);
+		return await fs.readFile(fullPath, 'utf-8');
 	},
 });

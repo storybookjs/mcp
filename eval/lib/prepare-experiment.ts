@@ -5,7 +5,7 @@ import { addDependency, installDependencies } from 'nypm';
 import { taskLog } from '@clack/prompts';
 import { runHook } from './run-hook.ts';
 import { startStorybookDevServer } from './storybook-dev-server.ts';
-import { isDevEvaluation } from './context-utils.ts';
+import { isDevEvaluation, isDocsEvaluation } from './context-utils.ts';
 
 const STORYBOOK_DEV_PACKAGES = [
 	'vitest@catalog:experiments',
@@ -72,7 +72,21 @@ export async function prepareExperiment(
 		silent: true,
 	});
 
-	if (isDevEvaluation(experimentArgs.context)) {
+	if (isDocsEvaluation(experimentArgs.context)) {
+		result = {
+			mcpServerConfig: {
+				'storybook-docs-mcp': {
+					type: 'stdio',
+					command: 'node',
+					args: [
+						path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
+						'--manifestsDir',
+						experimentArgs.evalPath,
+					],
+				},
+			},
+		};
+	} else if (isDevEvaluation(experimentArgs.context)) {
 		log.message('Setting up Storybook for Storybook Dev MCP context');
 
 		// Copy evaluation template (includes .storybook config with addon-mcp, vitest setup, etc.)
