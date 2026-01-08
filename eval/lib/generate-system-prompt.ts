@@ -24,4 +24,3 @@ export async function generateSystemPrompt(
 
 	return systemParts.join('\n\n');
 }
-

@@ -33,7 +33,7 @@ The addon supports configuring which toolsets are enabled:
     name: '@storybook/addon-mcp',
     options: {
       toolsets: {
-        dev: true,      // get-story-urls, get-storybook-story-instructions
+        dev: true,   // get-story-urls, get-storybook-story-instructions
         docs: true,  // list-all-components, get-component-documentation
       },
       experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
@@ -72,8 +72,8 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
   - Returns the manifest JSON as a string
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
-  - `onListAllComponents`: Called when the list-all-components tool is invoked
-  - `onGetComponentDocumentation`: Called when the get-component-documentation tool is invoked
+  - `onListAllDocumentation`: Called when the list-all-documentation tool is invoked
+  - `onGetDocumentation`: Called when the get-component-documentation tool is invoked
 - **Output Format**: The `format` property in context controls output format:
   - `'markdown'` (default): Token-efficient markdown with adaptive formatting
   - `'xml'`: Legacy XML format
@@ -261,14 +261,14 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - `AddonContext` extends `StorybookContext` to ensure type compatibility
 - Component manifest tools are conditionally registered based on feature flags:
   - Checks `features.experimentalComponentsManifest` flag
-  - Checks for `experimental_componentManifestGenerator` preset
-  - Only registers `addListAllComponentsTool` and `addGetComponentDocumentationTool` when enabled
+  - Checks for `experimental_manifests` preset
+  - Only registers `addListAllDocumentationTool` and `addGetDocumentationTool` when enabled
 - Context includes `request` (HTTP Request object) which tools use to determine manifest location
 - Default manifest URL is constructed from request origin, replacing `/mcp` with `/manifests/components.json`
 - **Optional handlers for tracking**:
   - `onSessionInitialize`: Called when an MCP session is initialized, receives context
-  - `onListAllComponents`: Called when list tool is invoked, receives context and manifest
-  - `onGetComponentDocumentation`: Called when get tool is invoked, receives context, input with componentId, and optional foundComponent
+  - `onListAllDocumentation`: Called when list tool is invoked, receives context and manifest
+  - `onGetDocumentation`: Called when get tool is invoked, receives context, input with id, and optional foundDocumentation
   - Addon-mcp uses these handlers to collect telemetry on tool usage
 
 **Storybook internals used:**
@@ -278,7 +278,7 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - `storybook/internal/node-logger` - Logging utilities
 - Framework detection via `options.presets.apply('framework')`
 - Feature flags via `options.presets.apply('features')`
-- Component manifest generator via `options.presets.apply('experimental_componentManifestGenerator')`
+- Component manifest generator via `options.presets.apply('experimental_manifests')`
 
 **Story URL generation:**
 

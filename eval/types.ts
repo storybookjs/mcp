@@ -115,8 +115,7 @@ export type ContextItem =
 			mcpServerConfig: McpServerConfig;
 	  }
 	| {
-			type: 'components-manifest';
-			mcpServerConfig: McpServerConfig;
+			type: 'storybook-mcp-docs';
 	  }
 	| {
 			type: 'storybook-mcp-dev';

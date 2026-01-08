@@ -58,13 +58,12 @@ function parseBooleanEnv(
 }
 /**
  * Intermediate parsed context before full resolution.
- * For components-manifest, we store the path temporarily before converting to mcpServerConfig.
  */
 type ParsedContext =
 	| { type: false }
 	| { type: 'extra-prompts'; prompts: string[] }
 	| { type: 'mcp-server'; mcpServerConfig: McpServerConfig }
-	| { type: 'components-manifest'; manifestPath: string }
+	| { type: 'storybook-mcp-docs' }
 	| { type: 'storybook-mcp-dev' };
 
 /**
@@ -90,8 +89,13 @@ async function parseSingleContextValue(
 		return { type: 'storybook-mcp-dev' };
 	}
 
-	// MCP config file (contains "mcp" and ends with .json)
-	if (rawContext.includes('mcp') && rawContext.endsWith('.json')) {
+	// Components manifest file (--context=storybook-docs)
+	if (rawContext === 'storybook-docs') {
+		return { type: 'storybook-mcp-docs' };
+	}
+
+	// MCP config file (ends with .json)
+	if (rawContext.endsWith('.json')) {
 		if (!evalName) {
 			throw new Error(
 				'To set an MCP config file as the context, you must also set the eval as a positional argument',
@@ -103,11 +107,6 @@ async function parseSingleContextValue(
 		});
 		const validated = v.parse(McpServerConfigSchema, config);
 		return { type: 'mcp-server', mcpServerConfig: validated };
-	}
-
-	// Components manifest file (ends with .json but no "mcp")
-	if (rawContext.endsWith('.json')) {
-		return { type: 'components-manifest', manifestPath: rawContext };
 	}
 
 	// Extra prompts (ends with .md)
@@ -181,21 +180,11 @@ function buildRerunCommand(args: CollectedArgs): string {
 				case 'mcp-server':
 					contextStrings.push(`'${JSON.stringify(context.mcpServerConfig)}'`);
 					break;
-				case 'components-manifest': {
-					// Extract the manifest path from the mcpServerConfig args
-					const serverConfig = context.mcpServerConfig['storybook-docs-mcp'];
-					const manifestArg =
-						serverConfig?.type === 'stdio'
-							? serverConfig.args?.find((arg: string) => arg.endsWith('.json'))
-							: undefined;
-					if (manifestArg) {
-						const manifestFileName = path.basename(manifestArg);
-						contextStrings.push(manifestFileName);
-					}
-					break;
-				}
 				case 'storybook-mcp-dev':
 					contextStrings.push('storybook-dev');
+					break;
+				case 'storybook-mcp-docs':
+					contextStrings.push('storybook-docs');
 					break;
 				case 'extra-prompts':
 					contextStrings.push(...context.prompts);
@@ -412,61 +401,30 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				return result;
 			},
 			context: async function (): Promise<Context> {
-				// If context was already parsed from CLI, convert to Context array
+				const evalPath = path.resolve(path.join('evals', evalName));
+
 				if (parsedContext !== undefined) {
-					const contexts: Context = [];
-					for (const parsed of parsedContext) {
-						// For components-manifest, we need to convert the manifestPath to full mcpServerConfig
-						if (parsed.type === 'components-manifest') {
-							contexts.push({
-								type: 'components-manifest',
-								mcpServerConfig: manifestPathToMcpServerConfig(
-									path.join(evalPath, parsed.manifestPath),
-								),
-							});
-						} else if (parsed.type === 'extra-prompts') {
-							contexts.push(parsed);
-						} else if (parsed.type === 'mcp-server') {
-							contexts.push(parsed);
-						} else if (parsed.type === 'storybook-mcp-dev') {
-							contexts.push(parsed);
-						} else if (parsed.type === false) {
-							contexts.push(parsed);
-						}
-					}
-					if (
-						promptIsEmpty &&
-						!contexts.some(
-							(ctx) => ctx.type === 'extra-prompts' && ctx.prompts.length > 0,
-						)
-					) {
-						throw new Error(
-							`prompt.md is empty for eval "${evalName}". Please include at least one extra prompt via --context <file>.md.`,
-						);
-					}
-					return contexts;
+					return parsedContext;
 				}
 
 				// Discover available files for context options
 				const availableExtraPrompts: Record<string, string> = {};
 				const availableSystemPrompts: Record<string, string> = {};
-				const availableManifests: Record<string, string[]> = {};
+				let availableManifest: string[] | undefined = undefined;
 				for (const dirent of await fs.readdir(evalPath, {
 					withFileTypes: true,
 				})) {
 					if (!dirent.isFile()) {
 						continue;
 					}
-					if (dirent.name.endsWith('.json') && !dirent.name.includes('mcp')) {
+					if (dirent.name === 'components.json') {
 						const { default: manifestContent } = await import(
 							path.join(evalPath, dirent.name),
 							{
 								with: { type: 'json' },
 							}
 						);
-						availableManifests[dirent.name] = Object.keys(
-							manifestContent.components || {},
-						);
+						availableManifest = Object.keys(manifestContent.components || {});
 					} else if (
 						dirent.name.startsWith('system.') &&
 						dirent.name.endsWith('.md')
@@ -507,11 +465,11 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						{
 							label: 'Storybook MCP - Docs',
 							hint:
-								Object.keys(availableManifests).length > 0
-									? 'Add a Storybook MCP server based on a components manifest file'
-									: 'No component manifest files available for this eval',
-							value: 'components-manifest',
-							disabled: Object.keys(availableManifests).length === 0,
+								availableManifest && availableManifest.length > 0
+									? 'Add a Storybook MCP server based on manifest files'
+									: 'No manifest files available for this eval',
+							value: 'storybook-mcp-docs',
+							disabled: !availableManifest || availableManifest.length === 0,
 						},
 						{
 							label: 'Generic MCP server',
@@ -556,34 +514,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							contexts.push({ type: 'storybook-mcp-dev' });
 							break;
 						}
-						case 'components-manifest': {
-							const manifestOptions = Object.entries(availableManifests).map(
-								([manifestPath, componentNames]) => ({
-									label: manifestPath,
-									hint: `${componentNames.length} components: ${componentNames.slice(0, 5).join(', ')}...`,
-									value: manifestPath,
-								}),
-							);
-
-							const selectedManifestPath = await p.select({
-								message:
-									'Which components manifest should be used for the Storybook MCP?',
-								options: manifestOptions,
-							});
-							if (p.isCancel(selectedManifestPath)) {
-								p.cancel('Operation cancelled.');
-								process.exit(0);
-							}
-
+						case 'storybook-mcp-docs': {
 							contexts.push({
-								type: 'components-manifest',
-								mcpServerConfig: manifestPathToMcpServerConfig(
-									path.join(evalPath, selectedManifestPath),
-								),
+								type: 'storybook-mcp-docs',
 							});
 							break;
 						}
-
 						case 'mcp-server': {
 							const mcpServerName = await p.text({
 								message: 'What name should be used for the MCP server?',
@@ -793,18 +729,4 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	]);
 
 	return result;
-}
-
-function manifestPathToMcpServerConfig(manifestPath: string): McpServerConfig {
-	return {
-		'storybook-docs-mcp': {
-			type: 'stdio',
-			command: 'node',
-			args: [
-				path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
-				'--manifestPath',
-				manifestPath,
-			],
-		},
-	};
 }
