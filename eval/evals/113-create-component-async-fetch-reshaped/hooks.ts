@@ -28,10 +28,6 @@ export default config;
 			cwd: experimentArgs.projectPath,
 		});
 
-		await fs.unlink(
-			path.join(experimentArgs.projectPath, '.storybook', 'preview.ts'),
-		);
-
 		log.success(
 			'Reshaped package installed, PostCSS config added, MSW packages installed and MSW for Storybook configured',
 		);
