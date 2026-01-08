@@ -56,20 +56,8 @@ function getContextDetails(context: Context): string {
 			case 'storybook-mcp-dev':
 				details.push('Storybook Dev Server');
 				break;
-			case 'components-manifest': {
-				// Extract manifest path from MCP server config args
-				const mcpConfig = Object.values(ctx.mcpServerConfig)[0];
-				if (mcpConfig?.type === 'stdio' && mcpConfig.args) {
-					const manifestIndex = mcpConfig.args.indexOf('--manifestPath');
-					const manifestIndexValue = mcpConfig.args[manifestIndex + 1];
-					if (manifestIndex !== -1 && manifestIndexValue) {
-						details.push(`Manifest: ${path.basename(manifestIndexValue)}`);
-					} else {
-						details.push('unknown manifest name');
-					}
-				} else {
-					details.push('unknown manifest name');
-				}
+			case 'storybook-mcp-docs': {
+				details.push('Storybook Docs Manifest');
 				break;
 			}
 		}

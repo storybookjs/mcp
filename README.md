@@ -134,7 +134,7 @@ curl -X POST http://localhost:13316/mcp \
     "id": 2,
     "method": "tools/call",
     "params": {
-      "name": "list-all-components",
+      "name": "list-all-documentation",
       "arguments": {}
     }
   }'
