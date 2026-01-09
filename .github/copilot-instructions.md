@@ -33,8 +33,8 @@ The addon supports configuring which toolsets are enabled:
     name: '@storybook/addon-mcp',
     options: {
       toolsets: {
-        dev: true,      // get-story-urls, get-ui-building-instructions
-        docs: true,  // list-all-documentation, get-component-documentation
+        dev: true,   // get-story-urls, get-storybook-story-instructions
+        docs: true,  // list-all-components, get-component-documentation
       },
       experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
