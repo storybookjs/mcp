@@ -2,7 +2,7 @@
 '@storybook/addon-mcp': minor
 ---
 
-Breaking change: Renamed tool `get-ui-building-instructions` to `get-storybook-story-instructions` to increase the likelihood of Agents calling the MCP tool.
+Renamed tool `get-ui-building-instructions` to `get-storybook-story-instructions` to increase the likelihood of Agents calling the MCP tool.
 
 Further updates:
 
