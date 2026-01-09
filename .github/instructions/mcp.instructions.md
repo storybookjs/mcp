@@ -27,7 +27,7 @@ src/
   serve.ts          # Development server setup
   tools/
     list-all-documentation.ts              # List all documentation tool
-    get-component-documentation.ts      # Get component documentation tool
+    get-documentation.ts      # Get component documentation tool
   utils/
     format-manifest.ts                  # Format component manifest to XML
     parse-react-docgen.ts              # Parse react-docgen output
