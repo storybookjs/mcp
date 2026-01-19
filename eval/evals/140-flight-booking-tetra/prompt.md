@@ -33,4 +33,20 @@ The calendar widget shouldn't allow selecting dates in the past and the return f
 10. The (optional) element to open the Return Date date select SHOULD have "Return Date" as its initial content and SHOULD have data-testid="date-trigger-return"
 11. Each date in the date selects SHOULD the day of month as its only content and SHOULD have data-testid="date-{DAY}" (e.g., "date-27", "date-15")
 12. The submit button SHOULD have "Search Flights" as its only content and SHOULD have data-testid="search-flights"
-    </technical_requirements>
+
+## Critical: Storybook MCP Integration
+
+Before doing any UI, frontend, or React development, ALWAYS call the storybook MCP server to get further instructions.
+
+1. Call `get-storybook-story-instructions` to get the latest instructions for creating or updating stories and ui components.
+
+### Required MCP Tool Usage
+
+**CRITICAL: Never hallucinate component properties!** Before using ANY property on a component from this design system (including common-sounding ones like `shadow`, etc.), you MUST:
+
+1. Call `list-all-documentation` to get a list of all components
+2. Call `get-documentation` for that component to see all available properties
+3. Only use properties that are explicitly documented or shown in example stories
+
+A story name might not match the property name exactly—always verify properties in the documentation or example stories before using them.
+</technical_requirements>

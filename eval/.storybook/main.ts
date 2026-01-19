@@ -27,7 +27,7 @@ const config: StorybookConfig = {
 	},
 	core: {
 		builder: {
-			name: '@storybook/builder-vite',
+			name: getAbsolutePath("@storybook/builder-vite"),
 			options: {
 				viteConfigPath: './templates/project/vite.config.ts',
 			},
