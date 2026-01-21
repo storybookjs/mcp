@@ -67,7 +67,7 @@ function doPost(e) {
 		if (chromaticUrlIndex !== -1) {
 			const cell = sheet.getRange(targetRow, chromaticUrlIndex + 1);
 
-			if(data.chromaticUrl !== '') {
+			if (data.chromaticUrl !== '') {
 				cell.setFormula(`=HYPERLINK("${data.chromaticUrl}", "See results")`);
 			} else {
 				cell.setValue('no result');

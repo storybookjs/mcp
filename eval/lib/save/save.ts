@@ -33,7 +33,7 @@ export async function save(
 	// Build Storybook and upload to Chromatic
 	log.message('Building Storybook');
 	const storybookBuildSuccess = await buildStorybook(experimentArgs);
-	
+
 	let storybookUrl: string | undefined = undefined;
 
 	if (!storybookBuildSuccess) {
