@@ -33,12 +33,15 @@ export async function save(
 	// Build Storybook and upload to Chromatic
 	log.message('Building Storybook');
 	const storybookBuildSuccess = await buildStorybook(experimentArgs);
+	
+	let storybookUrl: string | undefined = undefined;
+
 	if (!storybookBuildSuccess) {
-		log.error('Storybook build failed, skipping upload.');
-		return;
+		log.error('Storybook build failed, skipping Chromatic upload.');
+	} else {
+		log.message('Uploading to Chromatic');
+		storybookUrl = await uploadToChromatic(experimentArgs);
 	}
-	log.message('Uploading to Chromatic');
-	const storybookUrl = await uploadToChromatic(experimentArgs);
 
 	// Save to Google Sheets
 	log.message('Uploading to Google Sheets');

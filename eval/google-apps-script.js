@@ -64,9 +64,14 @@ function doPost(e) {
 
 		// Handle chromaticUrl as a hyperlink
 		const chromaticUrlIndex = keys.indexOf('chromaticUrl');
-		if (chromaticUrlIndex !== -1 && data.chromaticUrl) {
+		if (chromaticUrlIndex !== -1) {
 			const cell = sheet.getRange(targetRow, chromaticUrlIndex + 1);
-			cell.setFormula(`=HYPERLINK("${data.chromaticUrl}", "See results")`);
+
+			if(data.chromaticUrl !== '') {
+				cell.setFormula(`=HYPERLINK("${data.chromaticUrl}", "See results")`);
+			} else {
+				cell.setValue('no result');
+			}
 		}
 		sheet.autoResizeColumns(1, rowData.length);
 
