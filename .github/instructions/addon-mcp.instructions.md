@@ -245,7 +245,7 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 ### Naming Conventions
 
 - Constants: SCREAMING_SNAKE_CASE (e.g., `GET_STORY_URLS_TOOL_NAME`)
-- Functions: camelCase (e.g., `addGetStoryUrlsTool`, `createAddonMcpHandler`)
+- Functions: camelCase (e.g., `addPreviewStoriesTool`, `createAddonMcpHandler`)
 - Types/Interfaces: PascalCase (e.g., `AddonContext`, `StoryInput`)
 
 ## Important Files
