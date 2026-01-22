@@ -173,10 +173,7 @@ pnpm test:ci       # Run tests with coverage and CI reporters
 
 - **Overall Target**: >70% statement coverage
 - **src/utils**: 100% coverage (errors.ts, fetch-story-index.ts)
-  <<<<<<< HEAD
-- # **src/tools**: >90% coverage (preview-stories.ts, get-ui-building-instructions.ts)
-- **src/tools**: >90% coverage (get-story-urls.ts, get-storybook-story-instructions.ts)
-  > > > > > > > e09477cfed1095fed760ff7da9cd040151a06e5c
+- **src/tools**: >90% coverage (preview-stories.ts, get-storybook-story-instructions.ts)
 - **src**: Integration files (preset.ts, mcp-handler.ts, telemetry.ts) have partial coverage
 
 **Key Testing Patterns:**
@@ -266,12 +263,8 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 - `src/mcp-handler.ts` - Main MCP server handler factory using tmcp
 - `src/telemetry.ts` - Telemetry tracking for usage analytics
 - `src/types.ts` - Valibot schemas and AddonContext interface
-  <<<<<<< HEAD
 - `src/tools/preview-stories.ts` - Tool to preview stories from Storybook
-- # `src/tools/get-ui-building-instructions.ts` - Tool to provide framework-specific UI instructions
-- `src/tools/get-story-urls.ts` - Tool to fetch story URLs from index.json
 - `src/tools/get-storybook-story-instructions.ts` - Tool to provide framework-specific UI instructions
-  > > > > > > > e09477cfed1095fed760ff7da9cd040151a06e5c
 - `src/utils/errors.ts` - Error handling utilities
 - `src/utils/fetch-story-index.ts` - Utility to fetch Storybook's story index
 - `src/ui-building-instructions.md` - Template for UI development instructions
