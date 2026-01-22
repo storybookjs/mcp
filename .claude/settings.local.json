@@ -4,7 +4,7 @@
 			"Bash(git merge:*)",
 			"Bash(git checkout:*)",
 			"Bash(git add:*)",
-			"mcp__storybook-addon-mcp__get-ui-building-instructions",
+			"mcp__storybook-addon-mcp__get-storybook-story-instructions",
 			"mcp__storybook-addon-mcp__preview-stories"
 		],
 		"deny": [],

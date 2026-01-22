@@ -20,6 +20,7 @@ export type CollectedArgs = {
 	verbose: boolean;
 	eval: string;
 	context: Context;
+	systemPrompts: string[];
 	storybook: boolean | undefined;
 	uploadId: string | false;
 };
@@ -195,6 +196,10 @@ function buildRerunCommand(args: CollectedArgs): string {
 		}
 	}
 
+	if (args.systemPrompts.length > 0) {
+		parts.push(`--system-prompts=${args.systemPrompts.join(',')}`);
+	}
+
 	if (args.uploadId) {
 		parts.push(`--upload-id=${args.uploadId}`);
 	} else {
@@ -284,6 +289,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		)
 		.addOption(
 			new Option(
+				'--system-prompts <files>',
+				'System prompt files to merge into Claude.md (comma-separated, e.g., system.base.md,system.strict.md)',
+			).env('SYSTEM_PROMPTS'),
+		)
+		.addOption(
+			new Option(
 				'-u, --upload-id <id>',
 				'Upload results to Google Sheet with this ID',
 			)
@@ -323,6 +334,16 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	if (p.isCancel(evalName)) {
 		p.cancel('Operation cancelled.');
 		process.exit(0);
+	}
+
+	const evalPath = path.resolve(path.join('evals', evalName));
+	const promptPath = path.join(evalPath, 'prompt.md');
+	let promptIsEmpty = false;
+	try {
+		const promptContent = await fs.readFile(promptPath, 'utf8');
+		promptIsEmpty = promptContent.trim().length === 0;
+	} catch (error) {
+		promptIsEmpty = true;
 	}
 
 	// Prompt for missing arguments
@@ -388,6 +409,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				// Discover available files for context options
 				const availableExtraPrompts: Record<string, string> = {};
+				const availableSystemPrompts: Record<string, string> = {};
 				let availableManifest: string[] | undefined = undefined;
 				for (const dirent of await fs.readdir(evalPath, {
 					withFileTypes: true,
@@ -404,8 +426,18 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						);
 						availableManifest = Object.keys(manifestContent.components || {});
 					} else if (
+						dirent.name.startsWith('system.') &&
+						dirent.name.endsWith('.md')
+					) {
+						const content = await fs.readFile(
+							path.join(evalPath, dirent.name),
+							'utf8',
+						);
+						availableSystemPrompts[dirent.name] = content;
+					} else if (
 						dirent.name.endsWith('.md') &&
-						dirent.name !== 'prompt.md'
+						dirent.name !== 'prompt.md' &&
+						!dirent.name.startsWith('system.')
 					) {
 						const content = await fs.readFile(
 							path.join(evalPath, dirent.name),
@@ -413,6 +445,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						);
 						availableExtraPrompts[dirent.name] = content;
 					}
+				}
+
+				if (promptIsEmpty && Object.keys(availableExtraPrompts).length === 0) {
+					throw new Error(
+						`prompt.md is empty for eval "${evalName}" and no extra prompts were found. Add at least one extra prompt .md file to this eval directory.`,
+					);
 				}
 
 				const selectedContextTypes = await p.multiselect<string>({
@@ -453,6 +491,14 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				if (p.isCancel(selectedContextTypes)) {
 					p.cancel('Operation cancelled.');
 					process.exit(0);
+				}
+
+				if (
+					promptIsEmpty &&
+					!selectedContextTypes.includes('extra-prompts') &&
+					Object.keys(availableExtraPrompts).length > 0
+				) {
+					selectedContextTypes.push('extra-prompts');
 				}
 
 				// If nothing selected, return array with false
@@ -567,6 +613,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 								process.exit(0);
 							}
 
+							if (promptIsEmpty && selectedExtraPromptNames.length === 0) {
+								throw new Error(
+									`prompt.md is empty for eval "${evalName}". You must select at least one extra prompt.`,
+								);
+							}
+
 							contexts.push({
 								type: 'extra-prompts',
 								prompts: selectedExtraPromptNames,
@@ -577,6 +629,59 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				}
 
 				return contexts;
+			},
+			systemPrompts: async () => {
+				// If system prompts were provided via CLI, use them
+				if (opts.systemPrompts) {
+					return opts.systemPrompts.split(',').map((s: string) => s.trim());
+				}
+
+				// Discover system.*.md files if not already discovered
+				const availableSystemPrompts: Record<string, string> = {};
+				for (const dirent of await fs.readdir(evalPath, {
+					withFileTypes: true,
+				})) {
+					if (
+						dirent.isFile() &&
+						dirent.name.startsWith('system.') &&
+						dirent.name.endsWith('.md')
+					) {
+						const content = await fs.readFile(
+							path.join(evalPath, dirent.name),
+							'utf8',
+						);
+						availableSystemPrompts[dirent.name] = content;
+					}
+				}
+
+				// If no system prompts found, return empty array
+				if (Object.keys(availableSystemPrompts).length === 0) {
+					return [];
+				}
+
+				const systemPromptOptions = Object.entries(availableSystemPrompts).map(
+					([name, content]) => ({
+						label: name,
+						hint:
+							content.slice(0, 100).replace(/\n/g, ' ') +
+							(content.length > 100 ? '...' : ''),
+						value: name,
+					}),
+				);
+
+				const selectedSystemPromptNames = await p.multiselect({
+					message:
+						'Which system prompts should be included? (will be merged into Claude.md)',
+					options: systemPromptOptions,
+					required: false,
+				});
+
+				if (p.isCancel(selectedSystemPromptNames)) {
+					p.cancel('Operation cancelled.');
+					process.exit(0);
+				}
+
+				return selectedSystemPromptNames ?? [];
 			},
 			uploadId: async () => {
 				if (opts.uploadId !== undefined) {
@@ -611,6 +716,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		agent: promptResults.agent,
 		model: promptResults.model as SupportedModel,
 		context: promptResults.context as Context,
+		systemPrompts: promptResults.systemPrompts as string[],
 		uploadId: promptResults.uploadId,
 		storybook: promptResults.storybook,
 		verbose: promptResults.verbose,

@@ -53,7 +53,9 @@ export async function prepareExperiment(
 
 	await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-	let result: PrepareExperimentResult = {};
+	let result: PrepareExperimentResult = {
+		mcpServerConfig: {},
+	};
 
 	if (isDevEvaluation(experimentArgs.context)) {
 		packageJson.scripts = {
@@ -73,20 +75,18 @@ export async function prepareExperiment(
 	});
 
 	if (isDocsEvaluation(experimentArgs.context)) {
-		result = {
-			mcpServerConfig: {
-				'storybook-docs-mcp': {
-					type: 'stdio',
-					command: 'node',
-					args: [
-						path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
-						'--manifestsDir',
-						experimentArgs.evalPath,
-					],
-				},
-			},
+		result.mcpServerConfig!['storybook-docs-mcp'] = {
+			type: 'stdio',
+			command: 'node',
+			args: [
+				path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
+				'--manifestsDir',
+				experimentArgs.evalPath,
+			],
 		};
-	} else if (isDevEvaluation(experimentArgs.context)) {
+	}
+
+	if (isDevEvaluation(experimentArgs.context)) {
 		log.message('Setting up Storybook for Storybook Dev MCP context');
 
 		// Copy evaluation template (includes .storybook config with addon-mcp, vitest setup, etc.)
@@ -118,13 +118,9 @@ export async function prepareExperiment(
 		const devServer = await startStorybookDevServer(experimentArgs.projectPath);
 		log.message(`Storybook dev server running on port ${devServer.port}`);
 
-		result = {
-			mcpServerConfig: {
-				'storybook-dev-mcp': {
-					type: 'http',
-					url: `http://localhost:${devServer.port}/mcp`,
-				},
-			},
+		result.mcpServerConfig!['storybook-dev-mcp'] = {
+			type: 'http',
+			url: `http://localhost:${devServer.port}/mcp`,
 		};
 	}
 
