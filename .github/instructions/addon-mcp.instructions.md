@@ -30,7 +30,7 @@ The addon supports two toolsets that can be enabled/disabled:
 
 2. **`docs`** (default: true)
    - `list-all-documentation`: List all available components from manifest
-   - `get-component-documentation`: Get detailed component documentation
+   - `get-documentation`: Get detailed component documentation
    - Requires experimental feature flag `features.experimentalComponentsManifest`
 
 **Configuration Methods:**
