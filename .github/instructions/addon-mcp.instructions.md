@@ -25,12 +25,8 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 The addon supports two toolsets that can be enabled/disabled:
 
 1. **`dev`** (default: true)
-   <<<<<<< HEAD
    - `preview-stories`: Retrieve story preview URLs from Storybook
-   - # `get-ui-building-instructions`: Provide UI development guidelines
-   - `get-story-urls`: Retrieve story URLs from Storybook
    - `get-storybook-story-instructions`: Provide UI development guidelines
-     > > > > > > > e09477cfed1095fed760ff7da9cd040151a06e5c
 
 2. **`docs`** (default: true)
    - `list-all-documentation`: List all available components from manifest
