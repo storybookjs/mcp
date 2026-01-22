@@ -376,3 +376,7 @@ When working on data validation, refer to the following resources:
 
 - https://valibot.dev/
 - https://github.com/paoloricciuti/tmcp/tree/main/packages/adapter-valibot
+
+When working with MCP Apps and/or the `get-story-urls.ts` file, refer to the MCP App specification:
+
+- https://raw.githubusercontent.com/modelcontextprotocol/ext-apps/refs/heads/main/specification/draft/apps.mdx
