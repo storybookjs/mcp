@@ -50,6 +50,7 @@ export type ExperimentArgs = {
 	verbose: boolean;
 	hooks: Hooks;
 	uploadId: string | false;
+	runId?: string;
 	evalName: string;
 	context: Context;
 	agent: string;
@@ -105,6 +106,10 @@ export type McpServerConfig = v.InferOutput<typeof McpServerConfigSchema>;
 export type ContextItem =
 	| {
 			type: false;
+	  }
+	| {
+			type: 'inline-prompt';
+			content: string;
 	  }
 	| {
 			type: 'extra-prompts';

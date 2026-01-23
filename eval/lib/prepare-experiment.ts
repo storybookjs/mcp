@@ -102,11 +102,6 @@ export async function prepareExperiment(
 				!source.endsWith(path.join('results', 'coverage.mdx')),
 		});
 
-		await fs.writeFile(
-			path.join(experimentArgs.projectPath, '.storybook', 'preview.ts'),
-			'export default {};\n',
-		);
-
 		// Install packages required for a Storybook dev setup
 		await addDependency(STORYBOOK_DEV_PACKAGES, {
 			cwd: experimentArgs.projectPath,

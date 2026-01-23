@@ -8,10 +8,11 @@ import type {
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbwAbn91zsf9V2UKyLqtJb-NQ1CFbqqEyed_lc-AhauGu4zWflET_NDwMkD02xzvKVjCow/exec';
+	'https://script.google.com/macros/s/AKfycbwtZytoi18nKbk26FGE7u15vx0vLLLfOuS1pe6m3t4btEK0iY__qgiN4cyul71Vdw_wBw/exec';
 
 type SheetsData = {
 	uploadId: string;
+	runId: string;
 	timestamp: string;
 	evalName: string;
 	chromaticUrl: string;
@@ -110,6 +111,7 @@ export async function saveToGoogleSheets(
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
 		experimentPath: path.relative(process.cwd(), experimentPath),
+		runId: experimentArgs.runId ?? '',
 	};
 
 	try {

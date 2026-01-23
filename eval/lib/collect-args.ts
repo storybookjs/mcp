@@ -3,6 +3,7 @@ import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import * as v from 'valibot';
+import { randomUUID } from 'node:crypto';
 import {
 	McpServerConfigSchema,
 	SUPPORTED_MODELS,
@@ -23,6 +24,7 @@ export type CollectedArgs = {
 	systemPrompts: string[];
 	storybook: boolean | undefined;
 	uploadId: string | false;
+	runId: string;
 };
 
 /**
@@ -206,6 +208,10 @@ function buildRerunCommand(args: CollectedArgs): string {
 		parts.push('--no-upload-id');
 	}
 
+	if (args.runId) {
+		parts.push(`--run-id=${args.runId}`);
+	}
+
 	parts.push(args.eval);
 
 	return parts.join(' ');
@@ -302,6 +308,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				.argParser((value) => (value === 'false' ? false : value)),
 		)
 		.addOption(new Option('--no-upload-id', 'Skip uploading results'))
+		.addOption(
+			new Option(
+				'--run-id <id>',
+				'Run identifier to group uploads together (env: RUN_ID)',
+			).env('RUN_ID'),
+		)
 		.addHelpText('after', HELP_EXAMPLES);
 
 	await program.parseAsync();
@@ -712,6 +724,8 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		},
 	);
 
+	const runId = opts.runId ?? randomUUID();
+
 	const result: CollectedArgs = {
 		agent: promptResults.agent,
 		model: promptResults.model as SupportedModel,
@@ -721,6 +735,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		storybook: promptResults.storybook,
 		verbose: promptResults.verbose,
 		eval: evalName,
+		runId,
 	};
 
 	p.log.message([
