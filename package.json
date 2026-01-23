@@ -22,7 +22,7 @@
 		"lint:ci": "oxlint --format github --type-aware",
 		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
-		"storybook": "turbo watch storybook",
+		"storybook": "turbo watch storybook --filter=@storybook/mcp-internal-storybook",
 		"test": "vitest",
 		"test:ci": "vitest run --coverage --reporter=default --reporter=github-actions --reporter=junit --outputFile=test-report.junit.xml",
 		"test:run": "vitest run",
