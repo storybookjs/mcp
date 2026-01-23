@@ -162,6 +162,8 @@ To work with and debug the MCP app that is rendered as part of the preview-stori
 
 > Show me how all the button stories look, using the Storybook MCP
 
+6. After this first prompt, whenever you make changes, Storybook automatically restarts. Wait for it to be fully ready, then you can prompt _"Run the tool again"_.
+
 You can also use [the inspector from MCPJam](https://docs.mcpjam.com/getting-started) to have more low level control of the tool calls.
 
 ### Formatting & Linting
