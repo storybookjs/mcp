@@ -150,6 +150,20 @@ pnpm storybook
 
 This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` and try it out.
 
+### Working with the MCP App
+
+To work with and debug the MCP app that is rendered as part of the preview-stories tool, you can:
+
+1. Use the Insiders build of VSCode
+2. Ensure the [chat.mcp.apps.enabled](vscode-insiders://settings/chat.mcp.apps.enabled) setting is enabled
+3. Start up the repo's Storybook in watch mode by running `pnpm storybook` in the root
+4. Restart VSCode and, open the [`.vscode/mcp.json`](./.vscode/mcp.json) file and ensure the Storybook MCP is marked as Running, otherwise click Start.
+5. Open up a chat in VSCode and write a prompt like this:
+
+> Show me how all the button stories look, using the Storybook MCP
+
+You can also use [the inspector from MCPJam](https://docs.mcpjam.com/getting-started) to have more low level control of the tool calls.
+
 ### Formatting & Linting
 
 ```bash
