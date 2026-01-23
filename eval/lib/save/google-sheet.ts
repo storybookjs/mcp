@@ -12,6 +12,7 @@ const GOOGLE_SHEETS_URL =
 
 type SheetsData = {
 	uploadId: string;
+	runId: string;
 	timestamp: string;
 	evalName: string;
 	chromaticUrl: string;
@@ -110,6 +111,7 @@ export async function saveToGoogleSheets(
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
 		experimentPath: path.relative(process.cwd(), experimentPath),
+		runId: experimentArgs.runId ?? '',
 	};
 
 	try {
