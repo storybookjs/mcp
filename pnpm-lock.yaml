@@ -6,24 +6,12 @@ settings:
 
 catalogs:
   default:
-    '@storybook/addon-a11y':
-      specifier: 10.3.0-alpha.0
-      version: 10.3.0-alpha.0
-    '@storybook/addon-docs':
-      specifier: 10.3.0-alpha.0
-      version: 10.3.0-alpha.0
-    '@storybook/react-vite':
-      specifier: 10.3.0-alpha.0
-      version: 10.3.0-alpha.0
     '@tmcp/adapter-valibot':
       specifier: ^0.1.4
       version: 0.1.4
     '@tmcp/transport-http':
       specifier: ^0.8.0
       version: 0.8.0
-    '@tmcp/transport-stdio':
-      specifier: ^0.4.1
-      version: 0.4.1
     storybook:
       specifier: 10.3.0-alpha.0
       version: 10.3.0-alpha.0
@@ -33,9 +21,6 @@ catalogs:
     valibot:
       specifier: 1.2.0
       version: 1.2.0
-    vite:
-      specifier: 7.2.2
-      version: 7.2.2
 
 importers:
 
@@ -110,6 +95,9 @@ importers:
       '@storybook/addon-mcp':
         specifier: workspace:*
         version: link:../../packages/addon-mcp
+      '@storybook/addon-themes':
+        specifier: ^10.2.0
+        version: 10.2.0(storybook@10.3.0-alpha.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@storybook/react-vite':
         specifier: 'catalog:'
         version: 10.3.0-alpha.0(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.52.5)(storybook@10.3.0-alpha.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
@@ -269,6 +257,9 @@ importers:
       '@tmcp/transport-http':
         specifier: 'catalog:'
         version: 0.8.0(tmcp@1.18.1(typescript@5.9.3))
+      picoquery:
+        specifier: ^2.5.0
+        version: 2.5.0
       tmcp:
         specifier: 'catalog:'
         version: 1.18.1(typescript@5.9.3)
@@ -2113,6 +2104,11 @@ packages:
     resolution: {integrity: sha512-vjZ7Zh1ve7PBhF9Rk8xEOQD2AGrnWW1oHpVnXcX+KMdFEuivlxwJFF6K07Skoh1fRrBGHN1D5/4SOTYNFs+Wlg==}
     peerDependencies:
       storybook: ^10.3.0-alpha.0
+
+  '@storybook/addon-themes@10.2.0':
+    resolution: {integrity: sha512-BJsBvxqMtBcZYKVOt0S8NRMAeOBXND5mtOr3ga7jRXDGMP6/BbFo/SBJ1QKjRTsXw/rsOfm6MKWc4jwgbuj4Nw==}
+    peerDependencies:
+      storybook: ^10.2.0
 
   '@storybook/builder-vite@10.3.0-alpha.0':
     resolution: {integrity: sha512-3dI0Z+2/1/wTrbWmp4DMH30qJ8yFo4OWq5gwUm/dUCOwHKmQKMUgr7i26OLuG6itQIhrsHfhOlnsb5FDBSXgLg==}
@@ -4103,6 +4099,9 @@ packages:
   picomatch@4.0.3:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
+
+  picoquery@2.5.0:
+    resolution: {integrity: sha512-j1kgOFxtaCyoFCkpoYG2Oj3OdGakadO7HZ7o5CqyRazlmBekKhbDoUnNnXASE07xSY4nDImWZkrZv7toSxMi/g==}
 
   pify@4.0.1:
     resolution: {integrity: sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==}
@@ -7760,6 +7759,11 @@ snapshots:
       - vite
       - webpack
 
+  '@storybook/addon-themes@10.2.0(storybook@10.3.0-alpha.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+    dependencies:
+      storybook: 10.3.0-alpha.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      ts-dedent: 2.2.0
+
   '@storybook/builder-vite@10.3.0-alpha.0(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.3.0-alpha.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
       '@storybook/csf-plugin': 10.3.0-alpha.0(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
@@ -9944,6 +9948,8 @@ snapshots:
   picomatch@2.3.1: {}
 
   picomatch@4.0.3: {}
+
+  picoquery@2.5.0: {}
 
   pify@4.0.1: {}
 
