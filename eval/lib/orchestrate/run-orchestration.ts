@@ -38,10 +38,17 @@ type RunResult = {
 	logs?: string;
 };
 
+type FailedRun = {
+	request: RunRequest;
+	error: string;
+	stack?: string;
+};
+
 export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 	const runRequests = buildRunRequests(args);
 	const progress = new Map<string, RunProgress>();
 	const results: RunResult[] = [];
+	const failures: FailedRun[] = [];
 	for (const req of runRequests) {
 		progress.set(req.id, {
 			request: req,
@@ -84,7 +91,7 @@ export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 		while (cursor < runRequests.length) {
 			const req = runRequests[cursor]!;
 			cursor += 1;
-			await runSingle(args, req, progress, render, results);
+			await runSingle(args, req, progress, render, results, failures);
 		}
 	};
 
@@ -96,6 +103,7 @@ export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 
 	render();
 
+	printFailureSummary(failures, args.runId);
 	printVariantComparison(results);
 }
 
@@ -209,6 +217,7 @@ async function runSingle(
 	progress: Map<string, RunProgress>,
 	onUpdate: () => void,
 	results: RunResult[],
+	failures: FailedRun[],
 ): Promise<void> {
 	const current = progress.get(request.id)!;
 	current.status = 'running';
@@ -217,6 +226,7 @@ async function runSingle(
 
 	const payload = createWorkerPayload(args, request);
 	const response = await runWorker(payload);
+	const logName = `${args.runId}--${request.variantId}--${request.iteration}`;
 
 	if (response.ok) {
 		const { executionSummary, evaluationSummary } = response.result;
@@ -228,7 +238,7 @@ async function runSingle(
 		const experimentFolder = path.basename(
 			response.result.experimentArgs.experimentPath,
 		);
-		writeRunLog(experimentFolder, response.logs);
+		writeRunLog(logName, response.logs);
 		results.push({
 			variantId: request.variantId,
 			variantLabel: request.variantLabel,
@@ -246,10 +256,42 @@ async function runSingle(
 		current.status = 'failed';
 		current.finishedAt = Date.now();
 		current.error = response.error;
+		writeRunLog(logName, response.stack, response.error);
+		failures.push({
+			request,
+			error: response.error,
+			stack: response.stack,
+		});
 	}
 
 	progress.set(request.id, current);
 	onUpdate();
+}
+
+function printFailureSummary(failures: FailedRun[], runId: string): void {
+	if (failures.length === 0) {
+		return;
+	}
+
+	process.stdout.write('\n--- Failed Runs ---\n\n');
+	for (const failure of failures) {
+		const { request, error, stack } = failure;
+		const logName = `${runId}--${request.variantId}--${request.iteration}`;
+		process.stdout.write(
+			`[${request.variantLabel} #${request.iteration}] ${error}\n`,
+		);
+		if (stack) {
+			// Show first few lines of stack
+			const stackLines = stack.split('\n').slice(0, 3);
+			for (const line of stackLines) {
+				process.stdout.write(`  ${line}\n`);
+			}
+			if (stack.split('\n').length > 3) {
+				process.stdout.write(`  ... (see orchestration-logs/${logName}.log)\n`);
+			}
+		}
+		process.stdout.write('\n');
+	}
 }
 
 function printVariantComparison(results: RunResult[]): void {
@@ -377,16 +419,21 @@ function renderBar(value: number, maxValue: number): string {
 	return '[' + '#'.repeat(filled).padEnd(width, ' ') + ']';
 }
 
-function writeRunLog(experimentFolder: string, logs?: string): void {
+function writeRunLog(logName: string, logs?: string, error?: string): void {
 	if (!fs.existsSync(LOG_DIR)) {
 		fs.mkdirSync(LOG_DIR, { recursive: true });
 	}
-	const logPath = path.join(LOG_DIR, `${experimentFolder}.log`);
+	const logPath = path.join(LOG_DIR, `${logName}.log`);
 	const cleaned = cleanLogs(logs);
-	const content =
+	let content =
 		cleaned && cleaned.trim().length > 0
 			? cleaned
 			: 'No stdout/stderr captured from worker.';
+
+	if (error) {
+		content = `ERROR: ${error}\n\n---\n\n${content}`;
+	}
+
 	fs.writeFileSync(logPath, content, 'utf8');
 }
 

@@ -44,30 +44,26 @@ function interceptOutput(): () => void {
 	};
 }
 
-async function main(): Promise<void> {
+try {
+	const payloadRaw = await readStdin();
+	const params = JSON.parse(payloadRaw) as RunEvaluationParams;
+
+	const restoreOutput = interceptOutput();
 	try {
-		const payloadRaw = await readStdin();
-		const params = JSON.parse(payloadRaw) as RunEvaluationParams;
-
-		const restoreOutput = interceptOutput();
-		try {
-			const result = await runEvaluation({ ...params, quiet: true });
-			const response: WorkerResult = { ok: true, result };
-			restoreOutput();
-			process.stdout.write(JSON.stringify(response));
-		} catch (error) {
-			restoreOutput();
-			throw error;
-		}
-	} catch (error) {
-		const response: WorkerResult = {
-			ok: false,
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-		};
+		const result = await runEvaluation({ ...params, quiet: true });
+		const response: WorkerResult = { ok: true, result };
+		restoreOutput();
 		process.stdout.write(JSON.stringify(response));
-		process.exit(1);
+	} catch (error) {
+		restoreOutput();
+		throw error;
 	}
+} catch (error) {
+	const response: WorkerResult = {
+		ok: false,
+		error: error instanceof Error ? error.message : String(error),
+		stack: error instanceof Error ? error.stack : undefined,
+	};
+	process.stdout.write(JSON.stringify(response));
+	process.exit(1);
 }
-
-void main();

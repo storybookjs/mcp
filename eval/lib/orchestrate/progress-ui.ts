@@ -26,18 +26,12 @@ export function renderProgressUI(params: {
 	lines.push(`Run ID: ${runId}`);
 	lines.push('');
 
-	const grouped = runs.reduce<Record<string, RunProgress[]>>((acc, run) => {
-		if (!acc[run.request.variantId]) {
-			acc[run.request.variantId] = [];
-		}
-		acc[run.request.variantId]?.push(run);
-		return acc;
-	}, {});
+	const grouped = Object.groupBy(runs, (run) => run.request.variantId);
 
 	for (const [variantId, variantRuns] of Object.entries(grouped)) {
-		const label = variantRuns[0]?.request.variantLabel ?? variantId;
+		const label = variantRuns![0]?.request.variantLabel ?? variantId;
 		lines.push(`Variant: ${label}`);
-		for (const run of variantRuns) {
+		for (const run of variantRuns!) {
 			lines.push(`  ${formatRunLine(run, now)}`);
 		}
 		lines.push('');
