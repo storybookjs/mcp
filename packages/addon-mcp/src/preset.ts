@@ -5,6 +5,12 @@ import * as v from 'valibot';
 import { getManifestStatus } from './tools/is-manifest-available.ts';
 import htmlTemplate from './template.html';
 import path from 'node:path';
+import {
+	CompositionAuth,
+	extractBearerToken,
+	type ComposedRef,
+} from './auth/index.ts';
+import { logger } from 'storybook/internal/node-logger';
 
 export const previewAnnotations: PresetPropertyFn<
 	'previewAnnotations'
@@ -23,14 +29,58 @@ export const experimental_devServer: PresetPropertyFn<
 			'experimentalFormat' in options ? options.experimentalFormat : 'markdown',
 	});
 
-	app!.post('/mcp', (req, res) =>
-		mcpServerHandler({
+	const origin = `http://localhost:${options.port}`;
+
+	// Get composed Storybook refs from config
+	const refs = await getRefsFromConfig(options);
+	const compositionAuth = new CompositionAuth();
+
+	if (refs.length > 0) {
+		logger.info(`Initializing composition with ${refs.length} remote Storybook(s)`);
+		await compositionAuth.initialize(refs);
+		if (compositionAuth.requiresAuth) {
+			logger.info(`Auth required for: ${compositionAuth.authUrls.join(', ')}`);
+		}
+	}
+
+	// Create composed manifest provider (null if no refs)
+	const composedManifestProvider = refs.length > 0
+		? compositionAuth.createManifestProvider(origin, refs)
+		: undefined;
+
+	// Serve .well-known/oauth-protected-resource for MCP auth
+	app!.get('/.well-known/oauth-protected-resource', (_req, res) => {
+		const wellKnown = compositionAuth.buildWellKnown(origin);
+		if (!wellKnown) {
+			res.writeHead(404);
+			res.end('Not found');
+			return;
+		}
+
+		res.writeHead(200, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify(wellKnown));
+	});
+
+	app!.post('/mcp', (req, res) => {
+		// If auth is required and no token provided, return 401
+		const token = extractBearerToken(req.headers['authorization']);
+		if (compositionAuth.requiresAuth && !token) {
+			res.writeHead(401, {
+				'Content-Type': 'text/plain',
+				'WWW-Authenticate': compositionAuth.buildWwwAuthenticate(origin),
+			});
+			res.end('401 - Unauthorized');
+			return;
+		}
+
+		return mcpServerHandler({
 			req,
 			res,
 			options,
 			addonOptions,
-		}),
-	);
+			manifestProvider: composedManifestProvider,
+		});
+	});
 
 	const manifestStatus = await getManifestStatus(options);
 
@@ -40,7 +90,18 @@ export const experimental_devServer: PresetPropertyFn<
 
 	app!.get('/mcp', (req, res) => {
 		if (!req.headers['accept']?.includes('text/html')) {
-			return mcpServerHandler({ req, res, options, addonOptions });
+			// If auth is required and no token provided, return 401
+			const token = extractBearerToken(req.headers['authorization']);
+			if (compositionAuth.requiresAuth && !token) {
+				res.writeHead(401, {
+					'Content-Type': 'text/plain',
+					'WWW-Authenticate': compositionAuth.buildWwwAuthenticate(origin),
+				});
+				res.end('401 - Unauthorized');
+				return;
+			}
+
+			return mcpServerHandler({ req, res, options, addonOptions, manifestProvider: composedManifestProvider });
 		}
 
 		// Browser request - send HTML with redirect
@@ -74,3 +135,26 @@ export const experimental_devServer: PresetPropertyFn<
 	});
 	return app;
 };
+
+/**
+ * Get composed Storybook refs from Storybook config.
+ * See: https://storybook.js.org/docs/sharing/storybook-composition
+ */
+async function getRefsFromConfig(options: any): Promise<ComposedRef[]> {
+	try {
+		// Get refs from Storybook presets
+		const refs = await options.presets.apply('refs', {});
+
+		if (!refs || typeof refs !== 'object') {
+			return [];
+		}
+
+		// Convert refs object to array
+		return Object.entries(refs).map(([key, value]: [string, any]) => ({
+			title: value.title || key,
+			url: value.url,
+		})).filter((ref) => ref.url); // Only include refs with URLs
+	} catch {
+		return [];
+	}
+}
