@@ -27,6 +27,8 @@ export async function generatePrompt(
 				const content = await fs.readFile(path.join(evalPath, prompt), 'utf8');
 				promptParts.push(content);
 			}
+		} else if (ctx.type === 'inline-prompt') {
+			promptParts.push(ctx.content);
 		}
 	}
 

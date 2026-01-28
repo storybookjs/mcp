@@ -8,10 +8,11 @@ import type {
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbwtZytoi18nKbk26FGE7u15vx0vLLLfOuS1pe6m3t4btEK0iY__qgiN4cyul71Vdw_wBw/exec';
+	'https://script.google.com/macros/s/AKfycbx9aztixxdKVkxd6YKmS3RLJei--DC80xK5bd6DXsCEFaXbNBpDjdGn7LQLmM8_id4oug/exec';
 
 type SheetsData = {
 	uploadId: string;
+	runId: string;
 	timestamp: string;
 	evalName: string;
 	chromaticUrl: string;
@@ -25,6 +26,7 @@ type SheetsData = {
 	durationApi: number;
 	turns: number;
 	coverageLines: number | null;
+	componentUsageScore: number | null;
 	contextType: string;
 	contextDetails: string;
 	agent: string;
@@ -47,6 +49,9 @@ function getContextDetails(context: Context): string {
 			continue;
 		}
 		switch (ctx.type) {
+			case 'inline-prompt':
+				details.push(`Prompt`);
+				break;
 			case 'extra-prompts':
 				details.push(`Extra prompts: ${ctx.prompts.join(', ')}`);
 				break;
@@ -54,10 +59,10 @@ function getContextDetails(context: Context): string {
 				details.push(`MCP: ${Object.keys(ctx.mcpServerConfig).join(', ')}`);
 				break;
 			case 'storybook-mcp-dev':
-				details.push('Storybook Dev Server');
+				details.push('Storybook Dev MCP');
 				break;
 			case 'storybook-mcp-docs': {
-				details.push('Storybook Docs Manifest');
+				details.push('Storybook MCP');
 				break;
 			}
 		}
@@ -80,6 +85,7 @@ export async function saveToGoogleSheets(
 
 	const data: SheetsData = {
 		uploadId,
+		runId: experimentArgs.runId ?? '',
 		timestamp: new Date().toISOString().replace('Z', ''),
 		evalName,
 		chromaticUrl: chromaticUrl || '',
@@ -93,6 +99,7 @@ export async function saveToGoogleSheets(
 		coverageLines: evaluationSummary.coverage?.lines
 			? evaluationSummary.coverage.lines / 100
 			: null,
+		componentUsageScore: evaluationSummary.componentUsage?.score ?? null,
 		cost: executionSummary.cost ?? 'unknown',
 
 		duration: executionSummary.duration,

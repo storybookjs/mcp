@@ -21,6 +21,12 @@ interface SummaryProps {
 		lines: number | null;
 		statements: number | null;
 	};
+	componentUsage?: {
+		score: number;
+		matched: number;
+		missing: number;
+		unexpected: number;
+	};
 }
 
 const StatusBadge = ({
@@ -222,6 +228,13 @@ export const Summary = (props: SummaryProps) => {
 						title="Coverage (lines)"
 						value={formatPct(props.coverage.lines)}
 						subvalue={`Statements ${formatPct(props.coverage.statements)}, Branches ${formatPct(props.coverage.branches)}`}
+					/>
+				)}
+				{props.componentUsage && (
+					<MetricCard
+						title="Component Usage"
+						value={props.componentUsage.score}
+						subvalue={`Matched ${props.componentUsage.matched}, Missing ${props.componentUsage.missing}, Unexpected ${props.componentUsage.unexpected}`}
 					/>
 				)}
 			</div>

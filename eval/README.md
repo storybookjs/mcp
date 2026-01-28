@@ -29,6 +29,9 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 # Interactive mode (recommended)
 node eval.ts
 
+# Orchestrate multiple runs across variants
+node orchestrate.ts
+
 # With all options specified
 node eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.json --upload-id batch-1 100-flight-booking-plain
 ```
@@ -44,6 +47,7 @@ node eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.
 | `--storybook`    | `-s`  | boolean | Auto-start Storybook after completion                                                                     |
 | `--upload-id`    | `-u`  | string  | Upload results to Google Sheets with this ID for grouping/filtering                                       |
 | `--no-upload-id` |       | -       | Skip uploading results (default if no upload ID provided)                                                 |
+| `--run-id`       |       | string  | Run identifier to group uploads together                                                                  |
 | `--help`         | `-h`  | -       | Display help information                                                                                  |
 
 **Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
@@ -94,6 +98,51 @@ The framework supports five context modes:
 4. **MCP server config** (`--context mcp.config.json` or inline JSON): Custom MCP server setup (use this for fully custom MCP servers, not for Storybook MCP)
 5. **Extra prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`): Additional markdown files appended to main prompt
 
+## Orchestrator
+
+Use the orchestrator to run multiple iterations across context variants and compare results.
+
+```bash
+# Interactive orchestration
+node orchestrate.ts
+
+# Orchestrate via pnpm script
+pnpm orchestrate
+
+# Advanced mode (only for internal usage - more prompt options available)
+node orchestrate.ts --advanced-mode
+```
+
+### Orchestration configs
+
+Orchestrator configs live under `eval/orchestrations/` and define a base setup plus variants:
+
+```ts
+// eval/orchestrations/storybook-mcp-comparison.ts
+const base = {
+	agent: 'claude-code',
+	model: 'claude-sonnet-4.5',
+};
+
+export default {
+	name: 'storybook-mcp-comparison',
+	variants: [
+		{
+			...base,
+			id: 'with-mcp',
+			label: 'With Storybook MCP',
+			context: [{ type: 'storybook-mcp-docs' }],
+		},
+		{
+			...base,
+			id: 'without-mcp',
+			label: 'Without MCP',
+			context: [{ type: false }],
+		},
+	],
+};
+```
+
 ## Project Structure
 
 ```
@@ -106,7 +155,7 @@ eval/
 │       ├── extra-prompt-*.md       # Optional: additional context
 │       ├── hooks.ts                # Optional: lifecycle hooks
 │       └── experiments/            # Generated experiment runs
-│           └── {context}-{agent}-{timestamp}/
+│           └── {context}-{agent}-{timestamp}-{unique}/
 │               ├── prompt.md       # Full prompt sent to agent
 │               ├── project/        # Generated project code
 │               └── results/        # Evaluation results
@@ -119,6 +168,7 @@ eval/
 ├── templates/
 │   ├── project/                    # Base Vite + React + Storybook template
 │   └── evaluation/                 # Test/lint configs for evaluations
+├── orchestrations/                 # Orchestrator configs
 └── lib/
     ├── agents/                     # Agent implementations
     ├── evaluations/                # Evaluation runners (build, test, lint, etc.)
