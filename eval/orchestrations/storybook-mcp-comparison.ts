@@ -14,7 +14,7 @@ const base = {
 const config = {
 	name: 'storybook-mcp-comparison',
 	description:
-		'Compare eval performance with and without the Storybook MCP docs server enabled.',
+		'Compare eval performance with and without the Storybook Docs MCP Server enabled.',
 	variants: [
 		{
 			...base,
@@ -37,7 +37,7 @@ const config = {
 				{
 					type: 'inline-prompt',
 					content:
-						"To get information about the design system, inspect the local project, where you'll find all the components. Don't use any pre-existing knowledge about the design system to perform the task.",
+						"To get information about the design system, inspect the local project and package.json, where you'll find all the components. Don't use any pre-existing knowledge about the design system to perform the task.",
 				},
 			],
 		},

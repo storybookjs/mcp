@@ -308,6 +308,20 @@ function logSummary(
 		}
 	}
 
+	if (evaluationSummary.componentUsage) {
+		const cu = evaluationSummary.componentUsage;
+		// Red if 0 matched, green if >0 matched AND 0 missing AND 0 unexpected, yellow otherwise
+		const badge =
+			cu.matched === 0
+				? '❌'
+				: cu.missing === 0 && cu.unexpected === 0
+					? '✅'
+					: '⚠️';
+		p.log.message(
+			`🧩 Component Usage: ${badge} Score ${cu.score} (matched: ${cu.matched}, missing: ${cu.missing}, unexpected: ${cu.unexpected})`,
+		);
+	}
+
 	p.log.message(
 		`⏱️  Duration: ${executionSummary.duration}s (API: ${executionSummary.durationApi}s)`,
 	);

@@ -34,6 +34,7 @@ type RunResult = {
 	testsPassed: number;
 	testsFailed: number;
 	coverageLines?: number | null;
+	componentUsageScore?: number | null;
 	experimentFolder?: string;
 	logs?: string;
 };
@@ -249,6 +250,7 @@ async function runSingle(
 			testsPassed: evaluationSummary.test.passed,
 			testsFailed: evaluationSummary.test.failed,
 			coverageLines: evaluationSummary.coverage?.lines ?? null,
+			componentUsageScore: evaluationSummary.componentUsage?.score ?? null,
 			experimentFolder,
 			logs: response.logs,
 		});
@@ -316,22 +318,22 @@ function printVariantComparison(results: RunResult[]): void {
 	const metrics = [
 		{
 			key: 'duration',
-			label: 'Duration (s) (less is better)',
+			label: 'Duration (s) (lower is better)',
 			getter: (r: RunResult) => r.duration,
 		},
 		{
 			key: 'cost',
-			label: 'Cost ($) (less is better)',
+			label: 'Cost ($) (lower is better)',
 			getter: (r: RunResult) => r.cost,
 		},
 		{
 			key: 'turns',
-			label: 'Turns (less is better)',
+			label: 'Turns (lower is better)',
 			getter: (r: RunResult) => r.turns,
 		},
 		{
 			key: 'a11y',
-			label: 'A11y Violations (less is better)',
+			label: 'A11y Violations (lower is better)',
 			getter: (r: RunResult) => r.a11yViolations,
 		},
 		{

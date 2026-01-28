@@ -83,6 +83,19 @@ export type EvaluationSummary = {
 		lines: number | null;
 		statements: number | null;
 	};
+	componentUsage?: {
+		score: number;
+		matched: number;
+		missing: number;
+		unexpected: number;
+	};
+};
+
+/**
+ * Configuration for an evaluation, loaded from config.json in the eval directory.
+ */
+export type EvalConfig = {
+	expectedImports?: Record<string, string[]>;
 };
 
 export const McpServerConfigSchema = v.record(

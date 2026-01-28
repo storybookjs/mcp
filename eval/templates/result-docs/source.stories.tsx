@@ -666,3 +666,42 @@ export const useAuth = () => {
 		},
 	},
 };
+
+/**
+ * Confirms multi-line imports are counted correctly.
+ * The reshaped import has 8 specifiers across multiple lines.
+ * React import has 3 specifiers (React, useState, useMemo).
+ * Total should be 11 specifiers from 2 packages.
+ */
+export const MultiLineImports: Story = {
+	args: {
+		files: {
+			'src/components/FlightBooking.tsx': `import React, { useState, useMemo } from "react";
+import {
+  Autocomplete,
+  Button,
+  Calendar,
+  Popover,
+  ToggleButton,
+  ToggleButtonGroup,
+  View,
+  Text,
+} from "reshaped";
+
+export const FlightBooking = () => {
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+
+  return (
+    <View>
+      <Text>Flight Booking</Text>
+      <Autocomplete value={origin} onChange={setOrigin} />
+      <Autocomplete value={destination} onChange={setDestination} />
+      <Button>Search Flights</Button>
+    </View>
+  );
+};
+`,
+		},
+	},
+};

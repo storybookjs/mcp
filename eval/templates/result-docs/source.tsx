@@ -9,6 +9,7 @@ import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
 import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { extractImportsFromContent } from '../../lib/evaluations/component-usage.ts';
 
 SyntaxHighlighter.registerLanguage('tsx', tsx);
 SyntaxHighlighter.registerLanguage('typescript', typescript);
@@ -22,7 +23,7 @@ interface SourceProps {
 	files: Record<string, string>;
 }
 
-interface ImportInfo {
+interface DisplayImportInfo {
 	line: string;
 	source: string;
 	specifiers: string[];
@@ -54,63 +55,55 @@ const getLanguageFromPath = (filePath: string): string => {
 
 const extractImports = (
 	files: Record<string, string>,
-): { imports: ImportInfo[]; totalSpecifiers: number } => {
-	const imports: ImportInfo[] = [];
-	let totalSpecifiers = 0;
+): { imports: DisplayImportInfo[]; uniqueSpecifierCount: number } => {
+	const imports: DisplayImportInfo[] = [];
+	// Track unique source:specifier pairs for accurate counting
+	const uniqueSpecifiers = new Set<string>();
+
+	// Regex to match complete import statements (including multi-line) for extracting original line
+	const importRegex = /import\s+[\s\S]*?from\s+['"]([^'"]+)['"];?/g;
 
 	for (const [filePath, content] of Object.entries(files)) {
-		const lines = content.split('\n');
-		for (const line of lines) {
-			const trimmed = line.trim();
-			if (!trimmed.startsWith('import ')) continue;
+		// Use shared function for extraction (with identifier names for display, include all packages)
+		const fileImports = extractImportsFromContent(content, {
+			ignorePackages: false,
+			defaultImportName: 'identifier',
+		});
 
-			// Match import source (the string after 'from')
-			const fromMatch = trimmed.match(/from\s+['"]([^'"]+)['"]/);
-			if (!fromMatch?.[1]) continue;
+		// Also extract the original lines for display
+		let match;
+		let importIndex = 0;
+		while ((match = importRegex.exec(content)) !== null) {
+			const fullStatement = match[0];
+			const source = match[1];
 
-			const source = fromMatch[1];
-			// Skip relative imports
-			if (source.startsWith('.') || source.startsWith('/')) continue;
+			// Skip relative imports (same as the shared function)
+			if (!source || source.startsWith('.') || source.startsWith('/')) continue;
 
-			// Extract specifiers
-			const specifiers: string[] = [];
-
-			// Default import: import Foo from 'lib'
-			const defaultMatch = trimmed.match(/^import\s+(\w+)\s+from/);
-			if (defaultMatch?.[1]) {
-				specifiers.push(defaultMatch[1]);
-			}
-
-			// Named imports: import { Foo, Bar } from 'lib'
-			const namedMatch = trimmed.match(/\{([^}]+)\}/);
-			if (namedMatch?.[1]) {
-				const names = namedMatch[1].split(',').map((s) => {
-					// Handle 'Foo as Bar' -> take the alias or original
-					const parts = s.trim().split(/\s+as\s+/);
-					return parts[parts.length - 1]?.trim() ?? '';
-				});
-				specifiers.push(...names.filter((n) => n.length > 0));
-			}
-
-			// Namespace import: import * as Foo from 'lib'
-			const namespaceMatch = trimmed.match(/\*\s+as\s+(\w+)/);
-			if (namespaceMatch?.[1]) {
-				specifiers.push(`* as ${namespaceMatch[1]}`);
-			}
-
-			if (specifiers.length > 0) {
+			// Find the matching import from our extracted imports
+			if (
+				importIndex < fileImports.length &&
+				fileImports[importIndex]?.source === source
+			) {
+				const normalized = fullStatement.replace(/\s+/g, ' ').trim();
 				imports.push({
-					line: trimmed,
+					line: normalized,
 					source,
-					specifiers,
+					specifiers: fileImports[importIndex].specifiers,
 					file: filePath,
 				});
-				totalSpecifiers += specifiers.length;
+				// Add to unique set for accurate counting
+				for (const specifier of fileImports[importIndex].specifiers) {
+					uniqueSpecifiers.add(`${source}:${specifier}`);
+				}
+				importIndex++;
 			}
 		}
+		// Reset regex lastIndex for next file
+		importRegex.lastIndex = 0;
 	}
 
-	return { imports, totalSpecifiers };
+	return { imports, uniqueSpecifierCount: uniqueSpecifiers.size };
 };
 
 const CodeBlock = ({
@@ -168,21 +161,31 @@ const MetadataCard = ({
 	</div>
 );
 
-const ImportsSection = ({ imports }: { imports: ImportInfo[] }) => {
+const ImportsSection = ({ imports }: { imports: DisplayImportInfo[] }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	const groupedBySource = useMemo(() => {
-		const grouped: Record<string, ImportInfo[]> = {};
-		for (const imp of imports) {
-			const existing = grouped[imp.source];
-			if (existing) {
-				existing.push(imp);
-			} else {
-				grouped[imp.source] = [imp];
+	const { groupedBySource, uniqueSpecifierCount: totalUniqueSpecifiers } =
+		useMemo(() => {
+			const grouped: Record<string, DisplayImportInfo[]> = {};
+			const uniqueSet = new Set<string>();
+			for (const imp of imports) {
+				const existing = grouped[imp.source];
+				if (existing) {
+					existing.push(imp);
+				} else {
+					grouped[imp.source] = [imp];
+				}
+				for (const specifier of imp.specifiers) {
+					uniqueSet.add(`${imp.source}:${specifier}`);
+				}
 			}
-		}
-		return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
-	}, [imports]);
+			return {
+				groupedBySource: Object.entries(grouped).sort(([a], [b]) =>
+					a.localeCompare(b),
+				),
+				uniqueSpecifierCount: uniqueSet.size,
+			};
+		}, [imports]);
 
 	if (imports.length === 0) return null;
 
@@ -226,8 +229,8 @@ const ImportsSection = ({ imports }: { imports: ImportInfo[] }) => {
 						color: '#6b7280',
 					}}
 				>
-					{imports.reduce((sum, i) => sum + i.specifiers.length, 0)} specifiers
-					from {groupedBySource.length} packages
+					{totalUniqueSpecifiers} unique specifiers from{' '}
+					{groupedBySource.length} packages
 				</span>
 			</div>
 			{isExpanded && (
@@ -258,12 +261,8 @@ const ImportsSection = ({ imports }: { imports: ImportInfo[] }) => {
 										color: '#6b7280',
 									}}
 								>
-									(
-									{sourceImports.reduce(
-										(sum, i) => sum + i.specifiers.length,
-										0,
-									)}{' '}
-									imports)
+									({new Set(sourceImports.flatMap((i) => i.specifiers)).size}{' '}
+									unique imports)
 								</span>
 							</div>
 							{sourceImports.map((imp, idx) => (
@@ -407,7 +406,7 @@ export const Source = ({ files }: SourceProps) => {
 	);
 	const [activeTab, setActiveTab] = useState(sortedPaths[0] || '');
 
-	const { imports, totalSpecifiers } = useMemo(
+	const { imports, uniqueSpecifierCount } = useMemo(
 		() => extractImports(files),
 		[files],
 	);
@@ -452,7 +451,7 @@ export const Source = ({ files }: SourceProps) => {
 			>
 				<MetadataCard label="Files" value={totalFiles} />
 				<MetadataCard label="Total Lines" value={totalLines} />
-				<MetadataCard label="External Imports" value={totalSpecifiers} />
+				<MetadataCard label="External Imports" value={uniqueSpecifierCount} />
 			</div>
 
 			<ImportsSection imports={imports} />

@@ -4,6 +4,7 @@ import { prepareEvaluations } from './prepare-evaluations.ts';
 import { testStories } from './test-stories.ts';
 import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
+import { computeComponentUsageScore } from './component-usage.ts';
 import { taskLog } from '@clack/prompts';
 import { x } from 'tinyexec';
 import { runHook } from '../run-hook.ts';
@@ -65,17 +66,57 @@ export async function evaluate(
 		return result;
 	};
 
-	const [buildSuccess, typeCheckErrors, lintErrors, testResults] =
-		await Promise.all([buildTask(), typeCheckTask(), lintTask(), testTask()]);
+	const componentUsageTask = async () => {
+		const group = log.group('Checking component usage');
+		const result = await computeComponentUsageScore(
+			experimentArgs.projectPath,
+			experimentArgs.evalPath,
+		);
+		if (result === undefined) {
+			group.success('No expected imports configured, skipped');
+		} else if (
+			result.matched > 0 &&
+			result.missing === 0 &&
+			result.unexpected === 0
+		) {
+			group.success(
+				`Score: ${result.score} (matched: ${result.matched}, missing: ${result.missing}, unexpected: ${result.unexpected})`,
+			);
+		} else if (result.matched === 0) {
+			group.error(
+				`Score: ${result.score} (matched: ${result.matched}, missing: ${result.missing}, unexpected: ${result.unexpected})`,
+			);
+		} else {
+			group.message(
+				`Score: ${result.score} (matched: ${result.matched}, missing: ${result.missing}, unexpected: ${result.unexpected})`,
+			);
+		}
+		return result;
+	};
+
+	const [
+		buildSuccess,
+		typeCheckErrors,
+		lintErrors,
+		componentUsage,
+		testResults,
+	] = await Promise.all([
+		buildTask(),
+		typeCheckTask(),
+		lintTask(),
+		componentUsageTask(),
+		testTask(),
+	]);
 
 	const formatGroup = log.group('Formatting results');
 	await x('pnpm', ['exec', 'prettier', '--write', experimentArgs.resultsPath]);
 	formatGroup.success('Results formatted');
 
-	const evaluationSummary = {
+	const evaluationSummary: EvaluationSummary = {
 		buildSuccess,
 		typeCheckErrors,
 		lintErrors,
+		componentUsage,
 		...testResults,
 	};
 
