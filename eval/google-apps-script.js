@@ -59,7 +59,7 @@ function appendRow(sheet, keys, rowData, data) {
 	console.log('Waiting to acquire lock for sheet:', sheetName);
 
 	try {
-		lock.waitLock(30000); // Wait up to 30 seconds for the lock
+		lock.waitLock(120000); // Wait up to 120 seconds for the lock
 		console.log('Lock acquired for sheet:', sheetName);
 
 		const lastRow = sheet.getLastRow();

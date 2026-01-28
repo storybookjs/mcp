@@ -31,8 +31,6 @@ type RunResult = {
 	cost?: number;
 	turns: number;
 	a11yViolations: number;
-	testsPassed: number;
-	testsFailed: number;
 	coverageLines?: number | null;
 	componentUsageScore?: number | null;
 	experimentFolder?: string;
@@ -247,8 +245,6 @@ async function runSingle(
 			cost: executionSummary.cost,
 			turns: executionSummary.turns,
 			a11yViolations: evaluationSummary.a11y.violations,
-			testsPassed: evaluationSummary.test.passed,
-			testsFailed: evaluationSummary.test.failed,
 			coverageLines: evaluationSummary.coverage?.lines ?? null,
 			componentUsageScore: evaluationSummary.componentUsage?.score ?? null,
 			experimentFolder,
@@ -337,19 +333,9 @@ function printVariantComparison(results: RunResult[]): void {
 			getter: (r: RunResult) => r.a11yViolations,
 		},
 		{
-			key: 'testsTotal',
-			label: 'Tests (total)',
-			getter: (r: RunResult) => r.testsPassed + r.testsFailed,
-		},
-		{
-			key: 'testsPassed',
-			label: 'Tests (passed)',
-			getter: (r: RunResult) => r.testsPassed,
-		},
-		{
-			key: 'testsFailed',
-			label: 'Tests (failed)',
-			getter: (r: RunResult) => r.testsFailed,
+			key: 'componentUsageScore',
+			label: 'Component Usage Score',
+			getter: (r: RunResult) => r.componentUsageScore ?? undefined,
 		},
 	] as const;
 

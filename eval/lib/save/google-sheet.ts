@@ -8,7 +8,7 @@ import type {
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbxVIMk1tyvZN5Wb_vWrcZMRmV0rl0cibNfiveOScwKxIQjPH7QBN6IMGDdagn2ENg_0wQ/exec';
+	'https://script.google.com/macros/s/AKfycbx9aztixxdKVkxd6YKmS3RLJei--DC80xK5bd6DXsCEFaXbNBpDjdGn7LQLmM8_id4oug/exec';
 
 type SheetsData = {
 	uploadId: string;
