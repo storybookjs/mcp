@@ -206,7 +206,7 @@ function debugPost() {
 		uploadId: 'debug-script',
 		runId: 'run-001',
 		timestamp: new Date().toISOString().replace('Z', ''),
-		evalName: '111-create-component-atom-reshaped',
+		taskName: '111-create-component-atom-reshaped',
 		label: '2. With Storybook MCP Docs',
 		chromaticUrl: 'https://www.example.com/',
 		buildSuccess: true,
@@ -222,7 +222,7 @@ function debugPost() {
 		agent: 'claude-code',
 		gitBranch: 'main',
 		gitCommit: 'abc1234',
-		experimentPath: 'eval/experiments/test',
+		trialPath: 'eval/trials/test',
 	};
 
 	const mockEvent = {

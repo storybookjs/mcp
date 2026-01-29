@@ -177,7 +177,7 @@ export const Summary = (props: SummaryProps) => {
 
 	return (
 		<div style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
-			<h1 style={{ marginTop: 0 }}>Evaluation Summary</h1>
+			<h1 style={{ marginTop: 0 }}>Grading Summary</h1>
 
 			<div style={{ marginBottom: '2rem' }}>
 				<h2

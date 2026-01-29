@@ -1,0 +1,24 @@
+{
+	"stories": [
+		{
+			"storyId": "stories-flightbooking--initial",
+			"status": "passed"
+		},
+		{
+			"storyId": "stories-flightbooking--flight-picker",
+			"status": "passed"
+		},
+		{
+			"storyId": "stories-flightbooking--date-picker",
+			"status": "failed"
+		},
+		{
+			"storyId": "stories-flightbooking--return-date-picker-is-unavailable-when-one-way-selected",
+			"status": "passed"
+		},
+		{
+			"storyId": "stories-flightbooking--submitted",
+			"status": "failed"
+		}
+	]
+}

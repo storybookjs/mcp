@@ -1,20 +1,20 @@
 import { log } from '@clack/prompts';
 import type {
-	ExperimentArgs,
+	TrialArgs,
 	Context,
-	EvaluationSummary,
+	GradingSummary,
 	ExecutionSummary,
 } from '../../types.ts';
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbwpz0Y0C9bA8XnH5gQX8QQyrt_GcYku23HA5xAcb663pgnugSkNCHclyM-_OXskrkK3/exec';
+	'https://script.google.com/macros/s/AKfycby3gwPuKEgjnA4kSsrKsw6ddsGMXKJOKGexu_PZENVpVckSWU7bRYSctNEzit_eOnyN/exec';
 
 type SheetsData = {
 	uploadId: string;
 	runId: string;
 	timestamp: string;
-	evalName: string;
+	taskName: string;
 	label: string;
 	chromaticUrl: string;
 	buildSuccess: boolean;
@@ -31,7 +31,7 @@ type SheetsData = {
 	agent: string;
 	gitBranch: string;
 	gitCommit: string;
-	experimentPath: string;
+	trialPath: string;
 };
 
 function getLabelFromContext(context: Context): string {
@@ -70,13 +70,13 @@ function getLabelFromContext(context: Context): string {
 }
 
 export async function saveToGoogleSheets(
-	experimentArgs: ExperimentArgs,
-	evaluationSummary: EvaluationSummary,
+	trialArgs: TrialArgs,
+	gradingSummary: GradingSummary,
 	executionSummary: ExecutionSummary,
 	environment: { branch: string; commit: string },
 	chromaticUrl?: string,
 ): Promise<void> {
-	const { experimentPath, evalName, context, uploadId } = experimentArgs;
+	const { trialPath, taskName, context, uploadId } = trialArgs;
 
 	if (!uploadId) {
 		throw new Error('saveToGoogleSheets called without an uploadId');
@@ -84,22 +84,22 @@ export async function saveToGoogleSheets(
 
 	const data: SheetsData = {
 		uploadId,
-		runId: experimentArgs.runId ?? '',
+		runId: trialArgs.runId ?? '',
 		timestamp: new Date().toISOString().replace('Z', ''),
-		evalName,
-		label: experimentArgs.label ?? getLabelFromContext(context),
+		taskName,
+		label: trialArgs.label ?? getLabelFromContext(context),
 		chromaticUrl: chromaticUrl || '',
-		buildSuccess: evaluationSummary.buildSuccess,
-		typeCheckErrors: evaluationSummary.typeCheckErrors,
-		lintErrors: evaluationSummary.lintErrors,
+		buildSuccess: gradingSummary.buildSuccess,
+		typeCheckErrors: gradingSummary.typeCheckErrors,
+		lintErrors: gradingSummary.lintErrors,
 		testsPassed:
-			evaluationSummary.test.passed /
-			(evaluationSummary.test.passed + evaluationSummary.test.failed),
-		a11yViolations: evaluationSummary.a11y.violations,
-		coverageLines: evaluationSummary.coverage?.lines
-			? evaluationSummary.coverage.lines / 100
+			gradingSummary.test.passed /
+			(gradingSummary.test.passed + gradingSummary.test.failed),
+		a11yViolations: gradingSummary.a11y.violations,
+		coverageLines: gradingSummary.coverage?.lines
+			? gradingSummary.coverage.lines / 100
 			: null,
-		componentUsageScore: evaluationSummary.componentUsage?.score ?? null,
+		componentUsageScore: gradingSummary.componentUsage?.score ?? null,
 		cost: executionSummary.cost ?? 'unknown',
 
 		duration: executionSummary.duration,
@@ -111,10 +111,10 @@ export async function saveToGoogleSheets(
 				: context
 						.map((ctx) => (ctx.type === false ? 'none' : ctx.type))
 						.join('-'),
-		agent: experimentArgs.agent,
+		agent: trialArgs.agent,
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
-		experimentPath: path.relative(process.cwd(), experimentPath),
+		trialPath: path.relative(process.cwd(), trialPath),
 	};
 
 	try {

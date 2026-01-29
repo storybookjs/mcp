@@ -1,0 +1,30 @@
+{
+  "agent": "claude-code",
+  "date": "2026-01-29T10:41:27.980Z",
+  "branch": "valentin/orchestrator",
+  "commit": "d7a6c3c6997028186b472389d7570dee5f4463e5",
+  "System": {
+    "OS": "macOS 15.5",
+    "CPU": "(10) arm64 Apple M1 Pro",
+    "Memory": "990.55 MB / 32.00 GB",
+    "Shell": {
+      "version": "5.9",
+      "path": "/bin/zsh"
+    }
+  },
+  "Binaries": {
+    "Node": {
+      "version": "24.11.0",
+      "path": "/Users/jeppe/Library/Caches/fnm_multishells/83208_1769427589705/bin/node"
+    },
+    "Yarn": "Not Found",
+    "npm": {
+      "version": "11.6.1",
+      "path": "/Users/jeppe/Library/Caches/fnm_multishells/83208_1769427589705/bin/npm"
+    },
+    "pnpm": {
+      "version": "10.19.0",
+      "path": "/Users/jeppe/Library/Caches/fnm_multishells/83208_1769427589705/bin/pnpm"
+    }
+  }
+}

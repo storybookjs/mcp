@@ -10,7 +10,7 @@ import { SUPPORTED_MODELS } from '../../types.ts';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EVAL_ROOT = path.resolve(__dirname, '..', '..');
 const ORCHESTRATIONS_DIR = path.join(EVAL_ROOT, 'orchestrations');
-const EVALS_DIR = path.join(EVAL_ROOT, 'evals');
+const TASKS_DIR = path.join(EVAL_ROOT, 'tasks');
 
 type LoadedConfig = {
 	filename: string;
@@ -20,7 +20,7 @@ type LoadedConfig = {
 export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
 	const configs = await loadOrchestrationConfigs();
 	const designSystem = await chooseDesignSystem();
-	const evalName = await chooseEvalName(designSystem);
+	const taskName = await chooseTaskName(designSystem);
 	const config = await chooseConfig(configs);
 	const iterations = await askIterations();
 	const uploadId = await askUploadId();
@@ -50,7 +50,7 @@ export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
 	};
 
 	return {
-		evalName,
+		taskName,
 		config: normalizedConfig,
 		iterations,
 		uploadId,
@@ -106,7 +106,7 @@ async function loadOrchestrationConfigs(): Promise<LoadedConfig[]> {
 }
 
 async function chooseDesignSystem(): Promise<string> {
-	const evalOptions = (await fs.readdir(EVALS_DIR, { withFileTypes: true }))
+	const taskOptions = (await fs.readdir(TASKS_DIR, { withFileTypes: true }))
 		.filter((dirent) => dirent.isDirectory())
 		.map((dirent) => ({
 			value: dirent.name.split('-').at(-1)!,
@@ -118,18 +118,18 @@ async function chooseDesignSystem(): Promise<string> {
 		)
 		.filter((value) => value !== null);
 
-	const evalName = await p.select({
+	const taskName = await p.select({
 		message: 'Which design system do you want to use?',
-		options: evalOptions,
+		options: taskOptions,
 	});
 
-	ensureNotCancelled(evalName);
-	return String(evalName);
+	ensureNotCancelled(taskName);
+	return String(taskName);
 }
 
-async function chooseEvalName(designSystem: string): Promise<string> {
-	// Temporary blacklist for evals which we don't want to expose for now
-	const BLACK_LISTED_EVALS = [
+async function chooseTaskName(designSystem: string): Promise<string> {
+	// Temporary blacklist for tasks which we don't want to expose for now
+	const BLACK_LISTED_TASKS = [
 		'111-create-component-atom-reshaped',
 		'112-create-component-composite-reshaped',
 		'113-create-component-async-fetch-reshaped',
@@ -139,26 +139,26 @@ async function chooseEvalName(designSystem: string): Promise<string> {
 		'117-existing-component-change-component-reshaped',
 	];
 
-	const evalOptions = (await fs.readdir(EVALS_DIR, { withFileTypes: true }))
+	const taskOptions = (await fs.readdir(TASKS_DIR, { withFileTypes: true }))
 		.filter((dirent) => dirent.isDirectory())
 		.filter((dirent) => dirent.name.endsWith(designSystem))
-		.filter((dirent) => !BLACK_LISTED_EVALS.includes(dirent.name))
+		.filter((dirent) => !BLACK_LISTED_TASKS.includes(dirent.name))
 		.map((dirent) => ({
 			value: dirent.name,
 			label: dirent.name,
 		}));
 
-	if (evalOptions.length === 1) {
-		return evalOptions[0]!.value;
+	if (taskOptions.length === 1) {
+		return taskOptions[0]!.value;
 	}
 
-	const evalName = await p.select({
-		message: 'Which eval do you want to run?',
-		options: evalOptions,
+	const taskName = await p.select({
+		message: 'Which task do you want to run?',
+		options: taskOptions,
 	});
 
-	ensureNotCancelled(evalName);
-	return String(evalName);
+	ensureNotCancelled(taskName);
+	return String(taskName);
 }
 
 async function chooseConfig(

@@ -19,7 +19,7 @@ export type CollectedArgs = {
 	agent: keyof typeof agents;
 	model: SupportedModel;
 	verbose: boolean;
-	eval: string;
+	taskName: string;
 	context: Context;
 	systemPrompts: string[];
 	storybook: boolean | undefined;
@@ -74,9 +74,9 @@ type ParsedContext =
  */
 async function parseSingleContextValue(
 	rawContext: string,
-	evalName: string | undefined,
+	taskName: string | undefined,
 ): Promise<ParsedContext> {
-	const EVALS_DIR = path.join(process.cwd(), 'evals');
+	const TASKS_DIR = path.join(process.cwd(), 'tasks');
 
 	// Try to parse as JSON (inline MCP config)
 	try {
@@ -99,12 +99,12 @@ async function parseSingleContextValue(
 
 	// MCP config file (ends with .json)
 	if (rawContext.endsWith('.json')) {
-		if (!evalName) {
+		if (!taskName) {
 			throw new Error(
-				'To set an MCP config file as the context, you must also set the eval as a positional argument',
+				'To set an MCP config file as the context, you must also set the task as a positional argument',
 			);
 		}
-		const configPath = path.join(EVALS_DIR, evalName, rawContext);
+		const configPath = path.join(TASKS_DIR, taskName, rawContext);
 		const { default: config } = await import(configPath, {
 			with: { type: 'json' },
 		});
@@ -126,7 +126,7 @@ async function parseSingleContextValue(
  */
 async function parseContextValue(
 	rawContext: string | boolean | undefined,
-	evalName: string | undefined,
+	taskName: string | undefined,
 ): Promise<ParsedContext[] | undefined> {
 	// --no-context sets context to false
 	if (rawContext === false) {
@@ -143,7 +143,7 @@ async function parseContextValue(
 	const parsedContexts: ParsedContext[] = [];
 
 	for (const contextStr of contextStrings) {
-		const parsed = await parseSingleContextValue(contextStr, evalName);
+		const parsed = await parseSingleContextValue(contextStr, taskName);
 		parsedContexts.push(parsed);
 	}
 
@@ -213,7 +213,7 @@ function buildRerunCommand(args: CollectedArgs): string {
 		parts.push(`--run-id=${args.runId}`);
 	}
 
-	parts.push(args.eval);
+	parts.push(args.taskName);
 
 	return parts.join(' ');
 }
@@ -221,7 +221,7 @@ function buildRerunCommand(args: CollectedArgs): string {
 const HELP_EXAMPLES = `
 Examples:
   $ node eval.ts                                    Interactive mode (recommended)
-  $ node eval.ts 100-flight-booking-plain           Run specific eval
+  $ node eval.ts 100-flight-booking-plain           Run specific task
   $ node eval.ts --agent ${Object.keys(agents)[0]} --context components.json 100-flight-booking-plain
   $ node eval.ts --verbose --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
   $ node eval.ts --context mcp.config.json 110-flight-booking-reshaped
@@ -238,7 +238,7 @@ Learn More: eval/README.md
 `;
 
 export async function collectArgs(): Promise<CollectedArgs> {
-	const EVALS_DIR = path.join(process.cwd(), 'evals');
+	const TASKS_DIR = path.join(process.cwd(), 'tasks');
 
 	// Load .env file - CLI args will override these
 	try {
@@ -253,7 +253,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		.description(
 			'A CLI tool for testing AI coding agents with Storybook and MCP tools.',
 		)
-		.argument('[eval-name]', 'Name of the eval directory in evals/')
+		.argument('[task-name]', 'Name of the task directory in tasks/')
 		.addOption(
 			new Option('-a, --agent <name>', 'Which coding agent to use')
 				.choices(Object.keys(agents))
@@ -276,13 +276,13 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		.addOption(
 			new Option(
 				'-s, --storybook',
-				'Auto-start Storybook after evaluation (env: STORYBOOK)',
+				'Auto-start Storybook after grading (env: STORYBOOK)',
 			),
 		)
 		.addOption(
 			new Option(
 				'--no-storybook',
-				'Do not auto-start Storybook after evaluation (env: STORYBOOK)',
+				'Do not auto-start Storybook after grading (env: STORYBOOK)',
 			),
 		)
 		.addOption(
@@ -326,37 +326,37 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	await program.parseAsync();
 
 	const opts = program.opts();
-	const evalNameArg = program.args[0];
+	const taskNameArg = program.args[0];
 
 	// Parse context value (may involve async file loading)
-	const parsedContext = await parseContextValue(opts.context, evalNameArg);
+	const parsedContext = await parseContextValue(opts.context, taskNameArg);
 
-	// Get available eval directories for prompts
-	const availableEvals = await fs.readdir(EVALS_DIR, { withFileTypes: true });
-	const evalOptions = availableEvals
+	// Get available task directories for prompts
+	const availableTasks = await fs.readdir(TASKS_DIR, { withFileTypes: true });
+	const taskOptions = availableTasks
 		.filter((dirent) => dirent.isDirectory())
 		.map((dirent) => ({
 			value: dirent.name,
 			label: dirent.name,
 		}));
 
-	// Prompt for eval name if not provided
-	const evalName =
-		evalNameArg ??
+	// Prompt for task name if not provided
+	const taskName =
+		taskNameArg ??
 		(
 			await p.select({
-				message: 'Which eval do you want to run?',
-				options: evalOptions,
+				message: 'Which task do you want to run?',
+				options: taskOptions,
 			})
 		).toString();
 
-	if (p.isCancel(evalName)) {
+	if (p.isCancel(taskName)) {
 		p.cancel('Operation cancelled.');
 		process.exit(0);
 	}
 
-	const evalPath = path.resolve(path.join('evals', evalName));
-	const promptPath = path.join(evalPath, 'prompt.md');
+	const taskPath = path.resolve(path.join('tasks', taskName));
+	const promptPath = path.join(taskPath, 'prompt.md');
 	let promptIsEmpty = false;
 	try {
 		const promptContent = await fs.readFile(promptPath, 'utf8');
@@ -420,7 +420,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				return result;
 			},
 			context: async function (): Promise<Context> {
-				const evalPath = path.resolve(path.join('evals', evalName));
+				const taskDir = path.resolve(path.join('tasks', taskName));
 
 				if (parsedContext !== undefined) {
 					return parsedContext;
@@ -430,7 +430,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				const availableExtraPrompts: Record<string, string> = {};
 				const availableSystemPrompts: Record<string, string> = {};
 				let availableManifest: string[] | undefined = undefined;
-				for (const dirent of await fs.readdir(evalPath, {
+				for (const dirent of await fs.readdir(taskDir, {
 					withFileTypes: true,
 				})) {
 					if (!dirent.isFile()) {
@@ -438,7 +438,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					}
 					if (dirent.name === 'components.json') {
 						const { default: manifestContent } = await import(
-							path.join(evalPath, dirent.name),
+							path.join(taskDir, dirent.name),
 							{
 								with: { type: 'json' },
 							}
@@ -449,7 +449,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						dirent.name.endsWith('.md')
 					) {
 						const content = await fs.readFile(
-							path.join(evalPath, dirent.name),
+							path.join(taskDir, dirent.name),
 							'utf8',
 						);
 						availableSystemPrompts[dirent.name] = content;
@@ -459,7 +459,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						!dirent.name.startsWith('system.')
 					) {
 						const content = await fs.readFile(
-							path.join(evalPath, dirent.name),
+							path.join(taskDir, dirent.name),
 							'utf8',
 						);
 						availableExtraPrompts[dirent.name] = content;
@@ -468,7 +468,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				if (promptIsEmpty && Object.keys(availableExtraPrompts).length === 0) {
 					throw new Error(
-						`prompt.md is empty for eval "${evalName}" and no extra prompts were found. Add at least one extra prompt .md file to this eval directory.`,
+						`prompt.md is empty for task "${taskName}" and no extra prompts were found. Add at least one extra prompt .md file to this task directory.`,
 					);
 				}
 
@@ -486,7 +486,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							hint:
 								availableManifest && availableManifest.length > 0
 									? 'Add a Storybook MCP server based on manifest files'
-									: 'No manifest files available for this eval',
+									: 'No manifest files available for this task',
 							value: 'storybook-mcp-docs',
 							disabled: !availableManifest || availableManifest.length === 0,
 						},
@@ -499,8 +499,8 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							label: 'Extra prompts',
 							hint:
 								Object.keys(availableExtraPrompts).length > 0
-									? 'Include any of the additional prompts from the eval'
-									: 'No additional prompts available for this eval',
+									? 'Include any of the additional prompts from the task'
+									: 'No additional prompts available for this task',
 							value: 'extra-prompts',
 							disabled: Object.keys(availableExtraPrompts).length === 0,
 						},
@@ -634,7 +634,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 							if (promptIsEmpty && selectedExtraPromptNames.length === 0) {
 								throw new Error(
-									`prompt.md is empty for eval "${evalName}". You must select at least one extra prompt.`,
+									`prompt.md is empty for task "${taskName}". You must select at least one extra prompt.`,
 								);
 							}
 
@@ -657,7 +657,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				// Discover system.*.md files if not already discovered
 				const availableSystemPrompts: Record<string, string> = {};
-				for (const dirent of await fs.readdir(evalPath, {
+				for (const dirent of await fs.readdir(taskPath, {
 					withFileTypes: true,
 				})) {
 					if (
@@ -666,7 +666,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						dirent.name.endsWith('.md')
 					) {
 						const content = await fs.readFile(
-							path.join(evalPath, dirent.name),
+							path.join(taskPath, dirent.name),
 							'utf8',
 						);
 						availableSystemPrompts[dirent.name] = content;
@@ -741,15 +741,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		uploadId: promptResults.uploadId,
 		storybook: promptResults.storybook,
 		verbose: promptResults.verbose,
-		eval: evalName,
+		taskName,
 		runId,
 		label: opts.label,
 	};
 
-	p.log.message([
-		'To re-run this experiment, call:',
-		buildRerunCommand(result),
-	]);
+	p.log.message(['To re-run this trial, call:', buildRerunCommand(result)]);
 
 	return result;
 }

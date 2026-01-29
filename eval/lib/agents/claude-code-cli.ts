@@ -7,9 +7,9 @@ import { spinner, log as clackLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
 import type {
-	ConversationMessage,
-	ToolUseContent as ConversationToolUseContent,
-} from '../../templates/result-docs/conversation.types.ts';
+	TranscriptMessage,
+	ToolUseContent as TranscriptToolUseContent,
+} from '../../templates/result-docs/transcript.types.ts';
 
 /**
  * Mapping from our standard model names to Claude CLI --model flag values.
@@ -212,12 +212,12 @@ function calculateMessageTokenCount(
 	return { tokens: 0, cost: 0 };
 }
 
-function getTodoProgress(messages: ConversationMessage[]): TodoProgress | null {
+function getTodoProgress(messages: TranscriptMessage[]): TodoProgress | null {
 	// Find the most recent TodoWrite message
 	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
-				(c): c is ConversationToolUseContent =>
+				(c): c is TranscriptToolUseContent =>
 					c.type === 'tool_use' && c.name === 'TodoWrite',
 			);
 			if (todoWrite?.input.todos) {
@@ -254,8 +254,8 @@ function getTodoProgress(messages: ConversationMessage[]): TodoProgress | null {
 }
 
 export const claudeCodeCli: Agent = {
-	async execute(prompt, experimentArgs, mcpServerConfig) {
-		const { projectPath, resultsPath, model: selectedModel } = experimentArgs;
+	async execute(prompt, trialArgs, mcpServerConfig) {
+		const { projectPath, resultsPath, model: selectedModel } = trialArgs;
 
 		// Validate that the model is supported by Claude CLI
 		if (!CLAUDE_MODELS.includes(selectedModel as ClaudeModel)) {
@@ -272,7 +272,7 @@ export const claudeCodeCli: Agent = {
 			);
 		}
 		const log = spinner();
-		await runHook('pre-execute-agent', experimentArgs);
+		await runHook('pre-execute-agent', trialArgs);
 
 		log.start(`Executing prompt with Claude Code CLI (model: ${claudeModel})`);
 		const claudeEncoding = await import('ai-tokenizer/encoding/claude');
@@ -308,7 +308,7 @@ export const claudeCodeCli: Agent = {
 			claudeProcess.process?.stdin.write('1\n');
 			claudeProcess.process?.stdin.end();
 		}
-		const messages: ConversationMessage[] = [];
+		const messages: TranscriptMessage[] = [];
 		let agentName = '';
 		let modelName = '';
 		let previousMs = Date.now();
@@ -328,9 +328,9 @@ export const claudeCodeCli: Agent = {
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
 
-			const getConversationMessage = (
+			const getTranscriptMessage = (
 				message: ClaudeCodeStreamMessage,
-			): ConversationMessage => {
+			): TranscriptMessage => {
 				if (message.type === 'assistant') {
 					return {
 						...message,
@@ -358,7 +358,7 @@ export const claudeCodeCli: Agent = {
 				}
 			};
 
-			messages.push(getConversationMessage(parsed));
+			messages.push(getTranscriptMessage(parsed));
 
 			// Check for MCP server status in init message
 			if (
@@ -405,7 +405,7 @@ export const claudeCodeCli: Agent = {
 		);
 
 		await fs.writeFile(
-			path.join(resultsPath, 'conversation.json'),
+			path.join(resultsPath, 'transcript.json'),
 			JSON.stringify({ prompt, promptTokenCount, messages }, null, 2),
 		);
 		const result = {
@@ -417,7 +417,7 @@ export const claudeCodeCli: Agent = {
 			turns: resultMessage.num_turns,
 		};
 		const successMessage = `Agent completed in ${result.turns} turns, ${result.duration} seconds, $${result.cost}`;
-		await runHook('post-execute-agent', experimentArgs);
+		await runHook('post-execute-agent', trialArgs);
 		log.stop(successMessage);
 
 		return result;

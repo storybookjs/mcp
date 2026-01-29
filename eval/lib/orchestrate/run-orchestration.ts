@@ -3,10 +3,7 @@ import os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type {
-	RunEvaluationParams,
-	RunEvaluationResult,
-} from '../run-evaluation.ts';
+import type { RunTaskParams, RunTaskResult } from '../run-task.ts';
 import { renderProgressUI } from './progress-ui.ts';
 import type { OrchestrationArgs, RunProgress, RunRequest } from './types.ts';
 
@@ -16,11 +13,11 @@ const WORKER_PATH = path.join(
 	EVAL_ROOT,
 	'lib',
 	'orchestrate',
-	'run-eval-worker.ts',
+	'run-task-worker.ts',
 );
 const LOG_DIR = path.join(EVAL_ROOT, 'orchestration-logs');
 
-type WorkerSuccess = { ok: true; result: RunEvaluationResult; logs: string };
+type WorkerSuccess = { ok: true; result: RunTaskResult; logs: string };
 type WorkerFailure = { ok: false; error: string; stack?: string };
 type WorkerResponse = WorkerSuccess | WorkerFailure;
 
@@ -33,7 +30,7 @@ type RunResult = {
 	a11yViolations: number;
 	coverageLines?: number | null;
 	componentUsageScore?: number | null;
-	experimentFolder?: string;
+	trialFolder?: string;
 	logs?: string;
 };
 
@@ -58,7 +55,7 @@ export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 	const render = () =>
 		renderProgressUI({
 			orchestrationName: args.config.name,
-			evalName: args.evalName,
+			taskName: args.taskName,
 			uploadId: args.uploadId,
 			runId: args.runId,
 			runs: Array.from(progress.values()).sort((a, b) => {
@@ -135,7 +132,7 @@ function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
 function createWorkerPayload(
 	args: OrchestrationArgs,
 	request: RunRequest,
-): RunEvaluationParams {
+): RunTaskParams {
 	const ctx = [...request.context];
 
 	if (args.inlinePrompt) {
@@ -150,7 +147,7 @@ function createWorkerPayload(
 	}
 
 	return {
-		evalName: args.evalName,
+		taskName: args.taskName,
 		context: ctx,
 		agent: request.agent,
 		model: request.model,
@@ -164,7 +161,7 @@ function createWorkerPayload(
 	};
 }
 
-function runWorker(payload: RunEvaluationParams): Promise<WorkerResponse> {
+function runWorker(payload: RunTaskParams): Promise<WorkerResponse> {
 	return new Promise((resolve, reject) => {
 		const child = spawn('node', [WORKER_PATH], {
 			cwd: EVAL_ROOT,
@@ -230,15 +227,13 @@ async function runSingle(
 	const logName = `${args.runId}--${request.variantId}--${request.iteration}`;
 
 	if (response.ok) {
-		const { executionSummary, evaluationSummary } = response.result;
+		const { executionSummary, gradingSummary } = response.result;
 		current.status = 'success';
 		current.finishedAt = Date.now();
 		current.durationSeconds = executionSummary.duration;
 		current.cost = executionSummary.cost;
 		current.turns = executionSummary.turns;
-		const experimentFolder = path.basename(
-			response.result.experimentArgs.experimentPath,
-		);
+		const trialFolder = path.basename(response.result.trialArgs.trialPath);
 		writeRunLog(logName, response.logs);
 		results.push({
 			variantId: request.variantId,
@@ -246,10 +241,10 @@ async function runSingle(
 			duration: executionSummary.duration,
 			cost: executionSummary.cost,
 			turns: executionSummary.turns,
-			a11yViolations: evaluationSummary.a11y.violations,
-			coverageLines: evaluationSummary.coverage?.lines ?? null,
-			componentUsageScore: evaluationSummary.componentUsage?.score ?? null,
-			experimentFolder,
+			a11yViolations: gradingSummary.a11y.violations,
+			coverageLines: gradingSummary.coverage?.lines ?? null,
+			componentUsageScore: gradingSummary.componentUsage?.score ?? null,
+			trialFolder,
 			logs: response.logs,
 		});
 	} else {

@@ -9,7 +9,7 @@ import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
 import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { extractImportsFromContent } from '../../lib/evaluations/component-usage.ts';
+import { extractImportsFromContent } from '../../lib/graders/component-usage.ts';
 
 SyntaxHighlighter.registerLanguage('tsx', tsx);
 SyntaxHighlighter.registerLanguage('typescript', typescript);

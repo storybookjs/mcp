@@ -21,7 +21,7 @@ export type OrchestrationConfig = {
 };
 
 export type OrchestrationArgs = {
-	evalName: string;
+	taskName: string;
 	config: OrchestrationConfig;
 	iterations: number;
 	uploadId: string | false;

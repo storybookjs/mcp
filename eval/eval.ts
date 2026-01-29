@@ -1,14 +1,14 @@
 import * as p from '@clack/prompts';
 import { x } from 'tinyexec';
 import { collectArgs } from './lib/collect-args.ts';
-import { runEvaluation } from './lib/run-evaluation.ts';
+import { runTask } from './lib/run-task.ts';
 
-p.intro('🧪 Storybook MCP Eval');
+p.intro('🧪 Storybook MCP Eval Harness');
 
 const args = await collectArgs();
 
-const { experimentArgs } = await runEvaluation({
-	evalName: args.eval,
+const { trialArgs } = await runTask({
+	taskName: args.taskName,
 	context: args.context,
 	agent: args.agent,
 	model: args.model,
@@ -24,16 +24,16 @@ const startStorybook =
 	args.storybook !== undefined
 		? args.storybook
 		: await p.confirm({
-				message: "Would you like to start the experiment's Storybook?",
+				message: "Would you like to start the trial's Storybook?",
 			});
 
-p.outro('✨ Evaluation complete!');
+p.outro('✨ Grading complete!');
 
 if (startStorybook) {
 	console.log('');
 	await x('pnpm', ['run', 'storybook'], {
 		nodeOptions: {
-			cwd: experimentArgs.projectPath,
+			cwd: trialArgs.projectPath,
 			stdio: 'inherit',
 		},
 	});

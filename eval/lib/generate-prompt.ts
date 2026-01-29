@@ -8,13 +8,13 @@ const CONSTRAINTS_PROMPT = `<constraints>
 </constraints>`;
 
 export async function generatePrompt(
-	evalPath: string,
+	taskPath: string,
 	context: Context,
 ): Promise<string> {
 	const promptParts: string[] = [];
 
 	try {
-		const content = await fs.readFile(path.join(evalPath, 'prompt.md'), 'utf8');
+		const content = await fs.readFile(path.join(taskPath, 'prompt.md'), 'utf8');
 		promptParts.push(content);
 	} catch (error) {
 		log.warn(`prompt.md not found, skipping`);
@@ -24,7 +24,7 @@ export async function generatePrompt(
 	for (const ctx of context) {
 		if (ctx.type === 'extra-prompts') {
 			for (const prompt of ctx.prompts) {
-				const content = await fs.readFile(path.join(evalPath, prompt), 'utf8');
+				const content = await fs.readFile(path.join(taskPath, prompt), 'utf8');
 				promptParts.push(content);
 			}
 		} else if (ctx.type === 'inline-prompt') {

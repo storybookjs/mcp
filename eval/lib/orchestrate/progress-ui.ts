@@ -11,17 +11,17 @@ const MAX_ERROR_LENGTH = 20;
 
 export function renderProgressUI(params: {
 	orchestrationName: string;
-	evalName: string;
+	taskName: string;
 	uploadId: string | false;
 	runId: string;
 	runs: RunProgress[];
 }): void {
-	const { orchestrationName, evalName, uploadId, runId, runs } = params;
+	const { orchestrationName, taskName, uploadId, runId, runs } = params;
 	const now = Date.now();
 
 	const lines: string[] = [];
 	lines.push(`Orchestration: ${orchestrationName}`);
-	lines.push(`Eval: ${evalName}`);
+	lines.push(`Task: ${taskName}`);
 	lines.push(`Upload ID: ${uploadId === false ? 'skip' : uploadId}`);
 	lines.push(`Run ID: ${runId}`);
 	lines.push('');

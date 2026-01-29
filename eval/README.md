@@ -1,19 +1,19 @@
-# Storybook MCP Evaluation Framework
+# Storybook MCP Eval Harness
 
-A CLI-based evaluation framework for testing AI coding agents' ability to build UI components with Storybook and MCP tools.
+A CLI-based eval harness for testing AI coding agents' ability to build UI components with Storybook and MCP tools.
 
 ## What is this?
 
-This framework runs automated experiments where AI coding agents (Claude Code CLI or GitHub Copilot CLI) are given prompts to build UI components. Each experiment:
+This eval harness runs automated trials where AI coding agents (Claude Code CLI or GitHub Copilot CLI) are given prompts to build UI components. Each trial:
 
 1. **Prepares** a fresh Vite + React + Storybook project
 2. **Executes** the agent with a prompt and optional context (MCP servers, component manifests, or extra prompts)
-3. **Evaluates** the results using automated checks: build success, type checking, linting, tests, and accessibility
+3. **Grades** the results using automated metrics: build success, type checking, linting, tests, and accessibility
 
 The goal is to measure how well agents can use Storybook's MCP tools to build production-quality components.
 
 > [!NOTE]
-> All eval results that are uploaded (opt-outable) are publicly available in [this Google Sheet](https://docs.google.com/spreadsheets/d/1TAvPyK6S6J-Flc1-gNrQpwmd6NWVXoTrQhaQ35y13vw/edit?usp=sharing).
+> All task results that are uploaded (opt-outable) are publicly available in [this Google Sheet](https://docs.google.com/spreadsheets/d/1TAvPyK6S6J-Flc1-gNrQpwmd6NWVXoTrQhaQ35y13vw/edit?usp=sharing).
 
 ## Requirements
 
@@ -50,7 +50,7 @@ node eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.
 | `--run-id`       |       | string  | Run identifier to group uploads together                                                                  |
 | `--help`         | `-h`  | -       | Display help information                                                                                  |
 
-**Positional argument:** The eval directory name (e.g., `100-flight-booking-plain`)
+**Positional argument:** The task directory name (e.g., `100-flight-booking-plain`)
 
 ### Model Selection
 
@@ -90,7 +90,7 @@ node eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
 
 ### Context Types
 
-The framework supports five context modes:
+The harness supports five context modes:
 
 1. **No context** (`--no-context`): Agent uses only default tools
 2. **Storybook MCP - Dev** (`--context storybook-dev`): Sets up local Storybook dev server with MCP endpoint
@@ -100,7 +100,7 @@ The framework supports five context modes:
 
 ## Orchestrator
 
-Use the orchestrator to run multiple iterations across context variants and compare results.
+Use the orchestrator to run multiple trials across context variants and compare results.
 
 ```bash
 # Interactive orchestration
@@ -147,40 +147,40 @@ export default {
 
 ```
 eval/
-├── evals/                          # Evaluation definitions
+├── tasks/                          # Task definitions
 │   └── 100-flight-booking-plain/
 │       ├── prompt.md               # Main prompt for the agent
 │       ├── components.json         # Optional: component manifest
 │       ├── mcp.config.json         # Optional: MCP server config
 │       ├── extra-prompt-*.md       # Optional: additional context
 │       ├── hooks.ts                # Optional: lifecycle hooks
-│       └── experiments/            # Generated experiment runs
+│       └── trials/                 # Generated trial runs
 │           └── {context}-{agent}-{timestamp}-{unique}/
 │               ├── prompt.md       # Full prompt sent to agent
 │               ├── project/        # Generated project code
-│               └── results/        # Evaluation results
+│               └── results/        # Grading results
 │                   ├── summary.json
-│                   ├── full-conversation.js
+│                   ├── transcript.json
 │                   ├── build-output.txt
 │                   ├── typecheck-output.txt
 │                   ├── lint-output.txt
 │                   └── test-results.json
 ├── templates/
 │   ├── project/                    # Base Vite + React + Storybook template
-│   └── evaluation/                 # Test/lint configs for evaluations
+│   └── grading/                    # Test/lint configs for grading
 ├── orchestrations/                 # Orchestrator configs
 └── lib/
     ├── agents/                     # Agent implementations
-    ├── evaluations/                # Evaluation runners (build, test, lint, etc.)
-    └── *.ts                        # Core framework logic
+    ├── graders/                    # Grading runners (build, test, lint, etc.)
+    └── *.ts                        # Core harness logic
 ```
 
-## Creating an Eval
+## Creating a Task
 
-1. **Create eval directory:**
+1. **Create task directory:**
 
    ```bash
-   mkdir evals/200-my-component
+   mkdir tasks/200-my-component
    ```
 
 2. **Write `prompt.md`:**
@@ -206,15 +206,15 @@ eval/
    import type { Hooks } from '../../types.ts';
 
    export default {
-   	async postPrepareExperiment(args, log) {
+   	async postPrepareTrial(args, log) {
    		// Custom setup (e.g., copy fixtures)
    	},
    } satisfies Hooks;
    ```
 
-## Evaluation Metrics
+## Grading Metrics
 
-Each experiment produces:
+Each trial produces:
 
 - **Build success**: Can the project build without errors?
 - **Type check**: TypeScript compilation errors count
@@ -224,13 +224,13 @@ Each experiment produces:
 - **Coverage**: Vite/Vitest coverage summary (lines/statements/branches/functions)
 - **Cost**: API usage cost in USD
 - **Duration**: Total time and API time in seconds
-- **Turns**: Number of agent conversation turns
+- **Turns**: Number of agent transcript turns
 
 ## Output Files
 
 ### `summary.json`
 
-Complete metrics from execution and evaluation:
+Complete metrics from execution and grading:
 
 ```json
 {
@@ -251,9 +251,9 @@ Complete metrics from execution and evaluation:
 }
 ```
 
-### `full-conversation.js`
+### `transcript.json`
 
-Complete conversation log viewable in `conversation-viewer.html`:
+Complete transcript log with:
 
 - All assistant and user messages
 - Tool calls with arguments
@@ -269,14 +269,14 @@ Complete conversation log viewable in `conversation-viewer.html`:
 
 ## Lifecycle Hooks
 
-Customize experiment behavior with `hooks.ts`:
+Customize trial behavior with `hooks.ts`:
 
 ```typescript
 export default {
-	prePrepareExperiment: async (args, log) => {
+	prePrepareTrial: async (args, log) => {
 		// Before project template copy
 	},
-	postPrepareExperiment: async (args, log) => {
+	postPrepareTrial: async (args, log) => {
 		// After dependencies installed
 	},
 	preExecuteAgent: async (args, log) => {
@@ -285,34 +285,29 @@ export default {
 	postExecuteAgent: async (args, log) => {
 		// After agent completes
 	},
-	preEvaluate: async (args, log) => {
-		// Before evaluation runs
+	preGrade: async (args, log) => {
+		// Before grading runs
 	},
-	postEvaluate: async (args, log) => {
-		// After evaluation completes
+	postGrade: async (args, log) => {
+		// After grading completes
 	},
 } satisfies Hooks;
 ```
 
 ## Viewing Results
 
-**Conversation viewer:**
+**Inspect generated project:**
 
 ```bash
-# Open the HTML file and select the full-conversation.js file
-open conversation-viewer.html
-```
-
-**Storybook:**
-
-```bash
-cd evals/100-flight-booking-plain/experiments/{experiment-name}/project
+cd tasks/100-flight-booking-plain/trials/{trial-name}/project
 pnpm storybook
 ```
+
+**View transcript:** Open `results/transcript.json` to see agent activity.
 
 ## Tips
 
 - Use `--verbose` to see detailed agent activity and tool calls
-- Check `full-conversation.js` to debug agent behavior
+- Check `transcript.json` to debug agent behavior
 - Use extra prompts to guide agent without modifying main prompt
 - Component manifests work best when agents need library documentation
