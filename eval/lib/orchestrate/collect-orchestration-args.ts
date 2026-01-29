@@ -201,7 +201,7 @@ async function askUploadId(): Promise<string | false> {
 	const uploadId = await p.text({
 		message:
 			'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
-		placeholder: 'experiment-batch-1',
+		placeholder: 'trial-batch-1',
 	});
 
 	ensureNotCancelled(uploadId);

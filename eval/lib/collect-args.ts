@@ -711,7 +711,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				const result = await p.text({
 					message:
 						'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
-					placeholder: 'experiment-batch-1',
+					placeholder: 'trial-batch-1',
 				});
 				if (p.isCancel(result)) {
 					p.cancel('Operation cancelled.');
