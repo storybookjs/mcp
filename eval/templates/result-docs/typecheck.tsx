@@ -32,9 +32,7 @@ const DiagnosticItem = ({ diagnostic }: { diagnostic: TypeCheckError }) => (
 		>
 			{diagnostic.file}:{diagnostic.line}:{diagnostic.column}
 		</div>
-		<div style={{ color: '#1f2937', marginBottom: '0.25rem' }}>
-			{diagnostic.message}
-		</div>
+		<div style={{ color: '#1f2937', marginBottom: '0.25rem' }}>{diagnostic.message}</div>
 		<div
 			style={{
 				fontSize: '0.75rem',
@@ -47,11 +45,7 @@ const DiagnosticItem = ({ diagnostic }: { diagnostic: TypeCheckError }) => (
 );
 
 export const TypeCheck = (props: TypeCheckProps) => {
-	if (
-		props.success &&
-		props.errors.length === 0 &&
-		props.warnings.length === 0
-	) {
+	if (props.success && props.errors.length === 0 && props.warnings.length === 0) {
 		return (
 			<div style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
 				<h1 style={{ marginTop: 0 }}>Type Check Results</h1>

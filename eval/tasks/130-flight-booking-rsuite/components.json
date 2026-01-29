@@ -113,9 +113,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -128,9 +126,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -143,9 +139,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -158,9 +152,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -173,9 +165,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -188,9 +178,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -1668,10 +1656,7 @@
 						"tsType": {
 							"name": "union",
 							"raw": "boolean | 'hover'",
-							"elements": [
-								{ "name": "boolean" },
-								{ "name": "literal", "value": "'hover'" }
-							]
+							"elements": [{ "name": "boolean" }, { "name": "literal", "value": "'hover'" }]
 						},
 						"description": "Whether there is a shadow",
 						"type": {
@@ -2100,9 +2085,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2116,9 +2099,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2132,9 +2113,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2148,9 +2127,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2164,9 +2141,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2180,9 +2155,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2770,9 +2743,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2786,9 +2757,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2802,9 +2771,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2818,9 +2785,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2834,9 +2799,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -2850,9 +2813,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -3987,9 +3948,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4003,9 +3962,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4019,9 +3976,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4035,9 +3990,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4051,9 +4004,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4067,9 +4018,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4604,9 +4553,7 @@
 							"type": "function",
 							"raw": "(toggle: boolean) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "boolean" }, "name": "toggle" }
-								],
+								"arguments": [{ "type": { "name": "boolean" }, "name": "toggle" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4620,9 +4567,7 @@
 							"type": "function",
 							"raw": "(toggle: boolean) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "boolean" }, "name": "toggle" }
-								],
+								"arguments": [{ "type": { "name": "boolean" }, "name": "toggle" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -4900,18 +4845,12 @@
 														{
 															"name": "union",
 															"raw": "Date | null",
-															"elements": [
-																{ "name": "Date" },
-																{ "name": "null" }
-															]
+															"elements": [{ "name": "Date" }, { "name": "null" }]
 														},
 														{
 															"name": "union",
 															"raw": "Date | null",
-															"elements": [
-																{ "name": "Date" },
-																{ "name": "null" }
-															]
+															"elements": [{ "name": "Date" }, { "name": "null" }]
 														}
 													]
 												},
@@ -5089,9 +5028,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -5105,9 +5042,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -5121,9 +5056,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -5137,9 +5070,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -5153,9 +5084,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -5169,9 +5098,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -6313,9 +6240,7 @@
 							"type": "function",
 							"raw": "(open?: boolean) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "boolean" }, "name": "open" }
-								],
+								"arguments": [{ "type": { "name": "boolean" }, "name": "open" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -7881,9 +7806,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -7897,9 +7820,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -7913,9 +7834,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -7929,9 +7848,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -7945,9 +7862,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -7961,9 +7876,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -8950,9 +8863,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -8965,9 +8876,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -8980,9 +8889,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -8995,9 +8902,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9010,9 +8915,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9025,9 +8928,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9065,10 +8966,7 @@
 						"tsType": {
 							"name": "union",
 							"raw": "boolean | 'static'",
-							"elements": [
-								{ "name": "boolean" },
-								{ "name": "literal", "value": "'static'" }
-							]
+							"elements": [{ "name": "boolean" }, { "name": "literal", "value": "'static'" }]
 						},
 						"description": "When set to true, the Modal will display the background when it is opened.\nClicking on the background will close the Modal. If you do not want to close the Modal,\nset it to 'static'.",
 						"type": {
@@ -9382,9 +9280,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9398,9 +9294,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9414,9 +9308,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9430,9 +9322,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9446,9 +9336,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -9462,9 +9350,7 @@
 							"type": "function",
 							"raw": "(node: HTMLElement) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "HTMLElement" }, "name": "node" }
-								],
+								"arguments": [{ "type": { "name": "HTMLElement" }, "name": "node" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -11653,9 +11539,7 @@
 							"type": "function",
 							"raw": "(isGroup: boolean) => (a: any, b: any) => number",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "boolean" }, "name": "isGroup" }
-								],
+								"arguments": [{ "type": { "name": "boolean" }, "name": "isGroup" }],
 								"return": {
 									"name": "signature",
 									"type": "function",
@@ -12400,11 +12284,7 @@
 						"description": "Define the spacing between immediate children",
 						"type": {
 							"name": "union",
-							"value": [
-								{ "name": "number" },
-								{ "name": "string" },
-								{ "name": "array" }
-							]
+							"value": [{ "name": "number" }, { "name": "string" }, { "name": "array" }]
 						}
 					},
 					"divider": {
@@ -14198,9 +14078,7 @@
 							"type": "function",
 							"raw": "(file: FileType) => boolean | Promise<boolean>",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "FileType" }, "name": "file" }
-								],
+								"arguments": [{ "type": { "name": "FileType" }, "name": "file" }],
 								"return": {
 									"name": "union",
 									"raw": "boolean | Promise<boolean>",
@@ -14280,9 +14158,7 @@
 							"type": "function",
 							"raw": "(file: FileType) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "FileType" }, "name": "file" }
-								],
+								"arguments": [{ "type": { "name": "FileType" }, "name": "file" }],
 								"return": { "name": "void" }
 							}
 						},
@@ -14376,9 +14252,7 @@
 							"type": "function",
 							"raw": "(file: FileType) => void",
 							"signature": {
-								"arguments": [
-									{ "type": { "name": "FileType" }, "name": "file" }
-								],
+								"arguments": [{ "type": { "name": "FileType" }, "name": "file" }],
 								"return": { "name": "void" }
 							}
 						},

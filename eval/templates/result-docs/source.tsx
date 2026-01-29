@@ -82,10 +82,7 @@ const extractImports = (
 			if (!source || source.startsWith('.') || source.startsWith('/')) continue;
 
 			// Find the matching import from our extracted imports
-			if (
-				importIndex < fileImports.length &&
-				fileImports[importIndex]?.source === source
-			) {
+			if (importIndex < fileImports.length && fileImports[importIndex]?.source === source) {
 				const normalized = fullStatement.replace(/\s+/g, ' ').trim();
 				imports.push({
 					line: normalized,
@@ -107,13 +104,7 @@ const extractImports = (
 	return { imports, uniqueSpecifierCount: uniqueSpecifiers.size };
 };
 
-const CodeBlock = ({
-	content,
-	language,
-}: {
-	content: string;
-	language: string;
-}) => (
+const CodeBlock = ({ content, language }: { content: string; language: string }) => (
 	<div className="sb-unstyled">
 		<SyntaxHighlighter
 			language={language}
@@ -130,13 +121,7 @@ const CodeBlock = ({
 	</div>
 );
 
-const MetadataCard = ({
-	label,
-	value,
-}: {
-	label: string;
-	value: string | number;
-}) => (
+const MetadataCard = ({ label, value }: { label: string; value: string | number }) => (
 	<div
 		style={{
 			padding: '1rem 1.5rem',
@@ -165,28 +150,25 @@ const MetadataCard = ({
 const ImportsSection = ({ imports }: { imports: DisplayImportInfo[] }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	const { groupedBySource, uniqueSpecifierCount: totalUniqueSpecifiers } =
-		useMemo(() => {
-			const grouped: Record<string, DisplayImportInfo[]> = {};
-			const uniqueSet = new Set<string>();
-			for (const imp of imports) {
-				const existing = grouped[imp.source];
-				if (existing) {
-					existing.push(imp);
-				} else {
-					grouped[imp.source] = [imp];
-				}
-				for (const specifier of imp.specifiers) {
-					uniqueSet.add(`${imp.source}:${specifier}`);
-				}
+	const { groupedBySource, uniqueSpecifierCount: totalUniqueSpecifiers } = useMemo(() => {
+		const grouped: Record<string, DisplayImportInfo[]> = {};
+		const uniqueSet = new Set<string>();
+		for (const imp of imports) {
+			const existing = grouped[imp.source];
+			if (existing) {
+				existing.push(imp);
+			} else {
+				grouped[imp.source] = [imp];
 			}
-			return {
-				groupedBySource: Object.entries(grouped).sort(([a], [b]) =>
-					a.localeCompare(b),
-				),
-				uniqueSpecifierCount: uniqueSet.size,
-			};
-		}, [imports]);
+			for (const specifier of imp.specifiers) {
+				uniqueSet.add(`${imp.source}:${specifier}`);
+			}
+		}
+		return {
+			groupedBySource: Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)),
+			uniqueSpecifierCount: uniqueSet.size,
+		};
+	}, [imports]);
 
 	if (imports.length === 0) return null;
 
@@ -221,17 +203,14 @@ const ImportsSection = ({ imports }: { imports: DisplayImportInfo[] }) => {
 				>
 					▶
 				</div>
-				<span style={{ fontWeight: 600, color: '#166534' }}>
-					External Imports
-				</span>
+				<span style={{ fontWeight: 600, color: '#166534' }}>External Imports</span>
 				<span
 					style={{
 						fontSize: '0.875rem',
 						color: '#6b7280',
 					}}
 				>
-					{totalUniqueSpecifiers} unique specifiers from{' '}
-					{groupedBySource.length} packages
+					{totalUniqueSpecifiers} unique specifiers from {groupedBySource.length} packages
 				</span>
 			</div>
 			{isExpanded && (
@@ -262,8 +241,7 @@ const ImportsSection = ({ imports }: { imports: DisplayImportInfo[] }) => {
 										color: '#6b7280',
 									}}
 								>
-									({new Set(sourceImports.flatMap((i) => i.specifiers)).size}{' '}
-									unique imports)
+									({new Set(sourceImports.flatMap((i) => i.specifiers)).size} unique imports)
 								</span>
 							</div>
 							{sourceImports.map((imp, idx) => (
@@ -340,13 +318,7 @@ const FileTab = ({
 	);
 };
 
-const FileContent = ({
-	filePath,
-	content,
-}: {
-	filePath: string;
-	content: string;
-}) => {
+const FileContent = ({ filePath, content }: { filePath: string; content: string }) => {
 	const language = getLanguageFromPath(filePath);
 	const lineCount = content.split('\n').length;
 
@@ -401,16 +373,10 @@ const FileContent = ({
 };
 
 export const Source = ({ files }: SourceProps) => {
-	const sortedPaths = useMemo(
-		() => Object.keys(files).sort((a, b) => a.localeCompare(b)),
-		[files],
-	);
+	const sortedPaths = useMemo(() => Object.keys(files).sort((a, b) => a.localeCompare(b)), [files]);
 	const [activeTab, setActiveTab] = useState(sortedPaths[0] || '');
 
-	const { imports, uniqueSpecifierCount } = useMemo(
-		() => extractImports(files),
-		[files],
-	);
+	const { imports, uniqueSpecifierCount } = useMemo(() => extractImports(files), [files]);
 
 	const totalFiles = sortedPaths.length;
 	const totalLines = Object.values(files).reduce(

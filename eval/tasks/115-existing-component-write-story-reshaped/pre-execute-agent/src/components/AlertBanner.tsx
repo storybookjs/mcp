@@ -10,10 +10,7 @@ export type AlertBannerProps = {
 	onClose?: () => void;
 };
 
-const variantToColor: Record<
-	AlertVariant,
-	'primary' | 'positive' | 'warning' | 'critical'
-> = {
+const variantToColor: Record<AlertVariant, 'primary' | 'positive' | 'warning' | 'critical'> = {
 	info: 'primary',
 	success: 'positive',
 	warning: 'warning',

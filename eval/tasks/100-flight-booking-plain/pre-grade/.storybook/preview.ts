@@ -4,14 +4,7 @@ const preview: Preview = {
 	parameters: {
 		options: {
 			storySort: {
-				order: [
-					'Summary',
-					'Conversation',
-					'Build',
-					'Typecheck',
-					'Lint',
-					'Source',
-				],
+				order: ['Summary', 'Conversation', 'Build', 'Typecheck', 'Lint', 'Source'],
 			},
 		},
 	},

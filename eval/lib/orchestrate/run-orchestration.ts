@@ -9,12 +9,7 @@ import type { OrchestrationArgs, RunProgress, RunRequest } from './types.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EVAL_ROOT = path.resolve(__dirname, '..', '..');
-const WORKER_PATH = path.join(
-	EVAL_ROOT,
-	'lib',
-	'orchestrate',
-	'run-task-worker.ts',
-);
+const WORKER_PATH = path.join(EVAL_ROOT, 'lib', 'orchestrate', 'run-task-worker.ts');
 const LOG_DIR = path.join(EVAL_ROOT, 'orchestration-logs');
 
 type WorkerSuccess = { ok: true; result: RunTaskResult; logs: string };
@@ -72,13 +67,9 @@ export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 
 	// Concurrency based on CPU cores (leave one core free if possible)
 	const cpuCount = Math.max(1, os.cpus().length);
-	const maxParallel = Math.max(
-		1,
-		Math.min(runRequests.length, cpuCount - 1 || 1),
-	);
+	const maxParallel = Math.max(1, Math.min(runRequests.length, cpuCount - 1 || 1));
 
-	const refreshInterval =
-		runRequests.length > 1 ? setInterval(render, 1000) : undefined;
+	const refreshInterval = runRequests.length > 1 ? setInterval(render, 1000) : undefined;
 
 	const workerCount = maxParallel;
 	let cursor = 0;
@@ -129,10 +120,7 @@ function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
 	return requests;
 }
 
-function createWorkerPayload(
-	args: OrchestrationArgs,
-	request: RunRequest,
-): RunTaskParams {
+function createWorkerPayload(args: OrchestrationArgs, request: RunRequest): RunTaskParams {
 	const ctx = [...request.context];
 
 	if (args.inlinePrompt) {
@@ -190,11 +178,7 @@ function runWorker(payload: RunTaskParams): Promise<WorkerResponse> {
 
 			try {
 				const parsed = JSON.parse(stdout) as WorkerResponse;
-				resolve(
-					parsed.ok
-						? { ok: true, result: parsed.result, logs: stderr }
-						: parsed,
-				);
+				resolve(parsed.ok ? { ok: true, result: parsed.result, logs: stderr } : parsed);
 			} catch (error) {
 				resolve({
 					ok: false,
@@ -272,9 +256,7 @@ function printFailureSummary(failures: FailedRun[], runId: string): void {
 	for (const failure of failures) {
 		const { request, error, stack } = failure;
 		const logName = `${runId}--${request.variantId}--${request.iteration}`;
-		process.stdout.write(
-			`[${request.variantLabel} #${request.iteration}] ${error}\n`,
-		);
+		process.stdout.write(`[${request.variantLabel} #${request.iteration}] ${error}\n`);
 		if (stack) {
 			// Show first few lines of stack
 			const stackLines = stack.split('\n').slice(0, 3);
@@ -349,8 +331,7 @@ function printVariantComparison(results: RunResult[]): void {
 				.filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
 			if (values.length === 0) continue;
 			const mean = values.reduce((a, b) => a + b, 0) / values.length;
-			const variance =
-				values.reduce((a, b) => a + (b - mean) * (b - mean), 0) / values.length;
+			const variance = values.reduce((a, b) => a + (b - mean) * (b - mean), 0) / values.length;
 			statsByVariant[variantId]![metric.key] = {
 				mean,
 				sd: Math.sqrt(variance),
@@ -369,17 +350,13 @@ function printVariantComparison(results: RunResult[]): void {
 		let maxStatLen = 0;
 		for (const [variantId] of variants) {
 			const stat = statsByVariant[variantId]?.[metric.key];
-			const statStr = stat
-				? `${stat.mean.toFixed(2)} ± ${stat.sd.toFixed(2)}`
-				: 'n/a';
+			const statStr = stat ? `${stat.mean.toFixed(2)} ± ${stat.sd.toFixed(2)}` : 'n/a';
 			statStrings[variantId] = statStr;
 			maxStatLen = Math.max(maxStatLen, statStr.length);
 		}
 
 		const maxMean = Math.max(
-			...variants
-				.map(([id]) => statsByVariant[id]?.[metric.key]?.mean ?? 0)
-				.filter((v) => v > 0),
+			...variants.map(([id]) => statsByVariant[id]?.[metric.key]?.mean ?? 0).filter((v) => v > 0),
 			0,
 		);
 		for (const [variantId, entry] of variants) {
@@ -411,9 +388,7 @@ function writeRunLog(logName: string, logs?: string, error?: string): void {
 	const logPath = path.join(LOG_DIR, `${logName}.log`);
 	const cleaned = cleanLogs(logs);
 	let content =
-		cleaned && cleaned.trim().length > 0
-			? cleaned
-			: 'No stdout/stderr captured from worker.';
+		cleaned && cleaned.trim().length > 0 ? cleaned : 'No stdout/stderr captured from worker.';
 
 	if (error) {
 		content = `ERROR: ${error}\n\n---\n\n${content}`;

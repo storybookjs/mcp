@@ -1,6 +1,6 @@
 {
 	"oxc.enable": true,
-	"editor.defaultFormatter": "nicolo-ribaudo.vscode-oxfmt",
+	"editor.defaultFormatter": "oxc.oxc-vscode",
 	"oxc.typeAware": true,
 	"vitest.disableWorkspaceWarning": true
 }

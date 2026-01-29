@@ -4,10 +4,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { dedent } from 'ts-dedent';
 
-export async function build({
-	projectPath,
-	resultsPath,
-}: TrialArgs): Promise<boolean> {
+export async function build({ projectPath, resultsPath }: TrialArgs): Promise<boolean> {
 	const result = await x('pnpm', ['eval:build'], {
 		nodeOptions: {
 			cwd: projectPath,

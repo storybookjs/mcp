@@ -69,9 +69,7 @@ const MetadataCard = ({
 			<div dangerouslySetInnerHTML={{ __html: html }} />
 		) : (
 			<>
-				<div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
-					{value}
-				</div>
+				<div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{value}</div>
 				{subvalue && (
 					<div
 						style={{
@@ -165,13 +163,7 @@ const CodeBlock = ({
 	);
 };
 
-const ContentSection = ({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) => (
+const ContentSection = ({ label, children }: { label: string; children: React.ReactNode }) => (
 	<div style={{ marginBottom: '1rem' }}>
 		<div
 			style={{
@@ -261,11 +253,7 @@ ${newString
 	);
 };
 
-const TodoList = ({
-	todos,
-}: {
-	todos: Array<{ content: string; status?: string }>;
-}) => (
+const TodoList = ({ todos }: { todos: Array<{ content: string; status?: string }> }) => (
 	<div style={{ padding: '1rem' }}>
 		{todos.map((todo, i) => {
 			const status = todo.status || 'pending';
@@ -297,13 +285,7 @@ const TodoList = ({
 	</div>
 );
 
-const ElapsedTime = ({
-	elapsedMs,
-	percentage,
-}: {
-	elapsedMs: number;
-	percentage: number;
-}) => (
+const ElapsedTime = ({ elapsedMs, percentage }: { elapsedMs: number; percentage: number }) => (
 	<div
 		style={{
 			display: 'flex',
@@ -443,9 +425,7 @@ const Turn = ({
 				{tokenCount && (
 					<>
 						<span style={{ flex: 1 }} />
-						<span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-							{tokenCount}
-						</span>
+						<span style={{ fontSize: '0.875rem', color: '#6b7280' }}>{tokenCount}</span>
 						{percentage !== undefined && (
 							<span
 								style={{
@@ -462,11 +442,7 @@ const Turn = ({
 					</>
 				)}
 			</div>
-			{isExpanded && (
-				<div style={{ padding: '1rem', backgroundColor: 'white' }}>
-					{children}
-				</div>
-			)}
+			{isExpanded && <div style={{ padding: '1rem', backgroundColor: 'white' }}>{children}</div>}
 		</div>
 	);
 };
@@ -482,8 +458,7 @@ export const Transcript = (props: TranscriptProps) => {
 
 		const style = document.createElement('link');
 		style.rel = 'stylesheet';
-		style.href =
-			'https://esm.sh/highlight.js@11.9.0/styles/github-dark-dimmed.css';
+		style.href = 'https://esm.sh/highlight.js@11.9.0/styles/github-dark-dimmed.css';
 		document.head.appendChild(style);
 
 		const codeStyle = document.createElement('style');
@@ -497,17 +472,10 @@ export const Transcript = (props: TranscriptProps) => {
 		};
 	}, []);
 
-	const systemTurn = messages.find((t) => t.type === 'system') as
-		| SystemMessage
-		| undefined;
-	const resultTurn = messages.find((t) => t.type === 'result') as
-		| ResultMessage
-		| undefined;
+	const systemTurn = messages.find((t) => t.type === 'system') as SystemMessage | undefined;
+	const resultTurn = messages.find((t) => t.type === 'result') as ResultMessage | undefined;
 
-	const messageTokens = messages.reduce(
-		(sum, turn) => sum + (turn.tokenCount || 0),
-		0,
-	);
+	const messageTokens = messages.reduce((sum, turn) => sum + (turn.tokenCount || 0), 0);
 
 	const totalTime = messages.reduce((sum, turn) => sum + (turn.ms || 0), 0);
 	const totalMessageTokens = messageTokens;
@@ -530,8 +498,7 @@ export const Transcript = (props: TranscriptProps) => {
 			metadataCards.push({
 				title: 'Available Tools',
 				value: systemTurn.tools.length,
-				subvalue:
-					mcpTools.length > 0 ? `${mcpTools.length} MCP tools` : 'unknown',
+				subvalue: mcpTools.length > 0 ? `${mcpTools.length} MCP tools` : 'unknown',
 			});
 		}
 
@@ -576,9 +543,7 @@ export const Transcript = (props: TranscriptProps) => {
 		}
 	}
 
-	const turns = messages.filter((t) =>
-		['assistant', 'user', 'system', 'result'].includes(t.type),
-	);
+	const turns = messages.filter((t) => ['assistant', 'user', 'system', 'result'].includes(t.type));
 
 	const groupedTurns = groupToolCallsWithResults(turns);
 
@@ -719,10 +684,7 @@ function groupToolCallsWithResults(turns: TranscriptMessage[]): Array<{
 					t.type === 'user' &&
 					'message' in t &&
 					t.message?.content?.some(
-						(c) =>
-							c.type === 'tool_result' &&
-							'tool_use_id' in c &&
-							c.tool_use_id === toolUseId,
+						(c) => c.type === 'tool_result' && 'tool_use_id' in c && c.tool_use_id === toolUseId,
 					),
 			);
 
@@ -750,17 +712,14 @@ const ToolCallGroup = ({
 	totalMessageTokens: number;
 	cwd: string;
 }) => {
-	const toolUse = toolCall.message.content.find(
-		(c) => c.type === 'tool_use',
-	) as ToolUseContent;
+	const toolUse = toolCall.message.content.find((c) => c.type === 'tool_use') as ToolUseContent;
 	const toolName = toolUse?.name || 'Unknown Tool';
 	const isMCP = toolUse?.isMCP;
 
 	const additionalInfo = extractToolAdditionalInfo(toolUse, toolName, cwd);
 
 	const totalTokens = (toolCall.tokenCount || 0) + (toolResult.tokenCount || 0);
-	const percentage =
-		totalMessageTokens > 0 ? (totalTokens / totalMessageTokens) * 100 : 0;
+	const percentage = totalMessageTokens > 0 ? (totalTokens / totalMessageTokens) * 100 : 0;
 
 	const tokenCountStr =
 		toolCall.tokenCount && toolResult.tokenCount
@@ -796,19 +755,13 @@ const TurnRenderer = ({
 
 	const title = getTurnTitle(turn);
 	const percentage =
-		turn.tokenCount && totalMessageTokens > 0
-			? (turn.tokenCount / totalMessageTokens) * 100
-			: 0;
+		turn.tokenCount && totalMessageTokens > 0 ? (turn.tokenCount / totalMessageTokens) * 100 : 0;
 
 	return (
 		<Turn
 			type={turn.type}
 			title={title}
-			tokenCount={
-				turn.tokenCount
-					? `${turn.tokenCount.toLocaleString()} tokens`
-					: undefined
-			}
+			tokenCount={turn.tokenCount ? `${turn.tokenCount.toLocaleString()} tokens` : undefined}
 			percentage={turn.tokenCount ? percentage : undefined}
 			isMCP={isMCP}
 		>
@@ -829,11 +782,8 @@ function getTurnTitle(turn: TranscriptMessage): string {
 	}
 
 	if (turn.type === 'user' && 'message' in turn && turn.message?.content) {
-		const toolResult = turn.message.content.find(
-			(c) => c.type === 'tool_result',
-		);
-		if (toolResult && 'tool_use_id' in toolResult)
-			return `Result: ${toolResult.tool_use_id}`;
+		const toolResult = turn.message.content.find((c) => c.type === 'tool_result');
+		if (toolResult && 'tool_use_id' in toolResult) return `Result: ${toolResult.tool_use_id}`;
 	}
 
 	return 'subtype' in turn && turn.subtype ? turn.subtype : turn.type;
@@ -867,17 +817,10 @@ function extractToolAdditionalInfo(
 	return '';
 }
 
-function renderToolInput(
-	toolUse: ToolUseContent | undefined,
-	toolName: string,
-): React.ReactNode {
+function renderToolInput(toolUse: ToolUseContent | undefined, toolName: string): React.ReactNode {
 	if (!toolUse?.input) return null;
 
-	if (
-		toolName === 'Write' &&
-		toolUse.input.file_path &&
-		toolUse.input.content
-	) {
+	if (toolName === 'Write' && toolUse.input.file_path && toolUse.input.content) {
 		return (
 			<FileContent
 				filePath={toolUse.input.file_path}
@@ -909,13 +852,8 @@ function renderToolInput(
 	);
 }
 
-function renderToolOutput(
-	toolResult: UserMessage,
-	isMCP: boolean,
-): React.ReactNode {
-	const toolResultContent = toolResult.message.content.find(
-		(c) => c.type === 'tool_result',
-	);
+function renderToolOutput(toolResult: UserMessage, isMCP: boolean): React.ReactNode {
+	const toolResultContent = toolResult.message.content.find((c) => c.type === 'tool_result');
 	if (!toolResultContent) return null;
 
 	if (isMCP) {
@@ -931,13 +869,7 @@ function renderToolOutput(
 						<>
 							{content.map((item, index) => {
 								if (item.type !== 'text' || !item.text) return null;
-								return (
-									<CodeBlock
-										key={index}
-										content={item.text}
-										isError={item.isError}
-									/>
-								);
+								return <CodeBlock key={index} content={item.text} isError={item.isError} />;
 							})}
 						</>
 					</ContentSection>
@@ -992,9 +924,7 @@ function renderTurnContent(
 							</ContentSection>
 							{'input' in item && item.input && (
 								<ContentSection label="Input">
-									<CodeBlock
-										content={formatJsonWithPreservedWhitespace(item.input)}
-									/>
+									<CodeBlock content={formatJsonWithPreservedWhitespace(item.input)} />
 								</ContentSection>
 							)}
 						</div>

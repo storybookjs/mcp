@@ -1,7 +1,4 @@
-import type {
-	OrchestrationConfig,
-	OrchestrationVariant,
-} from '../lib/orchestrate/types.ts';
+import type { OrchestrationConfig, OrchestrationVariant } from '../lib/orchestrate/types.ts';
 
 const base = {
 	agent: 'claude-code',
@@ -13,8 +10,7 @@ const base = {
 
 const config = {
 	name: 'storybook-mcp-comparison',
-	description:
-		'Compare eval performance with and without the Storybook Docs MCP Server enabled.',
+	description: 'Compare eval performance with and without the Storybook Docs MCP Server enabled.',
 	variants: [
 		{
 			...base,
