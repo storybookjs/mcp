@@ -133,7 +133,7 @@ pnpm storybook  # From root - starts internal-storybook with addon in dev mode
 
 ### Formatting
 
-Use prettier at the root level:
+Use oxfmt at the root level:
 
 ```bash
 pnpm format  # From root
@@ -236,7 +236,7 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 
 ### Code Style
 
-- Use prettier for formatting (inherited from root config)
+- Use oxfmt for formatting (inherited from root config)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names

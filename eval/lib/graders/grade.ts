@@ -107,7 +107,7 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 	]);
 
 	const formatGroup = log.group('Formatting results');
-	await x('pnpm', ['exec', 'prettier', '--write', trialArgs.resultsPath]);
+	await x('pnpm', ['exec', 'oxfmt', trialArgs.resultsPath]);
 	formatGroup.success('Results formatted');
 
 	const gradingSummary: GradingSummary = {
