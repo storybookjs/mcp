@@ -7,9 +7,9 @@ import { COPILOT_MODELS } from '../../types.ts';
 import { runHook } from '../run-hook.ts';
 import type {
 	AssistantMessage,
-	ConversationMessage,
+	TranscriptMessage,
 	ResultMessage,
-} from '../../templates/result-docs/conversation.types';
+} from '../../templates/result-docs/transcript.types.ts';
 
 type ToolInteraction = {
 	id: string;
@@ -28,8 +28,8 @@ const USAGE_0 = { input_tokens: 0, output_tokens: 0 } as const;
 const TOOL_LINE_REGEX = /^([✓✗])\s+(\S+)\s*(.*)$/;
 
 export const copilotCli: Agent = {
-	async execute(prompt, experimentArgs, mcpServerConfig) {
-		const { projectPath, resultsPath, model: selectedModel } = experimentArgs;
+	async execute(prompt, trialArgs, mcpServerConfig) {
+		const { projectPath, resultsPath, model: selectedModel } = trialArgs;
 
 		// Validate that the model is supported by Copilot CLI
 		if (!COPILOT_MODELS.includes(selectedModel as CopilotModel)) {
@@ -41,7 +41,7 @@ export const copilotCli: Agent = {
 
 		const log = spinner();
 
-		await runHook('pre-execute-agent', experimentArgs);
+		await runHook('pre-execute-agent', trialArgs);
 
 		log.start(
 			`Executing prompt with GitHub Copilot CLI (model: ${copilotModel})`,
@@ -53,7 +53,7 @@ export const copilotCli: Agent = {
 			? writeCopilotMcpConfig(copilotConfigDir, mcpServerConfig)
 			: fs.mkdir(copilotConfigDir, { recursive: true }));
 
-		const messages: ConversationMessage[] = [
+		const messages: TranscriptMessage[] = [
 			{
 				type: 'system',
 				subtype: 'init',
@@ -200,7 +200,7 @@ export const copilotCli: Agent = {
 		messages.push(resultMessage);
 
 		await fs.writeFile(
-			path.join(resultsPath, 'conversation.json'),
+			path.join(resultsPath, 'transcript.json'),
 			JSON.stringify(
 				{
 					prompt,
@@ -216,7 +216,7 @@ export const copilotCli: Agent = {
 		const successMessage = isError
 			? 'Copilot CLI completed with errors'
 			: 'Copilot CLI completed';
-		await runHook('post-execute-agent', experimentArgs);
+		await runHook('post-execute-agent', trialArgs);
 		log.stop(successMessage);
 
 		return {

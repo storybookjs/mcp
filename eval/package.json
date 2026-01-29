@@ -5,8 +5,9 @@
 	"description": "The project for evaluating UI component development with and without Storybook MCP",
 	"type": "module",
 	"scripts": {
-		"clean-experiments": "node clean-experiments.ts",
+		"clean-trials": "node clean-trials.ts",
 		"eval": "node eval.ts",
+		"orchestrate": "node orchestrate.ts",
 		"storybook": "storybook dev --port 6007 --no-open",
 		"typecheck": "tsc"
 	},
