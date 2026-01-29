@@ -1,0 +1,13 @@
+{
+	"expectedImports": {
+		"reshaped": [
+			"Autocomplete",
+			"Button",
+			"Calendar",
+			"Popover",
+			"ToggleButton",
+			"ToggleButtonGroup",
+			"View"
+		]
+	}
+}

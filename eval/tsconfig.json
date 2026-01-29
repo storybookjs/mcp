@@ -15,10 +15,10 @@
 	},
 	"include": [
 		"eval.ts",
-		"clean-experiments.ts",
+		"clean-trials.ts",
 		"lib",
 		"templates/result-docs",
-		"templates/evaluation",
+		"templates/grading",
 		"google-apps-script.js",
 		"types"
 	]

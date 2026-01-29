@@ -7,14 +7,14 @@ settings:
 catalogs:
   default:
     '@storybook/addon-a11y':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
+      specifier: 10.3.0-alpha.1
+      version: 10.3.0-alpha.1
     '@storybook/addon-docs':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
+      specifier: 10.3.0-alpha.1
+      version: 10.3.0-alpha.1
     '@storybook/react-vite':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
+      specifier: 10.3.0-alpha.1
+      version: 10.3.0-alpha.1
     '@tmcp/adapter-valibot':
       specifier: ^0.1.4
       version: 0.1.4
@@ -25,8 +25,8 @@ catalogs:
       specifier: ^0.4.1
       version: 0.4.1
     storybook:
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
+      specifier: 10.3.0-alpha.1
+      version: 10.3.0-alpha.1
     tmcp:
       specifier: ^1.16.0
       version: 1.18.1
@@ -36,73 +36,6 @@ catalogs:
     vite:
       specifier: 7.2.2
       version: 7.2.2
-  experiments:
-    '@eslint/js':
-      specifier: 9.39.1
-      version: 9.39.1
-    '@storybook/addon-a11y':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
-    '@storybook/addon-docs':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
-    '@storybook/addon-vitest':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
-    '@storybook/react-vite':
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
-    '@types/node':
-      specifier: 24.10.1
-      version: 24.10.1
-    '@types/react':
-      specifier: 19.2.6
-      version: 19.2.6
-    '@types/react-dom':
-      specifier: 19.2.3
-      version: 19.2.3
-    '@vitejs/plugin-react-swc':
-      specifier: 4.2.2
-      version: 4.2.2
-    '@vitest/browser-playwright':
-      specifier: 4.0.6
-      version: 4.0.6
-    eslint:
-      specifier: 9.39.1
-      version: 9.39.1
-    eslint-plugin-react-hooks:
-      specifier: 7.0.1
-      version: 7.0.1
-    eslint-plugin-react-refresh:
-      specifier: 0.4.24
-      version: 0.4.24
-    eslint-plugin-storybook:
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
-    globals:
-      specifier: 16.5.0
-      version: 16.5.0
-    react:
-      specifier: 19.2.0
-      version: 19.2.0
-    react-dom:
-      specifier: 19.2.0
-      version: 19.2.0
-    storybook:
-      specifier: 10.2.0-alpha.14
-      version: 10.2.0-alpha.14
-    typescript:
-      specifier: 5.9.3
-      version: 5.9.3
-    typescript-eslint:
-      specifier: 8.47.0
-      version: 8.47.0
-    vite:
-      specifier: 7.2.2
-      version: 7.2.2
-    vitest:
-      specifier: 4.0.6
-      version: 4.0.6
 
 importers:
 
@@ -167,19 +100,22 @@ importers:
         version: 5.1.4(typescript@5.9.3)(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
       vitest:
         specifier: 4.0.6
-        version: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
+        version: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(jsdom@27.4.0)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
 
   apps/internal-storybook:
     devDependencies:
       '@storybook/addon-docs':
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(@types/react@18.3.26)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+        version: 10.3.0-alpha.1(@types/react@18.3.26)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
       '@storybook/addon-mcp':
         specifier: workspace:*
         version: link:../../packages/addon-mcp
+      '@storybook/addon-themes':
+        specifier: ^10.2.0
+        version: 10.2.0(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@storybook/react-vite':
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+        version: 10.3.0-alpha.1(esbuild@0.25.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
       '@types/react':
         specifier: ^18.2.65
         version: 18.3.26
@@ -197,7 +133,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       storybook:
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tinyexec:
         specifier: ^1.0.2
         version: 1.0.2
@@ -230,13 +166,13 @@ importers:
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@18.3.26))(@types/react@18.3.26)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@storybook/addon-a11y':
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
+        version: 10.3.0-alpha.1(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
       '@storybook/mcp':
         specifier: workspace:*
         version: link:../packages/mcp
       '@storybook/react-vite':
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+        version: 10.3.0-alpha.1(esbuild@0.25.12)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
       '@tsconfig/node-ts':
         specifier: ^23.6.1
         version: 23.6.2
@@ -308,10 +244,10 @@ importers:
         version: 5.83.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       storybook:
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       storybook-addon-test-codegen:
         specifier: ^3.0.0
-        version: 3.0.0(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
+        version: 3.0.0(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
       tinyexec:
         specifier: ^1.0.1
         version: 1.0.2
@@ -325,1549 +261,6 @@ importers:
         specifier: ^7.1.12
         version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
 
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-14-17/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-14-58/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-18-37/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-19-21/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-21-00/project:
-    dependencies:
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-21-12/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-24-25/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.concise-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T10-52-58/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-31-10/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-41-11/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-47-10/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-08T16-50-56/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T10-49-13/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T10-51-56/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T10-53-55/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-02-06/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-06-30/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-14-04/project:
-    dependencies:
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-15-19/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-22-05/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-26-46/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
-  eval/evals/113-create-component-async-fetch-reshaped/experiments/storybook-mcp-dev-storybook-mcp-docs-prompt.detailed-prompt.explicit-stories-claude-code-claude-sonnet-4.5-2026-01-09T11-32-00/project:
-    dependencies:
-      msw:
-        specifier: ^2.12.7
-        version: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      msw-storybook-addon:
-        specifier: ^2.0.6
-        version: 2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))
-      react:
-        specifier: catalog:experiments
-        version: 19.2.0
-      react-dom:
-        specifier: catalog:experiments
-        version: 19.2.0(react@19.2.0)
-      reshaped:
-        specifier: ^3.9.0
-        version: 3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    devDependencies:
-      '@eslint/js':
-        specifier: catalog:experiments
-        version: 9.39.1
-      '@storybook/addon-a11y':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      '@storybook/addon-docs':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/addon-mcp':
-        specifier: workspace:*
-        version: link:../../../../../../packages/addon-mcp
-      '@storybook/addon-vitest':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)
-      '@storybook/react-vite':
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@types/node':
-        specifier: catalog:experiments
-        version: 24.10.1
-      '@types/react':
-        specifier: catalog:experiments
-        version: 19.2.6
-      '@types/react-dom':
-        specifier: catalog:experiments
-        version: 19.2.3(@types/react@19.2.6)
-      '@vitejs/plugin-react-swc':
-        specifier: catalog:experiments
-        version: 4.2.2(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/browser-playwright':
-        specifier: catalog:experiments
-        version: 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      eslint:
-        specifier: catalog:experiments
-        version: 9.39.1(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: catalog:experiments
-        version: 7.0.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: catalog:experiments
-        version: 0.4.24(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      globals:
-        specifier: catalog:experiments
-        version: 16.5.0
-      storybook:
-        specifier: catalog:experiments
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      typescript:
-        specifier: catalog:experiments
-        version: 5.9.3
-      typescript-eslint:
-        specifier: catalog:experiments
-        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: catalog:experiments
-        version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      vitest:
-        specifier: catalog:experiments
-        version: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-
   packages/addon-mcp:
     dependencies:
       '@storybook/mcp':
@@ -1879,6 +272,9 @@ importers:
       '@tmcp/transport-http':
         specifier: 'catalog:'
         version: 0.8.0(tmcp@1.18.1(typescript@5.9.3))
+      picoquery:
+        specifier: ^2.5.0
+        version: 2.5.0
       tmcp:
         specifier: 'catalog:'
         version: 1.18.1(typescript@5.9.3)
@@ -1888,7 +284,7 @@ importers:
     devDependencies:
       storybook:
         specifier: 'catalog:'
-        version: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
   packages/mcp:
     dependencies:
@@ -1920,6 +316,9 @@ importers:
 
 packages:
 
+  '@acemir/cssom@0.9.31':
+    resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
+
   '@actions/core@1.11.1':
     resolution: {integrity: sha512-hXJCSrkwfA46Vd9Z3q4cpEpHB1rL5NG04+/rbqW9d3+CSvtB1tYe8UTpAlixa1vj0m/ULglfEK2UKxMGxCxv5A==}
 
@@ -1943,6 +342,15 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.24.1
+
+  '@asamuzakjp/css-color@4.1.1':
+    resolution: {integrity: sha512-B0Hv6G3gWGMn0xKJ0txEi/jM5iFpT3MfDxmhZFb4W047GvytCf1DHQ1D69W3zHI4yWe2aTZAA0JnbMZ7Xc8DuQ==}
+
+  '@asamuzakjp/dom-selector@6.7.6':
+    resolution: {integrity: sha512-hBaJER6A9MpdG3WgdlOolHmbOYvSk46y7IQN/1+iqiCuUu6iWdQrs9DGKF8ocqsEqWujWf/V7b7vaDgiUmIvUg==}
+
+  '@asamuzakjp/nwsapi@2.3.9':
+    resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -2128,11 +536,33 @@ packages:
       '@csstools/css-parser-algorithms': ^3.0.5
       '@csstools/css-tokenizer': ^3.0.4
 
+  '@csstools/color-helpers@5.1.0':
+    resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
+    engines: {node: '>=18'}
+
+  '@csstools/css-calc@2.1.4':
+    resolution: {integrity: sha512-3N8oaj+0juUw/1H3YwmDDJXCgTB1gKU6Hc/bB502u9zR0q2vd786XJH9QfrKIEgFlZmhZiq6epXl4rHqhzsIgQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@csstools/css-parser-algorithms': ^3.0.5
+      '@csstools/css-tokenizer': ^3.0.4
+
+  '@csstools/css-color-parser@3.1.0':
+    resolution: {integrity: sha512-nbtKwh3a6xNVIp/VRuXV64yTKnb1IjTAEEh3irzS+HkKjAOYLTGNb9pmVNntZ8iVBHcWDA2Dof0QtPgFI1BaTA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@csstools/css-parser-algorithms': ^3.0.5
+      '@csstools/css-tokenizer': ^3.0.4
+
   '@csstools/css-parser-algorithms@3.0.5':
     resolution: {integrity: sha512-DaDeUkXZKjdGhgYaHNJTV9pV7Y9B3b644jCLs9Upc3VeNGg6LWARAT6O+Q+/COo+2gg/bM5rhpMAtf70WqfBdQ==}
     engines: {node: '>=18'}
     peerDependencies:
       '@csstools/css-tokenizer': ^3.0.4
+
+  '@csstools/css-syntax-patches-for-csstree@1.0.25':
+    resolution: {integrity: sha512-g0Kw9W3vjx5BEBAF8c5Fm2NcB/Fs8jJXh85aXqwEXiL+tqtOut07TWgyaGzAAfTM+gKckrrncyeGEZPcaRgm2Q==}
+    engines: {node: '>=18'}
 
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
@@ -2353,6 +783,15 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@exodus/bytes@1.9.0':
+    resolution: {integrity: sha512-lagqsvnk09NKogQaN/XrtlWeUF8SRhT12odMvbTIIaVObqzwAogL6jhR4DAp0gPuKoM1AOVrKUshJpRdpMFrww==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+    peerDependencies:
+      '@noble/hashes': ^1.8.0 || ^2.0.0
+    peerDependenciesMeta:
+      '@noble/hashes':
+        optional: true
 
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
@@ -3671,46 +2110,33 @@ packages:
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
-  '@storybook/addon-a11y@10.2.0-alpha.14':
-    resolution: {integrity: sha512-RdW2P3QLta8p4FGrQZWrcgdhuyA6PqoLVQ1Xr+hOOYDkO1Zhr1KgcoGDYtGYM0GMm//Z40dLkYkqYPWCs4g2pg==}
+  '@storybook/addon-a11y@10.3.0-alpha.1':
+    resolution: {integrity: sha512-bzipU9RlRh2/E9nUH5UA8CYuZV4Ax2UCvUkVgxexAWGZfRTUfxZ42AMUQ5UUgwhnxVUNMZVLxOKq3QoHjR0Lpw==}
     peerDependencies:
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
 
-  '@storybook/addon-docs@10.2.0-alpha.14':
-    resolution: {integrity: sha512-4kQUfHk2uxrEfLVYyE5N7f94K33iWqIRUfxRd+NhT+SUwJkVHPQ8BqQ29Z9qwJ7RO6otAH2RwZO/BmZBqTgECA==}
+  '@storybook/addon-docs@10.3.0-alpha.1':
+    resolution: {integrity: sha512-N8xP3YEh1ihFEx3TBZU9RLsPYea9N1rkxVAElwsiAWCZ8EifNVZ7Dz8JjB7b12C5NZAZOypLa9Cg+l0qMvROCQ==}
     peerDependencies:
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
 
-  '@storybook/addon-vitest@10.2.0-alpha.14':
-    resolution: {integrity: sha512-wCb3lQyul+7TFjyJEu12GYfbd0bmc8qoPCFX6te1D79sS+SK4PBK2sjq8/3OH3VLtUbSrutw2uaTD7aQQsFrDw==}
+  '@storybook/addon-themes@10.2.0':
+    resolution: {integrity: sha512-BJsBvxqMtBcZYKVOt0S8NRMAeOBXND5mtOr3ga7jRXDGMP6/BbFo/SBJ1QKjRTsXw/rsOfm6MKWc4jwgbuj4Nw==}
     peerDependencies:
-      '@vitest/browser': ^3.0.0 || ^4.0.0
-      '@vitest/browser-playwright': ^4.0.0
-      '@vitest/runner': ^3.0.0 || ^4.0.0
-      storybook: ^10.2.0-alpha.14
-      vitest: ^3.0.0 || ^4.0.0
-    peerDependenciesMeta:
-      '@vitest/browser':
-        optional: true
-      '@vitest/browser-playwright':
-        optional: true
-      '@vitest/runner':
-        optional: true
-      vitest:
-        optional: true
+      storybook: ^10.2.0
 
-  '@storybook/builder-vite@10.2.0-alpha.14':
-    resolution: {integrity: sha512-PZQ0oSVSfKaGe+h48MSGoH3wmcYRPbcmuX8G7GLORViW+x7gILLr0e3D5MF5C9rc4BHpfxikaXa3Gq5krUYeKQ==}
+  '@storybook/builder-vite@10.3.0-alpha.1':
+    resolution: {integrity: sha512-nRqqpv/TCPMBFDgq6/e2St+5v5V4FPOr8+xxor9JEZeP5qi3t8Ktzb23h70KQzmreNyXUHvoqmCq2VZgu/FSzQ==}
     peerDependencies:
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  '@storybook/csf-plugin@10.2.0-alpha.14':
-    resolution: {integrity: sha512-uACCM01OIzeBPOFeNDygxjIqLTlYDQHpzVvMveRz8kcHrP+1jOi6Cq5efMXMmmtb2ltwhr39bblkqLcZCz0lkg==}
+  '@storybook/csf-plugin@10.3.0-alpha.1':
+    resolution: {integrity: sha512-BX/EY488ky4mwhVpkesLeux4IjYnnuNAn595L1cmpVGX8+uciR+E+wXmI15OPBq8vtb0eftsXcDwiIWR7TlGnA==}
     peerDependencies:
       esbuild: '*'
       rollup: '*'
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
       vite: '*'
       webpack: '*'
     peerDependenciesMeta:
@@ -3732,27 +2158,27 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@storybook/react-dom-shim@10.2.0-alpha.14':
-    resolution: {integrity: sha512-QXIfC1XF1wRV2Y3/K7+yhqNUiWkStixk08SNOQ83RUI8ULzKb4GltRHyvt16gjQHHp+8LB5duV6PY8GI/3Il2g==}
+  '@storybook/react-dom-shim@10.3.0-alpha.1':
+    resolution: {integrity: sha512-YlQVSS14X7/O20OnUEMxi3MnmZRmElWAdb7kON0miOypq1wK+Xjut5kQPMdM8lWKf5zfjwnAp4enI2b9OzIrmA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
 
-  '@storybook/react-vite@10.2.0-alpha.14':
-    resolution: {integrity: sha512-mrT0kUObQwc4G73f8FKEXdvPT1cZ/iORW8S7KrIyeV83u0FcMPxHcZcYGLIfdvpOgLNRBK6pCSadIKLV5pOD6w==}
+  '@storybook/react-vite@10.3.0-alpha.1':
+    resolution: {integrity: sha512-4TQSCJlG70z6Gv3GZ1WfnXjrE7SCSP2BW/+/1bn2C0CebiMAY002uo5y2yH9eYQwT858Jgy4F7+91G4To2ZcuA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  '@storybook/react@10.2.0-alpha.14':
-    resolution: {integrity: sha512-IsBgaa+3Erluy5asRTwxZcMeSfo9x8TVuixUXd3LTOpdbi5rjgF7MrEDyNe8oDnxH4vEiQnX59QzMaMZ7CDZmw==}
+  '@storybook/react@10.3.0-alpha.1':
+    resolution: {integrity: sha512-pBH2sYLflxMEiMTIIOm7iVlr6gwLr5f/ENR8DC9QFL/EhzSXmKcyhXDO3GRVY+cFaI23A7S5NlZ+cyFeHU4/kA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^10.2.0-alpha.14
+      storybook: ^10.3.0-alpha.1
       typescript: '>= 4.9.x'
     peerDependenciesMeta:
       typescript:
@@ -3972,9 +2398,6 @@ packages:
   '@types/react@18.3.26':
     resolution: {integrity: sha512-RFA/bURkcKzx/X9oumPG9Vp3D3JUgus/d0b67KB0t5S/raciymilkOa66olh78MUI92QLbEJevO7rvqU/kjwKA==}
 
-  '@types/react@19.2.6':
-    resolution: {integrity: sha512-p/jUvulfgU7oKtj6Xpk8cA2Y1xKTtICGpJYeJXz2YVO2UcvjQgeRMLDGfDeqeRW2Ta+0QNFwcc8X3GH8SxZz6w==}
-
   '@types/react@19.2.7':
     resolution: {integrity: sha512-MWtvHrGZLFttgeEj28VXHxpmwYbor/ATPYbBfSFZEIRK0ecCFLl2Qo55z52Hss+UV9CRN7trSeq1zbgx7YDWWg==}
 
@@ -3989,102 +2412,6 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
-
-  '@typescript-eslint/eslint-plugin@8.47.0':
-    resolution: {integrity: sha512-fe0rz9WJQ5t2iaLfdbDc9T80GJy0AeO453q8C3YCilnGozvOyCG5t+EZtg7j7D88+c3FipfP/x+wzGnh1xp8ZA==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      '@typescript-eslint/parser': ^8.47.0
-      eslint: ^8.57.0 || ^9.0.0
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/parser@8.47.0':
-    resolution: {integrity: sha512-lJi3PfxVmo0AkEY93ecfN+r8SofEqZNGByvHAI3GBLrvt1Cw6H5k1IM02nSzu0RfUafr2EvFSw0wAsZgubNplQ==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      eslint: ^8.57.0 || ^9.0.0
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/project-service@8.47.0':
-    resolution: {integrity: sha512-2X4BX8hUeB5JcA1TQJ7GjcgulXQ+5UkNb0DL8gHsHUHdFoiCTJoYLTpib3LtSDPZsRET5ygN4qqIWrHyYIKERA==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/project-service@8.52.0':
-    resolution: {integrity: sha512-xD0MfdSdEmeFa3OmVqonHi+Cciab96ls1UhIF/qX/O/gPu5KXD0bY9lu33jj04fjzrXHcuvjBcBC+D3SNSadaw==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/scope-manager@8.47.0':
-    resolution: {integrity: sha512-a0TTJk4HXMkfpFkL9/WaGTNuv7JWfFTQFJd6zS9dVAjKsojmv9HT55xzbEpnZoY+VUb+YXLMp+ihMLz/UlZfDg==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@typescript-eslint/scope-manager@8.52.0':
-    resolution: {integrity: sha512-ixxqmmCcc1Nf8S0mS0TkJ/3LKcC8mruYJPOU6Ia2F/zUUR4pApW7LzrpU3JmtePbRUTes9bEqRc1Gg4iyRnDzA==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@typescript-eslint/tsconfig-utils@8.47.0':
-    resolution: {integrity: sha512-ybUAvjy4ZCL11uryalkKxuT3w3sXJAuWhOoGS3T/Wu+iUu1tGJmk5ytSY8gbdACNARmcYEB0COksD2j6hfGK2g==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/tsconfig-utils@8.52.0':
-    resolution: {integrity: sha512-jl+8fzr/SdzdxWJznq5nvoI7qn2tNYV/ZBAEcaFMVXf+K6jmXvAFrgo/+5rxgnL152f//pDEAYAhhBAZGrVfwg==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/type-utils@8.47.0':
-    resolution: {integrity: sha512-QC9RiCmZ2HmIdCEvhd1aJELBlD93ErziOXXlHEZyuBo3tBiAZieya0HLIxp+DoDWlsQqDawyKuNEhORyku+P8A==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      eslint: ^8.57.0 || ^9.0.0
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/types@8.47.0':
-    resolution: {integrity: sha512-nHAE6bMKsizhA2uuYZbEbmp5z2UpffNrPEqiKIeN7VsV6UY/roxanWfoRrf6x/k9+Obf+GQdkm0nPU+vnMXo9A==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@typescript-eslint/types@8.52.0':
-    resolution: {integrity: sha512-LWQV1V4q9V4cT4H5JCIx3481iIFxH1UkVk+ZkGGAV1ZGcjGI9IoFOfg3O6ywz8QqCDEp7Inlg6kovMofsNRaGg==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@typescript-eslint/typescript-estree@8.47.0':
-    resolution: {integrity: sha512-k6ti9UepJf5NpzCjH31hQNLHQWupTRPhZ+KFF8WtTuTpy7uHPfeg2NM7cP27aCGajoEplxJDFVCEm9TGPYyiVg==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/typescript-estree@8.52.0':
-    resolution: {integrity: sha512-XP3LClsCc0FsTK5/frGjolyADTh3QmsLp6nKd476xNI9CsSsLnmn4f0jrzNoAulmxlmNIpeXuHYeEQv61Q6qeQ==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/utils@8.47.0':
-    resolution: {integrity: sha512-g7XrNf25iL4TJOiPqatNuaChyqt49a/onq5YsJ9+hXeugK+41LVg7AxikMfM02PC6jbNtZLCJj6AUcQXJS/jGQ==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      eslint: ^8.57.0 || ^9.0.0
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/utils@8.52.0':
-    resolution: {integrity: sha512-wYndVMWkweqHpEpwPhwqE2lnD2DxC6WVLupU/DOt/0/v+/+iQbbzO3jOHjmBMnhu0DgLULvOaU4h4pwHYi2oRQ==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      eslint: ^8.57.0 || ^9.0.0
-      typescript: '>=4.8.4 <6.0.0'
-
-  '@typescript-eslint/visitor-keys@8.47.0':
-    resolution: {integrity: sha512-SIV3/6eftCy1bNzCQoPmbWsRLujS8t5iDIZ4spZOBHqrM+yfX2ogg8Tt3PDTAVKw3sSCiUgg30uOAvK2r9zGjQ==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@typescript-eslint/visitor-keys@8.52.0':
-    resolution: {integrity: sha512-ink3/Zofus34nmBsPjow63FP5M7IGff0RKAgqR6+CFpdk22M7aLwC9gOcLGYqr7MczLPzZVERW9hRog3O4n1sQ==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@valibot/to-json-schema@1.3.0':
     resolution: {integrity: sha512-82Vv6x7sOYhv5YmTRgSppSqj1nn2pMCk5BqCMGWYp0V/fq+qirrbGncqZAtZ09/lrO40ne/7z8ejwE728aVreg==}
@@ -4128,17 +2455,6 @@ packages:
 
   '@vitest/expect@4.0.6':
     resolution: {integrity: sha512-5j8UUlBVhOjhj4lR2Nt9sEV8b4WtbcYh8vnfhTNA2Kn5+smtevzjNq+xlBuVhnFGXiyPPNzGrOVvmyHWkS5QGg==}
-
-  '@vitest/mocker@3.2.4':
-    resolution: {integrity: sha512-46ryTE9RZO/rfDd7pEqFl7etuyzekzEhUbTW3BvmeO/BcCMEgq59BKhek3dXDWgAj4oMK6OZi+vRr1wPW6qjEQ==}
-    peerDependencies:
-      msw: ^2.4.9
-      vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0
-    peerDependenciesMeta:
-      msw:
-        optional: true
-      vite:
-        optional: true
 
   '@vitest/mocker@4.0.6':
     resolution: {integrity: sha512-3COEIew5HqdzBFEYN9+u0dT3i/NCwppLnO1HkjGfAP1Vs3vti1Hxm/MvcbC4DAn3Szo1M7M3otiAaT83jvqIjA==}
@@ -4249,6 +2565,10 @@ packages:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  agent-base@7.1.4:
+    resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
+    engines: {node: '>= 14'}
 
   ai-tokenizer@1.0.6:
     resolution: {integrity: sha512-GaakQFxen0pRH/HIA4v68ZM40llCH27HUYUSBLK+gVuZ57e53pYJe1xFvSTj4sJJjbWU92m1X6NjPWyeWkFDow==}
@@ -4370,6 +2690,9 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
+  bidi-js@1.0.3:
+    resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
+
   birpc@2.8.0:
     resolution: {integrity: sha512-Bz2a4qD/5GRhiHSwj30c/8kC8QGj12nNDwz3D4ErQ4Xhy35dsSDvF+RA/tWpjyU0pdGtSDiEk6B5fBGE1qNVhw==}
 
@@ -4382,9 +2705,6 @@ packages:
 
   brace-expansion@1.1.12:
     resolution: {integrity: sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg==}
-
-  brace-expansion@2.0.2:
-    resolution: {integrity: sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ==}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -4539,10 +2859,6 @@ packages:
     resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
     engines: {node: '>=20'}
 
-  commander@14.0.2:
-    resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
-    engines: {node: '>=20'}
-
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
@@ -4656,6 +2972,10 @@ packages:
     resolution: {integrity: sha512-0LrrStPOdJj+SPCCrGhzryycLjwcgUSHBtxNA8aIDxf0GLsRh1cKYhB00Gd1lDOS4yGH69+SNn13+TWbVHETFQ==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0, npm: '>=7.0.0'}
 
+  cssstyle@5.3.7:
+    resolution: {integrity: sha512-7D2EPVltRrsTkhpQmksIu+LxeWAIEk6wRDMJ1qljlv+CKHJM+cJLlfhWIzNA44eAsHXSNe3+vO6DW1yCYx8SuQ==}
+    engines: {node: '>=20'}
+
   csstype@3.1.3:
     resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
 
@@ -4669,6 +2989,10 @@ packages:
   data-uri-to-buffer@4.0.1:
     resolution: {integrity: sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==}
     engines: {node: '>= 12'}
+
+  data-urls@6.0.1:
+    resolution: {integrity: sha512-euIQENZg6x8mj3fO6o9+fOW8MimUI4PpD/fZBhJfeioZVy9TUpM4UY7KjQNVZFlqwJ0UdzRDzkycB997HEq1BQ==}
+    engines: {node: '>=20'}
 
   dataloader@1.4.0:
     resolution: {integrity: sha512-68s5jYdlvasItOJnCuI2Q9s4q98g0pCyL3HrcKJu8KNugUl8ahgmZYg38ysLTgQjjXX3H8CJLkAvWrclWfcalw==}
@@ -4685,6 +3009,9 @@ packages:
     peerDependenciesMeta:
       supports-color:
         optional: true
+
+  decimal.js@10.6.0:
+    resolution: {integrity: sha512-YpgQiITW3JXGntzdUmyUR1V812Hn8T1YVXhCu+wO3OpS4eU9l4YdD3qjyiKdV6mvV29zapkMeD390UVEf2lkUg==}
 
   decode-named-character-reference@1.2.0:
     resolution: {integrity: sha512-c6fcElNV6ShtZXmsgNgFFV5tVX2PaV4g+MOAkb8eXHvn6sryJBrZa9r0zV6+dtTyoCKxtDy5tyQ5ZwQuidtd+Q==}
@@ -4820,6 +3147,10 @@ packages:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
 
+  entities@6.0.1:
+    resolution: {integrity: sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==}
+    engines: {node: '>=0.12'}
+
   envinfo@7.20.0:
     resolution: {integrity: sha512-+zUomDcLXsVkQ37vUqWBvQwLaLlj8eZPSi61llaEFAVBY5mhcXdaSw1pSJVl4yTYD5g/gEfpNl28YYk4IPvrrg==}
     engines: {node: '>=4'}
@@ -4859,23 +3190,6 @@ packages:
   escape-string-regexp@4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
-
-  eslint-plugin-react-hooks@7.0.1:
-    resolution: {integrity: sha512-O0d0m04evaNzEPoSW+59Mezf8Qt0InfgGIBJnpC0h3NH/WjUAR7BIKUfysC6todmtiZ/A0oUVS8Gce0WhBrHsA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
-
-  eslint-plugin-react-refresh@0.4.24:
-    resolution: {integrity: sha512-nLHIW7TEq3aLrEYWpVaJ1dRgFR+wLDPN8e8FpYAql/bMV2oBEfC37K0gLEGgv9fy66juNShSMV8OkTqzltcG/w==}
-    peerDependencies:
-      eslint: '>=8.40'
-
-  eslint-plugin-storybook@10.2.0-alpha.14:
-    resolution: {integrity: sha512-W5K/nx+HWNKqWL3bY+9Cn+oJpE+StDAt1s8RDPmWAEj+SnHD7MUY3JZlZ7y5I4tEFZS6yMQKZKri7iz/kKq7Vw==}
-    peerDependencies:
-      eslint: '>=8'
-      storybook: ^10.2.0-alpha.14
 
   eslint-scope@5.1.1:
     resolution: {integrity: sha512-2NxwbF/hZ0KpepYN0cNbo+FN6XoK7GaHlQhgx/hIZl6Va0bF45RQOOwhLIy8lQDbuCiadSLCBnH2CFYquit5bw==}
@@ -5145,9 +3459,6 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  graphemer@1.4.0:
-    resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
-
   graphql@16.12.0:
     resolution: {integrity: sha512-DKKrynuQRne0PNpEbzuEdHlYOMksHSUI8Zc9Unei5gTsMNA2/vMpoMz/yKba50pejK56qj98qM0SjYxAKi13gQ==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
@@ -5173,12 +3484,6 @@ packages:
   headers-polyfill@4.0.3:
     resolution: {integrity: sha512-IScLbePpkvO846sIwOtOTDjutRMWdXdJmXdMvk6gCBHxFO8d+QKOQedyZSxFTTFYRSmlgSTDtXqqq4pcenBXLQ==}
 
-  hermes-estree@0.25.1:
-    resolution: {integrity: sha512-0wUoCcLp+5Ev5pDW2OriHC2MJCbwLwuRx+gAqMTOkGKJJiBCLjtrvy4PWUGn6MIVefecRpzoOZ/UV6iGdOr+Cw==}
-
-  hermes-parser@0.25.1:
-    resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
-
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
 
@@ -5188,12 +3493,24 @@ packages:
   hookable@5.5.3:
     resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
 
+  html-encoding-sniffer@6.0.0:
+    resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
 
   http-errors@2.0.0:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
     engines: {node: '>= 0.8'}
+
+  http-proxy-agent@7.0.2:
+    resolution: {integrity: sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==}
+    engines: {node: '>= 14'}
+
+  https-proxy-agent@7.0.6:
+    resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
+    engines: {node: '>= 14'}
 
   human-id@4.1.2:
     resolution: {integrity: sha512-v/J+4Z/1eIJovEBdlV5TYj1IR+ZiohcYGRY+qN/oC9dAfKzVT023N/Bgw37hrKCoVRBvk3bqyzpr2PP5YeTMSg==}
@@ -5209,10 +3526,6 @@ packages:
 
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
-    engines: {node: '>= 4'}
-
-  ignore@7.0.5:
-    resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
 
   image-size@0.5.5:
@@ -5284,6 +3597,9 @@ packages:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
 
+  is-potential-custom-element-name@1.0.1:
+    resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
+
   is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
 
@@ -5350,6 +3666,15 @@ packages:
   js-yaml@4.1.1:
     resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
     hasBin: true
+
+  jsdom@27.4.0:
+    resolution: {integrity: sha512-mjzqwWRD9Y1J1KUi7W97Gja1bwOOM5Ug0EZ6UDK3xS7j7mndrkwozHtSblfomlzyB4NepioNt+B2sOSzczVgtQ==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+    peerDependencies:
+      canvas: ^3.0.0
+    peerDependenciesMeta:
+      canvas:
+        optional: true
 
   jsesc@3.1.0:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
@@ -5540,10 +3865,6 @@ packages:
   minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
 
-  minimatch@9.0.5:
-    resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==}
-    engines: {node: '>=16 || 14 >=14.17'}
-
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
@@ -5564,11 +3885,6 @@ packages:
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
-
-  msw-storybook-addon@2.0.6:
-    resolution: {integrity: sha512-ExCwDbcJoM2V3iQU+fZNp+axVfNc7DWMRh4lyTXebDO8IbpUNYKGFUrA8UqaeWiRGKVuS7+fU+KXEa9b0OP6uA==}
-    peerDependencies:
-      msw: ^2.0.0
 
   msw@2.12.7:
     resolution: {integrity: sha512-retd5i3xCZDVWMYjHEVuKTmhqY8lSsxujjVrZiGbbdoxxIBg5S7rCuYy/YQpfrTYIxpd/o0Kyb/3H+1udBMoYg==}
@@ -5732,6 +4048,9 @@ packages:
     resolution: {integrity: sha512-3YHlOa/JgH6Mnpr05jP9eDG254US9ek25LyIxZlDItp2iJtwyaXQb57lBYLdT3MowkUFYEV2XXNAYIPlESvJlA==}
     engines: {node: '>= 0.10'}
 
+  parse5@8.0.0:
+    resolution: {integrity: sha512-9m4m5GSgXjL4AjumKzq1Fgfp3Z8rsvjRNbnkVwfu2ImRqE5D0LnY2QfDen18FSY9C573YU5XxSapdHZTZ2WolA==}
+
   parseurl@1.3.3:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
     engines: {node: '>= 0.8'}
@@ -5784,6 +4103,9 @@ packages:
   picomatch@4.0.3:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
+
+  picoquery@2.5.0:
+    resolution: {integrity: sha512-j1kgOFxtaCyoFCkpoYG2Oj3OdGakadO7HZ7o5CqyRazlmBekKhbDoUnNnXASE07xSY4nDImWZkrZv7toSxMi/g==}
 
   pify@4.0.1:
     resolution: {integrity: sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==}
@@ -6225,14 +4547,6 @@ packages:
       react: ^18 || ^19
       react-dom: ^18 || ^19
 
-  reshaped@3.9.0:
-    resolution: {integrity: sha512-lIrTyxgAiCpZtcZoH4QfQb+hO0MeLDDZZ71BRwnYMsvXSkPtqilj5luJfGd9HfoioSUQ5j5oXl0BPBsTXPRClQ==}
-    hasBin: true
-    peerDependencies:
-      postcss: ^8
-      react: ^18 || ^19
-      react-dom: ^18 || ^19
-
   resolve-from@4.0.0:
     resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
     engines: {node: '>=4'}
@@ -6323,6 +4637,10 @@ packages:
 
   sax@1.4.3:
     resolution: {integrity: sha512-yqYn1JhPczigF94DMS+shiDMjDowYO6y9+wB/4WgO0Y19jWYk0lQ4tuG5KI7kj4FTp1wxPj5IFfcrz/s1c3jjQ==}
+
+  saxes@6.0.0:
+    resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
+    engines: {node: '>=v12.22.7'}
 
   scheduler@0.23.2:
     resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
@@ -6467,8 +4785,8 @@ packages:
     peerDependencies:
       storybook: ^10.0.0
 
-  storybook@10.2.0-alpha.14:
-    resolution: {integrity: sha512-ZyGO3qVK1ARL08nyVSpb88k8KGIJTJ62nsVNdUCTeyDct/0G7OXFS3F/Ogk5o0EAAS3iymVBKnX/76v/PH3keA==}
+  storybook@10.3.0-alpha.1:
+    resolution: {integrity: sha512-hJUW32F7KWQJD4R1hu2c+y/WjGLuEXh0bkn/Y0GgrSRaTM2n//jXMnsvLuJKC+LWlHWSya4edR81TgR3Q2z+9w==}
     hasBin: true
     peerDependencies:
       prettier: ^2 || ^3
@@ -6537,6 +4855,9 @@ packages:
     resolution: {integrity: sha512-VvrHQ+9uniE+Mvx3+C9IEe/lWasXCU0nXMY2kZeLrHNICuRiC8uMPyM14UEaMOFA5mhyQqEkB02VoQ16n3DLaw==}
     engines: {node: '>=16'}
     hasBin: true
+
+  symbol-tree@3.2.4:
+    resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
 
   tagged-tag@1.0.0:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
@@ -6632,15 +4953,13 @@ packages:
   tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
 
+  tr46@6.0.0:
+    resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==}
+    engines: {node: '>=20'}
+
   tree-kill@1.2.2:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
     hasBin: true
-
-  ts-api-utils@2.4.0:
-    resolution: {integrity: sha512-3TaVTaAv2gTiMB35i3FiGJaRfwb3Pyn/j3m/bfAvGe8FB7CF6u+LMYqYlDh7reQf7UNvoTvdfAqHGmPGOSsPmA==}
-    engines: {node: '>=18.12'}
-    peerDependencies:
-      typescript: '>=4.8.4'
 
   ts-dedent@2.2.0:
     resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
@@ -6755,13 +5074,6 @@ packages:
   type-is@2.0.1:
     resolution: {integrity: sha512-OZs6gsjF4vMp32qrCbiVSkrFmXtG/AZhY3t0iAMrMBiAZyV9oALtXO8hsrHbMXF9x6L3grlFuwW2oAz7cav+Gw==}
     engines: {node: '>= 0.6'}
-
-  typescript-eslint@8.47.0:
-    resolution: {integrity: sha512-Lwe8i2XQ3WoMjua/r1PHrCTpkubPYJCAfOurtn+mtTzqB6jNd+14n9UN1bJ4s3F49x9ixAm0FLflB/JzQ57M8Q==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      eslint: ^8.57.0 || ^9.0.0
-      typescript: '>=4.8.4 <6.0.0'
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -6965,6 +5277,10 @@ packages:
       jsdom:
         optional: true
 
+  w3c-xmlserializer@5.0.0:
+    resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
+    engines: {node: '>=18'}
+
   watchpack@2.4.4:
     resolution: {integrity: sha512-c5EGNOiyxxV5qmTtAB7rbiXxi1ooX1pQKMLX/MIabJjRA0SJBQOjKF+KSVfHkr9U1cADPon0mRiVe/riyaiDUA==}
     engines: {node: '>=10.13.0'}
@@ -6975,6 +5291,10 @@ packages:
 
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
+
+  webidl-conversions@8.0.1:
+    resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
+    engines: {node: '>=20'}
 
   webpack-sources@3.3.3:
     resolution: {integrity: sha512-yd1RBzSGanHkitROoPFd6qsrxt+oFhg/129YzheDGqeustzX0vTZJZsSsQjVQC4yzBQ56K55XU8gaNCtIzOnTg==}
@@ -6992,6 +5312,18 @@ packages:
     peerDependenciesMeta:
       webpack-cli:
         optional: true
+
+  whatwg-mimetype@4.0.0:
+    resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
+    engines: {node: '>=18'}
+
+  whatwg-mimetype@5.0.0:
+    resolution: {integrity: sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==}
+    engines: {node: '>=20'}
+
+  whatwg-url@15.1.0:
+    resolution: {integrity: sha512-2ytDk0kiEj/yu90JOAp44PVPUkO9+jVhyf+SybKlRHSDlvOOZhdPIrr7xTH64l4WixO2cP+wQIcgujkGBPPz6g==}
+    engines: {node: '>=20'}
 
   whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
@@ -7041,6 +5373,13 @@ packages:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
 
+  xml-name-validator@5.0.0:
+    resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
+    engines: {node: '>=18'}
+
+  xmlchars@2.2.0:
+    resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
+
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
@@ -7077,16 +5416,13 @@ packages:
     peerDependencies:
       zod: ^3.24.1
 
-  zod-validation-error@4.0.2:
-    resolution: {integrity: sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      zod: ^3.25.0 || ^4.0.0
-
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
+
+  '@acemir/cssom@0.9.31':
+    optional: true
 
   '@actions/core@1.11.1':
     dependencies:
@@ -7126,6 +5462,27 @@ snapshots:
       '@img/sharp-linux-arm64': 0.33.5
       '@img/sharp-linux-x64': 0.33.5
       '@img/sharp-win32-x64': 0.33.5
+
+  '@asamuzakjp/css-color@4.1.1':
+    dependencies:
+      '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
+      '@csstools/css-color-parser': 3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
+      '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
+      '@csstools/css-tokenizer': 3.0.4
+      lru-cache: 11.2.4
+    optional: true
+
+  '@asamuzakjp/dom-selector@6.7.6':
+    dependencies:
+      '@asamuzakjp/nwsapi': 2.3.9
+      bidi-js: 1.0.3
+      css-tree: 3.1.0
+      is-potential-custom-element-name: 1.0.1
+      lru-cache: 11.2.4
+    optional: true
+
+  '@asamuzakjp/nwsapi@2.3.9':
+    optional: true
 
   '@babel/code-frame@7.27.1':
     dependencies:
@@ -7441,9 +5798,29 @@ snapshots:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
 
+  '@csstools/color-helpers@5.1.0':
+    optional: true
+
+  '@csstools/css-calc@2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
+    dependencies:
+      '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
+      '@csstools/css-tokenizer': 3.0.4
+    optional: true
+
+  '@csstools/css-color-parser@3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
+    dependencies:
+      '@csstools/color-helpers': 5.1.0
+      '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
+      '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
+      '@csstools/css-tokenizer': 3.0.4
+    optional: true
+
   '@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4)':
     dependencies:
       '@csstools/css-tokenizer': 3.0.4
+
+  '@csstools/css-syntax-patches-for-csstree@1.0.25':
+    optional: true
 
   '@csstools/css-tokenizer@3.0.4': {}
 
@@ -7596,6 +5973,9 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
+  '@exodus/bytes@1.9.0':
+    optional: true
+
   '@fastify/busboy@2.1.1': {}
 
   '@floating-ui/core@1.7.3':
@@ -7675,7 +6055,8 @@ snapshots:
   '@img/sharp-win32-x64@0.33.5':
     optional: true
 
-  '@inquirer/ansi@1.0.2': {}
+  '@inquirer/ansi@1.0.2':
+    optional: true
 
   '@inquirer/confirm@5.1.21(@types/node@20.19.0)':
     dependencies:
@@ -7684,13 +6065,6 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.0
     optional: true
-
-  '@inquirer/confirm@5.1.21(@types/node@24.10.1)':
-    dependencies:
-      '@inquirer/core': 10.3.2(@types/node@24.10.1)
-      '@inquirer/type': 3.0.10(@types/node@24.10.1)
-    optionalDependencies:
-      '@types/node': 24.10.1
 
   '@inquirer/core@10.3.2(@types/node@20.19.0)':
     dependencies:
@@ -7706,19 +6080,6 @@ snapshots:
       '@types/node': 20.19.0
     optional: true
 
-  '@inquirer/core@10.3.2(@types/node@24.10.1)':
-    dependencies:
-      '@inquirer/ansi': 1.0.2
-      '@inquirer/figures': 1.0.15
-      '@inquirer/type': 3.0.10(@types/node@24.10.1)
-      cli-width: 4.1.0
-      mute-stream: 2.0.0
-      signal-exit: 4.1.0
-      wrap-ansi: 6.2.0
-      yoctocolors-cjs: 2.1.3
-    optionalDependencies:
-      '@types/node': 24.10.1
-
   '@inquirer/external-editor@1.0.2(@types/node@20.19.0)':
     dependencies:
       chardet: 2.1.0
@@ -7726,16 +6087,13 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.0
 
-  '@inquirer/figures@1.0.15': {}
+  '@inquirer/figures@1.0.15':
+    optional: true
 
   '@inquirer/type@3.0.10(@types/node@20.19.0)':
     optionalDependencies:
       '@types/node': 20.19.0
     optional: true
-
-  '@inquirer/type@3.0.10(@types/node@24.10.1)':
-    optionalDependencies:
-      '@types/node': 24.10.1
 
   '@isaacs/balanced-match@4.0.1': {}
 
@@ -7819,12 +6177,6 @@ snapshots:
     dependencies:
       '@types/mdx': 2.0.13
       '@types/react': 18.3.26
-      react: 19.2.0
-
-  '@mdx-js/react@3.1.1(@types/react@19.2.6)(react@19.2.0)':
-    dependencies:
-      '@types/mdx': 2.0.13
-      '@types/react': 19.2.6
       react: 19.2.0
 
   '@modelcontextprotocol/inspector-cli@0.17.2':
@@ -7935,6 +6287,7 @@ snapshots:
       is-node-process: 1.2.0
       outvariant: 1.4.3
       strict-event-emitter: 0.5.1
+    optional: true
 
   '@napi-rs/wasm-runtime@1.0.7':
     dependencies:
@@ -8027,14 +6380,17 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 24.2.0
 
-  '@open-draft/deferred-promise@2.2.0': {}
+  '@open-draft/deferred-promise@2.2.0':
+    optional: true
 
   '@open-draft/logger@0.3.0':
     dependencies:
       is-node-process: 1.2.0
       outvariant: 1.4.3
+    optional: true
 
-  '@open-draft/until@2.1.0': {}
+  '@open-draft/until@2.1.0':
+    optional: true
 
   '@oxc-project/runtime@0.97.0': {}
 
@@ -8082,7 +6438,8 @@ snapshots:
   '@oxlint/win32-x64@1.28.0':
     optional: true
 
-  '@polka/url@1.0.0-next.29': {}
+  '@polka/url@1.0.0-next.29':
+    optional: true
 
   '@publint/pack@0.1.2': {}
 
@@ -9356,21 +7713,21 @@ snapshots:
 
   '@standard-schema/spec@1.0.0': {}
 
-  '@storybook/addon-a11y@10.2.0-alpha.14(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))':
+  '@storybook/addon-a11y@10.3.0-alpha.1(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
       axe-core: 4.11.0
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
-  '@storybook/addon-docs@10.2.0-alpha.14(@types/react@18.3.26)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/addon-docs@10.3.0-alpha.1(@types/react@18.3.26)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
       '@mdx-js/react': 3.1.1(@types/react@18.3.26)(react@19.2.0)
-      '@storybook/csf-plugin': 10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+      '@storybook/csf-plugin': 10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
       '@storybook/icons': 2.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@storybook/react-dom-shim': 10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@storybook/react-dom-shim': 10.3.0-alpha.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       ts-dedent: 2.2.0
     transitivePeerDependencies:
       - '@types/react'
@@ -9379,79 +7736,36 @@ snapshots:
       - vite
       - webpack
 
-  '@storybook/addon-docs@10.2.0-alpha.14(@types/react@19.2.6)(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/addon-themes@10.2.0(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
-      '@mdx-js/react': 3.1.1(@types/react@19.2.6)(react@19.2.0)
-      '@storybook/csf-plugin': 10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/icons': 2.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@storybook/react-dom-shim': 10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       ts-dedent: 2.2.0
-    transitivePeerDependencies:
-      - '@types/react'
-      - esbuild
-      - rollup
-      - vite
-      - webpack
 
-  '@storybook/addon-vitest@10.2.0-alpha.14(@vitest/browser-playwright@4.0.6)(@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(@vitest/runner@4.0.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vitest@4.0.6)':
+  '@storybook/builder-vite@10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
-      '@storybook/global': 5.0.0
-      '@storybook/icons': 2.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    optionalDependencies:
-      '@vitest/browser': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      '@vitest/browser-playwright': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      '@vitest/runner': 4.0.6
-      vitest: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-    transitivePeerDependencies:
-      - react
-      - react-dom
-
-  '@storybook/builder-vite@10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
-    dependencies:
-      '@storybook/csf-plugin': 10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@vitest/mocker': 3.2.4(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@storybook/csf-plugin': 10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       ts-dedent: 2.2.0
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
     transitivePeerDependencies:
       - esbuild
-      - msw
       - rollup
       - webpack
 
-  '@storybook/builder-vite@10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/builder-vite@10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
-      '@storybook/csf-plugin': 10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@vitest/mocker': 3.2.4(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@storybook/csf-plugin': 10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       ts-dedent: 2.2.0
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
     transitivePeerDependencies:
       - esbuild
-      - msw
       - rollup
       - webpack
 
-  '@storybook/builder-vite@10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/csf-plugin@10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
-      '@storybook/csf-plugin': 10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@vitest/mocker': 3.2.4(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      ts-dedent: 2.2.0
-      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-    transitivePeerDependencies:
-      - esbuild
-      - msw
-      - rollup
-      - webpack
-
-  '@storybook/csf-plugin@10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
-    dependencies:
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       unplugin: 2.3.10
     optionalDependencies:
       esbuild: 0.25.12
@@ -9459,9 +7773,9 @@ snapshots:
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
       webpack: 5.102.1(@swc/core@1.13.5)(esbuild@0.25.12)
 
-  '@storybook/csf-plugin@10.2.0-alpha.14(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/csf-plugin@10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       unplugin: 2.3.10
     optionalDependencies:
       esbuild: 0.25.12
@@ -9481,114 +7795,89 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  '@storybook/react-dom-shim@10.2.0-alpha.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+  '@storybook/react-dom-shim@10.3.0-alpha.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@storybook/react-dom-shim@10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+  '@storybook/react-dom-shim@10.3.0-alpha.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@storybook/react-dom-shim@10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))':
+  '@storybook/react-dom-shim@10.3.0-alpha.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))':
     dependencies:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
-  '@storybook/react-vite@10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/react-vite@10.3.0-alpha.1(esbuild@0.25.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.6.3(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
       '@rollup/pluginutils': 5.3.0(rollup@4.52.5)
-      '@storybook/builder-vite': 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/react': 10.2.0-alpha.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)
+      '@storybook/builder-vite': 10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+      '@storybook/react': 10.3.0-alpha.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)
       empathic: 2.0.0
       magic-string: 0.30.21
       react: 18.3.1
       react-docgen: 8.0.2
       react-dom: 18.3.1(react@18.3.1)
       resolve: 1.22.11
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tsconfig-paths: 4.2.0
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
     transitivePeerDependencies:
       - esbuild
-      - msw
       - rollup
       - supports-color
       - typescript
       - webpack
 
-  '@storybook/react-vite@10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
+  '@storybook/react-vite@10.3.0-alpha.1(esbuild@0.25.12)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.6.3(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
       '@rollup/pluginutils': 5.3.0(rollup@4.52.5)
-      '@storybook/builder-vite': 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/react': 10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
+      '@storybook/builder-vite': 10.3.0-alpha.1(esbuild@0.25.12)(rollup@4.52.5)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
+      '@storybook/react': 10.3.0-alpha.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
       empathic: 2.0.0
       magic-string: 0.30.21
       react: 19.2.0
       react-docgen: 8.0.2
       react-dom: 19.2.0(react@19.2.0)
       resolve: 1.22.11
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       tsconfig-paths: 4.2.0
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
     transitivePeerDependencies:
       - esbuild
-      - msw
       - rollup
       - supports-color
       - typescript
       - webpack
 
-  '@storybook/react-vite@10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))':
-    dependencies:
-      '@joshwooding/vite-plugin-react-docgen-typescript': 0.6.3(typescript@5.9.3)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@rollup/pluginutils': 5.3.0(rollup@4.52.5)
-      '@storybook/builder-vite': 10.2.0-alpha.14(esbuild@0.25.12)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(rollup@4.52.5)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(webpack@5.102.1(@swc/core@1.13.5)(esbuild@0.25.12))
-      '@storybook/react': 10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
-      empathic: 2.0.0
-      magic-string: 0.30.21
-      react: 19.2.0
-      react-docgen: 8.0.2
-      react-dom: 19.2.0(react@19.2.0)
-      resolve: 1.22.11
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      tsconfig-paths: 4.2.0
-      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-    transitivePeerDependencies:
-      - esbuild
-      - msw
-      - rollup
-      - supports-color
-      - typescript
-      - webpack
-
-  '@storybook/react@10.2.0-alpha.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)':
+  '@storybook/react@10.3.0-alpha.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/react-dom-shim': 10.2.0-alpha.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@storybook/react-dom-shim': 10.3.0-alpha.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       react: 18.3.1
       react-docgen: 8.0.2
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
-  '@storybook/react@10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)':
+  '@storybook/react@10.3.0-alpha.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/react-dom-shim': 10.2.0-alpha.14(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
+      '@storybook/react-dom-shim': 10.3.0-alpha.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
       react: 19.2.0
       react-docgen: 8.0.2
       react-dom: 19.2.0(react@19.2.0)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -9788,10 +8077,6 @@ snapshots:
       '@types/react': 18.3.26
     optional: true
 
-  '@types/react-dom@19.2.3(@types/react@19.2.6)':
-    dependencies:
-      '@types/react': 19.2.6
-
   '@types/react-dom@19.2.3(@types/react@19.2.7)':
     dependencies:
       '@types/react': 19.2.7
@@ -9806,10 +8091,6 @@ snapshots:
       '@types/prop-types': 15.7.15
       csstype: 3.2.3
 
-  '@types/react@19.2.6':
-    dependencies:
-      csstype: 3.2.3
-
   '@types/react@19.2.7':
     dependencies:
       csstype: 3.2.3
@@ -9817,155 +8098,12 @@ snapshots:
 
   '@types/resolve@1.20.6': {}
 
-  '@types/statuses@2.0.6': {}
+  '@types/statuses@2.0.6':
+    optional: true
 
   '@types/unist@2.0.11': {}
 
   '@types/unist@3.0.3': {}
-
-  '@typescript-eslint/eslint-plugin@8.47.0(@typescript-eslint/parser@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/scope-manager': 8.47.0
-      '@typescript-eslint/type-utils': 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/visitor-keys': 8.47.0
-      eslint: 9.39.1(jiti@2.6.1)
-      graphemer: 1.4.0
-      ignore: 7.0.5
-      natural-compare: 1.4.0
-      ts-api-utils: 2.4.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/parser@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/scope-manager': 8.47.0
-      '@typescript-eslint/types': 8.47.0
-      '@typescript-eslint/typescript-estree': 8.47.0(typescript@5.9.3)
-      '@typescript-eslint/visitor-keys': 8.47.0
-      debug: 4.4.3
-      eslint: 9.39.1(jiti@2.6.1)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/project-service@8.47.0(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.52.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.52.0
-      debug: 4.4.3
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/project-service@8.52.0(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.52.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.52.0
-      debug: 4.4.3
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/scope-manager@8.47.0':
-    dependencies:
-      '@typescript-eslint/types': 8.47.0
-      '@typescript-eslint/visitor-keys': 8.47.0
-
-  '@typescript-eslint/scope-manager@8.52.0':
-    dependencies:
-      '@typescript-eslint/types': 8.52.0
-      '@typescript-eslint/visitor-keys': 8.52.0
-
-  '@typescript-eslint/tsconfig-utils@8.47.0(typescript@5.9.3)':
-    dependencies:
-      typescript: 5.9.3
-
-  '@typescript-eslint/tsconfig-utils@8.52.0(typescript@5.9.3)':
-    dependencies:
-      typescript: 5.9.3
-
-  '@typescript-eslint/type-utils@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/types': 8.47.0
-      '@typescript-eslint/typescript-estree': 8.47.0(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      debug: 4.4.3
-      eslint: 9.39.1(jiti@2.6.1)
-      ts-api-utils: 2.4.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/types@8.47.0': {}
-
-  '@typescript-eslint/types@8.52.0': {}
-
-  '@typescript-eslint/typescript-estree@8.47.0(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/project-service': 8.47.0(typescript@5.9.3)
-      '@typescript-eslint/tsconfig-utils': 8.47.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.47.0
-      '@typescript-eslint/visitor-keys': 8.47.0
-      debug: 4.4.3
-      fast-glob: 3.3.3
-      is-glob: 4.0.3
-      minimatch: 9.0.5
-      semver: 7.7.3
-      ts-api-utils: 2.4.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/typescript-estree@8.52.0(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/project-service': 8.52.0(typescript@5.9.3)
-      '@typescript-eslint/tsconfig-utils': 8.52.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.52.0
-      '@typescript-eslint/visitor-keys': 8.52.0
-      debug: 4.4.3
-      minimatch: 9.0.5
-      semver: 7.7.3
-      tinyglobby: 0.2.15
-      ts-api-utils: 2.4.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/utils@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.1(jiti@2.6.1))
-      '@typescript-eslint/scope-manager': 8.47.0
-      '@typescript-eslint/types': 8.47.0
-      '@typescript-eslint/typescript-estree': 8.47.0(typescript@5.9.3)
-      eslint: 9.39.1(jiti@2.6.1)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/utils@8.52.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.1(jiti@2.6.1))
-      '@typescript-eslint/scope-manager': 8.52.0
-      '@typescript-eslint/types': 8.52.0
-      '@typescript-eslint/typescript-estree': 8.52.0(typescript@5.9.3)
-      eslint: 9.39.1(jiti@2.6.1)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/visitor-keys@8.47.0':
-    dependencies:
-      '@typescript-eslint/types': 8.47.0
-      eslint-visitor-keys: 4.2.1
-
-  '@typescript-eslint/visitor-keys@8.52.0':
-    dependencies:
-      '@typescript-eslint/types': 8.52.0
-      eslint-visitor-keys: 4.2.1
 
   '@valibot/to-json-schema@1.3.0(valibot@1.2.0(typescript@5.9.3))':
     dependencies:
@@ -9997,26 +8135,13 @@ snapshots:
       '@vitest/mocker': 4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
       playwright: 1.56.1
       tinyrainbow: 3.0.3
-      vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
+      vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(jsdom@27.4.0)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
     transitivePeerDependencies:
       - bufferutil
       - msw
       - utf-8-validate
       - vite
     optional: true
-
-  '@vitest/browser-playwright@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)':
-    dependencies:
-      '@vitest/browser': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-      '@vitest/mocker': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      playwright: 1.56.1
-      tinyrainbow: 3.0.3
-      vitest: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-    transitivePeerDependencies:
-      - bufferutil
-      - msw
-      - utf-8-validate
-      - vite
 
   '@vitest/browser@4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)':
     dependencies:
@@ -10027,7 +8152,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.0.3
-      vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
+      vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(jsdom@27.4.0)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
       ws: 8.18.3
     transitivePeerDependencies:
       - bufferutil
@@ -10035,23 +8160,6 @@ snapshots:
       - utf-8-validate
       - vite
     optional: true
-
-  '@vitest/browser@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)':
-    dependencies:
-      '@vitest/mocker': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/utils': 4.0.6
-      magic-string: 0.30.21
-      pixelmatch: 7.1.0
-      pngjs: 7.0.0
-      sirv: 3.0.2
-      tinyrainbow: 3.0.3
-      vitest: 4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0)
-      ws: 8.18.3
-    transitivePeerDependencies:
-      - bufferutil
-      - msw
-      - utf-8-validate
-      - vite
 
   '@vitest/coverage-v8@4.0.6(@vitest/browser@4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6))(vitest@4.0.6)':
     dependencies:
@@ -10066,7 +8174,7 @@ snapshots:
       magicast: 0.3.5
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
+      vitest: 4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(jsdom@27.4.0)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0)
     optionalDependencies:
       '@vitest/browser': 4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
     transitivePeerDependencies:
@@ -10089,24 +8197,6 @@ snapshots:
       chai: 6.2.1
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@3.2.4(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      msw: 2.12.7(@types/node@20.19.0)(typescript@5.9.3)
-      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  '@vitest/mocker@3.2.4(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      msw: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
   '@vitest/mocker@4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))':
     dependencies:
       '@vitest/spy': 4.0.6
@@ -10115,15 +8205,6 @@ snapshots:
     optionalDependencies:
       msw: 2.12.7(@types/node@20.19.0)(typescript@5.9.3)
       vite: 7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-
-  '@vitest/mocker@4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))':
-    dependencies:
-      '@vitest/spy': 4.0.6
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      msw: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
-      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -10278,6 +8359,9 @@ snapshots:
 
   acorn@8.15.0: {}
 
+  agent-base@7.1.4:
+    optional: true
+
   ai-tokenizer@1.0.6: {}
 
   ajv-formats@2.1.1(ajv@8.17.1):
@@ -10374,6 +8458,11 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
+  bidi-js@1.0.3:
+    dependencies:
+      require-from-string: 2.0.2
+    optional: true
+
   birpc@2.8.0: {}
 
   body-parser@2.2.0:
@@ -10396,10 +8485,6 @@ snapshots:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
-
-  brace-expansion@2.0.2:
-    dependencies:
-      balanced-match: 1.0.2
 
   braces@3.0.3:
     dependencies:
@@ -10495,7 +8580,8 @@ snapshots:
 
   classnames@2.5.1: {}
 
-  cli-width@4.1.0: {}
+  cli-width@4.1.0:
+    optional: true
 
   cliui@8.0.1:
     dependencies:
@@ -10533,8 +8619,6 @@ snapshots:
 
   commander@14.0.1: {}
 
-  commander@14.0.2: {}
-
   commander@2.20.3:
     optional: true
 
@@ -10569,7 +8653,8 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  cookie@1.1.1: {}
+  cookie@1.1.1:
+    optional: true
 
   copy-anything@2.0.6:
     dependencies:
@@ -10665,6 +8750,14 @@ snapshots:
     dependencies:
       css-tree: 2.2.1
 
+  cssstyle@5.3.7:
+    dependencies:
+      '@asamuzakjp/css-color': 4.1.1
+      '@csstools/css-syntax-patches-for-csstree': 1.0.25
+      css-tree: 3.1.0
+      lru-cache: 11.2.4
+    optional: true
+
   csstype@3.1.3: {}
 
   csstype@3.2.3: {}
@@ -10672,6 +8765,12 @@ snapshots:
   culori@4.0.2: {}
 
   data-uri-to-buffer@4.0.1: {}
+
+  data-urls@6.0.1:
+    dependencies:
+      whatwg-mimetype: 5.0.0
+      whatwg-url: 15.1.0
+    optional: true
 
   dataloader@1.4.0: {}
 
@@ -10682,6 +8781,9 @@ snapshots:
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
+
+  decimal.js@10.6.0:
+    optional: true
 
   decode-named-character-reference@1.2.0:
     dependencies:
@@ -10787,6 +8889,9 @@ snapshots:
 
   entities@4.5.0: {}
 
+  entities@6.0.1:
+    optional: true
+
   envinfo@7.20.0: {}
 
   errno@0.1.8:
@@ -10838,30 +8943,6 @@ snapshots:
   escape-html@1.0.3: {}
 
   escape-string-regexp@4.0.0: {}
-
-  eslint-plugin-react-hooks@7.0.1(eslint@9.39.1(jiti@2.6.1)):
-    dependencies:
-      '@babel/core': 7.28.5
-      '@babel/parser': 7.28.5
-      eslint: 9.39.1(jiti@2.6.1)
-      hermes-parser: 0.25.1
-      zod: 3.25.76
-      zod-validation-error: 4.0.2(zod@3.25.76)
-    transitivePeerDependencies:
-      - supports-color
-
-  eslint-plugin-react-refresh@0.4.24(eslint@9.39.1(jiti@2.6.1)):
-    dependencies:
-      eslint: 9.39.1(jiti@2.6.1)
-
-  eslint-plugin-storybook@10.2.0-alpha.14(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3):
-    dependencies:
-      '@typescript-eslint/utils': 8.52.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      eslint: 9.39.1(jiti@2.6.1)
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
 
   eslint-scope@5.1.1:
     dependencies:
@@ -11176,9 +9257,8 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  graphemer@1.4.0: {}
-
-  graphql@16.12.0: {}
+  graphql@16.12.0:
+    optional: true
 
   has-flag@4.0.0: {}
 
@@ -11200,19 +9280,21 @@ snapshots:
       property-information: 7.1.0
       space-separated-tokens: 2.0.2
 
-  headers-polyfill@4.0.3: {}
-
-  hermes-estree@0.25.1: {}
-
-  hermes-parser@0.25.1:
-    dependencies:
-      hermes-estree: 0.25.1
+  headers-polyfill@4.0.3:
+    optional: true
 
   highlight.js@10.7.3: {}
 
   highlightjs-vue@1.0.0: {}
 
   hookable@5.5.3: {}
+
+  html-encoding-sniffer@6.0.0:
+    dependencies:
+      '@exodus/bytes': 1.9.0
+    transitivePeerDependencies:
+      - '@noble/hashes'
+    optional: true
 
   html-escaper@2.0.2: {}
 
@@ -11223,6 +9305,22 @@ snapshots:
       setprototypeof: 1.2.0
       statuses: 2.0.1
       toidentifier: 1.0.1
+
+  http-proxy-agent@7.0.2:
+    dependencies:
+      agent-base: 7.1.4
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
+  https-proxy-agent@7.0.6:
+    dependencies:
+      agent-base: 7.1.4
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
 
   human-id@4.1.2: {}
 
@@ -11235,8 +9333,6 @@ snapshots:
       safer-buffer: 2.1.2
 
   ignore@5.3.2: {}
-
-  ignore@7.0.5: {}
 
   image-size@0.5.5:
     optional: true
@@ -11283,9 +9379,13 @@ snapshots:
     dependencies:
       is-docker: 3.0.0
 
-  is-node-process@1.2.0: {}
+  is-node-process@1.2.0:
+    optional: true
 
   is-number@7.0.0: {}
+
+  is-potential-custom-element-name@1.0.1:
+    optional: true
 
   is-promise@4.0.0: {}
 
@@ -11353,6 +9453,35 @@ snapshots:
   js-yaml@4.1.1:
     dependencies:
       argparse: 2.0.1
+
+  jsdom@27.4.0:
+    dependencies:
+      '@acemir/cssom': 0.9.31
+      '@asamuzakjp/dom-selector': 6.7.6
+      '@exodus/bytes': 1.9.0
+      cssstyle: 5.3.7
+      data-urls: 6.0.1
+      decimal.js: 10.6.0
+      html-encoding-sniffer: 6.0.0
+      http-proxy-agent: 7.0.2
+      https-proxy-agent: 7.0.6
+      is-potential-custom-element-name: 1.0.1
+      parse5: 8.0.0
+      saxes: 6.0.0
+      symbol-tree: 3.2.4
+      tough-cookie: 6.0.0
+      w3c-xmlserializer: 5.0.0
+      webidl-conversions: 8.0.1
+      whatwg-mimetype: 4.0.0
+      whatwg-url: 15.1.0
+      ws: 8.18.3
+      xml-name-validator: 5.0.0
+    transitivePeerDependencies:
+      - '@noble/hashes'
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    optional: true
 
   jsesc@3.1.0: {}
 
@@ -11522,10 +9651,6 @@ snapshots:
     dependencies:
       brace-expansion: 1.1.12
 
-  minimatch@9.0.5:
-    dependencies:
-      brace-expansion: 2.0.2
-
   minimist@1.2.8: {}
 
   minipass@7.1.2: {}
@@ -11539,14 +9664,10 @@ snapshots:
 
   mri@1.2.0: {}
 
-  mrmime@2.0.1: {}
+  mrmime@2.0.1:
+    optional: true
 
   ms@2.1.3: {}
-
-  msw-storybook-addon@2.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3)):
-    dependencies:
-      is-node-process: 1.2.0
-      msw: 2.12.7(@types/node@24.10.1)(typescript@5.9.3)
 
   msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3):
     dependencies:
@@ -11574,32 +9695,8 @@ snapshots:
       - '@types/node'
     optional: true
 
-  msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3):
-    dependencies:
-      '@inquirer/confirm': 5.1.21(@types/node@24.10.1)
-      '@mswjs/interceptors': 0.40.0
-      '@open-draft/deferred-promise': 2.2.0
-      '@types/statuses': 2.0.6
-      cookie: 1.1.1
-      graphql: 16.12.0
-      headers-polyfill: 4.0.3
-      is-node-process: 1.2.0
-      outvariant: 1.4.3
-      path-to-regexp: 6.3.0
-      picocolors: 1.1.1
-      rettime: 0.7.0
-      statuses: 2.0.2
-      strict-event-emitter: 0.5.1
-      tough-cookie: 6.0.0
-      type-fest: 5.3.1
-      until-async: 3.0.2
-      yargs: 17.7.2
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - '@types/node'
-
-  mute-stream@2.0.0: {}
+  mute-stream@2.0.0:
+    optional: true
 
   nanoid@3.3.11: {}
 
@@ -11676,7 +9773,8 @@ snapshots:
 
   outdent@0.5.0: {}
 
-  outvariant@1.4.3: {}
+  outvariant@1.4.3:
+    optional: true
 
   oxlint-tsgolint@0.4.0:
     optionalDependencies:
@@ -11748,6 +9846,11 @@ snapshots:
   parse-node-version@1.0.1:
     optional: true
 
+  parse5@8.0.0:
+    dependencies:
+      entities: 6.0.1
+    optional: true
+
   parseurl@1.3.3: {}
 
   path-exists@4.0.0: {}
@@ -11765,7 +9868,8 @@ snapshots:
 
   path-to-regexp@3.3.0: {}
 
-  path-to-regexp@6.3.0: {}
+  path-to-regexp@6.3.0:
+    optional: true
 
   path-to-regexp@8.3.0: {}
 
@@ -11781,11 +9885,14 @@ snapshots:
 
   picomatch@4.0.3: {}
 
+  picoquery@2.5.0: {}
+
   pify@4.0.1: {}
 
   pixelmatch@7.1.0:
     dependencies:
       pngjs: 7.0.0
+    optional: true
 
   pkce-challenge@4.1.0: {}
 
@@ -11822,7 +9929,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.2
 
-  pngjs@7.0.0: {}
+  pngjs@7.0.0:
+    optional: true
 
   postcss-calc@10.1.1(postcss@8.5.6):
     dependencies:
@@ -12308,19 +10416,6 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  reshaped@3.9.0(postcss@8.5.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
-    dependencies:
-      '@csstools/postcss-global-data': 3.1.0(postcss@8.5.6)
-      chalk: 4.1.2
-      commander: 14.0.2
-      cssnano: 7.1.1(postcss@8.5.6)
-      csstype: 3.1.3
-      culori: 4.0.2
-      postcss: 8.5.6
-      postcss-custom-media: 11.0.6(postcss@8.5.6)
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
-
   resolve-from@4.0.0: {}
 
   resolve-from@5.0.0: {}
@@ -12333,7 +10428,8 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  rettime@0.7.0: {}
+  rettime@0.7.0:
+    optional: true
 
   reusify@1.1.0: {}
 
@@ -12463,6 +10559,11 @@ snapshots:
 
   sax@1.4.3: {}
 
+  saxes@6.0.0:
+    dependencies:
+      xmlchars: 2.2.0
+    optional: true
+
   scheduler@0.23.2:
     dependencies:
       loose-envify: 1.4.0
@@ -12575,6 +10676,7 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+    optional: true
 
   sisteransi@1.0.5: {}
 
@@ -12620,11 +10722,11 @@ snapshots:
 
   std-env@3.10.0: {}
 
-  storybook-addon-test-codegen@3.0.0(storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)):
+  storybook-addon-test-codegen@3.0.0(storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)):
     dependencies:
-      storybook: 10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      storybook: 10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
-  storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -12647,7 +10749,7 @@ snapshots:
       - react-dom
       - utf-8-validate
 
-  storybook@10.2.0-alpha.14(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  storybook@10.3.0-alpha.1(@testing-library/dom@10.4.1)(prettier@3.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -12670,7 +10772,8 @@ snapshots:
       - react-dom
       - utf-8-validate
 
-  strict-event-emitter@0.5.1: {}
+  strict-event-emitter@0.5.1:
+    optional: true
 
   string-argv@0.3.2: {}
 
@@ -12730,7 +10833,11 @@ snapshots:
       picocolors: 1.1.1
       sax: 1.4.3
 
-  tagged-tag@1.0.0: {}
+  symbol-tree@3.2.4:
+    optional: true
+
+  tagged-tag@1.0.0:
+    optional: true
 
   tailwind-merge@2.6.0: {}
 
@@ -12779,11 +10886,13 @@ snapshots:
 
   tinyspy@4.0.4: {}
 
-  tldts-core@7.0.19: {}
+  tldts-core@7.0.19:
+    optional: true
 
   tldts@7.0.19:
     dependencies:
       tldts-core: 7.0.19
+    optional: true
 
   tmcp@1.18.1(typescript@5.9.3):
     dependencies:
@@ -12801,19 +10910,22 @@ snapshots:
 
   toidentifier@1.0.1: {}
 
-  totalist@3.0.1: {}
+  totalist@3.0.1:
+    optional: true
 
   tough-cookie@6.0.0:
     dependencies:
       tldts: 7.0.19
+    optional: true
 
   tr46@0.0.3: {}
 
-  tree-kill@1.2.2: {}
-
-  ts-api-utils@2.4.0(typescript@5.9.3):
+  tr46@6.0.0:
     dependencies:
-      typescript: 5.9.3
+      punycode: 2.3.1
+    optional: true
+
+  tree-kill@1.2.2: {}
 
   ts-dedent@2.2.0: {}
 
@@ -12915,23 +11027,13 @@ snapshots:
   type-fest@5.3.1:
     dependencies:
       tagged-tag: 1.0.0
+    optional: true
 
   type-is@2.0.1:
     dependencies:
       content-type: 1.0.5
       media-typer: 1.1.0
       mime-types: 3.0.1
-
-  typescript-eslint@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3):
-    dependencies:
-      '@typescript-eslint/eslint-plugin': 8.47.0(@typescript-eslint/parser@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/parser': 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/typescript-estree': 8.47.0(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      eslint: 9.39.1(jiti@2.6.1)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
 
   typescript@5.9.3: {}
 
@@ -12975,7 +11077,8 @@ snapshots:
       '@oxc-project/runtime': 0.97.0
       rolldown: 1.0.0-beta.50
 
-  until-async@3.0.2: {}
+  until-async@3.0.2:
+    optional: true
 
   update-browserslist-db@1.1.4(browserslist@4.28.0):
     dependencies:
@@ -13082,7 +11185,7 @@ snapshots:
       less: 4.4.2
       terser: 5.44.0
 
-  vitest@4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0):
+  vitest@4.0.6(@types/node@20.19.0)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(jsdom@27.4.0)(less@4.4.2)(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(terser@5.44.0):
     dependencies:
       '@vitest/expect': 4.0.6
       '@vitest/mocker': 4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
@@ -13107,6 +11210,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.0
       '@vitest/browser-playwright': 4.0.6(msw@2.12.7(@types/node@20.19.0)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@20.19.0)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
+      jsdom: 27.4.0
     transitivePeerDependencies:
       - jiti
       - less
@@ -13121,44 +11225,10 @@ snapshots:
       - tsx
       - yaml
 
-  vitest@4.0.6(@types/node@24.10.1)(@vitest/browser-playwright@4.0.6)(jiti@2.6.1)(less@4.4.2)(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(terser@5.44.0):
+  w3c-xmlserializer@5.0.0:
     dependencies:
-      '@vitest/expect': 4.0.6
-      '@vitest/mocker': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))
-      '@vitest/pretty-format': 4.0.6
-      '@vitest/runner': 4.0.6
-      '@vitest/snapshot': 4.0.6
-      '@vitest/spy': 4.0.6
-      '@vitest/utils': 4.0.6
-      debug: 4.4.3
-      es-module-lexer: 1.7.0
-      expect-type: 1.2.2
-      magic-string: 0.30.21
-      pathe: 2.0.3
-      picomatch: 4.0.3
-      std-env: 3.10.0
-      tinybench: 2.9.0
-      tinyexec: 0.3.2
-      tinyglobby: 0.2.15
-      tinyrainbow: 3.0.3
-      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@types/node': 24.10.1
-      '@vitest/browser-playwright': 4.0.6(msw@2.12.7(@types/node@24.10.1)(typescript@5.9.3))(playwright@1.56.1)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0))(vitest@4.0.6)
-    transitivePeerDependencies:
-      - jiti
-      - less
-      - lightningcss
-      - msw
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
+      xml-name-validator: 5.0.0
+    optional: true
 
   watchpack@2.4.4:
     dependencies:
@@ -13169,6 +11239,9 @@ snapshots:
   web-streams-polyfill@3.3.3: {}
 
   webidl-conversions@3.0.1: {}
+
+  webidl-conversions@8.0.1:
+    optional: true
 
   webpack-sources@3.3.3:
     optional: true
@@ -13208,6 +11281,18 @@ snapshots:
       - uglify-js
     optional: true
 
+  whatwg-mimetype@4.0.0:
+    optional: true
+
+  whatwg-mimetype@5.0.0:
+    optional: true
+
+  whatwg-url@15.1.0:
+    dependencies:
+      tr46: 6.0.0
+      webidl-conversions: 8.0.1
+    optional: true
+
   whatwg-url@5.0.0:
     dependencies:
       tr46: 0.0.3
@@ -13229,6 +11314,7 @@ snapshots:
       ansi-styles: 4.3.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
+    optional: true
 
   wrap-ansi@7.0.0:
     dependencies:
@@ -13250,6 +11336,12 @@ snapshots:
     dependencies:
       is-wsl: 3.1.0
 
+  xml-name-validator@5.0.0:
+    optional: true
+
+  xmlchars@2.2.0:
+    optional: true
+
   y18n@5.0.8: {}
 
   yallist@3.1.1: {}
@@ -13270,17 +11362,14 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  yoctocolors-cjs@2.1.3: {}
+  yoctocolors-cjs@2.1.3:
+    optional: true
 
   zod-package-json@1.2.0:
     dependencies:
       zod: 3.25.76
 
   zod-to-json-schema@3.24.6(zod@3.25.76):
-    dependencies:
-      zod: 3.25.76
-
-  zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:
       zod: 3.25.76
 

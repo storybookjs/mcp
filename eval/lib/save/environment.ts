@@ -1,10 +1,10 @@
-import type { ExperimentArgs } from '../../types';
+import type { TrialArgs } from '../../types.ts';
 import envinfo from 'envinfo';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { x } from 'tinyexec';
 
-export async function saveEnvironment({ resultsPath, agent }: ExperimentArgs) {
+export async function saveEnvironment({ resultsPath, agent }: TrialArgs) {
 	const info = JSON.parse(
 		await envinfo.run(
 			{

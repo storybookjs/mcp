@@ -33,8 +33,8 @@ The addon supports configuring which toolsets are enabled:
     name: '@storybook/addon-mcp',
     options: {
       toolsets: {
-        dev: true,   // get-story-urls, get-storybook-story-instructions
-        docs: true,  // list-all-components, get-documentation
+        dev: true,
+        docs: true,
       },
       experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
@@ -171,7 +171,7 @@ import pkgJson from '../package.json' with { type: 'json' };
 
 **Naming:**
 
-- Constants: `SCREAMING_SNAKE_CASE` (e.g., `GET_STORY_URLS_TOOL_NAME`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `PREVIEW_STORIES_TOOL_NAME`)
 - Functions: `camelCase`
 - Types: `PascalCase`
 
@@ -376,3 +376,7 @@ When working on data validation, refer to the following resources:
 
 - https://valibot.dev/
 - https://github.com/paoloricciuti/tmcp/tree/main/packages/adapter-valibot
+
+When working with MCP Apps and/or the `preview-stories.ts` file, refer to the MCP App specification:
+
+- https://raw.githubusercontent.com/modelcontextprotocol/ext-apps/refs/heads/main/specification/draft/apps.mdx
