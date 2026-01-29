@@ -33,8 +33,8 @@ The addon supports configuring which toolsets are enabled:
     name: '@storybook/addon-mcp',
     options: {
       toolsets: {
-        dev: true,      // preview-stories, get-storybook-story-instructions
-        docs: true,  // list-all-documentation, get-component-documentation
+        dev: true,
+        docs: true,
       },
       experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
@@ -73,7 +73,7 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllDocumentation`: Called when the list-all-documentation tool is invoked
-  - `onGetDocumentation`: Called when the get-component-documentation tool is invoked
+  - `onGetDocumentation`: Called when the get-documentation tool is invoked
 - **Output Format**: The `format` property in context controls output format:
   - `'markdown'` (default): Token-efficient markdown with adaptive formatting
   - `'xml'`: Legacy XML format
