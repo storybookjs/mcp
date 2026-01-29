@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Card, View, Text, Badge, Button } from 'reshaped';
+import { View, Text, Badge, Button } from 'reshaped';
 
 export type PlanCardProps = {
 	name: string;

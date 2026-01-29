@@ -48,6 +48,7 @@ const getLanguageFromPath = (filePath: string): string => {
 		case 'md':
 		case 'mdx':
 			return 'markdown';
+		case undefined:
 		default:
 			return 'typescript';
 	}

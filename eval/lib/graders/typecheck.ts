@@ -30,7 +30,7 @@ export async function checkTypes({
 	// Read tsconfig.json
 	const configFile = ts.readConfigFile(
 		path.join(projectPath, 'tsconfig.app.json'),
-		ts.sys.readFile,
+		(path) => ts.sys.readFile(path),
 	);
 	const parsedConfig = ts.parseJsonConfigFileContent(
 		configFile.config,

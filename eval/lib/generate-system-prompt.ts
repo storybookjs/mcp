@@ -18,7 +18,9 @@ export async function generateSystemPrompt(
 			const content = await fs.readFile(path.join(taskPath, file), 'utf8');
 			systemParts.push(content);
 		} catch (error) {
-			throw new Error(`Failed to read system prompt file ${file}: ${error}`);
+			throw new Error(
+				`Failed to read system prompt file ${file}: ${String(error)}`,
+			);
 		}
 	}
 

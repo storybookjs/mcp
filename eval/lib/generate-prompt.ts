@@ -16,7 +16,7 @@ export async function generatePrompt(
 	try {
 		const content = await fs.readFile(path.join(taskPath, 'prompt.md'), 'utf8');
 		promptParts.push(content);
-	} catch (error) {
+	} catch {
 		log.warn(`prompt.md not found, skipping`);
 	}
 

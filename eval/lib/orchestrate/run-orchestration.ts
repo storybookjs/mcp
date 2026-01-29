@@ -424,6 +424,7 @@ function writeRunLog(logName: string, logs?: string, error?: string): void {
 
 function cleanLogs(logs?: string): string {
 	if (!logs) return '';
+	// eslint-disable-next-line no-control-regex
 	const ansiRegex = /\x1B\[[0-9;]*[A-Za-z]/g;
 	const seen = new Set<string>();
 	const lines: string[] = [];

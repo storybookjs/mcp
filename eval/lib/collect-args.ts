@@ -175,11 +175,10 @@ function buildRerunCommand(args: CollectedArgs): string {
 	} else {
 		const contextStrings: string[] = [];
 		for (const context of args.context) {
-			if (context.type === false) {
-				// Skip false contexts when there are other contexts
-				continue;
-			}
 			switch (context.type) {
+				case false:
+					// Skip false contexts when there are other contexts
+					break;
 				case 'mcp-server':
 					contextStrings.push(`'${JSON.stringify(context.mcpServerConfig)}'`);
 					break;
@@ -191,6 +190,9 @@ function buildRerunCommand(args: CollectedArgs): string {
 					break;
 				case 'extra-prompts':
 					contextStrings.push(...context.prompts);
+					break;
+				case 'inline-prompt':
+					// Inline prompts are handled at prompt generation time, not here
 					break;
 			}
 		}
@@ -361,7 +363,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	try {
 		const promptContent = await fs.readFile(promptPath, 'utf8');
 		promptIsEmpty = promptContent.trim().length === 0;
-	} catch (error) {
+	} catch {
 		promptIsEmpty = true;
 	}
 
