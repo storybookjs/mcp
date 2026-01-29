@@ -17,6 +17,7 @@ const { experimentArgs } = await runEvaluation({
 	verbose: args.verbose,
 	storybook: args.storybook,
 	runId: args.runId,
+	label: args.label,
 });
 
 const startStorybook =

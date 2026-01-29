@@ -1,6 +1,7 @@
 {
 	"expectedImports": {
 		"reshaped": [
+			"default",
 			"Autocomplete",
 			"Button",
 			"Calendar",

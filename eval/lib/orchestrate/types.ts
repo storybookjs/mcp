@@ -43,6 +43,7 @@ export type RunRequest = {
 	verbose?: boolean;
 	storybook?: boolean;
 	systemPrompts?: string[];
+	label?: string;
 };
 
 export type RunStatus = 'pending' | 'running' | 'success' | 'failed';

@@ -8,13 +8,14 @@ import type {
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
-	'https://script.google.com/macros/s/AKfycbx9aztixxdKVkxd6YKmS3RLJei--DC80xK5bd6DXsCEFaXbNBpDjdGn7LQLmM8_id4oug/exec';
+	'https://script.google.com/macros/s/AKfycbwpz0Y0C9bA8XnH5gQX8QQyrt_GcYku23HA5xAcb663pgnugSkNCHclyM-_OXskrkK3/exec';
 
 type SheetsData = {
 	uploadId: string;
 	runId: string;
 	timestamp: string;
 	evalName: string;
+	label: string;
 	chromaticUrl: string;
 	buildSuccess: boolean;
 	typeCheckErrors: number;
@@ -23,19 +24,17 @@ type SheetsData = {
 	a11yViolations: number;
 	cost: number | 'unknown';
 	duration: number;
-	durationApi: number;
 	turns: number;
 	coverageLines: number | null;
 	componentUsageScore: number | null;
 	contextType: string;
-	contextDetails: string;
 	agent: string;
 	gitBranch: string;
 	gitCommit: string;
 	experimentPath: string;
 };
 
-function getContextDetails(context: Context): string {
+function getLabelFromContext(context: Context): string {
 	if (
 		context.length === 0 ||
 		(context.length === 1 && context[0]!.type === false)
@@ -88,6 +87,7 @@ export async function saveToGoogleSheets(
 		runId: experimentArgs.runId ?? '',
 		timestamp: new Date().toISOString().replace('Z', ''),
 		evalName,
+		label: experimentArgs.label ?? getLabelFromContext(context),
 		chromaticUrl: chromaticUrl || '',
 		buildSuccess: evaluationSummary.buildSuccess,
 		typeCheckErrors: evaluationSummary.typeCheckErrors,
@@ -103,7 +103,6 @@ export async function saveToGoogleSheets(
 		cost: executionSummary.cost ?? 'unknown',
 
 		duration: executionSummary.duration,
-		durationApi: executionSummary.durationApi,
 		turns: executionSummary.turns,
 		contextType:
 			context.length === 0 ||
@@ -112,7 +111,6 @@ export async function saveToGoogleSheets(
 				: context
 						.map((ctx) => (ctx.type === false ? 'none' : ctx.type))
 						.join('-'),
-		contextDetails: getContextDetails(context),
 		agent: experimentArgs.agent,
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,

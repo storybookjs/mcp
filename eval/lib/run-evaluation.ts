@@ -28,6 +28,7 @@ export type RunEvaluationParams = {
 	storybook?: boolean;
 	runId?: string;
 	quiet?: boolean;
+	label?: string;
 };
 
 export type RunEvaluationResult = {
@@ -47,6 +48,7 @@ export async function runEvaluation({
 	verbose = false,
 	runId,
 	quiet = false,
+	label,
 }: RunEvaluationParams): Promise<RunEvaluationResult> {
 	const evalPath = path.resolve(path.join('evals', evalName));
 
@@ -90,6 +92,7 @@ export async function runEvaluation({
 		model,
 		hooks,
 		runId,
+		label,
 	};
 
 	if (!quiet) {

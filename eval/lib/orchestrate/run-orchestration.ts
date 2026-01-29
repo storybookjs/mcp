@@ -112,7 +112,7 @@ function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
 		: args.config.variants;
 
 	const requests: RunRequest[] = [];
-	for (const variant of variants) {
+	for (const [index, variant] of variants.entries()) {
 		for (let iteration = 1; iteration <= args.iterations; iteration += 1) {
 			requests.push({
 				id: `${variant.id}-${iteration}`,
@@ -125,6 +125,7 @@ function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
 				verbose: variant.verbose,
 				storybook: variant.storybook,
 				systemPrompts: variant.systemPrompts,
+				label: `${index + 1}. ${variant.label}`,
 			});
 		}
 	}
@@ -159,6 +160,7 @@ function createWorkerPayload(
 		storybook: request.storybook,
 		runId: args.runId,
 		quiet: true,
+		label: request.label,
 	};
 }
 

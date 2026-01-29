@@ -25,6 +25,7 @@ export type CollectedArgs = {
 	storybook: boolean | undefined;
 	uploadId: string | false;
 	runId: string;
+	label?: string;
 };
 
 /**
@@ -313,6 +314,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				'--run-id <id>',
 				'Run identifier to group uploads together (env: RUN_ID)',
 			).env('RUN_ID'),
+		)
+		.addOption(
+			new Option(
+				'--label <label>',
+				'Human-readable label for this run',
+			).hideHelp(),
 		)
 		.addHelpText('after', HELP_EXAMPLES);
 
@@ -736,6 +743,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		verbose: promptResults.verbose,
 		eval: evalName,
 		runId,
+		label: opts.label,
 	};
 
 	p.log.message([

@@ -55,6 +55,7 @@ export type ExperimentArgs = {
 	context: Context;
 	agent: string;
 	model: SupportedModel;
+	label?: string;
 };
 
 export type ExecutionSummary = {
