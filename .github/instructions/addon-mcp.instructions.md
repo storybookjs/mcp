@@ -25,7 +25,7 @@ This is a Storybook addon that runs an MCP (Model Context Protocol) server withi
 The addon supports two toolsets that can be enabled/disabled:
 
 1. **`dev`** (default: true)
-   - `get-story-urls`: Retrieve story URLs from Storybook
+   - `preview-stories`: Retrieve story preview URLs from Storybook
    - `get-storybook-story-instructions`: Provide UI development guidelines
 
 2. **`docs`** (default: true)
@@ -80,7 +80,7 @@ src/
   types.ts                         # Valibot schemas and AddonContext type
   ui-building-instructions.md      # Template for agent UI development instructions
   tools/
-    get-story-urls.ts              # Tool to retrieve story URLs from Storybook
+    preview-stories.ts             # Tool to retrieve story preview URLs from Storybook
     get-storybook-story-instructions.ts # Tool to provide UI development guidelines
   utils/
     errors.ts                      # Error handling utilities
@@ -173,7 +173,7 @@ pnpm test:ci       # Run tests with coverage and CI reporters
 
 - **Overall Target**: >70% statement coverage
 - **src/utils**: 100% coverage (errors.ts, fetch-story-index.ts)
-- **src/tools**: >90% coverage (get-story-urls.ts, get-storybook-story-instructions.ts)
+- **src/tools**: >90% coverage (preview-stories.ts, get-storybook-story-instructions.ts)
 - **src**: Integration files (preset.ts, mcp-handler.ts, telemetry.ts) have partial coverage
 
 **Key Testing Patterns:**
@@ -244,8 +244,8 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 
 ### Naming Conventions
 
-- Constants: SCREAMING_SNAKE_CASE (e.g., `GET_STORY_URLS_TOOL_NAME`)
-- Functions: camelCase (e.g., `addGetStoryUrlsTool`, `createAddonMcpHandler`)
+- Constants: SCREAMING_SNAKE_CASE (e.g., `PREVIEW_STORIES_TOOL_NAME`)
+- Functions: camelCase (e.g., `addPreviewStoriesTool`, `createAddonMcpHandler`)
 - Types/Interfaces: PascalCase (e.g., `AddonContext`, `StoryInput`)
 
 ## Important Files
@@ -263,7 +263,7 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 - `src/mcp-handler.ts` - Main MCP server handler factory using tmcp
 - `src/telemetry.ts` - Telemetry tracking for usage analytics
 - `src/types.ts` - Valibot schemas and AddonContext interface
-- `src/tools/get-story-urls.ts` - Tool to fetch story URLs from index.json
+- `src/tools/preview-stories.ts` - Tool to preview stories from Storybook
 - `src/tools/get-storybook-story-instructions.ts` - Tool to provide framework-specific UI instructions
 - `src/utils/errors.ts` - Error handling utilities
 - `src/utils/fetch-story-index.ts` - Utility to fetch Storybook's story index
@@ -483,7 +483,7 @@ pnpm test run --coverage  # With coverage report
 
 - `src/utils/errors.test.ts` - Tests error handling utilities
 - `src/utils/fetch-story-index.test.ts` - Tests story index fetching
-- `src/tools/get-story-urls.test.ts` - Tests story URL resolution tool
+- `src/tools/preview-stories.test.ts` - Tests story preview tool
 - `src/tools/get-storybook-story-instructions.test.ts` - Tests UI instructions tool
 - `src/mcp-handler.test.ts` - Tests HTTP conversion utilities
 
