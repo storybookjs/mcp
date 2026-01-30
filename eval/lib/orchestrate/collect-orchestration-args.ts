@@ -65,7 +65,9 @@ export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
 	ensureNotCancelled(confirmed);
 
 	if (!confirmed) {
-		p.cancel('Operation cancelled.');
+		p.cancel(
+			'Operation cancelled. Tip: Use --advanced to customize agent, model, and variants.',
+		);
 		process.exit(0);
 	}
 
