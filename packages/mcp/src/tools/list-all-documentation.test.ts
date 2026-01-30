@@ -5,7 +5,7 @@ import {
 	addListAllDocumentationTool,
 	LIST_TOOL_NAME,
 } from './list-all-documentation.ts';
-import type { StorybookContext } from '../types.ts';
+import type { StorybookContext, Source } from '../types.ts';
 import smallManifestFixture from '../../fixtures/small-manifest.fixture.json' with { type: 'json' };
 import smallDocsManifestFixture from '../../fixtures/small-docs-manifest.fixture.json' with { type: 'json' };
 import * as getManifest from '../utils/get-manifest.ts';

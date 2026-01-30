@@ -133,10 +133,10 @@ export class CompositionAuth {
       const baseUrl = source?.url ?? localOrigin;
       const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 
-      // Only use token for remote sources that require auth
-      const needsAuth =
-        source?.url && this.authRequiredUrls.includes(source.url);
-      return this.fetchManifest(manifestUrl, needsAuth ? token : null);
+      // Always forward token for remote sources (server will ignore if not needed)
+      // Token is only used for remote sources (source?.url), not local
+      const isRemote = !!source?.url;
+      return this.fetchManifest(manifestUrl, isRemote ? token : null);
     };
   }
 

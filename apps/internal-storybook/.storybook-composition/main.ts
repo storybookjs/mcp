@@ -1,8 +1,8 @@
 import { defineMain } from '@storybook/react-vite/node';
 
 /**
- * Single-source Storybook configuration (no refs/composition).
- * For multi-source/composition tests, see .storybook-composition/
+ * Multi-source Storybook configuration with composition (refs).
+ * Used for E2E tests that verify multi-source/composition behavior.
  */
 const config = defineMain({
 	stories: [
@@ -29,7 +29,13 @@ const config = defineMain({
 	features: {
 		experimentalComponentsManifest: true,
 	},
-	// No refs - single source mode
+	// Composition with public Chromatic Storybook (storybook-ui next branch)
+	refs: {
+		'storybook-ui': {
+			title: 'Storybook UI',
+			url: 'https://next--635781f3500dd2c49e189caf.chromatic.com',
+		},
+	},
 });
 
 export default config;
