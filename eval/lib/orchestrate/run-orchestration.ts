@@ -40,7 +40,9 @@ type FailedRun = {
 	stack?: string;
 };
 
-export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
+export async function runOrchestration(
+	args: OrchestrationArgs,
+): Promise<{ allFailed: boolean }> {
 	const runRequests = buildRunRequests(args);
 	const progress = new Map<string, RunProgress>();
 	const results: RunResult[] = [];
@@ -101,6 +103,9 @@ export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 
 	printFailureSummary(failures, args.runId);
 	printVariantComparison(results);
+
+	const allFailed = runRequests.length > 0 && results.length === 0;
+	return { allFailed };
 }
 
 function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
@@ -270,22 +275,13 @@ function printFailureSummary(failures: FailedRun[], runId: string): void {
 
 	process.stdout.write('\n--- Failed Runs ---\n\n');
 	for (const failure of failures) {
-		const { request, error, stack } = failure;
+		const { request, error } = failure;
 		const logName = `${runId}--${request.variantId}--${request.iteration}`;
+		const logPath = `orchestration-logs/${logName}.log`;
 		process.stdout.write(
 			`[${request.variantLabel} #${request.iteration}] ${error}\n`,
 		);
-		if (stack) {
-			// Show first few lines of stack
-			const stackLines = stack.split('\n').slice(0, 3);
-			for (const line of stackLines) {
-				process.stdout.write(`  ${line}\n`);
-			}
-			if (stack.split('\n').length > 3) {
-				process.stdout.write(`  ... (see orchestration-logs/${logName}.log)\n`);
-			}
-		}
-		process.stdout.write('\n');
+		process.stdout.write(`  See: ${logPath}\n\n`);
 	}
 }
 

@@ -26,7 +26,7 @@ export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
 	const uploadId = await askUploadId();
 	const defaultRunId = randomUUID();
 
-	const advancedMode = process.argv.includes('--advanced-mode');
+	const advancedMode = process.argv.includes('--advanced');
 
 	let agent: keyof typeof agents | undefined = undefined;
 	let model: (typeof SUPPORTED_MODELS)[number] | undefined = undefined;
@@ -48,6 +48,26 @@ export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
 			model: v.model ?? model,
 		})),
 	};
+
+	const variantsToRun = selectedVariants
+		? normalizedConfig.variants.filter((v) => selectedVariants.includes(v.id))
+		: normalizedConfig.variants;
+
+	const totalIterations = variantsToRun.length * iterations;
+	const agentName = variantsToRun[0]!.agent;
+	const modelName = variantsToRun[0]!.model;
+
+	const confirmed = await p.confirm({
+		message: `This will run ${totalIterations} total iterations with the ${agentName} agent using the ${modelName} model. Are you sure you want to start this?`,
+		initialValue: true,
+	});
+
+	ensureNotCancelled(confirmed);
+
+	if (!confirmed) {
+		p.cancel('Operation cancelled.');
+		process.exit(0);
+	}
 
 	return {
 		taskName,
