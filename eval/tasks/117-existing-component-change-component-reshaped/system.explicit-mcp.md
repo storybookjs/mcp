@@ -4,7 +4,7 @@ Leverage the following Storybook MCP tools for guidance and best practices when 
 
 **CRITICAL: Never hallucinate component properties!** Before using ANY property on a component (including common-sounding ones `shadow`, etc.), you MUST use Storybook MCPs:
 
-1. Query `list-all-components` to get a list of all components
+1. Query `list-all-documentation` to get a list of all components
 2. Second query `get-documentation` for that component to see all available properties
 3. If the property you need isn't listed, query `get-documentation-for-story` to check example stories for alternative ways to achieve the desired styling
 4. Only use properties that are explicitly documented or shown in example stories
