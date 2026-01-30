@@ -7,7 +7,12 @@ async function main(): Promise<void> {
 
 	const args = await collectOrchestrationArgs();
 
-	await runOrchestration(args);
+	const { allFailed } = await runOrchestration(args);
+
+	if (allFailed) {
+		p.outro('❌ All runs failed');
+		process.exit(1);
+	}
 
 	p.outro('✅ Orchestration complete');
 }

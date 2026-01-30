@@ -17,6 +17,23 @@ const WORKER_PATH = path.join(
 );
 const LOG_DIR = path.join(EVAL_ROOT, 'orchestration-logs');
 
+function getLogName(
+	runId: string,
+	variantId: string,
+	iteration: number,
+): string {
+	return `${runId}--${variantId}--${iteration}`;
+}
+
+function getLogPath(
+	runId: string,
+	variantId: string,
+	iteration: number,
+): string {
+	const logName = getLogName(runId, variantId, iteration);
+	return path.join(LOG_DIR, `${logName}.log`);
+}
+
 type WorkerSuccess = { ok: true; result: RunTaskResult; logs: string };
 type WorkerFailure = { ok: false; error: string; stack?: string };
 type WorkerResponse = WorkerSuccess | WorkerFailure;
@@ -40,7 +57,9 @@ type FailedRun = {
 	stack?: string;
 };
 
-export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
+export async function runOrchestration(
+	args: OrchestrationArgs,
+): Promise<{ allFailed: boolean }> {
 	const runRequests = buildRunRequests(args);
 	const progress = new Map<string, RunProgress>();
 	const results: RunResult[] = [];
@@ -101,6 +120,9 @@ export async function runOrchestration(args: OrchestrationArgs): Promise<void> {
 
 	printFailureSummary(failures, args.runId);
 	printVariantComparison(results);
+
+	const allFailed = runRequests.length > 0 && results.length === 0;
+	return { allFailed };
 }
 
 function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
@@ -224,7 +246,7 @@ async function runSingle(
 
 	const payload = createWorkerPayload(args, request);
 	const response = await runWorker(payload);
-	const logName = `${args.runId}--${request.variantId}--${request.iteration}`;
+	const logName = getLogName(args.runId, request.variantId, request.iteration);
 
 	if (response.ok) {
 		const { executionSummary, gradingSummary } = response.result;
@@ -270,22 +292,12 @@ function printFailureSummary(failures: FailedRun[], runId: string): void {
 
 	process.stdout.write('\n--- Failed Runs ---\n\n');
 	for (const failure of failures) {
-		const { request, error, stack } = failure;
-		const logName = `${runId}--${request.variantId}--${request.iteration}`;
+		const { request, error } = failure;
+		const logPath = getLogPath(runId, request.variantId, request.iteration);
 		process.stdout.write(
 			`[${request.variantLabel} #${request.iteration}] ${error}\n`,
 		);
-		if (stack) {
-			// Show first few lines of stack
-			const stackLines = stack.split('\n').slice(0, 3);
-			for (const line of stackLines) {
-				process.stdout.write(`  ${line}\n`);
-			}
-			if (stack.split('\n').length > 3) {
-				process.stdout.write(`  ... (see orchestration-logs/${logName}.log)\n`);
-			}
-		}
-		process.stdout.write('\n');
+		process.stdout.write(`  See: ${logPath}\n\n`);
 	}
 }
 
@@ -408,7 +420,7 @@ function writeRunLog(logName: string, logs?: string, error?: string): void {
 	if (!fs.existsSync(LOG_DIR)) {
 		fs.mkdirSync(LOG_DIR, { recursive: true });
 	}
-	const logPath = path.join(LOG_DIR, `${logName}.log`);
+	const logPath = `${path.join(LOG_DIR, logName)}.log`;
 	const cleaned = cleanLogs(logs);
 	let content =
 		cleaned && cleaned.trim().length > 0

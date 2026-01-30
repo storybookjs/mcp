@@ -12,22 +12,9 @@ const base = {
 } satisfies Partial<OrchestrationVariant>;
 
 const config = {
-	name: 'storybook-mcp-comparison',
-	description:
-		'Compare eval performance with and without the Storybook Docs MCP Server enabled.',
+	name: 'storybook-docs-mcp-only',
+	description: 'Storybook Docs MCP Server only',
 	variants: [
-		{
-			...base,
-			id: 'without-mcp',
-			label: 'Without MCP',
-			context: [
-				{
-					type: 'inline-prompt',
-					content:
-						"To get information about the design system, inspect the local project and package.json, where you'll find all the components. Don't use any pre-existing knowledge about the design system to perform the task.",
-				},
-			],
-		},
 		{
 			...base,
 			id: 'with-mcp',

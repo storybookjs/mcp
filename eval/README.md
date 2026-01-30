@@ -109,8 +109,8 @@ node orchestrate.ts
 # Orchestrate via pnpm script
 pnpm orchestrate
 
-# Advanced mode (only for internal usage - more prompt options available)
-node orchestrate.ts --advanced-mode
+# Advanced mode, to customize agents and models
+node orchestrate.ts --advanced
 ```
 
 ### Orchestration configs
