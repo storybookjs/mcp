@@ -1,0 +1,18 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+import { Source } from '../../../../../../templates/result-docs/source.tsx';
+
+export const modules = import.meta.glob('/src/**/*', {
+	query: '?raw',
+	import: 'default',
+	eager: true,
+});
+
+export const files = Object.fromEntries(
+	Object.entries(modules)
+		.filter(([path]) => !path.endsWith('/src/main.tsx'))
+		.map(([path, content]) => [path.replace(/^\//, ''), content]),
+);
+
+<Meta title="Source" />
+
+<Source files={files} />

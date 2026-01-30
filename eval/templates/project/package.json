@@ -14,21 +14,21 @@
 		"eval:typecheck": "tsc --noEmit --project ./tsconfig.app.json"
 	},
 	"dependencies": {
-		"react": "catalog:experiments",
-		"react-dom": "catalog:experiments"
+		"react": "catalog:tasks",
+		"react-dom": "catalog:tasks"
 	},
 	"devDependencies": {
-		"@eslint/js": "catalog:experiments",
-		"@types/node": "catalog:experiments",
-		"@types/react": "catalog:experiments",
-		"@types/react-dom": "catalog:experiments",
-		"@vitejs/plugin-react-swc": "catalog:experiments",
-		"eslint": "catalog:experiments",
-		"eslint-plugin-react-hooks": "catalog:experiments",
-		"eslint-plugin-react-refresh": "catalog:experiments",
-		"globals": "catalog:experiments",
-		"typescript": "catalog:experiments",
-		"typescript-eslint": "catalog:experiments",
-		"vite": "catalog:experiments"
+		"@eslint/js": "catalog:tasks",
+		"@types/node": "catalog:tasks",
+		"@types/react": "catalog:tasks",
+		"@types/react-dom": "catalog:tasks",
+		"@vitejs/plugin-react-swc": "catalog:tasks",
+		"eslint": "catalog:tasks",
+		"eslint-plugin-react-hooks": "catalog:tasks",
+		"eslint-plugin-react-refresh": "catalog:tasks",
+		"globals": "catalog:tasks",
+		"typescript": "catalog:tasks",
+		"typescript-eslint": "catalog:tasks",
+		"vite": "catalog:tasks"
 	}
 }

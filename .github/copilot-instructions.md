@@ -33,8 +33,8 @@ The addon supports configuring which toolsets are enabled:
     name: '@storybook/addon-mcp',
     options: {
       toolsets: {
-        dev: true,   // get-story-urls, get-storybook-story-instructions
-        docs: true,  // list-all-components, get-component-documentation
+        dev: true,
+        docs: true,
       },
       experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
@@ -73,7 +73,7 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 - **Optional handlers**: `StorybookContext` supports optional handlers that are called at various points, allowing consumers to track usage or collect telemetry:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllDocumentation`: Called when the list-all-documentation tool is invoked
-  - `onGetDocumentation`: Called when the get-component-documentation tool is invoked
+  - `onGetDocumentation`: Called when the get-documentation tool is invoked
 - **Output Format**: The `format` property in context controls output format:
   - `'markdown'` (default): Token-efficient markdown with adaptive formatting
   - `'xml'`: Legacy XML format
@@ -171,7 +171,7 @@ import pkgJson from '../package.json' with { type: 'json' };
 
 **Naming:**
 
-- Constants: `SCREAMING_SNAKE_CASE` (e.g., `GET_STORY_URLS_TOOL_NAME`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `PREVIEW_STORIES_TOOL_NAME`)
 - Functions: `camelCase`
 - Types: `PascalCase`
 
@@ -376,3 +376,7 @@ When working on data validation, refer to the following resources:
 
 - https://valibot.dev/
 - https://github.com/paoloricciuti/tmcp/tree/main/packages/adapter-valibot
+
+When working with MCP Apps and/or the `preview-stories.ts` file, refer to the MCP App specification:
+
+- https://raw.githubusercontent.com/modelcontextprotocol/ext-apps/refs/heads/main/specification/draft/apps.mdx
