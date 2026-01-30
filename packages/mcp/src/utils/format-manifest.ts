@@ -2,6 +2,7 @@ import type {
 	AllManifests,
 	ComponentManifest,
 	Doc,
+	MultiSourceManifests,
 	OutputFormat,
 } from '../types.ts';
 import type { ManifestFormatter } from './manifest-formatter/types.ts';
@@ -41,4 +42,14 @@ export function formatManifestsToLists(
 	format: OutputFormat = 'markdown',
 ): string {
 	return formatters[format].formatManifestsToLists(manifests);
+}
+
+/**
+ * Format multi-source manifests into grouped lists.
+ */
+export function formatMultiSourceManifestsToLists(
+	manifests: MultiSourceManifests,
+	format: OutputFormat = 'markdown',
+): string {
+	return formatters[format].formatMultiSourceManifestsToLists(manifests);
 }

@@ -11,6 +11,7 @@ import {
 	type ComposedRef,
 } from './auth/index.ts';
 import { logger } from 'storybook/internal/node-logger';
+import type { Source } from '@storybook/mcp';
 
 export const previewAnnotations: PresetPropertyFn<
 	'previewAnnotations'
@@ -35,18 +36,30 @@ export const experimental_devServer: PresetPropertyFn<
 	const refs = await getRefsFromConfig(options);
 	const compositionAuth = new CompositionAuth();
 
+	// Build sources and manifest provider only if refs are configured
+	let sources: Source[] | undefined;
+	let manifestProvider:
+		| ((
+				request: Request | undefined,
+				path: string,
+				source?: Source,
+		  ) => Promise<string>)
+		| undefined;
+
 	if (refs.length > 0) {
 		logger.info(`Initializing composition with ${refs.length} remote Storybook(s)`);
 		await compositionAuth.initialize(refs);
 		if (compositionAuth.requiresAuth) {
 			logger.info(`Auth required for: ${compositionAuth.authUrls.join(', ')}`);
 		}
-	}
 
-	// Create composed manifest provider (null if no refs)
-	const composedManifestProvider = refs.length > 0
-		? compositionAuth.createManifestProvider(origin, refs)
-		: undefined;
+		// Build sources array (local + refs)
+		sources = compositionAuth.buildSources(refs);
+		logger.info(`Sources: ${sources.map((s) => s.id).join(', ')}`);
+
+		// Create manifest provider that handles multi-source
+		manifestProvider = compositionAuth.createManifestProvider(origin);
+	}
 
 	// Serve .well-known/oauth-protected-resource for MCP auth
 	app!.get('/.well-known/oauth-protected-resource', (_req, res) => {
@@ -78,7 +91,8 @@ export const experimental_devServer: PresetPropertyFn<
 			res,
 			options,
 			addonOptions,
-			manifestProvider: composedManifestProvider,
+			sources,
+			manifestProvider,
 		});
 	});
 
@@ -101,7 +115,14 @@ export const experimental_devServer: PresetPropertyFn<
 				return;
 			}
 
-			return mcpServerHandler({ req, res, options, addonOptions, manifestProvider: composedManifestProvider });
+			return mcpServerHandler({
+				req,
+				res,
+				options,
+				addonOptions,
+				sources,
+				manifestProvider,
+			});
 		}
 
 		// Browser request - send HTML with redirect

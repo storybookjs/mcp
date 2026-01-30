@@ -135,6 +135,7 @@ describe('createStorybookMcpHandler', () => {
 		expect(manifestProvider).toHaveBeenCalledWith(
 			expect.any(Request),
 			'./manifests/components.json',
+			undefined,
 		);
 		expect(result.content).toHaveLength(1);
 		expect((result.content as any)[0]).toMatchObject({
@@ -271,10 +272,12 @@ describe('createStorybookMcpHandler', () => {
 			expect(manifestProvider).toHaveBeenCalledWith(
 				expect.any(Request),
 				'./manifests/components.json',
+				undefined,
 			);
 			expect(manifestProvider).toHaveBeenCalledWith(
 				expect.any(Request),
 				'./manifests/docs.json',
+				undefined,
 			);
 
 			expect(result.content).toHaveLength(1);

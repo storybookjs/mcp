@@ -350,10 +350,12 @@ Invalid key: Expected "v" but received undefined]`);
 			expect(manifestProvider).toHaveBeenCalledWith(
 				request,
 				'./manifests/components.json',
+				undefined,
 			);
 			expect(manifestProvider).toHaveBeenCalledWith(
 				request,
 				'./manifests/docs.json',
+				undefined,
 			);
 			// fetch should not be called when manifestProvider is used
 			expect(global.fetch).not.toHaveBeenCalled();
@@ -383,6 +385,7 @@ Invalid key: Expected "v" but received undefined]`);
 			expect(manifestProvider).toHaveBeenCalledWith(
 				undefined,
 				'./manifests/components.json',
+				undefined,
 			);
 			// fetch should not be called when manifestProvider is used
 			expect(global.fetch).not.toHaveBeenCalled();

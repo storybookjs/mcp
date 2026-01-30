@@ -16,14 +16,20 @@ export {
 	GET_TOOL_NAME,
 } from './tools/get-documentation.ts';
 
-// Export manifest constants
+// Export manifest constants and utilities
 export {
 	COMPONENT_MANIFEST_PATH,
 	DOCS_MANIFEST_PATH,
+	getMultiSourceManifests,
 } from './utils/get-manifest.ts';
 
 // Export types for reuse
-export type { StorybookContext } from './types.ts';
+export type {
+	StorybookContext,
+	Source,
+	SourceManifests,
+	MultiSourceManifests,
+} from './types.ts';
 
 // copied from tmcp internals as it's not exposed
 type InitializeRequestParams = {

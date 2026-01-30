@@ -33,9 +33,9 @@ const config = defineMain({
 	},
 	// Test composition with private Chromatic Storybook
 	refs: {
-		'storybook-next': {
-			title: 'Storybook Next',
-			url: 'https://next--635781f3500dd2c49e189caf.chromatic.com',
+		'design-system': {
+			title: 'Design System',
+			url: 'https://62e7a15f87b0f4a7bed2cf04-ejukkgyspq.chromatic.com',
 		},
 	},
 });

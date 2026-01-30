@@ -7,6 +7,7 @@ import { addGetUIBuildingInstructionsTool } from './tools/get-storybook-story-in
 import {
 	addListAllDocumentationTool,
 	addGetDocumentationTool,
+	type Source,
 } from '@storybook/mcp';
 import type { Options } from 'storybook/internal/types';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -79,8 +80,14 @@ type McpServerHandlerParams = {
 	res: ServerResponse;
 	options: Options;
 	addonOptions: AddonOptionsOutput;
-	/** Optional custom manifest provider for composition */
-	manifestProvider?: (request: Request | undefined, path: string) => Promise<string>;
+	/** Sources for multi-source mode (when refs are configured) */
+	sources?: Source[];
+	/** Optional custom manifest provider, receives source as third param in multi-source mode */
+	manifestProvider?: (
+		request: Request | undefined,
+		path: string,
+		source?: Source,
+	) => Promise<string>;
 };
 
 export const mcpServerHandler = async ({
@@ -88,6 +95,7 @@ export const mcpServerHandler = async ({
 	res,
 	options,
 	addonOptions,
+	sources,
 	manifestProvider,
 }: McpServerHandlerParams) => {
 	// Initialize MCP server and transport on first request, with concurrency safety
@@ -106,6 +114,7 @@ export const mcpServerHandler = async ({
 		origin: origin!,
 		disableTelemetry: disableTelemetry!,
 		request: webRequest,
+		sources,
 		manifestProvider,
 		// Telemetry handlers for component manifest tools
 		...(!disableTelemetry && {

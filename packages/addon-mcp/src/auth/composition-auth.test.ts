@@ -55,36 +55,79 @@ describe('CompositionAuth', () => {
   describe('createManifestProvider', () => {
     it('creates a manifest provider function', () => {
       const auth = new CompositionAuth();
-      const provider = auth.createManifestProvider('http://localhost:6006', []);
+      const provider = auth.createManifestProvider('http://localhost:6006');
       expect(typeof provider).toBe('function');
     });
 
-    it('extracts token from request headers', async () => {
+    it('fetches from local origin when no source provided', async () => {
       const auth = new CompositionAuth();
-      const refs = [{ title: 'remote', url: 'http://remote.example.com' }];
 
-      // Mock fetch for local manifest
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         text: () => Promise.resolve('{"components":{}}'),
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const provider = auth.createManifestProvider('http://localhost:6006', refs);
-
-      // Create a mock request with Bearer token
-      const request = new Request('http://localhost:6006/mcp', {
-        headers: { Authorization: 'Bearer test-token-123' },
-      });
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp');
 
       await provider(request, './manifests/components.json');
 
-      // Verify that fetch was called with the token for remote refs
-      const remoteFetchCall = mockFetch.mock.calls.find((call) =>
-        call[0].includes('remote.example.com')
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:6006/manifests/components.json',
+        expect.any(Object)
       );
-      expect(remoteFetchCall).toBeDefined();
-      expect(remoteFetchCall[1].headers.Authorization).toBe('Bearer test-token-123');
+    });
+
+    it('fetches from source URL when source provided', async () => {
+      const auth = new CompositionAuth();
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve('{"components":{}}'),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp');
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      await provider(request, './manifests/components.json', source);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://remote.example.com/manifests/components.json',
+        expect.any(Object)
+      );
+    });
+
+    it('extracts token from request headers for auth-required sources', async () => {
+      const auth = new CompositionAuth();
+      // Simulate that this URL requires auth
+      (auth as any).authRequiredUrls = ['http://remote.example.com'];
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve('{"components":{}}'),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer test-token-123' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      await provider(request, './manifests/components.json', source);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://remote.example.com/manifests/components.json',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer test-token-123',
+          }),
+        })
+      );
     });
   });
 

@@ -6,6 +6,8 @@
  * MCP clients like VS Code to handle the OAuth flow with Chromatic.
  */
 
+import type { Source } from '@storybook/mcp';
+
 export interface ComposedRef {
   title: string;
   url: string;
@@ -32,7 +34,8 @@ interface AuthRequirement {
 
 export type ManifestProvider = (
   request: Request | undefined,
-  path: string
+  path: string,
+  source?: Source
 ) => Promise<string>;
 
 export class CompositionAuth {
@@ -93,77 +96,47 @@ export class CompositionAuth {
   }
 
   /**
-   * Create a manifest provider that fetches from multiple sources.
+   * Build sources configuration from refs.
+   * Creates a Source array with 'local' as the first entry, followed by each ref.
+   */
+  buildSources(refs: ComposedRef[]): Source[] {
+    const sources: Source[] = [{ id: 'local', title: 'Local' }];
+
+    for (const ref of refs) {
+      // Create a URL-safe ID from the title
+      const id = ref.title.toLowerCase().replace(/\s+/g, '-');
+      sources.push({
+        id,
+        title: ref.title,
+        url: ref.url,
+      });
+    }
+
+    return sources;
+  }
+
+  /**
+   * Create a manifest provider for multi-source mode.
+   * Each source is fetched independently based on the source parameter.
    * Token is extracted from the request for proper per-request isolation.
    */
-  createManifestProvider(
-    localOrigin: string,
-    refs: ComposedRef[]
-  ): ManifestProvider {
+  createManifestProvider(localOrigin: string): ManifestProvider {
     return async (
       request: Request | undefined,
-      path: string
+      path: string,
+      source?: Source
     ): Promise<string> => {
-      // Extract token from request for this specific request
+      // Extract token from request
       const token = extractBearerToken(request?.headers.get('Authorization'));
-      // Fetch from local Storybook
-      const localUrl = `${localOrigin}${path.replace('./', '/')}`;
-      const localManifest = await this.fetchManifest(localUrl, null);
 
-      // Fetch from remote refs
-      const remoteManifests = await Promise.all(
-        refs.map(async (ref) => {
-          const refUrl = `${ref.url}${path.replace('./', '/')}`;
-          try {
-            const manifest = await this.fetchManifest(refUrl, token);
-            return { ref, manifest };
-          } catch (error) {
-            console.warn(
-              `Failed to fetch manifest from ${ref.title}:`,
-              error
-            );
-            return null;
-          }
-        })
-      );
+      // Determine base URL for this source (default to local if no source provided)
+      const baseUrl = source?.url ?? localOrigin;
+      const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 
-      // Parse and combine manifests
-      const localParsed = JSON.parse(localManifest);
-
-      for (const remote of remoteManifests) {
-        if (!remote) continue;
-
-        const remoteParsed = JSON.parse(remote.manifest);
-
-        // Combine components (prefix with ref title to avoid collisions)
-        if (remoteParsed.components) {
-          for (const [id, component] of Object.entries(
-            remoteParsed.components
-          )) {
-            const prefixedId = `${remote.ref.title}/${id}`;
-            localParsed.components[prefixedId] = {
-              ...(component as object),
-              id: prefixedId,
-              source: remote.ref.title,
-            };
-          }
-        }
-
-        // Combine docs
-        if (remoteParsed.docs) {
-          localParsed.docs = localParsed.docs || {};
-          for (const [id, doc] of Object.entries(remoteParsed.docs)) {
-            const prefixedId = `${remote.ref.title}/${id}`;
-            localParsed.docs[prefixedId] = {
-              ...(doc as object),
-              id: prefixedId,
-              source: remote.ref.title,
-            };
-          }
-        }
-      }
-
-      return JSON.stringify(localParsed);
+      // Only use token for remote sources that require auth
+      const needsAuth =
+        source?.url && this.authRequiredUrls.includes(source.url);
+      return this.fetchManifest(manifestUrl, needsAuth ? token : null);
     };
   }
 

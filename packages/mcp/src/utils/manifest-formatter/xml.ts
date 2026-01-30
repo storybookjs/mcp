@@ -161,4 +161,81 @@ export const xmlFormatter: ManifestFormatter = {
 
 		return parts.join('\n');
 	},
+
+	formatMultiSourceManifestsToLists(manifests) {
+		const parts: string[] = [];
+
+		parts.push('<sources>');
+
+		for (const sourceManifests of manifests) {
+			const { source, componentManifest, docsManifest, error } = sourceManifests;
+
+			parts.push(`<source id="${source.id}" title="${source.title}">`);
+
+			// If there was an error fetching this source, show it
+			if (error) {
+				parts.push(`<error>${error}</error>`);
+				parts.push('</source>');
+				continue;
+			}
+
+			// Components section
+			const components = Object.values(componentManifest.components);
+			if (components.length > 0) {
+				parts.push('<components>');
+
+				for (const component of components) {
+					parts.push(dedent`<component>
+						<id>${component.id}</id>
+						<name>${component.name}</name>`);
+
+					const summary =
+						component.summary ??
+						(component.description
+							? component.description.length > MAX_SUMMARY_LENGTH
+								? `${component.description.slice(0, MAX_SUMMARY_LENGTH)}...`
+								: component.description
+							: undefined);
+
+					if (summary) {
+						parts.push(dedent`<summary>
+							${summary}
+							</summary>`);
+					}
+
+					parts.push('</component>');
+				}
+
+				parts.push('</components>');
+			}
+
+			// Docs section
+			if (docsManifest && Object.keys(docsManifest.docs).length > 0) {
+				parts.push('<docs>');
+
+				for (const doc of Object.values(docsManifest.docs)) {
+					const summary = doc.summary ?? extractDocsSummary(doc.content);
+					parts.push(dedent`<doc>
+						<id>${doc.id}</id>
+						<title>${doc.title}</title>`);
+
+					if (summary) {
+						parts.push(dedent`<summary>
+							${summary}
+							</summary>`);
+					}
+
+					parts.push('</doc>');
+				}
+
+				parts.push('</docs>');
+			}
+
+			parts.push('</source>');
+		}
+
+		parts.push('</sources>');
+
+		return parts.join('\n');
+	},
 };

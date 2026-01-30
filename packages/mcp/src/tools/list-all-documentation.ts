@@ -1,7 +1,14 @@
 import type { McpServer } from 'tmcp';
 import type { StorybookContext } from '../types.ts';
-import { getManifests, errorToMCPContent } from '../utils/get-manifest.ts';
-import { formatManifestsToLists } from '../utils/format-manifest.ts';
+import {
+	getManifests,
+	getMultiSourceManifests,
+	errorToMCPContent,
+} from '../utils/get-manifest.ts';
+import {
+	formatManifestsToLists,
+	formatMultiSourceManifestsToLists,
+} from '../utils/format-manifest.ts';
 
 export const LIST_TOOL_NAME = 'list-all-documentation';
 
@@ -19,16 +26,57 @@ export async function addListAllDocumentationTool(
 		},
 		async () => {
 			try {
+				const ctx = server.ctx.custom;
+				const format = ctx?.format ?? 'markdown';
+
+				// Multi-source mode: when sources are configured
+				if (ctx?.sources && ctx.sources.length > 0) {
+					const multiSourceManifests = await getMultiSourceManifests(
+						ctx.sources,
+						ctx.request,
+						ctx.manifestProvider,
+					);
+
+					const lists = formatMultiSourceManifestsToLists(
+						multiSourceManifests,
+						format,
+					);
+
+					// Note: onListAllDocumentation callback uses AllManifests type
+					// In multi-source mode, we pass the first successful source's manifests
+					// for backwards compatibility with telemetry
+					const firstSuccess = multiSourceManifests.find((m) => !m.error);
+					if (firstSuccess) {
+						await ctx.onListAllDocumentation?.({
+							context: ctx,
+							manifests: {
+								componentManifest: firstSuccess.componentManifest,
+								docsManifest: firstSuccess.docsManifest,
+							},
+							resultText: lists,
+						});
+					}
+
+					return {
+						content: [
+							{
+								type: 'text',
+								text: lists,
+							},
+						],
+					};
+				}
+
+				// Single-source mode: existing behavior
 				const manifests = await getManifests(
-					server.ctx.custom?.request,
-					server.ctx.custom?.manifestProvider,
+					ctx?.request,
+					ctx?.manifestProvider,
 				);
 
-				const format = server.ctx.custom?.format ?? 'markdown';
 				const lists = formatManifestsToLists(manifests, format);
 
-				await server.ctx.custom?.onListAllDocumentation?.({
-					context: server.ctx.custom,
+				await ctx?.onListAllDocumentation?.({
+					context: ctx,
 					manifests,
 					resultText: lists,
 				});
