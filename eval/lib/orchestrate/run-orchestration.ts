@@ -277,11 +277,10 @@ function printFailureSummary(failures: FailedRun[], runId: string): void {
 	for (const failure of failures) {
 		const { request, error } = failure;
 		const logName = `${runId}--${request.variantId}--${request.iteration}`;
-		const logPath = `orchestration-logs/${logName}.log`;
 		process.stdout.write(
 			`[${request.variantLabel} #${request.iteration}] ${error}\n`,
 		);
-		process.stdout.write(`  See: ${logPath}\n\n`);
+		process.stdout.write(`  See: ${path.join(LOG_DIR, `${logName}.log`)}\n\n`);
 	}
 }
 
