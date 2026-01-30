@@ -171,8 +171,8 @@ async function chooseConfig(
 	const selected = await p.select({
 		message: 'Select an orchestration configuration',
 		options: configs.map((c) => ({
-			value: c.filename,
-			label: c.config.name,
+			value: c.config.name,
+			label: c.filename,
 			hint: c.config.description,
 		})),
 	});
