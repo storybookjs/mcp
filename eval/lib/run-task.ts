@@ -317,6 +317,27 @@ function logSummary(
 		);
 	}
 
+	if (gradingSummary.mcpTools) {
+		const mcp = gradingSummary.mcpTools;
+		const badge =
+			mcp.allExpectationsPassed === undefined
+				? 'ℹ️'
+				: mcp.allExpectationsPassed
+					? '✅'
+					: '❌';
+		const toolNames = mcp.tools.map((t) => t.name).join(', ');
+		const tokens =
+			mcp.totalOutputTokens >= 1000
+				? `${(mcp.totalOutputTokens / 1000).toFixed(1)}K`
+				: String(mcp.totalOutputTokens);
+		p.log.message(
+			`🔧 MCP Tools: ${badge} ${mcp.totalCalls} calls, ${tokens} output tokens`,
+		);
+		if (verbose && toolNames) {
+			p.log.message(`   Tools: ${toolNames}`);
+		}
+	}
+
 	p.log.message(
 		`⏱️  Duration: ${executionSummary.duration}s (API: ${executionSummary.durationApi}s)`,
 	);

@@ -90,6 +90,69 @@ export type GradingSummary = {
 		missing: number;
 		unexpected: number;
 	};
+	mcpTools?: McpToolsSummary;
+};
+
+/**
+ * Expectation for an MCP tool call.
+ * Tool names are matched using includes() to handle MCP server prefixes
+ * (e.g., "mcp__list_components" matches expected "list_components").
+ */
+export type McpToolExpectation = {
+	/** Expected calls to this tool (array of expected inputs, strict equality check) */
+	expectedCalls?: Array<Record<string, unknown>>;
+	/** Maximum allowed output tokens for this tool (expect less than X) */
+	maxOutputTokens?: number;
+};
+
+/**
+ * Record of a single MCP tool invocation during execution.
+ */
+export type McpToolInvocation = {
+	/** Full tool name including MCP prefix (e.g., "mcp__list_components") */
+	name: string;
+	/** Input parameters passed to the tool */
+	input: Record<string, unknown>;
+	/** Token count of the tool's output */
+	outputTokens: number;
+};
+
+/**
+ * Aggregated metrics for a single MCP tool across all invocations.
+ */
+export type McpToolMetrics = {
+	/** Tool name (short form, without MCP prefix) */
+	name: string;
+	/** Full tool name including MCP prefix */
+	fullName: string;
+	/** Number of times this tool was called */
+	callCount: number;
+	/** Total output tokens across all calls */
+	totalOutputTokens: number;
+	/** Individual invocations with their inputs */
+	invocations: Array<{
+		input: Record<string, unknown>;
+		outputTokens: number;
+	}>;
+	/** Validation results if expectations are configured */
+	validation?: {
+		inputMatch?: boolean;
+		outputTokensWithinLimit?: boolean;
+	};
+};
+
+/**
+ * Summary of all MCP tool usage during execution.
+ */
+export type McpToolsSummary = {
+	/** Aggregated metrics per unique tool */
+	tools: McpToolMetrics[];
+	/** Total number of MCP tool calls */
+	totalCalls: number;
+	/** Total output tokens across all MCP tools */
+	totalOutputTokens: number;
+	/** Whether all expectations passed (undefined if no expectations configured) */
+	allExpectationsPassed?: boolean;
 };
 
 /**
@@ -97,6 +160,11 @@ export type GradingSummary = {
  */
 export type TaskConfig = {
 	expectedImports?: Record<string, string[]>;
+	/**
+	 * Expected MCP tool calls. Keys are tool name substrings (matched via includes()).
+	 * All fields are optional - only validate what's configured.
+	 */
+	expectedMcpTools?: Record<string, McpToolExpectation>;
 };
 
 export const McpServerConfigSchema = v.record(
