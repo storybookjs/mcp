@@ -139,6 +139,21 @@ export async function runTask({
 
 	const gradingSummary = await grade(trialArgs);
 
+	// Calculate quality score if hook is provided
+	if (hooks.calculateQuality) {
+		const quality = hooks.calculateQuality({
+			trialArgs,
+			execution: executionSummary,
+			grading: gradingSummary,
+		});
+		if (quality !== undefined) {
+			gradingSummary.quality = {
+				score: Math.max(0, Math.min(1, quality.score)),
+				description: quality.description,
+			};
+		}
+	}
+
 	await fs.writeFile(
 		path.join(resultsPath, 'summary.json'),
 		JSON.stringify({ ...executionSummary, ...gradingSummary }, null, 2),
@@ -335,6 +350,20 @@ function logSummary(
 		);
 		if (verbose && toolNames) {
 			p.log.message(`   Tools: ${toolNames}`);
+		}
+	}
+
+	if (gradingSummary.quality !== undefined) {
+		const pct = (gradingSummary.quality.score * 100).toFixed(0);
+		const badge =
+			gradingSummary.quality.score >= 0.9
+				? '✅'
+				: gradingSummary.quality.score >= 0.7
+					? '⚠️'
+					: '❌';
+		p.log.message(`📊 Quality: ${badge} ${pct}%`);
+		if (verbose) {
+			p.log.message(`   ${gradingSummary.quality.description}`);
 		}
 	}
 

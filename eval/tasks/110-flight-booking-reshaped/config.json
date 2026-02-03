@@ -20,8 +20,7 @@
 				{ "id": "components-button" },
 				{ "id": "components-calendar" },
 				{ "id": "components-popover" },
-				{ "id": "components-togglebuttongroup" },
-				{ "id": "components-view" }
+				{ "id": "components-togglebuttongroup" }
 			]
 		}
 	}

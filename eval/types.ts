@@ -91,6 +91,19 @@ export type GradingSummary = {
 		unexpected: number;
 	};
 	mcpTools?: McpToolsSummary;
+	/** Quality result with score and description, calculated via hooks.calculateQuality */
+	quality?: QualityResult;
+};
+
+/**
+ * Result from a quality calculation.
+ * Includes a normalized score (0-1) and a description explaining what it's based on.
+ */
+export type QualityResult = {
+	/** Normalized score from 0 (worst) to 1 (best) */
+	score: number;
+	/** Human-readable description of what the quality is based on */
+	description: string;
 };
 
 /**
@@ -220,13 +233,39 @@ export interface Agent {
 
 export type Hook = (trialArgs: TrialArgs) => Promise<void>;
 
-export type Hooks = {
-	prePrepareTrial?: Hook;
-	postPrepareTrial?: Hook;
-	preExecuteAgent?: Hook;
-	postExecuteAgent?: Hook;
-	preGrade?: Hook;
-	postGrade?: Hook;
-	preSave?: Hook;
-	postSave?: Hook;
+/**
+ * Arguments passed to the calculateQuality function.
+ * Contains all information from execution and grading phases.
+ */
+export type QualityArgs = {
+	/** Trial arguments including paths, context, etc. */
+	trialArgs: TrialArgs;
+	/** Summary from the execution phase */
+	execution: ExecutionSummary;
+	/** Summary from the grading phase */
+	grading: GradingSummary;
 };
+
+/**
+ * Function to calculate a quality result for a trial.
+ * Returns a QualityResult with score (0-1) and description, or undefined to skip.
+ */
+export type CalculateQualityFn = (
+	args: QualityArgs,
+) => QualityResult | undefined;
+
+export type Hooks = Partial<{
+	prePrepareTrial: Hook;
+	postPrepareTrial: Hook;
+	preExecuteAgent: Hook;
+	postExecuteAgent: Hook;
+	preGrade: Hook;
+	postGrade: Hook;
+	preSave: Hook;
+	postSave: Hook;
+	/**
+	 * Calculate a quality result for the trial.
+	 * Called after grading, result is included in summary.json.
+	 */
+	calculateQuality: CalculateQualityFn;
+}>;

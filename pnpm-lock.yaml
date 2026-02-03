@@ -297,7 +297,7 @@ importers:
         specifier: ^7.1.12
         version: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(terser@5.44.0)
 
-  eval/tasks/110-flight-booking-reshaped/trials/2026-02-02T14-29-54-86759-or47xp-storybook-mcp-docs-claude-code-claude-sonnet-4.5/project:
+  eval/tasks/110-flight-booking-reshaped/trials/2026-02-03T09-55-28-88293-zlt4jh-storybook-mcp-docs-claude-code-claude-sonnet-4.5/project:
     dependencies:
       react:
         specifier: catalog:experiments
