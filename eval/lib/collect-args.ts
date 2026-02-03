@@ -154,7 +154,7 @@ async function parseContextValue(
  * Build a rerun command from the final collected arguments.
  */
 function buildRerunCommand(args: CollectedArgs): string {
-	const parts: string[] = ['node', 'eval.ts'];
+	const parts: string[] = ['node', 'advanced-eval.ts'];
 
 	parts.push('--agent', args.agent);
 	parts.push('--model', args.model);
@@ -222,12 +222,12 @@ function buildRerunCommand(args: CollectedArgs): string {
 
 const HELP_EXAMPLES = `
 Examples:
-  $ node eval.ts                                    Interactive mode (recommended)
-  $ node eval.ts 100-flight-booking-plain           Run specific task
-  $ node eval.ts --agent ${Object.keys(agents)[0]} --context components.json 100-flight-booking-plain
-  $ node eval.ts --verbose --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
-  $ node eval.ts --context mcp.config.json 110-flight-booking-reshaped
-  $ node eval.ts --context storybook-dev 200-build-ui-with-storybook
+  $ node advanced-eval.ts                                    Interactive mode (recommended)
+  $ node advanced-eval.ts 100-flight-booking-plain           Run specific task
+  $ node advanced-eval.ts --agent ${Object.keys(agents)[0]} --context components.json 100-flight-booking-plain
+  $ node advanced-eval.ts --verbose --context extra-prompt-01.md,extra-prompt-02.md 100-flight-booking-plain
+  $ node advanced-eval.ts --context mcp.config.json 110-flight-booking-reshaped
+  $ node advanced-eval.ts --context storybook-dev 200-build-ui-with-storybook
 
 Context Modes:
   None                  Agent uses only built-in tools (--no-context)
@@ -251,7 +251,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 	// Configure Commander program
 	const program = new Command()
-		.name('eval.ts')
+		.name('advanced-eval.ts')
 		.description(
 			'A CLI tool for testing AI coding agents with Storybook and MCP tools.',
 		)

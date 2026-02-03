@@ -5,17 +5,12 @@ import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { RunTaskParams, RunTaskResult } from '../run-task.ts';
 import { renderProgressUI } from './progress-ui.ts';
-import type { OrchestrationArgs, RunProgress, RunRequest } from './types.ts';
+import type { EvalArgs, RunProgress, RunRequest } from './types.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EVAL_ROOT = path.resolve(__dirname, '..', '..');
-const WORKER_PATH = path.join(
-	EVAL_ROOT,
-	'lib',
-	'orchestrate',
-	'run-task-worker.ts',
-);
-const LOG_DIR = path.join(EVAL_ROOT, 'orchestration-logs');
+const WORKER_PATH = path.join(EVAL_ROOT, 'lib', 'eval', 'run-task-worker.ts');
+const LOG_DIR = path.join(EVAL_ROOT, 'eval-logs');
 
 function getLogName(
 	runId: string,
@@ -57,9 +52,7 @@ type FailedRun = {
 	stack?: string;
 };
 
-export async function runOrchestration(
-	args: OrchestrationArgs,
-): Promise<{ allFailed: boolean }> {
+export async function runEval(args: EvalArgs): Promise<{ allFailed: boolean }> {
 	const runRequests = buildRunRequests(args);
 	const progress = new Map<string, RunProgress>();
 	const results: RunResult[] = [];
@@ -73,7 +66,7 @@ export async function runOrchestration(
 
 	const render = () =>
 		renderProgressUI({
-			orchestrationName: args.config.name,
+			evalName: args.config.name,
 			taskName: args.taskName,
 			uploadId: args.uploadId,
 			runId: args.runId,
@@ -125,7 +118,7 @@ export async function runOrchestration(
 	return { allFailed };
 }
 
-function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
+function buildRunRequests(args: EvalArgs): RunRequest[] {
 	const variants = args.selectedVariants
 		? args.config.variants.filter((v) => args.selectedVariants?.includes(v.id))
 		: args.config.variants;
@@ -152,7 +145,7 @@ function buildRunRequests(args: OrchestrationArgs): RunRequest[] {
 }
 
 function createWorkerPayload(
-	args: OrchestrationArgs,
+	args: EvalArgs,
 	request: RunRequest,
 ): RunTaskParams {
 	const ctx = [...request.context];
@@ -232,7 +225,7 @@ function runWorker(payload: RunTaskParams): Promise<WorkerResponse> {
 }
 
 async function runSingle(
-	args: OrchestrationArgs,
+	args: EvalArgs,
 	request: RunRequest,
 	progress: Map<string, RunProgress>,
 	onUpdate: () => void,
