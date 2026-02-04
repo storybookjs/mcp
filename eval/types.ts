@@ -5,8 +5,8 @@ import * as v from 'valibot';
  * These names are used consistently across agents - each agent maps them to their native format.
  */
 export const SUPPORTED_MODELS = [
-	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-sonnet-4.5',
 	'claude-haiku-4.5',
 	'gpt-5.1-codex-max',
 	'gpt-5.1-codex',
@@ -20,8 +20,8 @@ export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
  * Models that are supported by the Claude Code CLI.
  */
 export const CLAUDE_MODELS = [
-	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-sonnet-4.5',
 	'claude-haiku-4.5',
 ] as const satisfies readonly SupportedModel[];
 
@@ -31,8 +31,8 @@ export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
  * Models that are supported by the Copilot CLI.
  */
 export const COPILOT_MODELS = [
-	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-sonnet-4.5',
 	'claude-haiku-4.5',
 	'gpt-5.1-codex-max',
 	'gpt-5.1-codex',

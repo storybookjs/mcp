@@ -22,7 +22,9 @@ This is an eval harness for testing AI coding agents' ability to build UI compon
 
 ### Key Components
 
-- **CLI Interface**: Interactive and non-interactive modes via `eval.ts`
+- **CLI Interface**: Two modes:
+  - `eval.ts` - Batch eval runner for running multiple trials across variants
+  - `advanced-eval.ts` - Single trial runner with interactive CLI
 - **Context System**: Five context modes (none, Storybook MCP - Dev, Storybook MCP - Docs, custom MCP server, extra prompts)
 - **Agent Abstraction**: Pluggable agent implementations (currently Claude Code CLI)
 - **Grading Pipeline**: Parallel execution of multiple quality checks
@@ -33,10 +35,11 @@ This is an eval harness for testing AI coding agents' ability to build UI compon
 
 ```
 eval/
-├── eval.ts                          # Main CLI entry point
+├── eval.ts                          # Batch eval runner (multiple trials)
+├── advanced-eval.ts                 # Single trial runner (interactive)
 ├── types.ts                         # Core types and schemas
 ├── lib/
-│   ├── collect-args.ts              # Interactive CLI argument collection
+│   ├── collect-args.ts              # Interactive CLI argument collection (for advanced-eval)
 │   ├── show-help.ts                 # Help text formatting
 │   ├── generate-prompt.ts           # Combines prompt parts
 │   ├── prepare-trial.ts             # Project template setup
@@ -44,6 +47,11 @@ eval/
 │   ├── storybook-dev-server.ts      # Storybook dev server management
 │   ├── agents/
 │   │   └── claude-code-cli.ts       # Claude Code CLI agent implementation
+│   ├── eval/                        # Batch eval runner logic
+│   │   ├── collect-eval-args.ts     # Collect args for batch eval
+│   │   ├── run-eval.ts              # Main eval orchestration
+│   │   ├── types.ts                 # Eval-specific types
+│   │   └── progress-ui.ts           # Progress display
 │   └── graders/
 │       ├── grade.ts                 # Main grading orchestrator
 │       ├── prepare-grading.ts       # Install test dependencies
@@ -53,6 +61,7 @@ eval/
 │       ├── test-stories.ts          # Vitest + a11y testing
 │       ├── environment.ts           # Git branch/commit tracking
 │       └── save-to-sheets.ts        # Google Sheets upload
+├── variant-configs/                 # Variant configs (variants, context combinations)
 ├── tasks/                           # Task definitions
 │   └── {number}-{name}/
 │       ├── prompt.md                # Main prompt
@@ -110,25 +119,31 @@ The harness supports five distinct context types:
 
 ### Running Evaluations
 
-**Interactive mode (recommended):**
+**Batch eval mode (recommended for comparison testing):**
 ```bash
 cd eval
 node eval.ts
 ```
 
-**Non-interactive mode:**
+**Single trial mode (interactive):**
 ```bash
-node eval.ts --agent claude-code --context components.json --upload-id batch-1 --no-storybook 100-flight-booking-plain
+cd eval
+node advanced-eval.ts
+```
+
+**Non-interactive single trial:**
+```bash
+node advanced-eval.ts --agent claude-code --context components.json --upload-id batch-1 --no-storybook 100-flight-booking-plain
 
 # With Storybook MCP - Dev context (starts local dev server)
-node eval.ts --agent claude-code --context storybook-dev --no-storybook 200-build-ui-with-storybook
+node advanced-eval.ts --agent claude-code --context storybook-dev --no-storybook 200-build-ui-with-storybook
 ```
 
 **IMPORTANT**: Always use the `--no-storybook` flag when running tasks to prevent the process from hanging at the end waiting for user input about starting Storybook.
 
 **Get help:**
 ```bash
-node eval.ts --help
+node advanced-eval.ts --help
 ```
 
 ### Creating a New Task
@@ -224,7 +239,7 @@ The `collect-args.ts` module uses Commander for CLI argument parsing:
 **Example:**
 ```typescript
 const program = new Command()
-  .name('eval.ts')
+  .name('advanced-eval.ts')
   .argument('[task-name]', 'Name of the task directory')
   .addOption(
     new Option('-a, --agent <name>', 'Which coding agent to use')
@@ -250,9 +265,12 @@ const result = await p.group({
 
 ### Core Harness
 
-- `eval.ts` - Main entry point, orchestrates entire flow
+- `eval.ts` - Batch eval runner for comparing variants
+- `advanced-eval.ts` - Single trial runner with interactive CLI
 - `types.ts` - All TypeScript types and Valibot schemas
-- `lib/collect-args.ts` - CLI argument parsing and validation
+- `lib/collect-args.ts` - CLI argument parsing and validation (for advanced-eval)
+- `lib/eval/collect-eval-args.ts` - CLI argument parsing (for eval)
+- `lib/eval/run-eval.ts` - Main batch eval orchestration
 - `lib/show-help.ts` - Help text formatting
 - `lib/generate-prompt.ts` - Combines prompt parts with constraints
 - `lib/prepare-trial.ts` - Project template setup
@@ -361,7 +379,7 @@ To add support for a new coding agent:
      }
    };
    ```
-3. Add to `agents` object in `eval.ts`
+3. Add to `agents` object in `config.ts`
 4. Update Commander options in `collect-args.ts` to include new agent choice
 
 ## Grading Metrics
