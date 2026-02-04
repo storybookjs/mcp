@@ -90,16 +90,10 @@ function formatRunLine(run: RunProgress, now: number): string {
 
 	const elapsedSeconds = Math.max(0, Math.round(elapsedMs / 1000));
 	const durationDisplay =
-		run.status === 'running'
-			? `${elapsedSeconds}s elapsed`
-			: formatDuration(run.durationSeconds);
+		run.status === 'running' ? `${elapsedSeconds}s elapsed` : formatDuration(run.durationSeconds);
 
 	const costDisplay = formatCost(run.cost);
-	const details = [
-		durationDisplay,
-		costDisplay,
-		run.turns ? `${run.turns} turns` : '',
-	]
+	const details = [durationDisplay, costDisplay, run.turns ? `${run.turns} turns` : '']
 		.filter(Boolean)
 		.join(', ');
 

@@ -66,9 +66,7 @@ export async function buildStorybook(trialArgs: TrialArgs): Promise<boolean> {
 	return true;
 }
 
-export async function uploadToChromatic(
-	trialArgs: TrialArgs,
-): Promise<string | undefined> {
+export async function uploadToChromatic(trialArgs: TrialArgs): Promise<string | undefined> {
 	await x(
 		'npx',
 		[
@@ -88,10 +86,7 @@ export async function uploadToChromatic(
 		},
 	);
 
-	const diagnosticsPath = path.join(
-		trialArgs.projectPath,
-		'chromatic-diagnostics.json',
-	);
+	const diagnosticsPath = path.join(trialArgs.projectPath, 'chromatic-diagnostics.json');
 	const { default: diagnostics } = (await import(diagnosticsPath, {
 		with: { type: 'json' },
 	})) as { default: ChromaticDiagnostics };

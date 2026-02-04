@@ -1,8 +1,4 @@
-import type {
-	GradingSummary,
-	TrialArgs,
-	ExecutionSummary,
-} from '../../types.ts';
+import type { GradingSummary, TrialArgs, ExecutionSummary } from '../../types.ts';
 import { taskLog } from '@clack/prompts';
 import { saveEnvironment } from './environment.ts';
 import { saveToGoogleSheets } from './google-sheet.ts';
@@ -45,13 +41,7 @@ export async function save(
 
 	// Save to Google Sheets
 	log.message('Uploading to Google Sheets');
-	await saveToGoogleSheets(
-		trialArgs,
-		gradingSummary,
-		executionSummary,
-		environment,
-		storybookUrl,
-	);
+	await saveToGoogleSheets(trialArgs, gradingSummary, executionSummary, environment, storybookUrl);
 
 	await runHook('post-save', trialArgs);
 	log.success('Upload complete!');

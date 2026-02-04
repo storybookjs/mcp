@@ -236,12 +236,9 @@ import { addMyTool, MY_TOOL_NAME } from '@storybook/mcp';
 export const MY_TOOL_NAME = 'my-tool';
 
 export async function addMyTool(server: McpServer<any, StorybookContext>) {
-	server.tool(
-		{ name: MY_TOOL_NAME, description: 'What it does' },
-		async () => ({
-			content: [{ type: 'text', text: 'result' }],
-		}),
-	);
+	server.tool({ name: MY_TOOL_NAME, description: 'What it does' }, async () => ({
+		content: [{ type: 'text', text: 'result' }],
+	}));
 }
 ```
 

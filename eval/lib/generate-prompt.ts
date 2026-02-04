@@ -7,10 +7,7 @@ const CONSTRAINTS_PROMPT = `<constraints>
   IMPORTANT: Do not run npm, pnpm, yarn, or any package manager commands. Dependencies have already been installed. Do not run build, test, or dev server commands. Just write the code files.
 </constraints>`;
 
-export async function generatePrompt(
-	taskPath: string,
-	context: Context,
-): Promise<string> {
+export async function generatePrompt(taskPath: string, context: Context): Promise<string> {
 	const promptParts: string[] = [];
 
 	try {

@@ -101,15 +101,9 @@ const MetricCard = ({
 		>
 			{title}
 		</h3>
-		<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>
-			{value}
-		</div>
+		<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>{value}</div>
 		{subvalue && (
-			<div
-				style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}
-			>
-				{subvalue}
-			</div>
+			<div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>{subvalue}</div>
 		)}
 	</div>
 );
@@ -190,14 +184,8 @@ export const Summary = (props: SummaryProps) => {
 					Status
 				</h2>
 				<div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-					<StatusBadge
-						status={props.buildSuccess ? 'success' : 'error'}
-						label="Build"
-					/>
-					<StatusBadge
-						status={typeCheckStatus.status}
-						label={typeCheckStatus.label}
-					/>
+					<StatusBadge status={props.buildSuccess ? 'success' : 'error'} label="Build" />
+					<StatusBadge status={typeCheckStatus.status} label={typeCheckStatus.label} />
 					<StatusBadge status={lintStatus.status} label={lintStatus.label} />
 					<StatusBadge status={testStatus.status} label={testStatus.label} />
 					<StatusBadge status={a11yStatus.status} label={a11yStatus.label} />

@@ -93,9 +93,7 @@ async function loadVariantConfigs(): Promise<LoadedConfig[]> {
 	const files = await fs.readdir(VARIANT_CONFIGS_DIR, { withFileTypes: true });
 	const tsFiles = files
 		.filter((dirent) => dirent.isFile())
-		.filter(
-			(dirent) => dirent.name.endsWith('.ts') || dirent.name.endsWith('.js'),
-		);
+		.filter((dirent) => dirent.name.endsWith('.ts') || dirent.name.endsWith('.js'));
 
 	const configs: LoadedConfig[] = [];
 	for (const file of tsFiles) {
@@ -169,9 +167,7 @@ async function chooseTaskName(designSystem: string): Promise<string> {
 	return String(taskName);
 }
 
-async function chooseConfig(
-	configs: LoadedConfig[],
-): Promise<VariantConfigInput> {
+async function chooseConfig(configs: LoadedConfig[]): Promise<VariantConfigInput> {
 	if (configs.length === 1) {
 		return configs[0]!.config;
 	}
@@ -207,8 +203,7 @@ async function askIterations(): Promise<number> {
 
 async function askUploadId(): Promise<string | false> {
 	const uploadId = await p.text({
-		message:
-			'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
+		message: 'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
 		placeholder: 'trial-batch-1',
 	});
 
@@ -225,8 +220,7 @@ async function chooseVariants(
 	}
 
 	const selected = await p.multiselect({
-		message:
-			'Which variants should be executed? (leave empty to run all variants)',
+		message: 'Which variants should be executed? (leave empty to run all variants)',
 		options: variants.map((variant) => ({
 			value: variant.id,
 			label: variant.label,

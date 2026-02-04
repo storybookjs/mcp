@@ -71,11 +71,7 @@ export interface ResultMessage {
 	costUSD?: number;
 }
 
-export type TranscriptMessage =
-	| AssistantMessage
-	| UserMessage
-	| SystemMessage
-	| ResultMessage;
+export type TranscriptMessage = AssistantMessage | UserMessage | SystemMessage | ResultMessage;
 
 export interface TranscriptProps {
 	prompt: string;

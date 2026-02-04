@@ -17,14 +17,9 @@ export async function parseTestResults(resultsPath: string): Promise<{
 	await fs.writeFile(testResultsPath, JSON.stringify(jsonTestResults, null, 2));
 
 	const a11yViolations: A11yViolations = {};
-	const storyAssertions: Record<
-		string,
-		{ status: JsonAssertionResult['status'] }
-	> = {};
+	const storyAssertions: Record<string, { status: JsonAssertionResult['status'] }> = {};
 
-	const testSuites = jsonTestResults.testResults
-		? Object.values(jsonTestResults.testResults)
-		: [];
+	const testSuites = jsonTestResults.testResults ? Object.values(jsonTestResults.testResults) : [];
 
 	for (const jsonTestResult of testSuites) {
 		for (const assertionResult of jsonTestResult.assertionResults ?? []) {

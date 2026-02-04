@@ -8,13 +8,10 @@ import { exec } from 'node:child_process';
 const hooks: Hooks = {
 	postPrepareTrial: async (trialArgs) => {
 		log.message('Installing reshaped, msw-storybook-addon, and msw packages');
-		await addDependency(
-			['reshaped@latest', 'msw-storybook-addon@latest', 'msw@latest'],
-			{
-				cwd: trialArgs.projectPath,
-				silent: true,
-			},
-		);
+		await addDependency(['reshaped@latest', 'msw-storybook-addon@latest', 'msw@latest'], {
+			cwd: trialArgs.projectPath,
+			silent: true,
+		});
 
 		await fs.writeFile(
 			path.join(trialArgs.projectPath, 'post.config.js'),
@@ -28,9 +25,7 @@ export default config;
 			cwd: trialArgs.projectPath,
 		});
 
-		await fs.unlink(
-			path.join(trialArgs.projectPath, '.storybook', 'preview.ts'),
-		);
+		await fs.unlink(path.join(trialArgs.projectPath, '.storybook', 'preview.ts'));
 
 		log.success(
 			'Reshaped package installed, PostCSS config added, MSW packages installed and MSW for Storybook configured',
