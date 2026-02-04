@@ -26,11 +26,7 @@ export default config;
 		log.success('Reshaped package installed, PostCSS config added');
 	},
 
-	// Quality score: 60% component usage, 40% MCP tools coverage
-	calculateQuality: combine(
-		[fromComponentUsage, 0.6],
-		[fromMcpToolsCoverage, 0.4],
-	),
+	calculateQuality: fromComponentUsage,
 };
 
 export default hooks;
