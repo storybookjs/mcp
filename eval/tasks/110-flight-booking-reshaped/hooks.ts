@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import type { Hooks } from '../../types.ts';
 import { addDependency } from 'nypm';
 import { log } from '@clack/prompts';
-import { combine, fromComponentUsage, fromMcpToolsCoverage } from '../../lib/quality/index.ts';
+import { fromComponentUsage } from '../../lib/quality/index.ts';
 
 const hooks: Hooks = {
 	postPrepareTrial: async (trialArgs) => {
