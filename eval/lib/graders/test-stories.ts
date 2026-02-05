@@ -17,8 +17,7 @@ export async function testStories({
 
 	await runTests({ projectPath, resultsPath } as TrialArgs, testScript);
 
-	const { testSummary, a11y, storyResults } =
-		await parseTestResults(resultsPath);
+	const { testSummary, a11y, storyResults } = await parseTestResults(resultsPath);
 
 	await writeStoryArtifacts(resultsPath, storyResults, a11y);
 
@@ -30,11 +29,7 @@ export async function testStories({
 		const templateCoverageMdxPath = path.resolve(
 			path.join('templates', 'grading', 'results', 'coverage.mdx'),
 		);
-		const projectCoverageMdxPath = path.join(
-			projectPath,
-			'results',
-			'coverage.mdx',
-		);
+		const projectCoverageMdxPath = path.join(projectPath, 'results', 'coverage.mdx');
 		await fs.copyFile(templateCoverageMdxPath, projectCoverageMdxPath);
 	}
 

@@ -22,9 +22,7 @@ export type PrepareTrialResult = {
 	mcpServerConfig?: McpServerConfig;
 };
 
-export async function prepareTrial(
-	trialArgs: TrialArgs,
-): Promise<PrepareTrialResult> {
+export async function prepareTrial(trialArgs: TrialArgs): Promise<PrepareTrialResult> {
 	const log = taskLog({
 		title: 'Preparing trial',
 		retainLog: trialArgs.verbose,
@@ -40,8 +38,7 @@ export async function prepareTrial(
 	await fs.mkdir(trialArgs.resultsPath, { recursive: true });
 	await fs.cp(projectTemplatePath, trialArgs.projectPath, {
 		recursive: true,
-		filter: (source) =>
-			!source.includes('node_modules') && !source.includes('dist'),
+		filter: (source) => !source.includes('node_modules') && !source.includes('dist'),
 	});
 
 	const packageJsonPath = path.join(trialArgs.projectPath, 'package.json');

@@ -26,17 +26,19 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 ## Quick Start
 
 ```bash
-# Interactive mode (recommended)
+# Run eval across variants (recommended for batch testing)
 node eval.ts
 
-# Orchestrate multiple runs across variants
-node orchestrate.ts
+# Run single advanced eval (interactive mode)
+node advanced-eval.ts
 
-# With all options specified
-node eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.json --upload-id batch-1 100-flight-booking-plain
+# With all options specified (advanced-eval)
+node advanced-eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.json --upload-id batch-1 100-flight-booking-plain
 ```
 
-## CLI Options
+## CLI Options (Advanced Eval)
+
+The following options apply to `advanced-eval.ts`:
 
 | Option           | Short | Type    | Description                                                                                               |
 | ---------------- | ----- | ------- | --------------------------------------------------------------------------------------------------------- |
@@ -69,11 +71,11 @@ Different agents support different models:
 **Example usage:**
 
 ```bash
-# Claude Code with Opus
-node eval.ts --agent claude-code --model claude-opus-4.5 100-flight-booking-plain
+# Claude Code with Opus (advanced-eval)
+node advanced-eval.ts --agent claude-code --model claude-opus-4.5 100-flight-booking-plain
 
-# Copilot CLI with GPT-5.2
-node eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
+# Copilot CLI with GPT-5.2 (advanced-eval)
+node advanced-eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
 ```
 
 > [!IMPORTANT]
@@ -98,27 +100,24 @@ The harness supports five context modes:
 4. **MCP server config** (`--context mcp.config.json` or inline JSON): Custom MCP server setup (use this for fully custom MCP servers, not for Storybook MCP)
 5. **Extra prompts** (`--context extra-prompt-01.md,extra-prompt-02.md`): Additional markdown files appended to main prompt
 
-## Orchestrator
+## Eval
 
-Use the orchestrator to run multiple trials across context variants and compare results.
+Use eval to run multiple trials across context variants and compare results.
 
 ```bash
-# Interactive orchestration
-node orchestrate.ts
+# Interactive eval
+node eval.ts
 
-# Orchestrate via pnpm script
-pnpm orchestrate
-
-# Advanced mode (only for internal usage - more prompt options available)
-node orchestrate.ts --advanced-mode
+# Eval via pnpm script
+pnpm eval
 ```
 
-### Orchestration configs
+### Eval configs
 
-Orchestrator configs live under `eval/orchestrations/` and define a base setup plus variants:
+Variant configs live under `eval/variant-configs/` and define a base setup plus variants:
 
 ```ts
-// eval/orchestrations/storybook-mcp-comparison.ts
+// eval/variant-configs/storybook-mcp-comparison.ts
 const base = {
 	agent: 'claude-code',
 	model: 'claude-sonnet-4.5',
@@ -168,9 +167,10 @@ eval/
 ├── templates/
 │   ├── project/                    # Base Vite + React + Storybook template
 │   └── grading/                    # Test/lint configs for grading
-├── orchestrations/                 # Orchestrator configs
+├── variant-configs/                # Variant configs
 └── lib/
     ├── agents/                     # Agent implementations
+    ├── eval/                       # Eval runner logic
     ├── graders/                    # Grading runners (build, test, lint, etc.)
     └── *.ts                        # Core harness logic
 ```

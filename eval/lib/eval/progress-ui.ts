@@ -10,17 +10,17 @@ const STATUS_ICON: Record<RunProgress['status'], string> = {
 const MAX_ERROR_LENGTH = 20;
 
 export function renderProgressUI(params: {
-	orchestrationName: string;
+	evalName: string;
 	taskName: string;
 	uploadId: string | false;
 	runId: string;
 	runs: RunProgress[];
 }): void {
-	const { orchestrationName, taskName, uploadId, runId, runs } = params;
+	const { evalName, taskName, uploadId, runId, runs } = params;
 	const now = Date.now();
 
 	const lines: string[] = [];
-	lines.push(`Orchestration: ${orchestrationName}`);
+	lines.push(`Eval: ${evalName}`);
 	lines.push(`Task: ${taskName}`);
 	lines.push(`Upload ID: ${uploadId === false ? 'skip' : uploadId}`);
 	lines.push(`Run ID: ${runId}`);
@@ -90,16 +90,10 @@ function formatRunLine(run: RunProgress, now: number): string {
 
 	const elapsedSeconds = Math.max(0, Math.round(elapsedMs / 1000));
 	const durationDisplay =
-		run.status === 'running'
-			? `${elapsedSeconds}s elapsed`
-			: formatDuration(run.durationSeconds);
+		run.status === 'running' ? `${elapsedSeconds}s elapsed` : formatDuration(run.durationSeconds);
 
 	const costDisplay = formatCost(run.cost);
-	const details = [
-		durationDisplay,
-		costDisplay,
-		run.turns ? `${run.turns} turns` : '',
-	]
+	const details = [durationDisplay, costDisplay, run.turns ? `${run.turns} turns` : '']
 		.filter(Boolean)
 		.join(', ');
 

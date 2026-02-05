@@ -13,10 +13,7 @@ SyntaxHighlighter.registerLanguage('javascript', javascript);
 
 interface CoverageFileData extends CoverageSummary {
 	lineHits?: Record<string, number>;
-	branchesByLine?: Record<
-		string,
-		{ covered: number | null; total: number | null }
-	>;
+	branchesByLine?: Record<string, { covered: number | null; total: number | null }>;
 	source?: string;
 }
 
@@ -92,18 +89,14 @@ export const Coverage = ({ total, files }: CoverageProps) => {
 										style={{ cursor: data.source ? 'pointer' : 'default' }}
 										onClick={() =>
 											data.source
-												? setExpandedFile(
-														expandedFile === filePath ? null : filePath,
-													)
+												? setExpandedFile(expandedFile === filePath ? null : filePath)
 												: undefined
 										}
 									>
 										<td style={tdStyle}>
 											<code>{filePath}</code>
 											{data.source && (
-												<span
-													style={{ marginLeft: '0.5rem', color: '#6b7280' }}
-												>
+												<span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>
 													{expandedFile === filePath ? '▼' : '►'}
 												</span>
 											)}
@@ -165,25 +158,13 @@ const FileCoverageView = ({ data }: { data: CoverageFileData }) => {
 	};
 
 	return (
-		<SyntaxHighlighter
-			language="tsx"
-			style={dark}
-			showLineNumbers
-			wrapLines
-			lineProps={lineProps}
-		>
+		<SyntaxHighlighter language="tsx" style={dark} showLineNumbers wrapLines lineProps={lineProps}>
 			{data.source || ''}
 		</SyntaxHighlighter>
 	);
 };
 
-const Metric = ({
-	label,
-	value,
-}: {
-	label: string;
-	value: string | number;
-}) => (
+const Metric = ({ label, value }: { label: string; value: string | number }) => (
 	<div
 		style={{
 			padding: '1.25rem',
@@ -204,8 +185,6 @@ const Metric = ({
 		>
 			{label}
 		</div>
-		<div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#111827' }}>
-			{value}
-		</div>
+		<div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#111827' }}>{value}</div>
 	</div>
 );

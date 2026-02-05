@@ -6,11 +6,7 @@ export type ReviewCardProps = {
 	comment: string;
 };
 
-export default function ReviewCard({
-	author,
-	rating,
-	comment,
-}: ReviewCardProps) {
+export default function ReviewCard({ author, rating, comment }: ReviewCardProps) {
 	const clamped = Math.min(5, Math.max(0, rating));
 
 	return (
@@ -24,11 +20,7 @@ export default function ReviewCard({
 		>
 			<View gap={2} direction="column">
 				<View direction="row" justify="space-between" align="center">
-					<Text
-						variant="body-2"
-						weight="bold"
-						attributes={{ 'data-testid': 'review-author' }}
-					>
+					<Text variant="body-2" weight="bold" attributes={{ 'data-testid': 'review-author' }}>
 						{author}
 					</Text>
 					<Text

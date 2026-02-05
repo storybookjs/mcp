@@ -96,8 +96,7 @@ export const MultipleErrorsInOneFile: Story = {
 					{
 						ruleId: 'react-hooks/exhaustive-deps',
 						severity: 2,
-						message:
-							"React Hook useEffect has a missing dependency: 'fetchData'.",
+						message: "React Hook useEffect has a missing dependency: 'fetchData'.",
 						line: 45,
 						column: 6,
 					},

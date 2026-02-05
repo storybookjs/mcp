@@ -14,95 +14,85 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-async function looseGetInteractiveElements(
-	testId: string,
-	label: string,
-	step: StepFunction,
-) {
+async function looseGetInteractiveElements(testId: string, label: string, step: StepFunction) {
 	let elements: HTMLElement[] = [];
-	await step(
-		`Get element by test ID '${testId}' or label '${label}'`,
-		async () => {
-			elements = await waitFor(function getElement() {
-				const byTestId = screen.queryAllByTestId(testId);
-				if (byTestId.length > 0) {
-					return byTestId;
-				}
-				const candidates = [
-					...screen.queryAllByTestId(testId),
-					...screen.queryAllByLabelText(label, { exact: false }),
-					...screen.queryAllByPlaceholderText(label, { exact: false }),
-					...screen.queryAllByText(label, { exact: false }),
-				];
+	await step(`Get element by test ID '${testId}' or label '${label}'`, async () => {
+		elements = await waitFor(function getElement() {
+			const byTestId = screen.queryAllByTestId(testId);
+			if (byTestId.length > 0) {
+				return byTestId;
+			}
+			const candidates = [
+				...screen.queryAllByTestId(testId),
+				...screen.queryAllByLabelText(label, { exact: false }),
+				...screen.queryAllByPlaceholderText(label, { exact: false }),
+				...screen.queryAllByText(label, { exact: false }),
+			];
 
-				// Return all interactive elements
-				const interactive = candidates.filter((el) => {
-					if (!el) {
-						return false;
-					}
-					if (
-						el.getAttribute('disabled') === '' ||
-						el.getAttribute('aria-disabled') === 'true'
-					) {
-						return false;
-					}
-					const tagName = el.tagName.toLowerCase();
-					// Check for naturally interactive HTML elements
-					if (
-						[
-							'button',
-							'a',
-							'input',
-							'select',
-							'textarea',
-							'details',
-							'summary',
-							'audio',
-							'video',
-						].includes(tagName)
-					) {
-						return true;
-					}
-					// Check for elements with interactive ARIA roles
-					const role = el.getAttribute('role');
-					if (
-						!!role &&
-						[
-							'button',
-							'link',
-							'textbox',
-							'checkbox',
-							'radio',
-							'combobox',
-							'listbox',
-							'option',
-							'menuitem',
-							'menuitemcheckbox',
-							'menuitemradio',
-							'tab',
-							'switch',
-							'slider',
-							'spinbutton',
-							'searchbox',
-							'progressbar',
-							'scrollbar',
-						].includes(role)
-					) {
-						return true;
-					}
-					// Check for cursor: pointer style
-					const computedStyle = window.getComputedStyle(el);
-					if (computedStyle.cursor === 'pointer') {
-						return true;
-					}
+			// Return all interactive elements
+			const interactive = candidates.filter((el) => {
+				if (!el) {
 					return false;
-				});
-				interactive.push(null as any);
-
-				return interactive;
+				}
+				if (el.getAttribute('disabled') === '' || el.getAttribute('aria-disabled') === 'true') {
+					return false;
+				}
+				const tagName = el.tagName.toLowerCase();
+				// Check for naturally interactive HTML elements
+				if (
+					[
+						'button',
+						'a',
+						'input',
+						'select',
+						'textarea',
+						'details',
+						'summary',
+						'audio',
+						'video',
+					].includes(tagName)
+				) {
+					return true;
+				}
+				// Check for elements with interactive ARIA roles
+				const role = el.getAttribute('role');
+				if (
+					!!role &&
+					[
+						'button',
+						'link',
+						'textbox',
+						'checkbox',
+						'radio',
+						'combobox',
+						'listbox',
+						'option',
+						'menuitem',
+						'menuitemcheckbox',
+						'menuitemradio',
+						'tab',
+						'switch',
+						'slider',
+						'spinbutton',
+						'searchbox',
+						'progressbar',
+						'scrollbar',
+					].includes(role)
+				) {
+					return true;
+				}
+				// Check for cursor: pointer style
+				const computedStyle = window.getComputedStyle(el);
+				if (computedStyle.cursor === 'pointer') {
+					return true;
+				}
+				return false;
 			});
-		},
-	);
+			interactive.push(null as any);
+
+			return interactive;
+		});
+	});
 	return elements!;
 }
 
@@ -133,40 +123,24 @@ export const FlightPicker: Story = {
 export const DatePicker: Story = {
 	play: async ({ step }) => {
 		await userEvent.click(
-			(
-				await looseGetInteractiveElements(
-					'date-trigger-departure',
-					'Departure Date',
-					step,
-				)
-			)[0],
+			(await looseGetInteractiveElements('date-trigger-departure', 'Departure Date', step))[0],
 		);
-		await expect(
-			(await looseGetInteractiveElements('date-27', '27', step))[0],
-		).toBeInTheDocument();
+		await expect((await looseGetInteractiveElements('date-27', '27', step))[0]).toBeInTheDocument();
 	},
 };
 
 export const ReturnDatePickerIsUnavailableWhenOneWaySelected: Story = {
 	play: async ({ step }) => {
-		await userEvent.click(
-			(await looseGetInteractiveElements('one-way', 'One Way', step))[0],
-		);
+		await userEvent.click((await looseGetInteractiveElements('one-way', 'One Way', step))[0]);
 
 		const returnDatePicker = (
-			await looseGetInteractiveElements(
-				'date-trigger-return',
-				'Return Date',
-				step,
-			)
+			await looseGetInteractiveElements('date-trigger-return', 'Return Date', step)
 		)[0];
 
 		// If the return datepicker exists, ensure it's disabled by trying to open it
 		if (returnDatePicker) {
 			await userEvent.click(returnDatePicker);
-			const date15 = (
-				await looseGetInteractiveElements('date-15', '15', step)
-			)[0];
+			const date15 = (await looseGetInteractiveElements('date-15', '15', step))[0];
 			await expect(date15).toBeNull();
 		} else {
 			await expect(returnDatePicker).toBeNull();
@@ -177,9 +151,7 @@ export const ReturnDatePickerIsUnavailableWhenOneWaySelected: Story = {
 export const Submitted: Story = {
 	play: async ({ canvasElement, args, step }) => {
 		await step('Enable return flight', async () => {
-			const returnToggle = (
-				await looseGetInteractiveElements('return', 'Return', step)
-			)[0];
+			const returnToggle = (await looseGetInteractiveElements('return', 'Return', step))[0];
 			await userEvent.click(returnToggle);
 		});
 
@@ -198,9 +170,7 @@ export const Submitted: Story = {
 				await userEvent.click(fromFlightTrigger);
 			}
 
-			const melbourneAirport = (
-				await looseGetInteractiveElements('airport-MEL', 'MEL', step)
-			)[0];
+			const melbourneAirport = (await looseGetInteractiveElements('airport-MEL', 'MEL', step))[0];
 			await userEvent.click(melbourneAirport);
 		});
 
@@ -218,25 +188,15 @@ export const Submitted: Story = {
 			} else {
 				await userEvent.click(toFlightTrigger);
 			}
-			const laxAirport = (
-				await looseGetInteractiveElements('airport-LAX', 'LAX', step)
-			)[0];
+			const laxAirport = (await looseGetInteractiveElements('airport-LAX', 'LAX', step))[0];
 			await userEvent.click(laxAirport);
 		});
 
 		await step('Select departure date', async () => {
 			await userEvent.click(
-				(
-					await looseGetInteractiveElements(
-						'date-trigger-departure',
-						'Departure Date',
-						step,
-					)
-				)[0],
+				(await looseGetInteractiveElements('date-trigger-departure', 'Departure Date', step))[0],
 			);
-			const date = (
-				await looseGetInteractiveElements('date-27', '27', step)
-			).at(-1)!;
+			const date = (await looseGetInteractiveElements('date-27', '27', step)).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
@@ -244,30 +204,16 @@ export const Submitted: Story = {
 
 		await step('Select return date', async () => {
 			await userEvent.click(
-				(
-					await looseGetInteractiveElements(
-						'date-trigger-return',
-						'Return Date',
-						step,
-					)
-				)[0],
+				(await looseGetInteractiveElements('date-trigger-return', 'Return Date', step))[0],
 			);
-			const date = (
-				await looseGetInteractiveElements('date-28', '28', step)
-			).at(-1)!;
+			const date = (await looseGetInteractiveElements('date-28', '28', step)).at(-1)!;
 			await expect(date).toBeInTheDocument();
 			await userEvent.click(date);
 			await userEvent.click(canvasElement); // dismiss datepicker popover
 		});
 
 		await userEvent.click(
-			(
-				await looseGetInteractiveElements(
-					'search-flights',
-					'Search Flights',
-					step,
-				)
-			)[0],
+			(await looseGetInteractiveElements('search-flights', 'Search Flights', step))[0],
 		);
 		await expect(args.onSubmit).toHaveBeenCalledOnce();
 	},

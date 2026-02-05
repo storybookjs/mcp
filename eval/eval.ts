@@ -1,40 +1,20 @@
 import * as p from '@clack/prompts';
-import { x } from 'tinyexec';
-import { collectArgs } from './lib/collect-args.ts';
-import { runTask } from './lib/run-task.ts';
+import { collectEvalArgs } from './lib/eval/collect-eval-args.ts';
+import { runEval } from './lib/eval/run-eval.ts';
 
-p.intro('🧪 Storybook MCP Eval Harness');
+async function main(): Promise<void> {
+	p.intro('🧪 Storybook MCP Eval');
 
-const args = await collectArgs();
+	const args = await collectEvalArgs();
 
-const { trialArgs } = await runTask({
-	taskName: args.taskName,
-	context: args.context,
-	agent: args.agent,
-	model: args.model,
-	systemPrompts: args.systemPrompts,
-	uploadId: args.uploadId,
-	verbose: args.verbose,
-	storybook: args.storybook,
-	runId: args.runId,
-	label: args.label,
-});
+	const { allFailed } = await runEval(args);
 
-const startStorybook =
-	args.storybook !== undefined
-		? args.storybook
-		: await p.confirm({
-				message: "Would you like to start the trial's Storybook?",
-			});
+	if (allFailed) {
+		p.outro('❌ All runs failed');
+		process.exit(1);
+	}
 
-p.outro('✨ Grading complete!');
-
-if (startStorybook) {
-	console.log('');
-	await x('pnpm', ['run', 'storybook'], {
-		nodeOptions: {
-			cwd: trialArgs.projectPath,
-			stdio: 'inherit',
-		},
-	});
+	p.outro('✅ Eval complete');
 }
+
+await main();

@@ -34,8 +34,5 @@ export async function prepareGrading({ projectPath }: TrialArgs) {
 	// add the storybook script after agent execution, so it does not taint the trial
 	pkgJson.scripts.storybook = 'storybook dev --port 6006';
 
-	await fs.writeFile(
-		path.join(projectPath, 'package.json'),
-		JSON.stringify(pkgJson, null, 2),
-	);
+	await fs.writeFile(path.join(projectPath, 'package.json'), JSON.stringify(pkgJson, null, 2));
 }

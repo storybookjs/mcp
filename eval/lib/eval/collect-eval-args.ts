@@ -1,53 +1,64 @@
 import * as p from '@clack/prompts';
 import * as fs from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import type { OrchestrationArgs, OrchestrationConfig } from './types.ts';
+import type { EvalArgs, VariantConfig, VariantConfigInput } from './types.ts';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { agents } from '../../config.ts';
-import { SUPPORTED_MODELS } from '../../types.ts';
+import { CLAUDE_MODELS } from '../../types.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EVAL_ROOT = path.resolve(__dirname, '..', '..');
-const ORCHESTRATIONS_DIR = path.join(EVAL_ROOT, 'orchestrations');
+const VARIANT_CONFIGS_DIR = path.join(EVAL_ROOT, 'variant-configs');
 const TASKS_DIR = path.join(EVAL_ROOT, 'tasks');
 
 type LoadedConfig = {
 	filename: string;
-	config: OrchestrationConfig;
+	config: VariantConfigInput;
 };
 
-export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
-	const configs = await loadOrchestrationConfigs();
+export async function collectEvalArgs(): Promise<EvalArgs> {
+	const configs = await loadVariantConfigs();
 	const designSystem = await chooseDesignSystem();
 	const taskName = await chooseTaskName(designSystem);
 	const config = await chooseConfig(configs);
+	const selectedVariants = await chooseVariants(config.variants);
+
+	// Only prompt for model if at least one variant is missing it
+	const needsModel = config.variants.some((v) => !v.model);
+	const model = needsModel ? await chooseModel() : undefined;
+
 	const iterations = await askIterations();
 	const uploadId = await askUploadId();
-	const defaultRunId = randomUUID();
+	const runId = randomUUID();
 
-	const advancedMode = process.argv.includes('--advanced-mode');
-
-	let agent: keyof typeof agents | undefined = undefined;
-	let model: (typeof SUPPORTED_MODELS)[number] | undefined = undefined;
-	let selectedVariants: string[] | undefined = undefined;
-	let runId: string | undefined = defaultRunId;
-
-	if (advancedMode) {
-		agent = await chooseAgent();
-		model = await chooseModel();
-		selectedVariants = await chooseVariants(config.variants);
-		runId = await askRunId(defaultRunId);
-	}
-
-	const normalizedConfig: OrchestrationConfig = {
+	const normalizedConfig: VariantConfig = {
 		...config,
 		variants: config.variants.map((v) => ({
 			...v,
-			agent: v.agent ?? agent,
-			model: v.model ?? model,
+			agent: v.agent ?? 'claude-code',
+			model: v.model ?? model!,
 		})),
 	};
+
+	const variantsToRun = selectedVariants
+		? normalizedConfig.variants.filter((v) => selectedVariants.includes(v.id))
+		: normalizedConfig.variants;
+
+	const totalIterations = variantsToRun.length * iterations;
+	const agentName = variantsToRun[0]!.agent;
+	const modelName = variantsToRun[0]!.model;
+
+	const confirmed = await p.confirm({
+		message: `This will run ${totalIterations} total iterations with the ${agentName} agent using the ${modelName} model. Are you sure you want to start this?`,
+		initialValue: true,
+	});
+
+	ensureNotCancelled(confirmed);
+
+	if (!confirmed) {
+		p.cancel('Operation cancelled.');
+		process.exit(0);
+	}
 
 	return {
 		taskName,
@@ -55,7 +66,6 @@ export async function collectOrchestrationArgs(): Promise<OrchestrationArgs> {
 		iterations,
 		uploadId,
 		runId,
-		advancedMode,
 		designSystem,
 		selectedVariants,
 	};
@@ -68,38 +78,34 @@ function ensureNotCancelled<T>(value: T): asserts value is Exclude<T, symbol> {
 	}
 }
 
-async function loadOrchestrationConfigs(): Promise<LoadedConfig[]> {
+async function loadVariantConfigs(): Promise<LoadedConfig[]> {
 	const dirExists = await fs
-		.access(ORCHESTRATIONS_DIR)
+		.access(VARIANT_CONFIGS_DIR)
 		.then(() => true)
 		.catch(() => false);
 
 	if (!dirExists) {
 		throw new Error(
-			'Orchestration directory not found. Expected eval/orchestrations relative to the eval package.',
+			'Variant configs directory not found. Expected eval/variant-configs relative to the eval package.',
 		);
 	}
 
-	const files = await fs.readdir(ORCHESTRATIONS_DIR, { withFileTypes: true });
+	const files = await fs.readdir(VARIANT_CONFIGS_DIR, { withFileTypes: true });
 	const tsFiles = files
 		.filter((dirent) => dirent.isFile())
-		.filter(
-			(dirent) => dirent.name.endsWith('.ts') || dirent.name.endsWith('.js'),
-		);
+		.filter((dirent) => dirent.name.endsWith('.ts') || dirent.name.endsWith('.js'));
 
 	const configs: LoadedConfig[] = [];
 	for (const file of tsFiles) {
-		const fullPath = path.join(ORCHESTRATIONS_DIR, file.name);
+		const fullPath = path.join(VARIANT_CONFIGS_DIR, file.name);
 		// Dynamic import to load config
 		const mod = await import(fullPath);
-		const config = (mod.default ?? mod) as OrchestrationConfig;
+		const config = (mod.default ?? mod) as VariantConfig;
 		configs.push({ filename: file.name, config });
 	}
 
 	if (configs.length === 0) {
-		throw new Error(
-			'No orchestration config files found in eval/orchestrations',
-		);
+		throw new Error('No variant config files found in eval/variant-configs');
 	}
 
 	return configs;
@@ -161,15 +167,13 @@ async function chooseTaskName(designSystem: string): Promise<string> {
 	return String(taskName);
 }
 
-async function chooseConfig(
-	configs: LoadedConfig[],
-): Promise<OrchestrationConfig> {
+async function chooseConfig(configs: LoadedConfig[]): Promise<VariantConfigInput> {
 	if (configs.length === 1) {
 		return configs[0]!.config;
 	}
 
 	const selected = await p.select({
-		message: 'Select an orchestration configuration',
+		message: 'Select an eval configuration',
 		options: configs.map((c) => ({
 			value: c.filename,
 			label: c.config.name,
@@ -180,7 +184,7 @@ async function chooseConfig(
 	ensureNotCancelled(selected);
 	const found = configs.find((c) => c.filename === selected);
 	if (!found) {
-		throw new Error(`Orchestration config not found: ${selected}`);
+		throw new Error(`Variant config not found: ${selected}`);
 	}
 
 	return found.config;
@@ -199,8 +203,7 @@ async function askIterations(): Promise<number> {
 
 async function askUploadId(): Promise<string | false> {
 	const uploadId = await p.text({
-		message:
-			'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
+		message: 'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
 		placeholder: 'trial-batch-1',
 	});
 
@@ -209,28 +212,15 @@ async function askUploadId(): Promise<string | false> {
 	return resolved || false;
 }
 
-async function askRunId(defaultRunId: string): Promise<string> {
-	const runId = await p.text({
-		message: 'Enter a Run ID (leave blank to use the generated one):',
-		placeholder: defaultRunId,
-		initialValue: defaultRunId,
-	});
-
-	ensureNotCancelled(runId);
-	const resolved = runId;
-	return resolved || defaultRunId;
-}
-
 async function chooseVariants(
-	variants: OrchestrationConfig['variants'],
+	variants: VariantConfigInput['variants'],
 ): Promise<string[] | undefined> {
 	if (variants.length <= 1) {
 		return undefined;
 	}
 
 	const selected = await p.multiselect({
-		message:
-			'Which variants should be executed? (leave empty to run all variants)',
+		message: 'Which variants should be executed? (leave empty to run all variants)',
 		options: variants.map((variant) => ({
 			value: variant.id,
 			label: variant.label,
@@ -243,20 +233,11 @@ async function chooseVariants(
 	return chosen.length > 0 ? chosen : undefined;
 }
 
-async function chooseAgent(): Promise<keyof typeof agents> {
-	const result = await p.select({
-		message: 'Which coding agent do you want to use?',
-		options: Object.keys(agents).map((a) => ({ value: a, label: a })),
-	});
-	ensureNotCancelled(result);
-	return result as keyof typeof agents;
-}
-
-async function chooseModel(): Promise<(typeof SUPPORTED_MODELS)[number]> {
+async function chooseModel(): Promise<(typeof CLAUDE_MODELS)[number]> {
 	const result = await p.select({
 		message: 'Which model should the agent use?',
-		options: SUPPORTED_MODELS.map((m) => ({ value: m, label: m })),
+		options: CLAUDE_MODELS.map((m) => ({ value: m, label: m })),
 	});
 	ensureNotCancelled(result);
-	return result as (typeof SUPPORTED_MODELS)[number];
+	return result as (typeof CLAUDE_MODELS)[number];
 }

@@ -15,8 +15,8 @@ import type {
  * Mapping from our standard model names to Claude CLI --model flag values.
  */
 const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
-	'claude-sonnet-4.5': 'Sonnet',
 	'claude-opus-4.5': 'Opus',
+	'claude-sonnet-4.5': 'Sonnet',
 	'claude-haiku-4.5': 'Haiku',
 };
 
@@ -24,8 +24,8 @@ const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
  * Mapping from standard model names to ai-tokenizer model keys.
  */
 const TOKENIZER_MODEL_MAP: Record<ClaudeModel, keyof typeof models> = {
-	'claude-sonnet-4.5': 'anthropic/claude-sonnet-4.5',
 	'claude-opus-4.5': 'anthropic/claude-opus-4.5',
+	'claude-sonnet-4.5': 'anthropic/claude-sonnet-4.5',
 	'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
 };
 
@@ -152,11 +152,7 @@ interface ResultMessage extends BaseMessage {
 	permission_denials: any[];
 }
 
-type ClaudeCodeStreamMessage =
-	| SystemInitMessage
-	| AssistantMessage
-	| UserMessage
-	| ResultMessage;
+type ClaudeCodeStreamMessage = SystemInitMessage | AssistantMessage | UserMessage | ResultMessage;
 
 interface TodoProgress {
 	current: number;
@@ -183,9 +179,7 @@ function calculateMessageTokenCount(
 		});
 
 		try {
-			const tokens = tokenizer.count(
-				JSON.stringify({ role: 'assistant', content }),
-			);
+			const tokens = tokenizer.count(JSON.stringify({ role: 'assistant', content }));
 			const cost = tokens * model.pricing.input;
 			return { tokens, cost };
 		} catch (error) {
@@ -217,15 +211,12 @@ function getTodoProgress(messages: TranscriptMessage[]): TodoProgress | null {
 	for (const message of messages.toReversed()) {
 		if (message.type === 'assistant') {
 			const todoWrite = message.message.content.find(
-				(c): c is TranscriptToolUseContent =>
-					c.type === 'tool_use' && c.name === 'TodoWrite',
+				(c): c is TranscriptToolUseContent => c.type === 'tool_use' && c.name === 'TodoWrite',
 			);
 			if (todoWrite?.input.todos) {
 				const todos = todoWrite.input.todos;
 				const total = todos.length;
-				const completed = todos.filter(
-					(t: any) => t.status === 'completed',
-				).length;
+				const completed = todos.filter((t: any) => t.status === 'completed').length;
 				const inProgress = todos.find((t: any) => t.status === 'in_progress');
 
 				if (inProgress) {
@@ -320,17 +311,11 @@ export const claudeCodeCli: Agent = {
 			previousMs = Date.now();
 
 			parsed.ms = deltaMs;
-			const tokenData = calculateMessageTokenCount(
-				parsed,
-				tokenizer,
-				tokenizerModel,
-			);
+			const tokenData = calculateMessageTokenCount(parsed, tokenizer, tokenizerModel);
 			parsed.tokenCount = tokenData.tokens;
 			parsed.costUSD = tokenData.cost;
 
-			const getTranscriptMessage = (
-				message: ClaudeCodeStreamMessage,
-			): TranscriptMessage => {
+			const getTranscriptMessage = (message: ClaudeCodeStreamMessage): TranscriptMessage => {
 				if (message.type === 'assistant') {
 					return {
 						...message,
@@ -388,9 +373,7 @@ export const claudeCodeCli: Agent = {
 			}
 			log.message(progressMessage);
 		}
-		const resultMessage = messages.find(
-			(m): m is ResultMessage => m.type === 'result',
-		);
+		const resultMessage = messages.find((m): m is ResultMessage => m.type === 'result');
 		if (!resultMessage) {
 			log.error('No result message received from Claude Code CLI');
 			process.exit(1);

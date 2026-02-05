@@ -14,9 +14,11 @@
 		]
 	},
 	"include": [
+		"advanced-eval.ts",
 		"eval.ts",
 		"clean-trials.ts",
 		"lib",
+		"variant-configs",
 		"templates/result-docs",
 		"templates/grading",
 		"google-apps-script.js",
