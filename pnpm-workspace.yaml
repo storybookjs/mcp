@@ -6,17 +6,17 @@ packages:
   - eval/evals/*/tasks/*/project
 
 catalog:
-  '@storybook/addon-a11y': 0.0.0-pr-33206-sha-8488a597
-  '@storybook/addon-docs': 0.0.0-pr-33206-sha-8488a597
-  '@storybook/addon-themes': 0.0.0-pr-33206-sha-8488a597
-  '@storybook/addon-vitest': 0.0.0-pr-33206-sha-8488a597
-  '@storybook/react-vite': 0.0.0-pr-33206-sha-8488a597
+  '@storybook/addon-a11y': 0.0.0-pr-33206-sha-4f964178
+  '@storybook/addon-docs': 0.0.0-pr-33206-sha-4f964178
+  '@storybook/addon-themes': 0.0.0-pr-33206-sha-4f964178
+  '@storybook/addon-vitest': 0.0.0-pr-33206-sha-4f964178
+  '@storybook/react-vite': 0.0.0-pr-33206-sha-4f964178
   '@tmcp/adapter-valibot': ^0.1.4
   '@tmcp/transport-http': ^0.8.0
   '@tmcp/transport-stdio': ^0.4.1
   '@vitest/browser-playwright': 4.0.6
-  eslint-plugin-storybook: 0.0.0-pr-33206-sha-8488a597
-  storybook: 0.0.0-pr-33206-sha-8488a597
+  eslint-plugin-storybook: 0.0.0-pr-33206-sha-4f964178
+  storybook: 0.0.0-pr-33206-sha-4f964178
   tmcp: ^1.16.0
   tsdown: ^0.15.12
   typescript: ^5.9.3
@@ -27,10 +27,10 @@ catalog:
 catalogs:
   tasks:
     '@eslint/js': 9.39.1
-    '@storybook/addon-a11y': 0.0.0-pr-33206-sha-8488a597
-    '@storybook/addon-docs': 0.0.0-pr-33206-sha-8488a597
-    '@storybook/addon-vitest': 0.0.0-pr-33206-sha-8488a597
-    '@storybook/react-vite': 0.0.0-pr-33206-sha-8488a597
+    '@storybook/addon-a11y': 0.0.0-pr-33206-sha-4f964178
+    '@storybook/addon-docs': 0.0.0-pr-33206-sha-4f964178
+    '@storybook/addon-vitest': 0.0.0-pr-33206-sha-4f964178
+    '@storybook/react-vite': 0.0.0-pr-33206-sha-4f964178
     '@types/node': 24.10.1
     '@types/react': 19.2.6
     '@types/react-dom': 19.2.3
@@ -39,11 +39,11 @@ catalogs:
     eslint: 9.39.1
     eslint-plugin-react-hooks: 7.0.1
     eslint-plugin-react-refresh: 0.4.24
-    eslint-plugin-storybook: 0.0.0-pr-33206-sha-8488a597
+    eslint-plugin-storybook: 0.0.0-pr-33206-sha-4f964178
     globals: 16.5.0
     react: 19.2.0
     react-dom: 19.2.0
-    storybook: 0.0.0-pr-33206-sha-8488a597
+    storybook: 0.0.0-pr-33206-sha-4f964178
     typescript: 5.9.3
     typescript-eslint: 8.47.0
     vite: 7.2.2
