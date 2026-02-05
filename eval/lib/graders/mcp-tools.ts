@@ -137,8 +137,11 @@ export function aggregateMcpToolMetrics(
 					// Check output tokens limit if configured
 					if (expectation.maxOutputTokens !== undefined) {
 						metrics.validation.outputTokensWithinLimit =
-							metrics.totalOutputTokens < expectation.maxOutputTokens;
+							metrics.totalOutputTokens <= expectation.maxOutputTokens;
 					}
+
+					// Once a matching tool is found for this expectation, stop searching other tools
+					break;
 				}
 			}
 		}

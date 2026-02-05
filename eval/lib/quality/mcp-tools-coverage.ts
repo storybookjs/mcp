@@ -2,9 +2,14 @@
  * Quality calculator based on MCP tools expectations coverage.
  *
  * Calculates a granular score based on:
- * - Whether expected tools were called (40% weight)
- * - Whether expected call inputs were matched (40% weight)
- * - Whether output tokens stayed within limits (20% weight)
+ * - Whether expected tools were called (40% base weight)
+ * - Whether expected call inputs were matched (40% base weight)
+ * - Whether output tokens stayed within limits (20% base weight)
+ *
+ * Note: Weights are relative to configured aspects only. When some validation
+ * aspects are not configured (e.g., no input matching expectations), the score
+ * is normalized by the sum of active weights. For example, if only tool presence
+ * and token limits are configured, they effectively become 66.7% and 33.3%.
  *
  * Returns undefined if no MCP tools were used or no expectations configured.
  */
