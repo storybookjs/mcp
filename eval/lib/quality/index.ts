@@ -6,11 +6,7 @@
  * directly or combined with weights.
  */
 
-import type {
-	CalculateQualityFn,
-	QualityArgs,
-	QualityResult,
-} from '../../types.ts';
+import type { CalculateQualityFn, QualityArgs, QualityResult } from '../../types.ts';
 
 export { fromComponentUsage } from './component-usage.ts';
 export { fromMcpToolsCoverage } from './mcp-tools-coverage.ts';
@@ -32,9 +28,7 @@ export { fromMcpToolsCoverage } from './mcp-tools-coverage.ts';
  * };
  * ```
  */
-export function combine(
-	...calculators: Array<[CalculateQualityFn, number]>
-): CalculateQualityFn {
+export function combine(...calculators: Array<[CalculateQualityFn, number]>): CalculateQualityFn {
 	return (args: QualityArgs): QualityResult | undefined => {
 		let totalWeight = 0;
 		let weightedSum = 0;

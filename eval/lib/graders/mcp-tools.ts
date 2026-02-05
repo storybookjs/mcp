@@ -28,9 +28,7 @@ function getShortToolName(fullName: string): string {
  * Extracts all MCP tool invocations from a transcript.
  * Returns an array of invocations with tool name, input, and output token count.
  */
-export function extractMcpToolInvocations(
-	messages: TranscriptMessage[],
-): McpToolInvocation[] {
+export function extractMcpToolInvocations(messages: TranscriptMessage[]): McpToolInvocation[] {
 	const invocations: McpToolInvocation[] = [];
 
 	for (let i = 0; i < messages.length; i++) {
@@ -124,24 +122,15 @@ export function aggregateMcpToolMetrics(
 		for (const [expectedName, expectation] of Object.entries(expectations)) {
 			// Find tool that matches using includes()
 			for (const [shortName, metrics] of metricsMap.entries()) {
-				if (
-					shortName.includes(expectedName) ||
-					metrics.fullName.includes(expectedName)
-				) {
+				if (shortName.includes(expectedName) || metrics.fullName.includes(expectedName)) {
 					metrics.validation = {};
 
 					// Check expected calls if configured (all must be present)
-					if (
-						expectation.expectedCalls !== undefined &&
-						expectation.expectedCalls.length > 0
-					) {
+					if (expectation.expectedCalls !== undefined && expectation.expectedCalls.length > 0) {
 						// Check if each expected call has a matching invocation
-						const actualInputs = metrics.invocations.map((inv) =>
-							JSON.stringify(inv.input),
-						);
-						metrics.validation.inputMatch = expectation.expectedCalls.every(
-							(expectedInput) =>
-								actualInputs.includes(JSON.stringify(expectedInput)),
+						const actualInputs = metrics.invocations.map((inv) => JSON.stringify(inv.input));
+						metrics.validation.inputMatch = expectation.expectedCalls.every((expectedInput) =>
+							actualInputs.includes(JSON.stringify(expectedInput)),
 						);
 					}
 
@@ -169,10 +158,7 @@ export function extractMcpToolsSummary(
 	const tools = aggregateMcpToolMetrics(invocations, expectations);
 
 	const totalCalls = invocations.length;
-	const totalOutputTokens = invocations.reduce(
-		(sum, inv) => sum + inv.outputTokens,
-		0,
-	);
+	const totalOutputTokens = invocations.reduce((sum, inv) => sum + inv.outputTokens, 0);
 
 	// Check if all expectations passed
 	let allExpectationsPassed: boolean | undefined;
@@ -182,8 +168,7 @@ export function extractMcpToolsSummary(
 		for (const expectedName of Object.keys(expectations)) {
 			// Find if the expected tool was called
 			const matchingTool = tools.find(
-				(t) =>
-					t.name.includes(expectedName) || t.fullName.includes(expectedName),
+				(t) => t.name.includes(expectedName) || t.fullName.includes(expectedName),
 			);
 
 			if (!matchingTool) {
@@ -216,9 +201,7 @@ export function extractMcpToolsSummary(
  * Grader function that extracts MCP tools metrics from the transcript.
  * Follows the pattern of other graders in this directory.
  */
-export async function gradeMcpTools(
-	trialArgs: TrialArgs,
-): Promise<McpToolsSummary | undefined> {
+export async function gradeMcpTools(trialArgs: TrialArgs): Promise<McpToolsSummary | undefined> {
 	const { resultsPath, taskPath } = trialArgs;
 
 	try {

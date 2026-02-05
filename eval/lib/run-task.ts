@@ -61,9 +61,7 @@ export async function runTask({
 		throw new Error(`Task directory does not exist: ${taskPath}`);
 	}
 
-	const localDateTimestamp = new Date(
-		Date.now() - new Date().getTimezoneOffset() * 60000,
-	)
+	const localDateTimestamp = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
 		.toISOString()
 		.slice(0, 19)
 		.replace(/[:.]/g, '-');
@@ -75,9 +73,8 @@ export async function runTask({
 	const projectPath = path.join(trialPath, 'project');
 	const resultsPath = path.join(trialPath, 'results');
 	const hooks =
-		(await import(path.join(taskPath, 'hooks.ts'))
-			.then((mod) => mod.default)
-			.catch(() => ({}))) ?? {};
+		(await import(path.join(taskPath, 'hooks.ts')).then((mod) => mod.default).catch(() => ({}))) ??
+		{};
 
 	const trialArgs: TrialArgs = {
 		taskPath,
@@ -96,9 +93,7 @@ export async function runTask({
 	};
 
 	if (!quiet) {
-		p.log.info(
-			`Running trial '${taskName}' with agent '${agentKey}' and model '${model}'`,
-		);
+		p.log.info(`Running trial '${taskName}' with agent '${agentKey}' and model '${model}'`);
 	}
 
 	const { mcpServerConfig: preparedMcpConfig } = await prepareTrial(trialArgs);
@@ -122,11 +117,7 @@ export async function runTask({
 	}
 
 	const agent = agents[agentKey];
-	const executionSummary = await agent.execute(
-		prompt,
-		trialArgs,
-		mergedMcpConfig,
-	);
+	const executionSummary = await agent.execute(prompt, trialArgs, mergedMcpConfig);
 
 	try {
 		await teardownTrial(trialArgs);
@@ -180,10 +171,7 @@ export async function runTask({
 }
 
 function buildContextPrefix(context: Context): string {
-	if (
-		context.length === 0 ||
-		(context.length === 1 && context[0]!.type === false)
-	) {
+	if (context.length === 0 || (context.length === 1 && context[0]!.type === false)) {
 		return 'no-context';
 	}
 
@@ -196,9 +184,7 @@ function buildContextPrefix(context: Context): string {
 			case 'extra-prompts':
 				prefixes.push(
 					ctx.prompts
-						.map((prompt) =>
-							path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'),
-						)
+						.map((prompt) => path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'))
 						.join('-'),
 				);
 				break;
@@ -208,9 +194,7 @@ function buildContextPrefix(context: Context): string {
 			case 'mcp-server':
 				prefixes.push(
 					Object.keys(ctx.mcpServerConfig)
-						.map((mcpServerName) =>
-							mcpServerName.toLowerCase().replace(/\s+/g, '-'),
-						)
+						.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
 						.join('-'),
 				);
 				break;
@@ -249,9 +233,7 @@ function logSummary(
 
 	if (gradingSummary.test.failed === 0 && gradingSummary.test.passed === 0) {
 		p.log.message(`🧪 Tests: ❌ ${styleText('red', 'Failed to run')}`);
-		p.log.message(
-			`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`,
-		);
+		p.log.message(`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`);
 	} else if (gradingSummary.test.failed > 0) {
 		p.log.message(
 			`🧪 Tests: ${
@@ -268,9 +250,7 @@ function logSummary(
 				)}`,
 			);
 		} else {
-			p.log.message(
-				`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`,
-			);
+			p.log.message(`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`);
 		}
 	} else {
 		p.log.message('🧪 Tests: ✅');
@@ -278,10 +258,7 @@ function logSummary(
 			`🦾 Accessibility: ${
 				gradingSummary.a11y.violations === 0
 					? '✅'
-					: styleText(
-							'yellow',
-							`⚠️  ${gradingSummary.a11y.violations} violations`,
-						)
+					: styleText('yellow', `⚠️  ${gradingSummary.a11y.violations} violations`)
 			}`,
 		);
 	}
@@ -321,12 +298,7 @@ function logSummary(
 	if (gradingSummary.componentUsage) {
 		const cu = gradingSummary.componentUsage;
 		// Red if 0 matched, green if >0 matched AND 0 missing AND 0 unexpected, yellow otherwise
-		const badge =
-			cu.matched === 0
-				? '❌'
-				: cu.missing === 0 && cu.unexpected === 0
-					? '✅'
-					: '⚠️';
+		const badge = cu.matched === 0 ? '❌' : cu.missing === 0 && cu.unexpected === 0 ? '✅' : '⚠️';
 		p.log.message(
 			`🧩 Component Usage: ${badge} Score ${cu.score} (matched: ${cu.matched}, missing: ${cu.missing}, unexpected: ${cu.unexpected})`,
 		);
@@ -335,19 +307,13 @@ function logSummary(
 	if (gradingSummary.mcpTools) {
 		const mcp = gradingSummary.mcpTools;
 		const badge =
-			mcp.allExpectationsPassed === undefined
-				? 'ℹ️'
-				: mcp.allExpectationsPassed
-					? '✅'
-					: '❌';
+			mcp.allExpectationsPassed === undefined ? 'ℹ️' : mcp.allExpectationsPassed ? '✅' : '❌';
 		const toolNames = mcp.tools.map((t) => t.name).join(', ');
 		const tokens =
 			mcp.totalOutputTokens >= 1000
 				? `${(mcp.totalOutputTokens / 1000).toFixed(1)}K`
 				: String(mcp.totalOutputTokens);
-		p.log.message(
-			`🔧 MCP Tools: ${badge} ${mcp.totalCalls} calls, ${tokens} output tokens`,
-		);
+		p.log.message(`🔧 MCP Tools: ${badge} ${mcp.totalCalls} calls, ${tokens} output tokens`);
 		if (verbose && toolNames) {
 			p.log.message(`   Tools: ${toolNames}`);
 		}
@@ -370,8 +336,6 @@ function logSummary(
 	p.log.message(
 		`⏱️  Duration: ${executionSummary.duration}s (API: ${executionSummary.durationApi}s)`,
 	);
-	p.log.message(
-		`💰 Cost: ${executionSummary.cost ? `$${executionSummary.cost}` : 'unknown'}`,
-	);
+	p.log.message(`💰 Cost: ${executionSummary.cost ? `$${executionSummary.cost}` : 'unknown'}`);
 	p.log.message(`🔄 Turns: ${executionSummary.turns}`);
 }

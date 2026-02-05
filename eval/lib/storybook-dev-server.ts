@@ -35,10 +35,7 @@ export async function getRandomAvailablePort(): Promise<number> {
 /**
  * Wait for Storybook to be ready by listening for the "Storybook ready!" message.
  */
-export async function waitForStorybook(
-	process: Result,
-	timeout: number = 10_000,
-): Promise<void> {
+export async function waitForStorybook(process: Result, timeout: number = 10_000): Promise<void> {
 	return await new Promise<void>((resolve, reject) => {
 		const timeoutId = setTimeout(() => {
 			cleanup();
@@ -73,20 +70,14 @@ export async function waitForStorybook(
  * @param projectPath - The path to the project directory
  * @returns The running server state with port and process
  */
-export async function startStorybookDevServer(
-	projectPath: string,
-): Promise<StorybookDevServer> {
+export async function startStorybookDevServer(projectPath: string): Promise<StorybookDevServer> {
 	const port = await getRandomAvailablePort();
 
-	const process = x(
-		'pnpm',
-		['run', 'storybook', '--port', port.toString(), '--no-open'],
-		{
-			nodeOptions: {
-				cwd: projectPath,
-			},
+	const process = x('pnpm', ['run', 'storybook', '--port', port.toString(), '--no-open'], {
+		nodeOptions: {
+			cwd: projectPath,
 		},
-	);
+	});
 
 	await waitForStorybook(process);
 

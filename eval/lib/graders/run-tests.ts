@@ -4,10 +4,7 @@ import { x } from 'tinyexec';
 import { dedent } from 'ts-dedent';
 import type { TrialArgs } from '../../types';
 
-export async function runTests(
-	trialArgs: TrialArgs,
-	testScript: string,
-): Promise<number> {
+export async function runTests(trialArgs: TrialArgs, testScript: string): Promise<number> {
 	const { projectPath, resultsPath } = trialArgs;
 	const result = await x('pnpm', [testScript], {
 		nodeOptions: { cwd: projectPath },

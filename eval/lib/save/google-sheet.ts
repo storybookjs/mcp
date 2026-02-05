@@ -1,10 +1,5 @@
 import { log } from '@clack/prompts';
-import type {
-	TrialArgs,
-	Context,
-	GradingSummary,
-	ExecutionSummary,
-} from '../../types.ts';
+import type { TrialArgs, Context, GradingSummary, ExecutionSummary } from '../../types.ts';
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
@@ -36,10 +31,7 @@ type SheetsData = {
 };
 
 function getLabelFromContext(context: Context): string {
-	if (
-		context.length === 0 ||
-		(context.length === 1 && context[0]!.type === false)
-	) {
+	if (context.length === 0 || (context.length === 1 && context[0]!.type === false)) {
 		return 'None';
 	}
 
@@ -94,24 +86,18 @@ export async function saveToGoogleSheets(
 		typeCheckErrors: gradingSummary.typeCheckErrors,
 		lintErrors: gradingSummary.lintErrors,
 		testsPassed:
-			gradingSummary.test.passed /
-			(gradingSummary.test.passed + gradingSummary.test.failed),
+			gradingSummary.test.passed / (gradingSummary.test.passed + gradingSummary.test.failed),
 		a11yViolations: gradingSummary.a11y.violations,
-		coverageLines: gradingSummary.coverage?.lines
-			? gradingSummary.coverage.lines / 100
-			: null,
+		coverageLines: gradingSummary.coverage?.lines ? gradingSummary.coverage.lines / 100 : null,
 		cost: executionSummary.cost ?? 'unknown',
 		duration: executionSummary.duration,
 		turns: executionSummary.turns,
 		qualityDescription: gradingSummary.quality?.description ?? '',
 		qualityScore: gradingSummary.quality?.score ?? '',
 		contextType:
-			context.length === 0 ||
-			(context.length === 1 && context[0]!.type === false)
+			context.length === 0 || (context.length === 1 && context[0]!.type === false)
 				? 'none'
-				: context
-						.map((ctx) => (ctx.type === false ? 'none' : ctx.type))
-						.join('-'),
+				: context.map((ctx) => (ctx.type === false ? 'none' : ctx.type)).join('-'),
 		agent: trialArgs.agent,
 		gitBranch: environment.branch,
 		gitCommit: environment.commit,
@@ -144,9 +130,7 @@ export async function saveToGoogleSheets(
 
 		if (!result.success) {
 			log.error(JSON.stringify(result, null, 2));
-			throw new Error(
-				`Google Sheets API error: ${result.error || 'Unknown error'}`,
-			);
+			throw new Error(`Google Sheets API error: ${result.error || 'Unknown error'}`);
 		}
 	} catch (error) {
 		console.error(error);

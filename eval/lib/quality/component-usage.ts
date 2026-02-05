@@ -8,9 +8,7 @@
 
 import type { CalculateQualityFn, QualityResult } from '../../types.ts';
 
-export const fromComponentUsage: CalculateQualityFn = ({
-	grading,
-}): QualityResult | undefined => {
+export const fromComponentUsage: CalculateQualityFn = ({ grading }): QualityResult | undefined => {
 	const cu = grading.componentUsage;
 	if (!cu) {
 		return undefined;

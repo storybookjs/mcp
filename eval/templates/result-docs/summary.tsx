@@ -130,15 +130,9 @@ const MetricCard = ({
 		>
 			{title}
 		</h3>
-		<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>
-			{value}
-		</div>
+		<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>{value}</div>
 		{subvalue && (
-			<div
-				style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}
-			>
-				{subvalue}
-			</div>
+			<div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>{subvalue}</div>
 		)}
 	</div>
 );
@@ -166,12 +160,7 @@ const formatTokens = (tokens: number): string => {
 
 const QualityCard = ({ quality }: { quality: QualityResult }) => {
 	const pct = (quality.score * 100).toFixed(0);
-	const status =
-		quality.score >= 0.9
-			? 'success'
-			: quality.score >= 0.7
-				? 'warning'
-				: 'error';
+	const status = quality.score >= 0.9 ? 'success' : quality.score >= 0.7 ? 'warning' : 'error';
 	const icon = quality.score >= 0.9 ? '✅' : quality.score >= 0.7 ? '⚠️' : '❌';
 
 	const colorMap = {
@@ -203,9 +192,7 @@ const QualityCard = ({ quality }: { quality: QualityResult }) => {
 			>
 				Quality {icon}
 			</h3>
-			<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>
-				{pct}%
-			</div>
+			<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>{pct}%</div>
 			<div
 				style={{
 					fontSize: '0.75rem',
@@ -278,8 +265,7 @@ const McpToolsCard = ({ mcpTools }: { mcpTools: McpToolsSummary }) => {
 					marginBottom: '0.75rem',
 				}}
 			>
-				{mcpTools.totalCalls} calls, {formatTokens(mcpTools.totalOutputTokens)}{' '}
-				tokens
+				{mcpTools.totalCalls} calls, {formatTokens(mcpTools.totalOutputTokens)} tokens
 			</div>
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
 				{mcpTools.tools.map((tool) => (
@@ -296,9 +282,7 @@ const McpToolsCard = ({ mcpTools }: { mcpTools: McpToolsSummary }) => {
 							fontSize: '0.875rem',
 						}}
 					>
-						<div
-							style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-						>
+						<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
 							<code
 								style={{
 									backgroundColor: '#f3f4f6',
@@ -384,14 +368,8 @@ export const Summary = (props: SummaryProps) => {
 					Status
 				</h2>
 				<div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-					<StatusBadge
-						status={props.buildSuccess ? 'success' : 'error'}
-						label="Build"
-					/>
-					<StatusBadge
-						status={typeCheckStatus.status}
-						label={typeCheckStatus.label}
-					/>
+					<StatusBadge status={props.buildSuccess ? 'success' : 'error'} label="Build" />
+					<StatusBadge status={typeCheckStatus.status} label={typeCheckStatus.label} />
 					<StatusBadge status={lintStatus.status} label={lintStatus.label} />
 					<StatusBadge status={testStatus.status} label={testStatus.label} />
 					<StatusBadge status={a11yStatus.status} label={a11yStatus.label} />

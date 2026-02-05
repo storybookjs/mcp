@@ -67,17 +67,10 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 
 	const componentUsageTask = async () => {
 		const group = log.group('Checking component usage');
-		const result = await computeComponentUsageScore(
-			trialArgs.projectPath,
-			trialArgs.taskPath,
-		);
+		const result = await computeComponentUsageScore(trialArgs.projectPath, trialArgs.taskPath);
 		if (result === undefined) {
 			group.success('No expected imports configured, skipped');
-		} else if (
-			result.matched > 0 &&
-			result.missing === 0 &&
-			result.unexpected === 0
-		) {
+		} else if (result.matched > 0 && result.missing === 0 && result.unexpected === 0) {
 			group.success(
 				`Score: ${result.score} (matched: ${result.matched}, missing: ${result.missing}, unexpected: ${result.unexpected})`,
 			);
@@ -109,31 +102,23 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 				result.totalOutputTokens >= 1000
 					? `${(result.totalOutputTokens / 1000).toFixed(1)}k`
 					: String(result.totalOutputTokens);
-			group.success(
-				`${result.totalCalls} calls, ${tokens} output tokens${badge}`,
-			);
+			group.success(`${result.totalCalls} calls, ${tokens} output tokens${badge}`);
 		}
 		return result;
 	};
 
-	const [
-		buildSuccess,
-		typeCheckErrors,
-		lintErrors,
-		componentUsage,
-		testResults,
-		mcpTools,
-	] = await Promise.all([
-		buildTask(),
-		typeCheckTask(),
-		lintTask(),
-		componentUsageTask(),
-		testTask(),
-		mcpToolsTask(),
-	]);
+	const [buildSuccess, typeCheckErrors, lintErrors, componentUsage, testResults, mcpTools] =
+		await Promise.all([
+			buildTask(),
+			typeCheckTask(),
+			lintTask(),
+			componentUsageTask(),
+			testTask(),
+			mcpToolsTask(),
+		]);
 
 	const formatGroup = log.group('Formatting results');
-	await x('pnpm', ['exec', 'prettier', '--write', trialArgs.resultsPath]);
+	await x('pnpm', ['exec', 'oxfmt', trialArgs.resultsPath]);
 	formatGroup.success('Results formatted');
 
 	const gradingSummary: GradingSummary = {

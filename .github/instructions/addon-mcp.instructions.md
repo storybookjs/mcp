@@ -133,7 +133,7 @@ pnpm storybook  # From root - starts internal-storybook with addon in dev mode
 
 ### Formatting
 
-Use prettier at the root level:
+Use oxfmt at the root level:
 
 ```bash
 pnpm format  # From root
@@ -191,9 +191,7 @@ pnpm test:ci       # Run tests with coverage and CI reporters
 2. **Tool Testing**: Mock external dependencies (fetch, logger, telemetry) and test tool logic:
 
    ```typescript
-   vi.spyOn(global, 'fetch').mockResolvedValue(
-   	new Response(JSON.stringify(fixture)),
-   );
+   vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify(fixture)));
    const response = await server.receive(toolCallRequest, {
    	sessionId,
    	custom: context,
@@ -236,7 +234,7 @@ Tests run automatically on PRs and main branch pushes via `.github/workflows/che
 
 ### Code Style
 
-- Use prettier for formatting (inherited from root config)
+- Use oxfmt for formatting (inherited from root config)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names
@@ -374,9 +372,7 @@ The addon uses several internal Storybook APIs:
 The addon fetches the story index at runtime:
 
 ```typescript
-const index: StoryIndex = await fetch(
-	`http://localhost:${port}/index.json`,
-).then((r) => r.json());
+const index: StoryIndex = await fetch(`http://localhost:${port}/index.json`).then((r) => r.json());
 ```
 
 Each story entry has:
@@ -391,8 +387,7 @@ Framework detection uses Storybook's preset system:
 
 ```typescript
 const frameworkPreset = await options.presets.apply('framework');
-const framework =
-	typeof frameworkPreset === 'string' ? frameworkPreset : frameworkPreset?.name;
+const framework = typeof frameworkPreset === 'string' ? frameworkPreset : frameworkPreset?.name;
 ```
 
 ## MCP Protocol
@@ -440,8 +435,7 @@ const addonContext: AddonContext = {
 			await collectTelemetry({
 				event: 'tool:listAllDocumentation',
 				server,
-				componentCount: Object.keys(manifests.componentManifest.components)
-					.length,
+				componentCount: Object.keys(manifests.componentManifest.components).length,
 				docsCount: Object.keys(manifests.docsManifest.docs).length,
 			});
 		}

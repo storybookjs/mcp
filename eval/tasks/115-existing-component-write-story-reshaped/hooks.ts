@@ -19,9 +19,7 @@ export default config;
 `,
 		);
 
-		await fs.unlink(
-			path.join(trialArgs.projectPath, '.storybook', 'preview.ts'),
-		);
+		await fs.unlink(path.join(trialArgs.projectPath, '.storybook', 'preview.ts'));
 
 		log.success('Reshaped package installed, PostCSS config added');
 	},

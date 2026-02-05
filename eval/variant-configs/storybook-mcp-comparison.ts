@@ -1,20 +1,14 @@
-import type {
-	OrchestrationConfig,
-	OrchestrationVariant,
-} from '../lib/orchestrate/types.ts';
+import type { VariantConfigInput, VariantInput } from '../lib/eval/types.ts';
 
 const base = {
-	agent: 'claude-code',
-	model: 'claude-opus-4.5',
 	verbose: false,
 	storybook: false,
 	systemPrompts: [],
-} satisfies Partial<OrchestrationVariant>;
+} satisfies Partial<VariantInput>;
 
 const config = {
 	name: 'storybook-mcp-comparison',
-	description:
-		'Compare eval performance with and without the Storybook Docs MCP Server enabled.',
+	description: 'Compare eval performance with and without the Storybook Docs MCP Server enabled.',
 	variants: [
 		{
 			...base,
@@ -42,6 +36,6 @@ const config = {
 			],
 		},
 	],
-} satisfies OrchestrationConfig;
+} satisfies VariantConfigInput;
 
 export default config;

@@ -1,8 +1,4 @@
-import {
-	runTask,
-	type RunTaskParams,
-	type RunTaskResult,
-} from '../run-task.ts';
+import { runTask, type RunTaskParams, type RunTaskResult } from '../run-task.ts';
 
 type WorkerResult =
 	| { ok: true; result: RunTaskResult }

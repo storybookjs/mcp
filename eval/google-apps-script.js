@@ -187,13 +187,7 @@ function copyToUploadIdSheet(mainSpreadsheet, uploadId, keys, rowData, data) {
 	console.log('Writing to uploadId sheet:', uploadIdSheet.getName());
 
 	const targetRow = appendRow(uploadIdSheet, keys, rowData, data);
-	console.log(
-		'Appended row',
-		targetRow,
-		'to uploadId sheet with',
-		rowData.length,
-		'columns',
-	);
+	console.log('Appended row', targetRow, 'to uploadId sheet with', rowData.length, 'columns');
 }
 
 /**

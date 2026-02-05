@@ -72,9 +72,7 @@ export function extractImportsFromContent(
 		const defaultMatch = normalized.match(/^import\s+(\w+)\s+from/);
 		if (defaultMatch?.[1]) {
 			// This is a default import
-			specifiers.push(
-				defaultImportName === 'keyword' ? 'default' : defaultMatch[1],
-			);
+			specifiers.push(defaultImportName === 'keyword' ? 'default' : defaultMatch[1]);
 		}
 
 		// Default + named: import Foo, { Bar } from 'lib'
@@ -83,9 +81,7 @@ export function extractImportsFromContent(
 			// Has both default and named - default is already added above if defaultMatch matched
 			// If defaultMatch didn't match but this does, add default
 			if (!defaultMatch) {
-				specifiers.push(
-					defaultImportName === 'keyword' ? 'default' : defaultNamedMatch[1],
-				);
+				specifiers.push(defaultImportName === 'keyword' ? 'default' : defaultNamedMatch[1]);
 			}
 		}
 
@@ -158,9 +154,7 @@ async function loadTaskConfig(taskPath: string): Promise<TaskConfig | null> {
 	}
 }
 
-export type ComponentUsageResult = NonNullable<
-	GradingSummary['componentUsage']
->;
+export type ComponentUsageResult = NonNullable<GradingSummary['componentUsage']>;
 
 /**
  * Compute the component usage score by comparing actual imports against expected imports.
