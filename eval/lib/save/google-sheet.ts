@@ -26,7 +26,6 @@ type SheetsData = {
 	duration: number;
 	turns: number;
 	coverageLines: number | null;
-	componentUsageScore: number | null;
 	qualityScore: number | '';
 	qualityDescription: string;
 	contextType: string;
@@ -101,9 +100,7 @@ export async function saveToGoogleSheets(
 		coverageLines: gradingSummary.coverage?.lines
 			? gradingSummary.coverage.lines / 100
 			: null,
-		componentUsageScore: gradingSummary.componentUsage?.score ?? null,
 		cost: executionSummary.cost ?? 'unknown',
-
 		duration: executionSummary.duration,
 		turns: executionSummary.turns,
 		qualityDescription: gradingSummary.quality?.description ?? '',
