@@ -1,10 +1,5 @@
 import { log } from '@clack/prompts';
-import type {
-	ExperimentArgs,
-	Context,
-	EvaluationSummary,
-	ExecutionSummary,
-} from '../../types.ts';
+import type { ExperimentArgs, Context, EvaluationSummary, ExecutionSummary } from '../../types.ts';
 import * as path from 'path';
 
 const GOOGLE_SHEETS_URL =
@@ -34,10 +29,7 @@ type SheetsData = {
 };
 
 function getContextDetails(context: Context): string {
-	if (
-		context.length === 0 ||
-		(context.length === 1 && context[0]!.type === false)
-	) {
+	if (context.length === 0 || (context.length === 1 && context[0]!.type === false)) {
 		return 'None';
 	}
 
@@ -99,12 +91,9 @@ export async function saveToGoogleSheets(
 		durationApi: executionSummary.durationApi,
 		turns: executionSummary.turns,
 		contextType:
-			context.length === 0 ||
-			(context.length === 1 && context[0]!.type === false)
+			context.length === 0 || (context.length === 1 && context[0]!.type === false)
 				? 'none'
-				: context
-						.map((ctx) => (ctx.type === false ? 'none' : ctx.type))
-						.join('-'),
+				: context.map((ctx) => (ctx.type === false ? 'none' : ctx.type)).join('-'),
 		contextDetails: getContextDetails(context),
 		agent: experimentArgs.agent,
 		gitBranch: environment.branch,
@@ -138,9 +127,7 @@ export async function saveToGoogleSheets(
 
 		if (!result.success) {
 			log.error(JSON.stringify(result, null, 2));
-			throw new Error(
-				`Google Sheets API error: ${result.error || 'Unknown error'}`,
-			);
+			throw new Error(`Google Sheets API error: ${result.error || 'Unknown error'}`);
 		}
 	} catch (error) {
 		console.error(error);

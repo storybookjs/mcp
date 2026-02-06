@@ -17,20 +17,20 @@ Requirement: `/manifests/components.json` returns `401` with `WWW-Authenticate: 
 ```typescript
 // .storybook/main.ts
 export default {
-  refs: {
-    'design-system': {
-      title: 'Design System',
-      url: 'https://design-system--abc123.chromatic.com',
-    },
-  },
+	refs: {
+		'design-system': {
+			title: 'Design System',
+			url: 'https://design-system--abc123.chromatic.com',
+		},
+	},
 };
 ```
 
-| Scenario | Works? |
-|----------|--------|
-| Public Storybooks | ✅ |
-| Private Storybooks with CIMD | ✅ |
-| Multiple private refs (same OAuth server) | ✅ |
+| Scenario                                        | Works?      |
+| ----------------------------------------------- | ----------- |
+| Public Storybooks                               | ✅          |
+| Private Storybooks with CIMD                    | ✅          |
+| Multiple private refs (same OAuth server)       | ✅          |
 | Multiple private refs (different OAuth servers) | ❓ Untested |
 
 **Multiple private refs:** User authenticates once. Token is user-scoped, so one token covers all Storybooks on the same OAuth server.

@@ -3249,9 +3249,7 @@
 			"id": "hooks-usekeyboardmode",
 			"name": "useKeyboardMode",
 			"path": "./src/hooks/tests/useKeyboardMode.stories.tsx",
-			"stories": [
-				{ "name": "base", "snippet": "const base = () => <Component />;" }
-			],
+			"stories": [{ "name": "base", "snippet": "const base = () => <Component />;" }],
 			"import": "import { Button, View } from \"reshaped\";",
 			"jsDocTags": {},
 			"error": {
@@ -3292,9 +3290,7 @@
 			"id": "hooks-usertl",
 			"name": "useRTL",
 			"path": "./src/hooks/tests/useRTL.stories.tsx",
-			"stories": [
-				{ "name": "setRTL", "snippet": "const setRTL = () => <Component />;" }
-			],
+			"stories": [{ "name": "setRTL", "snippet": "const setRTL = () => <Component />;" }],
 			"import": "",
 			"jsDocTags": {},
 			"error": {

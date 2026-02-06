@@ -34,10 +34,7 @@ export type CollectedArgs = {
  *   - Returns false for "false", "0", "no" (case-insensitive).
  *   - Returns undefined if the environment variable is unset or set to an unrecognized value.
  */
-function parseBooleanEnv(
-	value: boolean | undefined,
-	envName: string,
-): boolean | undefined {
+function parseBooleanEnv(value: boolean | undefined, envName: string): boolean | undefined {
 	if (value !== undefined) {
 		// don't read from env if value is set by CLI flag
 		return value;
@@ -243,9 +240,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 	// Configure Commander program
 	const program = new Command()
 		.name('eval.ts')
-		.description(
-			'A CLI tool for testing AI coding agents with Storybook and MCP tools.',
-		)
+		.description('A CLI tool for testing AI coding agents with Storybook and MCP tools.')
 		.argument('[eval-name]', 'Name of the eval directory in evals/')
 		.addOption(
 			new Option('-a, --agent <name>', 'Which coding agent to use')
@@ -260,23 +255,12 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				.argParser((value) => value as SupportedModel),
 		)
 		// we don't want to use commander's built in env-handling for boolean values, as it will coearce to true even when the env var is set to 'false'
+		.addOption(new Option('-v, --verbose', 'Show detailed logs during execution (env: VERBOSE)'))
 		.addOption(
-			new Option(
-				'-v, --verbose',
-				'Show detailed logs during execution (env: VERBOSE)',
-			),
+			new Option('-s, --storybook', 'Auto-start Storybook after evaluation (env: STORYBOOK)'),
 		)
 		.addOption(
-			new Option(
-				'-s, --storybook',
-				'Auto-start Storybook after evaluation (env: STORYBOOK)',
-			),
-		)
-		.addOption(
-			new Option(
-				'--no-storybook',
-				'Do not auto-start Storybook after evaluation (env: STORYBOOK)',
-			),
+			new Option('--no-storybook', 'Do not auto-start Storybook after evaluation (env: STORYBOOK)'),
 		)
 		.addOption(
 			new Option(
@@ -284,9 +268,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				'Additional context for the agent (file path or JSON)',
 			).env('CONTEXT'),
 		)
-		.addOption(
-			new Option('--no-context', 'No additional context beyond the prompt'),
-		)
+		.addOption(new Option('--no-context', 'No additional context beyond the prompt'))
 		.addOption(
 			new Option(
 				'--system-prompts <files>',
@@ -294,10 +276,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 			).env('SYSTEM_PROMPTS'),
 		)
 		.addOption(
-			new Option(
-				'-u, --upload-id <id>',
-				'Upload results to Google Sheet with this ID',
-			)
+			new Option('-u, --upload-id <id>', 'Upload results to Google Sheet with this ID')
 				.env('UPLOAD_ID')
 				.argParser((value) => (value === 'false' ? false : value)),
 		)
@@ -418,31 +397,19 @@ export async function collectArgs(): Promise<CollectedArgs> {
 						continue;
 					}
 					if (dirent.name === 'components.json') {
-						const { default: manifestContent } = await import(
-							path.join(evalPath, dirent.name),
-							{
-								with: { type: 'json' },
-							}
-						);
+						const { default: manifestContent } = await import(path.join(evalPath, dirent.name), {
+							with: { type: 'json' },
+						});
 						availableManifest = Object.keys(manifestContent.components || {});
-					} else if (
-						dirent.name.startsWith('system.') &&
-						dirent.name.endsWith('.md')
-					) {
-						const content = await fs.readFile(
-							path.join(evalPath, dirent.name),
-							'utf8',
-						);
+					} else if (dirent.name.startsWith('system.') && dirent.name.endsWith('.md')) {
+						const content = await fs.readFile(path.join(evalPath, dirent.name), 'utf8');
 						availableSystemPrompts[dirent.name] = content;
 					} else if (
 						dirent.name.endsWith('.md') &&
 						dirent.name !== 'prompt.md' &&
 						!dirent.name.startsWith('system.')
 					) {
-						const content = await fs.readFile(
-							path.join(evalPath, dirent.name),
-							'utf8',
-						);
+						const content = await fs.readFile(path.join(evalPath, dirent.name), 'utf8');
 						availableExtraPrompts[dirent.name] = content;
 					}
 				}
@@ -454,8 +421,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				}
 
 				const selectedContextTypes = await p.multiselect<string>({
-					message:
-						'Which additional contexts should the agent have? (select multiple)',
+					message: 'Which additional contexts should the agent have? (select multiple)',
 					options: [
 						{
 							label: 'Storybook MCP - Dev',
@@ -552,8 +518,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 							if (mcpServerType === 'http') {
 								const mcpServerUrl = await p.text({
-									message:
-										'What is the URL for the MCP server? (http://localhost:6006/mcp)',
+									message: 'What is the URL for the MCP server? (http://localhost:6006/mcp)',
 									initialValue: 'http://localhost:6006/mcp',
 								});
 								if (p.isCancel(mcpServerUrl)) {
@@ -569,8 +534,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 								});
 							} else {
 								const mcpServerCommand = await p.text({
-									message:
-										'What is the full command to run the MCP server? (command AND any args)',
+									message: 'What is the full command to run the MCP server? (command AND any args)',
 									placeholder: 'node server.js --port 8080',
 								});
 								if (p.isCancel(mcpServerCommand)) {
@@ -594,15 +558,14 @@ export async function collectArgs(): Promise<CollectedArgs> {
 							break;
 						}
 						case 'extra-prompts': {
-							const extraPromptOptions = Object.entries(
-								availableExtraPrompts,
-							).map(([name, content]) => ({
-								label: name,
-								hint:
-									content.slice(0, 100).replace(/\n/g, ' ') +
-									(content.length > 100 ? '...' : ''),
-								value: name,
-							}));
+							const extraPromptOptions = Object.entries(availableExtraPrompts).map(
+								([name, content]) => ({
+									label: name,
+									hint:
+										content.slice(0, 100).replace(/\n/g, ' ') + (content.length > 100 ? '...' : ''),
+									value: name,
+								}),
+							);
 
 							const selectedExtraPromptNames = await p.multiselect({
 								message: 'Which extra prompts should be included as context?',
@@ -641,15 +604,8 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				for (const dirent of await fs.readdir(evalPath, {
 					withFileTypes: true,
 				})) {
-					if (
-						dirent.isFile() &&
-						dirent.name.startsWith('system.') &&
-						dirent.name.endsWith('.md')
-					) {
-						const content = await fs.readFile(
-							path.join(evalPath, dirent.name),
-							'utf8',
-						);
+					if (dirent.isFile() && dirent.name.startsWith('system.') && dirent.name.endsWith('.md')) {
+						const content = await fs.readFile(path.join(evalPath, dirent.name), 'utf8');
 						availableSystemPrompts[dirent.name] = content;
 					}
 				}
@@ -662,16 +618,13 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				const systemPromptOptions = Object.entries(availableSystemPrompts).map(
 					([name, content]) => ({
 						label: name,
-						hint:
-							content.slice(0, 100).replace(/\n/g, ' ') +
-							(content.length > 100 ? '...' : ''),
+						hint: content.slice(0, 100).replace(/\n/g, ' ') + (content.length > 100 ? '...' : ''),
 						value: name,
 					}),
 				);
 
 				const selectedSystemPromptNames = await p.multiselect({
-					message:
-						'Which system prompts should be included? (will be merged into Claude.md)',
+					message: 'Which system prompts should be included? (will be merged into Claude.md)',
 					options: systemPromptOptions,
 					required: false,
 				});
@@ -690,8 +643,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 
 				// No flag specified, prompt the user
 				const result = await p.text({
-					message:
-						'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
+					message: 'Enter an Upload ID to upload results to Google Sheet (leave blank to skip):',
 					placeholder: 'experiment-batch-1',
 				});
 				if (p.isCancel(result)) {
@@ -723,10 +675,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 		eval: evalName,
 	};
 
-	p.log.message([
-		'To re-run this experiment, call:',
-		buildRerunCommand(result),
-	]);
+	p.log.message(['To re-run this experiment, call:', buildRerunCommand(result)]);
 
 	return result;
 }

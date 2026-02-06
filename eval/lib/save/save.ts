@@ -1,8 +1,4 @@
-import type {
-	EvaluationSummary,
-	ExperimentArgs,
-	ExecutionSummary,
-} from '../../types.ts';
+import type { EvaluationSummary, ExperimentArgs, ExecutionSummary } from '../../types.ts';
 import { taskLog } from '@clack/prompts';
 import { saveEnvironment } from './environment.ts';
 import { saveToGoogleSheets } from './google-sheet.ts';

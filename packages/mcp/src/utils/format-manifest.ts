@@ -27,10 +27,7 @@ export function formatComponentManifest(
 /**
  * Format a single docs manifest.
  */
-export function formatDocsManifest(
-	doc: Doc,
-	format: OutputFormat = 'markdown',
-): string {
+export function formatDocsManifest(doc: Doc, format: OutputFormat = 'markdown'): string {
 	return formatters[format].formatDocsManifest(doc);
 }
 

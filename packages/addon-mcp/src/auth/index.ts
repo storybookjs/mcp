@@ -3,8 +3,8 @@
  */
 
 export {
-  CompositionAuth,
-  extractBearerToken,
-  type ComposedRef,
-  type ManifestProvider,
+	CompositionAuth,
+	extractBearerToken,
+	type ComposedRef,
+	type ManifestProvider,
 } from './composition-auth.ts';

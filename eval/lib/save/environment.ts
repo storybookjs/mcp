@@ -18,11 +18,8 @@ export async function saveEnvironment({ resultsPath, agent }: ExperimentArgs) {
 		),
 	);
 
-	const commit =
-		(await x('git', ['rev-parse', 'HEAD'])).stdout.trim() ?? 'unknown';
-	const branch =
-		(await x('git', ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout.trim() ??
-		'unknown';
+	const commit = (await x('git', ['rev-parse', 'HEAD'])).stdout.trim() ?? 'unknown';
+	const branch = (await x('git', ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout.trim() ?? 'unknown';
 
 	await fs.writeFile(
 		path.join(resultsPath, 'environment.json'),

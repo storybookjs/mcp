@@ -18,9 +18,7 @@ export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 		],
 		{ cwd: projectPath, silent: true },
 	);
-	const evaluationTemplateDir = path.resolve(
-		path.join('templates', 'evaluation'),
-	);
+	const evaluationTemplateDir = path.resolve(path.join('templates', 'evaluation'));
 	await fs.cp(evaluationTemplateDir, projectPath, {
 		recursive: true,
 		filter: (source) =>
@@ -36,8 +34,5 @@ export async function prepareEvaluations({ projectPath }: ExperimentArgs) {
 	// add the storybook script after agent execution, so it does not taint the experiment
 	pkgJson.scripts.storybook = 'storybook dev --port 6006';
 
-	await fs.writeFile(
-		path.join(projectPath, 'package.json'),
-		JSON.stringify(pkgJson, null, 2),
-	);
+	await fs.writeFile(path.join(projectPath, 'package.json'), JSON.stringify(pkgJson, null, 2));
 }

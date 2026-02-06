@@ -20,10 +20,7 @@ export type CoverageFiles = Record<
 	string,
 	{
 		lineHits?: Record<string, number>;
-		branchesByLine?: Record<
-			string,
-			{ covered: number | null; total: number | null }
-		>;
+		branchesByLine?: Record<string, { covered: number | null; total: number | null }>;
 		source?: string;
 	} & CoverageSummary
 >;

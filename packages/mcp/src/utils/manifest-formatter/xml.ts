@@ -116,15 +116,11 @@ export const xmlFormatter: ManifestFormatter = {
 					}
 
 					if (propInfo.required !== undefined) {
-						parts.push(
-							dedent`<prop_required>${propInfo.required}</prop_required>`,
-						);
+						parts.push(dedent`<prop_required>${propInfo.required}</prop_required>`);
 					}
 
 					if (propInfo.defaultValue !== undefined) {
-						parts.push(
-							dedent`<prop_default>${propInfo.defaultValue}</prop_default>`,
-						);
+						parts.push(dedent`<prop_default>${propInfo.defaultValue}</prop_default>`);
 					}
 
 					parts.push('</prop>');

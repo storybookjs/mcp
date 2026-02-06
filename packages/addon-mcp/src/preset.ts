@@ -5,29 +5,25 @@ import * as v from 'valibot';
 import { getManifestStatus } from './tools/is-manifest-available.ts';
 import htmlTemplate from './template.html';
 import path from 'node:path';
-import {
-	CompositionAuth,
-	extractBearerToken,
-	type ComposedRef,
-} from './auth/index.ts';
+import { CompositionAuth, extractBearerToken, type ComposedRef } from './auth/index.ts';
 import { logger } from 'storybook/internal/node-logger';
 import type { Source } from '@storybook/mcp';
 
-export const previewAnnotations: PresetPropertyFn<
-	'previewAnnotations'
-> = async (existingAnnotations = []) => {
+export const previewAnnotations: PresetPropertyFn<'previewAnnotations'> = async (
+	existingAnnotations = [],
+) => {
 	return [...existingAnnotations, path.join(import.meta.dirname, 'preview.js')];
 };
 
-export const experimental_devServer: PresetPropertyFn<
-	'experimental_devServer'
-> = async (app, options) => {
+export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> = async (
+	app,
+	options,
+) => {
 	// There is no error handling here. This can make the whole storybook app crash with:
 	// ValiError: Invalid type: Expected boolean but received "false"
 	const addonOptions = v.parse(AddonOptions, {
 		toolsets: 'toolsets' in options ? options.toolsets : {},
-		experimentalFormat:
-			'experimentalFormat' in options ? options.experimentalFormat : 'markdown',
+		experimentalFormat: 'experimentalFormat' in options ? options.experimentalFormat : 'markdown',
 	});
 
 	const origin = `http://localhost:${options.port}`;
@@ -39,11 +35,7 @@ export const experimental_devServer: PresetPropertyFn<
 	// Build sources and manifest provider only if refs are configured
 	let sources: Source[] | undefined;
 	let manifestProvider:
-		| ((
-				request: Request | undefined,
-				path: string,
-				source?: Source,
-		  ) => Promise<string>)
+		| ((request: Request | undefined, path: string, source?: Source) => Promise<string>)
 		| undefined;
 
 	if (refs.length > 0) {
@@ -106,8 +98,7 @@ export const experimental_devServer: PresetPropertyFn<
 	const manifestStatus = await getManifestStatus(options);
 
 	const isDevEnabled = addonOptions.toolsets?.dev ?? true;
-	const isDocsEnabled =
-		manifestStatus.available && (addonOptions.toolsets?.docs ?? true);
+	const isDocsEnabled = manifestStatus.available && (addonOptions.toolsets?.docs ?? true);
 
 	app!.get('/mcp', (req, res) => {
 		if (!req.headers['accept']?.includes('text/html')) {
@@ -169,11 +160,13 @@ async function getRefsFromConfig(options: any): Promise<ComposedRef[]> {
 		}
 
 		// Convert refs object to array, using the config key as the stable ID
-		return Object.entries(refs).map(([key, value]: [string, any]) => ({
-			id: key,
-			title: value.title || key,
-			url: value.url,
-		})).filter((ref) => ref.url); // Only include refs with URLs
+		return Object.entries(refs)
+			.map(([key, value]: [string, any]) => ({
+				id: key,
+				title: value.title || key,
+				url: value.url,
+			}))
+			.filter((ref) => ref.url); // Only include refs with URLs
 	} catch {
 		return [];
 	}

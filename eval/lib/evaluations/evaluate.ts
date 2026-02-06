@@ -8,9 +8,7 @@ import { taskLog } from '@clack/prompts';
 import { x } from 'tinyexec';
 import { runHook } from '../run-hook.ts';
 
-export async function evaluate(
-	experimentArgs: ExperimentArgs,
-): Promise<EvaluationSummary> {
+export async function evaluate(experimentArgs: ExperimentArgs): Promise<EvaluationSummary> {
 	const log = taskLog({ title: 'Evaluating' });
 	await runHook('pre-evaluate', experimentArgs);
 
@@ -65,8 +63,12 @@ export async function evaluate(
 		return result;
 	};
 
-	const [buildSuccess, typeCheckErrors, lintErrors, testResults] =
-		await Promise.all([buildTask(), typeCheckTask(), lintTask(), testTask()]);
+	const [buildSuccess, typeCheckErrors, lintErrors, testResults] = await Promise.all([
+		buildTask(),
+		typeCheckTask(),
+		lintTask(),
+		testTask(),
+	]);
 
 	const formatGroup = log.group('Formatting results');
 	await x('pnpm', ['exec', 'prettier', '--write', experimentArgs.resultsPath]);

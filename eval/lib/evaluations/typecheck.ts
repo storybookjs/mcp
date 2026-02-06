@@ -32,11 +32,7 @@ export async function checkTypes({
 		path.join(projectPath, 'tsconfig.app.json'),
 		ts.sys.readFile,
 	);
-	const parsedConfig = ts.parseJsonConfigFileContent(
-		configFile.config,
-		ts.sys,
-		projectPath,
-	);
+	const parsedConfig = ts.parseJsonConfigFileContent(configFile.config, ts.sys, projectPath);
 
 	// Create program
 	const program = ts.createProgram({
@@ -46,9 +42,7 @@ export async function checkTypes({
 
 	// Get diagnostics
 	const emitResult = program.emit();
-	const allDiagnostics = ts
-		.getPreEmitDiagnostics(program)
-		.concat(emitResult.diagnostics);
+	const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
 
 	// Structure the output
 	const result: TypeCheckResults = {
@@ -59,13 +53,8 @@ export async function checkTypes({
 
 	allDiagnostics.forEach((diagnostic) => {
 		if (diagnostic.file && diagnostic.start) {
-			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
-				diagnostic.start,
-			);
-			const message = ts.flattenDiagnosticMessageText(
-				diagnostic.messageText,
-				'\n',
-			);
+			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+			const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
 
 			const error = {
 				file: diagnostic.file.fileName,
@@ -88,10 +77,7 @@ export async function checkTypes({
 			});
 		}
 	});
-	await fs.writeFile(
-		path.join(resultsPath, 'typecheck.json'),
-		JSON.stringify(result, null, 2),
-	);
+	await fs.writeFile(path.join(resultsPath, 'typecheck.json'), JSON.stringify(result, null, 2));
 
 	return result.errors.length;
 }

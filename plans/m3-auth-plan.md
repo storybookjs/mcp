@@ -14,14 +14,15 @@ addon-mcp needs to fetch manifests from private Chromatic Storybooks. This docum
 
 ### Endpoint Behavior
 
-| Endpoint | Without Token | With Token |
-|----------|--------------|------------|
-| `/mcp` | 401 + OAuth headers | 200 |
-| `/manifests/*.json` | 302 redirect | 200 |
-| `/manifests/*.json` + `Accept: application/json` | 200 + `{"loginUrl":"..."}` | 200 |
-| `/index.html` | 302 redirect | 200 |
+| Endpoint                                         | Without Token              | With Token |
+| ------------------------------------------------ | -------------------------- | ---------- |
+| `/mcp`                                           | 401 + OAuth headers        | 200        |
+| `/manifests/*.json`                              | 302 redirect               | 200        |
+| `/manifests/*.json` + `Accept: application/json` | 200 + `{"loginUrl":"..."}` | 200        |
+| `/index.html`                                    | 302 redirect               | 200        |
 
 **Detection strategy:** When fetching manifest with `Accept: application/json`:
+
 - If response contains `{"loginUrl": ...}` → needs auth, use `/mcp` for OAuth discovery
 - If response contains actual manifest data → no auth needed
 
@@ -36,29 +37,32 @@ GET /mcp
 ```
 
 Resource metadata (`.well-known/oauth-protected-resource`):
+
 ```json
 {
-  "resource": "https://xxx.chromatic.com/mcp",
-  "authorization_servers": ["https://www.chromatic.com"],
-  "scopes_supported": ["storybook:read", "project:read"]
+	"resource": "https://xxx.chromatic.com/mcp",
+	"authorization_servers": ["https://www.chromatic.com"],
+	"scopes_supported": ["storybook:read", "project:read"]
 }
 ```
 
 Auth server metadata (`/.well-known/oauth-authorization-server`):
+
 ```json
 {
-  "issuer": "https://www.chromatic.com",
-  "authorization_endpoint": "https://www.chromatic.com/authorize",
-  "token_endpoint": "https://www.chromatic.com/token",
-  "client_id_metadata_document_supported": true,
-  "code_challenge_methods_supported": ["S256"],
-  "grant_types_supported": ["authorization_code", "refresh_token"]
+	"issuer": "https://www.chromatic.com",
+	"authorization_endpoint": "https://www.chromatic.com/authorize",
+	"token_endpoint": "https://www.chromatic.com/token",
+	"client_id_metadata_document_supported": true,
+	"code_challenge_methods_supported": ["S256"],
+	"grant_types_supported": ["authorization_code", "refresh_token"]
 }
 ```
 
 ### Token Scope (Verified)
 
 Chromatic tokens are **user-scoped**, not project-scoped:
+
 - JWT payload has `userId` but no project ID
 - One token works across ALL Storybooks you have access to
 - 404 on manifests just means MCP not enabled for that Storybook
@@ -94,18 +98,21 @@ Session init: MCP Client -> Composing MCP server ("Server")
 ```
 
 **Key insight:** addon-mcp acts as a **proxy**:
+
 - It **discovers** auth requirements from Chromatic's `.well-known` (step 3)
 - It **exposes** those requirements as its own `.well-known` (step 5)
 - VS Code's built-in MCP auth handles the OAuth flow with Chromatic
 - Token flows: Chromatic → VS Code → addon-mcp → Chromatic (to fetch manifests)
 
 **Why this approach:**
+
 - No OAuth implementation in addon-mcp (VS Code handles it)
 - Uses standard MCP auth flow
 - Cleaner architecture
 - Token caching handled by VS Code
 
 **Limitation (from Tom):**
+
 > "Given the formats afaik only allow supplying a single auth server that implies the union of 'all auth servers' has to be a single one - ie all chromatic or all something else."
 
 This is why we scope to Chromatic-only for MVP.
@@ -121,22 +128,23 @@ addon-mcp reads composed Storybook URLs from the `refs` config in `.storybook/ma
 ```typescript
 // .storybook/main.ts
 const config: StorybookConfig = {
-  framework: '@storybook/react-vite',
-  stories: ['../src/**/*.stories  .@(js|jsx|ts|tsx)'],
-  refs: {
-    'design-system': {
-      title: 'Design System',
-      url: 'https://next--635781f3500dd2c49e189caf.chromatic.com',
-    },
-    'component-lib': {
-      title: 'Component Library',
-      url: 'https://main--66b1e47012f95c6f90c8882e.chromatic.com',
-    },
-  },
+	framework: '@storybook/react-vite',
+	stories: ['../src/**/*.stories  .@(js|jsx|ts|tsx)'],
+	refs: {
+		'design-system': {
+			title: 'Design System',
+			url: 'https://next--635781f3500dd2c49e189caf.chromatic.com',
+		},
+		'component-lib': {
+			title: 'Component Library',
+			url: 'https://main--66b1e47012f95c6f90c8882e.chromatic.com',
+		},
+	},
 };
 ```
 
 addon-mcp will:
+
 1. Read `refs` from Storybook config
 2. Try to fetch manifests from each URL
 3. For any that need auth:
@@ -147,6 +155,7 @@ addon-mcp will:
 6. Combine with local manifests
 
 **Note:** This works for any hosting provider that implements MCP auth:
+
 - Ideally: manifest endpoint returns 401 + `WWW-Authenticate` header
 - Fallback: `/mcp` endpoint returns 401 + `WWW-Authenticate` header
 - Has `.well-known/oauth-protected-resource` discovery
@@ -196,38 +205,40 @@ See: https://storybook.js.org/docs/sharing/storybook-composition
 
 ### Files Created
 
-| File | Purpose |
-|------|---------|
-| `packages/addon-mcp/src/auth/index.ts` | Exports |
-| `packages/addon-mcp/src/auth/discovery.ts` | Discover OAuth from remote `/mcp` endpoint |
-| `packages/addon-mcp/src/auth/state.ts` | Auth state management, `.well-known` builders |
-| `packages/addon-mcp/src/auth/composition.ts` | Multi-source manifest fetching |
+| File                                         | Purpose                                       |
+| -------------------------------------------- | --------------------------------------------- |
+| `packages/addon-mcp/src/auth/index.ts`       | Exports                                       |
+| `packages/addon-mcp/src/auth/discovery.ts`   | Discover OAuth from remote `/mcp` endpoint    |
+| `packages/addon-mcp/src/auth/state.ts`       | Auth state management, `.well-known` builders |
+| `packages/addon-mcp/src/auth/composition.ts` | Multi-source manifest fetching                |
 
 ### Files Modified
 
-| File | Changes |
-|------|---------|
-| `packages/addon-mcp/src/preset.ts` | Added `/.well-known/oauth-protected-resource` endpoint, 401 handling, refs reading |
-| `packages/addon-mcp/src/mcp-handler.ts` | Accept `manifestProvider` parameter |
+| File                                    | Changes                                                                            |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| `packages/addon-mcp/src/preset.ts`      | Added `/.well-known/oauth-protected-resource` endpoint, 401 handling, refs reading |
+| `packages/addon-mcp/src/mcp-handler.ts` | Accept `manifestProvider` parameter                                                |
 
 ### Key Code
 
 **`preset.ts` - .well-known endpoint:**
+
 ```typescript
 app.get('/.well-known/oauth-protected-resource', (_req, res) => {
-  const authState = getAuthState();
-  if (!authState.requiresAuth) {
-    res.writeHead(404);
-    res.end('Not found');
-    return;
-  }
-  const resourceMetadata = buildOAuthProtectedResource(origin);
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(resourceMetadata));
+	const authState = getAuthState();
+	if (!authState.requiresAuth) {
+		res.writeHead(404);
+		res.end('Not found');
+		return;
+	}
+	const resourceMetadata = buildOAuthProtectedResource(origin);
+	res.writeHead(200, { 'Content-Type': 'application/json' });
+	res.end(JSON.stringify(resourceMetadata));
 });
 ```
 
 **`preset.ts` - 401 response:**
+
 ```typescript
 app.post('/mcp', (req, res) => {
   // Check for token
@@ -251,19 +262,20 @@ app.post('/mcp', (req, res) => {
 ```
 
 **`discovery.ts` - OAuth discovery:**
+
 ```typescript
 async function discoverOAuthFromMcp(manifestUrl: string): Promise<AuthRequirement | null> {
-  const url = new URL(manifestUrl);
-  url.pathname = '/mcp';
+	const url = new URL(manifestUrl);
+	url.pathname = '/mcp';
 
-  const response = await fetch(url.toString());
-  if (response.status !== 401) return null;
+	const response = await fetch(url.toString());
+	if (response.status !== 401) return null;
 
-  const wwwAuth = response.headers.get('WWW-Authenticate');
-  // Parse resource_metadata URL from header
-  // Fetch .well-known/oauth-protected-resource
-  // Fetch .well-known/oauth-authorization-server
-  return { resourceMetadataUrl, resourceMetadata, serverMetadata };
+	const wwwAuth = response.headers.get('WWW-Authenticate');
+	// Parse resource_metadata URL from header
+	// Fetch .well-known/oauth-protected-resource
+	// Fetch .well-known/oauth-authorization-server
+	return { resourceMetadataUrl, resourceMetadata, serverMetadata };
 }
 ```
 
@@ -272,6 +284,7 @@ async function discoverOAuthFromMcp(manifestUrl: string): Promise<AuthRequiremen
 ✅ **Prototype builds successfully** - Ready for testing with a real Storybook + Chromatic setup.
 
 **Next steps:**
+
 1. Test with a local Storybook that has `refs` pointing to private Chromatic
 2. Verify VS Code MCP client handles the 401 → OAuth flow
 3. Verify token is passed back and manifests are fetched
@@ -316,6 +329,7 @@ if (isBrowserNavigation) {
 This way ALL endpoints (including `/manifests/*.json`) would return proper 401 + OAuth headers for programmatic clients, without hardcoding URLs.
 
 **Standards:**
+
 - `Sec-Fetch-Mode: navigate` - browser navigation (modern browsers send this automatically)
 - `Sec-Fetch-Dest: document` - browser wants HTML
 - RFC 6750 (OAuth Bearer Token) - servers SHOULD return 401 for API clients

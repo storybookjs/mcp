@@ -71,11 +71,7 @@ export interface ResultMessage {
 	costUSD?: number;
 }
 
-export type ConversationMessage =
-	| AssistantMessage
-	| UserMessage
-	| SystemMessage
-	| ResultMessage;
+export type ConversationMessage = AssistantMessage | UserMessage | SystemMessage | ResultMessage;
 
 export interface ConversationProps {
 	prompt: string;

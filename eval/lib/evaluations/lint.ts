@@ -25,10 +25,7 @@ export async function runESLint({
 		errorCount: results.reduce((sum, r) => sum + r.errorCount, 0),
 		warningCount: results.reduce((sum, r) => sum + r.warningCount, 0),
 		fixableErrorCount: results.reduce((sum, r) => sum + r.fixableErrorCount, 0),
-		fixableWarningCount: results.reduce(
-			(sum, r) => sum + r.fixableWarningCount,
-			0,
-		),
+		fixableWarningCount: results.reduce((sum, r) => sum + r.fixableWarningCount, 0),
 		files: results
 			.map((result) => ({
 				filePath: result.filePath,
@@ -56,10 +53,7 @@ export async function runESLint({
 			.filter((f) => f.messages.length > 0),
 	};
 
-	await fs.writeFile(
-		path.join(resultsPath, 'lint.json'),
-		JSON.stringify(structured, null, 2),
-	);
+	await fs.writeFile(path.join(resultsPath, 'lint.json'), JSON.stringify(structured, null, 2));
 	await fs.writeFile(path.join(resultsPath, 'lint.txt'), formatted);
 
 	return structured.errorCount;

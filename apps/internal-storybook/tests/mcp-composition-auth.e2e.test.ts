@@ -12,11 +12,7 @@ let storybookProcess: ReturnType<typeof x> | null = null;
 /**
  * Helper to create MCP protocol requests
  */
-function createMCPRequestBody(
-	method: string,
-	params: any = {},
-	id: number = 1,
-) {
+function createMCPRequestBody(method: string, params: any = {}, id: number = 1) {
 	return {
 		jsonrpc: '2.0',
 		id,
@@ -28,11 +24,7 @@ function createMCPRequestBody(
 /**
  * Helper to make MCP requests (with optional auth token)
  */
-async function mcpRequest(
-	method: string,
-	params: any = {},
-	token?: string,
-) {
+async function mcpRequest(method: string, params: any = {}, token?: string) {
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
 	};
@@ -62,10 +54,7 @@ async function parseMCPResponse(response: Response) {
  * Wait for MCP endpoint to be ready by polling it directly.
  * For auth-required endpoints, a 401 also means the server is up.
  */
-async function waitForMcpEndpoint(
-	maxAttempts = 120,
-	interval = 500,
-): Promise<void> {
+async function waitForMcpEndpoint(maxAttempts = 120, interval = 500): Promise<void> {
 	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	let attempts = 0;
 
@@ -89,9 +78,7 @@ async function waitForMcpEndpoint(
 
 		if (attempts >= maxAttempts) {
 			clearInterval(intervalId);
-			reject(
-				new Error('MCP endpoint failed to start within the timeout period'),
-			);
+			reject(new Error('MCP endpoint failed to start within the timeout period'));
 		}
 	}, interval);
 
@@ -197,9 +184,7 @@ describe('MCP Composition Auth E2E Tests', () => {
 			const response = await mcpRequest('tools/list', {}, 'dummy-token');
 			const data = await parseMCPResponse(response);
 
-			const getDocTool = data.result.tools.find(
-				(t: any) => t.name === 'get-documentation',
-			);
+			const getDocTool = data.result.tools.find((t: any) => t.name === 'get-documentation');
 
 			expect(getDocTool).toBeDefined();
 			expect(getDocTool.inputSchema.properties).toHaveProperty('storybookId');

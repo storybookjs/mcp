@@ -28,18 +28,13 @@ if (!dirExists) {
 	process.exit(1);
 }
 
-const localDateTimestamp = new Date(
-	Date.now() - new Date().getTimezoneOffset() * 60000,
-)
+const localDateTimestamp = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
 	.toISOString()
 	.slice(0, 19)
 	.replace(/[:.]/g, '-');
 
 let contextPrefix = '';
-if (
-	args.context.length === 0 ||
-	(args.context.length === 1 && args.context[0]!.type === false)
-) {
+if (args.context.length === 0 || (args.context.length === 1 && args.context[0]!.type === false)) {
 	contextPrefix = 'no-context';
 } else {
 	const prefixes: string[] = [];
@@ -51,18 +46,14 @@ if (
 			case 'extra-prompts':
 				prefixes.push(
 					context.prompts
-						.map((prompt) =>
-							path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'),
-						)
+						.map((prompt) => path.parse(prompt).name.toLowerCase().replace(/\s+/g, '-'))
 						.join('-'),
 				);
 				break;
 			case 'mcp-server':
 				prefixes.push(
 					Object.keys(context.mcpServerConfig)
-						.map((mcpServerName) =>
-							mcpServerName.toLowerCase().replace(/\s+/g, '-'),
-						)
+						.map((mcpServerName) => mcpServerName.toLowerCase().replace(/\s+/g, '-'))
 						.join('-'),
 				);
 				break;
@@ -92,17 +83,14 @@ const experimentArgs: ExperimentArgs = {
 	context: args.context,
 	agent: args.agent,
 	model: args.model,
-	hooks: await import(path.join(evalPath, 'hooks.ts'))
-		.then((mod) => mod.default)
-		.catch(() => ({})),
+	hooks: await import(path.join(evalPath, 'hooks.ts')).then((mod) => mod.default).catch(() => ({})),
 };
 
 p.log.info(
 	`Running experiment '${args.eval}' with agent '${args.agent}' and model '${args.model}'`,
 );
 
-const { mcpServerConfig: preparedMcpConfig } =
-	await prepareExperiment(experimentArgs);
+const { mcpServerConfig: preparedMcpConfig } = await prepareExperiment(experimentArgs);
 
 const prompt = await generatePrompt(evalPath, args.context);
 await fs.writeFile(path.join(experimentPath, 'prompt.md'), prompt);
@@ -125,11 +113,7 @@ for (const context of args.context) {
 }
 
 const agent = agents[args.agent];
-const promptSummary = await agent.execute(
-	prompt,
-	experimentArgs,
-	mergedMcpConfig,
-);
+const promptSummary = await agent.execute(prompt, experimentArgs, mergedMcpConfig);
 
 try {
 	await teardownExperiment(experimentArgs);
@@ -155,10 +139,7 @@ p.log.message(
 	`✨ Lint: ${evaluationSummary.lintErrors === 0 ? '✅' : styleText('red', `❌ ${evaluationSummary.lintErrors} errors`)}`,
 );
 
-if (
-	evaluationSummary.test.failed === 0 &&
-	evaluationSummary.test.passed === 0
-) {
+if (evaluationSummary.test.failed === 0 && evaluationSummary.test.passed === 0) {
 	p.log.message(`🧪 Tests: ❌ ${styleText('red', 'Failed to run')}`);
 	p.log.message(`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`);
 } else if (evaluationSummary.test.failed > 0) {
@@ -170,9 +151,7 @@ if (
 			`🦾 Accessibility: ⚠️  ${styleText('yellow', `${evaluationSummary.a11y.violations} violations from ${evaluationSummary.test.passed}/${evaluationSummary.test.passed + evaluationSummary.test.failed} tests`)}`,
 		);
 	} else {
-		p.log.message(
-			`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`,
-		);
+		p.log.message(`🦾 Accessibility: ⚠️  ${styleText('yellow', 'Inconclusive')}`);
 	}
 } else {
 	p.log.message('🧪 Tests: ✅');
@@ -213,19 +192,11 @@ if (cov) {
 	}
 }
 
-p.log.message(
-	`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`,
-);
-p.log.message(
-	`💰 Cost: ${promptSummary.cost ? `$${promptSummary.cost}` : 'unknown'}`,
-);
+p.log.message(`⏱️  Duration: ${promptSummary.duration}s (API: ${promptSummary.durationApi}s)`);
+p.log.message(`💰 Cost: ${promptSummary.cost ? `$${promptSummary.cost}` : 'unknown'}`);
 p.log.message(`🔄 Turns: ${promptSummary.turns}`);
 
-const chromaticUrl = await save(
-	experimentArgs,
-	evaluationSummary,
-	promptSummary,
-);
+const chromaticUrl = await save(experimentArgs, evaluationSummary, promptSummary);
 
 if (chromaticUrl) {
 	p.log.message(

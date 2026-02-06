@@ -11,16 +11,13 @@ export async function testStories({
 	projectPath,
 	resultsPath,
 	context,
-}: ExperimentArgs): Promise<
-	Pick<EvaluationSummary, 'test' | 'a11y' | 'coverage'>
-> {
+}: ExperimentArgs): Promise<Pick<EvaluationSummary, 'test' | 'a11y' | 'coverage'>> {
 	const isDevEval = isDevEvaluation(context);
 	const testScript = isDevEval ? 'eval:test:coverage' : 'eval:test';
 
 	await runTests({ projectPath, resultsPath } as ExperimentArgs, testScript);
 
-	const { testSummary, a11y, storyResults } =
-		await parseTestResults(resultsPath);
+	const { testSummary, a11y, storyResults } = await parseTestResults(resultsPath);
 
 	await writeStoryArtifacts(resultsPath, storyResults, a11y);
 
@@ -32,11 +29,7 @@ export async function testStories({
 		const templateCoverageMdxPath = path.resolve(
 			path.join('templates', 'evaluation', 'results', 'coverage.mdx'),
 		);
-		const projectCoverageMdxPath = path.join(
-			projectPath,
-			'results',
-			'coverage.mdx',
-		);
+		const projectCoverageMdxPath = path.join(projectPath, 'results', 'coverage.mdx');
 		await fs.copyFile(templateCoverageMdxPath, projectCoverageMdxPath);
 	}
 

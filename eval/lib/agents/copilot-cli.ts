@@ -43,9 +43,7 @@ export const copilotCli: Agent = {
 
 		await runHook('pre-execute-agent', experimentArgs);
 
-		log.start(
-			`Executing prompt with GitHub Copilot CLI (model: ${copilotModel})`,
-		);
+		log.start(`Executing prompt with GitHub Copilot CLI (model: ${copilotModel})`);
 
 		const copilotConfigDir = path.join(projectPath, '.copilot');
 
@@ -60,9 +58,10 @@ export const copilotCli: Agent = {
 				agent: 'Copilot CLI',
 				model: copilotModel,
 				tools: [],
-				mcp_servers: (mcpServerConfig ? Object.keys(mcpServerConfig) : []).map(
-					(name) => ({ name, status: 'unknown' }),
-				),
+				mcp_servers: (mcpServerConfig ? Object.keys(mcpServerConfig) : []).map((name) => ({
+					name,
+					status: 'unknown',
+				})),
 				cwd: projectPath,
 				ms: 0,
 			},
@@ -102,20 +101,12 @@ export const copilotCli: Agent = {
 			await copilotProcess;
 		} catch (error: any) {
 			err = error?.stderr || error?.message || String(error);
-			clackLog.error(
-				`Copilot CLI failed: ${err.split('\n')[0] || 'unknown error'}`,
-			);
+			clackLog.error(`Copilot CLI failed: ${err.split('\n')[0] || 'unknown error'}`);
 		}
 
 		const elapsedMs = Date.now() - t0;
-		const apiS = parseDurationSeconds(
-			out,
-			/Total duration \(API\):\s*([0-9]+)m\s*([0-9.]+)s/i,
-		);
-		const wallS = parseDurationSeconds(
-			out,
-			/Total duration \(wall\):\s*([0-9]+)m\s*([0-9.]+)s/i,
-		);
+		const apiS = parseDurationSeconds(out, /Total duration \(API\):\s*([0-9]+)m\s*([0-9.]+)s/i);
+		const wallS = parseDurationSeconds(out, /Total duration \(wall\):\s*([0-9]+)m\s*([0-9.]+)s/i);
 		const wallMs = Math.round((wallS ?? elapsedMs / 1000) * 1000);
 		const apiMs = Math.round((apiS ?? elapsedMs / 1000) * 1000);
 
@@ -181,9 +172,7 @@ export const copilotCli: Agent = {
 
 		// Parse token usage from the output
 		const tokenUsage = parseTokenUsage(out);
-		const totalTokens = tokenUsage
-			? tokenUsage.input + tokenUsage.output
-			: undefined;
+		const totalTokens = tokenUsage ? tokenUsage.input + tokenUsage.output : undefined;
 
 		const isError = err.trim().length > 0;
 		const resultMessage: ResultMessage = {
@@ -213,9 +202,7 @@ export const copilotCli: Agent = {
 			),
 		);
 
-		const successMessage = isError
-			? 'Copilot CLI completed with errors'
-			: 'Copilot CLI completed';
+		const successMessage = isError ? 'Copilot CLI completed with errors' : 'Copilot CLI completed';
 		await runHook('post-execute-agent', experimentArgs);
 		log.stop(successMessage);
 
@@ -326,9 +313,7 @@ function parseDurationSeconds(text: string, regex: RegExp): number | null {
  *
  * Returns { input, output } token counts, or null if not found.
  */
-function parseTokenUsage(
-	text: string,
-): { input: number; output: number } | null {
+function parseTokenUsage(text: string): { input: number; output: number } | null {
 	// Match patterns like "163.2k input" or "6.0k output" or "1234 input"
 	const inputMatch = text.match(/([0-9.]+)k?\s+input/i);
 	const outputMatch = text.match(/([0-9.]+)k?\s+output/i);
@@ -383,15 +368,10 @@ async function writeCopilotMcpConfig(
 			}
 			default: {
 				const unsupportedServer: never = server;
-				throw new Error(
-					`Unsupported server type: ${(unsupportedServer as any).type}`,
-				);
+				throw new Error(`Unsupported server type: ${(unsupportedServer as any).type}`);
 			}
 		}
 	}
 
-	await fs.writeFile(
-		configPath,
-		JSON.stringify({ mcpServers: converted }, null, 2),
-	);
+	await fs.writeFile(configPath, JSON.stringify({ mcpServers: converted }, null, 2));
 }

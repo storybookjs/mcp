@@ -365,12 +365,8 @@ describe('getDocumentationTool', () => {
 			});
 
 			expect((response.result as any).isError).toBe(true);
-			expect((response.result as any).content[0].text).toContain(
-				'storybookId is required',
-			);
-			expect((response.result as any).content[0].text).toContain(
-				'local, remote',
-			);
+			expect((response.result as any).content[0].text).toContain('storybookId is required');
+			expect((response.result as any).content[0].text).toContain('local, remote');
 		});
 
 		it('should return error when storybookId is invalid', async () => {
@@ -393,9 +389,7 @@ describe('getDocumentationTool', () => {
 			expect((response.result as any).content[0].text).toContain(
 				'Storybook source not found: "nonexistent"',
 			);
-			expect((response.result as any).content[0].text).toContain(
-				'local, remote',
-			);
+			expect((response.result as any).content[0].text).toContain('local, remote');
 		});
 
 		it('should fetch documentation with storybookId', async () => {
@@ -419,11 +413,7 @@ describe('getDocumentationTool', () => {
 			});
 
 			expect((response.result as any).content[0].text).toContain('# Button');
-			expect(getManifestsSpy).toHaveBeenCalledWith(
-				mockHttpRequest,
-				undefined,
-				sources[0],
-			);
+			expect(getManifestsSpy).toHaveBeenCalledWith(mockHttpRequest, undefined, sources[0]);
 		});
 
 		it('should pass remote source to getManifests', async () => {
@@ -447,11 +437,7 @@ describe('getDocumentationTool', () => {
 			});
 
 			expect((response.result as any).content[0].text).toContain('# Badge');
-			expect(getManifestsSpy).toHaveBeenCalledWith(
-				mockHttpRequest,
-				undefined,
-				sources[1],
-			);
+			expect(getManifestsSpy).toHaveBeenCalledWith(mockHttpRequest, undefined, sources[1]);
 		});
 
 		it('should include source in not-found error message', async () => {
@@ -475,9 +461,7 @@ describe('getDocumentationTool', () => {
 			});
 
 			expect((response.result as any).isError).toBe(true);
-			expect((response.result as any).content[0].text).toContain(
-				'in source "local"',
-			);
+			expect((response.result as any).content[0].text).toContain('in source "local"');
 		});
 
 		it('should call onGetDocumentation with storybookId', async () => {

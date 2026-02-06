@@ -22,13 +22,7 @@ interface LintProps {
 	files: LintFile[];
 }
 
-const LintMessageItem = ({
-	message,
-	filePath,
-}: {
-	message: LintMessage;
-	filePath: string;
-}) => (
+const LintMessageItem = ({ message, filePath }: { message: LintMessage; filePath: string }) => (
 	<div
 		style={{
 			padding: '0.75rem',
@@ -115,9 +109,7 @@ export const Lint = (props: LintProps) => {
 	}
 
 	const errorFiles = props.files.filter((f) => f.errorCount > 0);
-	const warningOnlyFiles = props.files.filter(
-		(f) => f.errorCount === 0 && f.warningCount > 0,
-	);
+	const warningOnlyFiles = props.files.filter((f) => f.errorCount === 0 && f.warningCount > 0);
 
 	return (
 		<div style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
@@ -134,20 +126,12 @@ export const Lint = (props: LintProps) => {
 			>
 				<div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
 					<div>
-						<span style={{ fontWeight: 600, color: '#991b1b' }}>
-							{props.errorCount}
-						</span>{' '}
-						<span style={{ color: '#6b7280' }}>
-							errors ({props.fixableErrorCount} fixable)
-						</span>
+						<span style={{ fontWeight: 600, color: '#991b1b' }}>{props.errorCount}</span>{' '}
+						<span style={{ color: '#6b7280' }}>errors ({props.fixableErrorCount} fixable)</span>
 					</div>
 					<div>
-						<span style={{ fontWeight: 600, color: '#92400e' }}>
-							{props.warningCount}
-						</span>{' '}
-						<span style={{ color: '#6b7280' }}>
-							warnings ({props.fixableWarningCount} fixable)
-						</span>
+						<span style={{ fontWeight: 600, color: '#92400e' }}>{props.warningCount}</span>{' '}
+						<span style={{ color: '#6b7280' }}>warnings ({props.fixableWarningCount} fixable)</span>
 					</div>
 				</div>
 			</div>

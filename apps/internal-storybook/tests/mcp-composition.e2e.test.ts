@@ -10,11 +10,7 @@ let storybookProcess: ReturnType<typeof x> | null = null;
 /**
  * Helper to create MCP protocol requests
  */
-function createMCPRequestBody(
-	method: string,
-	params: any = {},
-	id: number = 1,
-) {
+function createMCPRequestBody(method: string, params: any = {}, id: number = 1) {
 	return {
 		jsonrpc: '2.0',
 		id,
@@ -49,10 +45,7 @@ async function mcpRequest(method: string, params: any = {}, id: number = 1) {
 /**
  * Wait for MCP endpoint to be ready by polling it directly
  */
-async function waitForMcpEndpoint(
-	maxAttempts = 120,
-	interval = 500,
-): Promise<void> {
+async function waitForMcpEndpoint(maxAttempts = 120, interval = 500): Promise<void> {
 	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	let attempts = 0;
 
@@ -75,9 +68,7 @@ async function waitForMcpEndpoint(
 
 		if (attempts >= maxAttempts) {
 			clearInterval(intervalId);
-			reject(
-				new Error('MCP endpoint failed to start within the timeout period'),
-			);
+			reject(new Error('MCP endpoint failed to start within the timeout period'));
 		}
 	}, interval);
 
@@ -206,9 +197,7 @@ describe('MCP Composition E2E Tests', () => {
 	describe('Public Refs (No Auth)', () => {
 		it('should not require authentication for public refs', async () => {
 			// The .well-known endpoint should return "Not found" for public refs
-			const response = await fetch(
-				'http://localhost:6007/.well-known/oauth-protected-resource',
-			);
+			const response = await fetch('http://localhost:6007/.well-known/oauth-protected-resource');
 			const text = await response.text();
 
 			// Public refs should not expose OAuth metadata
@@ -220,9 +209,7 @@ describe('MCP Composition E2E Tests', () => {
 		it('should include storybookId parameter in get-documentation schema', async () => {
 			const response = await mcpRequest('tools/list');
 
-			const getDocTool = response.result.tools.find(
-				(t: any) => t.name === 'get-documentation',
-			);
+			const getDocTool = response.result.tools.find((t: any) => t.name === 'get-documentation');
 
 			expect(getDocTool).toBeDefined();
 			expect(getDocTool.inputSchema.properties).toHaveProperty('storybookId');

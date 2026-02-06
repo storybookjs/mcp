@@ -7,14 +7,8 @@ import { addGetDocumentationTool } from './tools/get-documentation.ts';
 import type { StorybookContext } from './types.ts';
 
 // Export tools for reuse by addon-mcp
-export {
-	addListAllDocumentationTool,
-	LIST_TOOL_NAME,
-} from './tools/list-all-documentation.ts';
-export {
-	addGetDocumentationTool,
-	GET_TOOL_NAME,
-} from './tools/get-documentation.ts';
+export { addListAllDocumentationTool, LIST_TOOL_NAME } from './tools/list-all-documentation.ts';
+export { addGetDocumentationTool, GET_TOOL_NAME } from './tools/get-documentation.ts';
 
 // Export manifest constants and utilities
 export {
@@ -24,12 +18,7 @@ export {
 } from './utils/get-manifest.ts';
 
 // Export types for reuse
-export type {
-	StorybookContext,
-	Source,
-	SourceManifests,
-	MultiSourceManifests,
-} from './types.ts';
+export type { StorybookContext, Source, SourceManifests, MultiSourceManifests } from './types.ts';
 
 // copied from tmcp internals as it's not exposed
 type InitializeRequestParams = {
@@ -69,15 +58,10 @@ export interface StorybookMcpHandlerOptions extends StorybookContext {
 	 * This is only valid at the handler creation level, not per-request.
 	 * Receives the initialize request parameters from the MCP protocol.
 	 */
-	onSessionInitialize?: (
-		initializeRequestParams: InitializeRequestParams,
-	) => void | Promise<void>;
+	onSessionInitialize?: (initializeRequestParams: InitializeRequestParams) => void | Promise<void>;
 }
 export type { ComponentManifest } from './types.ts';
-export {
-	ComponentManifestMap,
-	DocsManifestMap,
-} from './types.ts';
+export { ComponentManifestMap, DocsManifestMap } from './types.ts';
 
 type Handler = (req: Request, context?: StorybookContext) => Promise<Response>;
 
@@ -113,10 +97,8 @@ export const createStorybookMcpHandler = async (
 			request: req,
 			format: context?.format ?? options.format ?? 'markdown',
 			manifestProvider: context?.manifestProvider ?? options.manifestProvider,
-			onListAllDocumentation:
-				context?.onListAllDocumentation ?? options.onListAllDocumentation,
-			onGetDocumentation:
-				context?.onGetDocumentation ?? options.onGetDocumentation,
+			onListAllDocumentation: context?.onListAllDocumentation ?? options.onListAllDocumentation,
+			onGetDocumentation: context?.onGetDocumentation ?? options.onGetDocumentation,
 		});
 	}) as Handler;
 };

@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
-import {
-	addListAllDocumentationTool,
-	LIST_TOOL_NAME,
-} from './list-all-documentation.ts';
+import { addListAllDocumentationTool, LIST_TOOL_NAME } from './list-all-documentation.ts';
 import type { StorybookContext, Source } from '../types.ts';
 import smallManifestFixture from '../../fixtures/small-manifest.fixture.json' with { type: 'json' };
 import smallDocsManifestFixture from '../../fixtures/small-docs-manifest.fixture.json' with { type: 'json' };
@@ -104,10 +101,7 @@ describe('listAllDocumentationTool', () => {
 		};
 
 		it('should return grouped output from multiple sources', async () => {
-			const getMultiSourceManifestsSpy = vi.spyOn(
-				getManifest,
-				'getMultiSourceManifests',
-			);
+			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
 					source: sources[0],
@@ -146,10 +140,7 @@ describe('listAllDocumentationTool', () => {
 		});
 
 		it('should call onListAllDocumentation with first successful source', async () => {
-			const getMultiSourceManifestsSpy = vi.spyOn(
-				getManifest,
-				'getMultiSourceManifests',
-			);
+			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
 					source: sources[0],
@@ -195,10 +186,7 @@ describe('listAllDocumentationTool', () => {
 		});
 
 		it('should show error for failed sources while displaying successful ones', async () => {
-			const getMultiSourceManifestsSpy = vi.spyOn(
-				getManifest,
-				'getMultiSourceManifests',
-			);
+			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
 					source: sources[0],

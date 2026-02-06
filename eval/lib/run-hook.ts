@@ -39,10 +39,7 @@ const HOOK_CONFIG = {
 		directory: 'post-save',
 		hookName: 'postSave',
 	},
-} as const satisfies Record<
-	string,
-	{ directory: string; hookName: keyof Hooks }
->;
+} as const satisfies Record<string, { directory: string; hookName: keyof Hooks }>;
 
 export type HookName = keyof typeof HOOK_CONFIG;
 
@@ -57,10 +54,7 @@ export type HookName = keyof typeof HOOK_CONFIG;
  * @param hookName - The name of the step to run (e.g., 'pre-evaluate', 'post-prepare-experiment')
  * @param experimentArgs - The experiment arguments containing paths and hooks
  */
-export async function runHook(
-	hookName: HookName,
-	experimentArgs: ExperimentArgs,
-): Promise<void> {
+export async function runHook(hookName: HookName, experimentArgs: ExperimentArgs): Promise<void> {
 	const config = HOOK_CONFIG[hookName];
 	const hookDir = path.join(experimentArgs.evalPath, config.directory);
 

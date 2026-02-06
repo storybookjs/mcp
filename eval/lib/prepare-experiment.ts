@@ -40,8 +40,7 @@ export async function prepareExperiment(
 	await fs.mkdir(experimentArgs.resultsPath, { recursive: true });
 	await fs.cp(projectTemplatePath, experimentArgs.projectPath, {
 		recursive: true,
-		filter: (source) =>
-			!source.includes('node_modules') && !source.includes('dist'),
+		filter: (source) => !source.includes('node_modules') && !source.includes('dist'),
 	});
 
 	const packageJsonPath = path.join(experimentArgs.projectPath, 'package.json');
@@ -90,9 +89,7 @@ export async function prepareExperiment(
 		log.message('Setting up Storybook for Storybook Dev MCP context');
 
 		// Copy evaluation template (includes .storybook config with addon-mcp, vitest setup, etc.)
-		const evaluationTemplatePath = path.resolve(
-			path.join('templates', 'evaluation'),
-		);
+		const evaluationTemplatePath = path.resolve(path.join('templates', 'evaluation'));
 		await fs.cp(evaluationTemplatePath, experimentArgs.projectPath, {
 			recursive: true,
 			force: true,

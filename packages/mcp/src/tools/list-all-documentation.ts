@@ -1,10 +1,6 @@
 import type { McpServer } from 'tmcp';
 import type { StorybookContext } from '../types.ts';
-import {
-	getManifests,
-	getMultiSourceManifests,
-	errorToMCPContent,
-} from '../utils/get-manifest.ts';
+import { getManifests, getMultiSourceManifests, errorToMCPContent } from '../utils/get-manifest.ts';
 import {
 	formatManifestsToLists,
 	formatMultiSourceManifestsToLists,
@@ -20,8 +16,7 @@ export async function addListAllDocumentationTool(
 		{
 			name: LIST_TOOL_NAME,
 			title: 'List All Documentation',
-			description:
-				'List all available UI components and documentation entries from the Storybook',
+			description: 'List all available UI components and documentation entries from the Storybook',
 			enabled,
 		},
 		async () => {
@@ -37,10 +32,7 @@ export async function addListAllDocumentationTool(
 						ctx.manifestProvider,
 					);
 
-					const lists = formatMultiSourceManifestsToLists(
-						multiSourceManifests,
-						format,
-					);
+					const lists = formatMultiSourceManifestsToLists(multiSourceManifests, format);
 
 					// Note: onListAllDocumentation callback uses AllManifests type
 					// In multi-source mode, we pass the first successful source's manifests
@@ -68,10 +60,7 @@ export async function addListAllDocumentationTool(
 				}
 
 				// Single-source mode: existing behavior
-				const manifests = await getManifests(
-					ctx?.request,
-					ctx?.manifestProvider,
-				);
+				const manifests = await getManifests(ctx?.request, ctx?.manifestProvider);
 
 				const lists = formatManifestsToLists(manifests, format);
 

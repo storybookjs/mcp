@@ -82,8 +82,7 @@ export const MultipleErrors: Story = {
 				file: 'src/hooks/useForm.ts',
 				line: 34,
 				column: 5,
-				message:
-					"Argument of type 'null' is not assignable to parameter of type 'string'.",
+				message: "Argument of type 'null' is not assignable to parameter of type 'string'.",
 				code: 2345,
 			},
 		],
@@ -135,8 +134,7 @@ export const ErrorsAndWarnings: Story = {
 				file: 'src/components/Form.tsx',
 				line: 78,
 				column: 5,
-				message:
-					"Property 'onSubmit' is missing in type '{}' but required in type 'FormProps'.",
+				message: "Property 'onSubmit' is missing in type '{}' but required in type 'FormProps'.",
 				code: 2741,
 			},
 		],
@@ -209,16 +207,14 @@ export const ModuleResolutionErrors: Story = {
 				file: 'src/App.tsx',
 				line: 3,
 				column: 23,
-				message:
-					"Cannot find module './components/Header' or its corresponding type declarations.",
+				message: "Cannot find module './components/Header' or its corresponding type declarations.",
 				code: 2769,
 			},
 			{
 				file: 'src/pages/Dashboard.tsx',
 				line: 1,
 				column: 28,
-				message:
-					"Cannot find module 'react-router-dom' or its corresponding type declarations.",
+				message: "Cannot find module 'react-router-dom' or its corresponding type declarations.",
 				code: 2769,
 			},
 		],
@@ -237,8 +233,7 @@ export const GenericTypeErrors: Story = {
 				file: 'src/api/client.ts',
 				line: 42,
 				column: 10,
-				message:
-					"Type 'Promise<any>' is not assignable to type 'Promise<Response<T>>'.",
+				message: "Type 'Promise<any>' is not assignable to type 'Promise<Response<T>>'.",
 				code: 2322,
 			},
 			{

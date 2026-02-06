@@ -19,11 +19,7 @@ export async function computeCoverage(
 	let coverage: EvaluationSummary['coverage'];
 	let coverageFiles: CoverageFiles | undefined;
 
-	const finalCoveragePath = path.join(
-		projectPath,
-		'coverage',
-		'coverage-final.json',
-	);
+	const finalCoveragePath = path.join(projectPath, 'coverage', 'coverage-final.json');
 
 	try {
 		let normalizedTotal: CoverageSummary | undefined;
@@ -59,9 +55,7 @@ export async function computeCoverage(
 				const branches = fileCoverage.getBranchCoverageByLine?.();
 				if (branches && typeof branches === 'object') {
 					branchesByLine = {};
-					for (const [line, data] of Object.entries(
-						branches as Record<string, any>,
-					)) {
+					for (const [line, data] of Object.entries(branches as Record<string, any>)) {
 						branchesByLine[line] = {
 							covered: data.covered ?? null,
 							total: data.total ?? null,
@@ -96,16 +90,9 @@ export async function computeCoverage(
 			statements: normalizedTotal.statements?.pct ?? null,
 		};
 
-		const targetCoveragePath = path.join(
-			resultsPath,
-			'coverage',
-			'coverage-summary.json',
-		);
+		const targetCoveragePath = path.join(resultsPath, 'coverage', 'coverage-summary.json');
 		await fs.mkdir(path.dirname(targetCoveragePath), { recursive: true });
-		await fs.writeFile(
-			targetCoveragePath,
-			JSON.stringify({ total: normalizedTotal }, null, 2),
-		);
+		await fs.writeFile(targetCoveragePath, JSON.stringify({ total: normalizedTotal }, null, 2));
 
 		await fs.writeFile(
 			path.join(resultsPath, 'coverage', 'coverage-final.json'),

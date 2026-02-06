@@ -12,9 +12,7 @@ type ChromaticDiagnostics = {
 	webUrl?: string;
 };
 
-export async function buildStorybook(
-	experimentArgs: ExperimentArgs,
-): Promise<boolean> {
+export async function buildStorybook(experimentArgs: ExperimentArgs): Promise<boolean> {
 	const { projectPath, resultsPath } = experimentArgs;
 
 	let buildSuccess = false;
@@ -90,10 +88,7 @@ export async function uploadToChromatic(
 		},
 	);
 
-	const diagnosticsPath = path.join(
-		experimentArgs.projectPath,
-		'chromatic-diagnostics.json',
-	);
+	const diagnosticsPath = path.join(experimentArgs.projectPath, 'chromatic-diagnostics.json');
 	const { default: diagnostics } = (await import(diagnosticsPath, {
 		with: { type: 'json' },
 	})) as { default: ChromaticDiagnostics };

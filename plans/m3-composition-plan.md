@@ -17,6 +17,7 @@ Enable `@storybook/addon-mcp` to include documentation from multiple Storybook s
 Currently, if you have a Storybook for your application and a separate Storybook for your Design System, you need to set both MCP servers up in your MCP client. The app MCP being available on localhost via `addon-mcp`, and the DS being available remotely with Chromatic.
 
 Not only is this tedious to configure, but there's a risk of bad results:
+
 - LLM can be confused about multiple, similar tools
 - Won't call both when necessary
 - More MCP servers bloat context unnecessarily
@@ -35,18 +36,18 @@ Give `addon-mcp` the ability to include MCP docs from external sources, using St
 
 ```typescript
 export type Source = {
-  id: string;           // e.g., 'local', 'tetra'
-  title: string;        // e.g., 'Local', 'Tetra Design System'
-  url?: string;         // Remote URL (undefined = local)
+	id: string; // e.g., 'local', 'tetra'
+	title: string; // e.g., 'Local', 'Tetra Design System'
+	url?: string; // Remote URL (undefined = local)
 };
 
 export type SourcesConfig = Source[];
 
 export type MultiSourceManifests = {
-  sourceId: string;
-  sourceTitle: string;
-  manifests: AllManifests;
-  error?: string;       // Capture per-source errors
+	sourceId: string;
+	sourceTitle: string;
+	manifests: AllManifests;
+	error?: string; // Capture per-source errors
 }[];
 ```
 
@@ -56,8 +57,8 @@ export type MultiSourceManifests = {
 
 ```typescript
 const GetDocumentationInput = v.object({
-  id: v.string(),
-  sourceId: v.optional(v.string(), 'local'),  // Backwards compatible
+	id: v.string(),
+	sourceId: v.optional(v.string(), 'local'), // Backwards compatible
 });
 ```
 
@@ -67,21 +68,18 @@ const GetDocumentationInput = v.object({
 
 ```typescript
 export type StorybookContext = {
-  // ... existing fields ...
+	// ... existing fields ...
 
-  /**
-   * Multiple source configuration. When provided, tools operate
-   * in multi-source mode, grouping results by source.
-   */
-  sources?: SourcesConfig;
+	/**
+	 * Multiple source configuration. When provided, tools operate
+	 * in multi-source mode, grouping results by source.
+	 */
+	sources?: SourcesConfig;
 
-  /**
-   * Provider for fetching manifests from a specific source.
-   */
-  multiSourceManifestProvider?: (
-    source: Source,
-    path: string,
-  ) => Promise<string>;
+	/**
+	 * Provider for fetching manifests from a specific source.
+	 */
+	multiSourceManifestProvider?: (source: Source, path: string) => Promise<string>;
 };
 ```
 
@@ -142,36 +140,36 @@ function getErrorMessage(error: unknown): string {
 
 ```typescript
 type CacheEntry = {
-  data: string;
-  fetchedAt: number;
+	data: string;
+	fetchedAt: number;
 };
 
 const cache = new Map<string, CacheEntry>();
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function fetchWithCache(
-  url: string,
-  fetcher: () => Promise<Response>,
+	url: string,
+	fetcher: () => Promise<Response>,
 ): Promise<Response> {
-  const cached = cache.get(url);
+	const cached = cache.get(url);
 
-  if (cached && Date.now() - cached.fetchedAt < TTL_MS) {
-    return new Response(cached.data, { status: 200 });
-  }
+	if (cached && Date.now() - cached.fetchedAt < TTL_MS) {
+		return new Response(cached.data, { status: 200 });
+	}
 
-  const response = await fetcher();
+	const response = await fetcher();
 
-  if (response.ok) {
-    const text = await response.text();
-    cache.set(url, { data: text, fetchedAt: Date.now() });
-    return new Response(text, { status: 200 });
-  }
+	if (response.ok) {
+		const text = await response.text();
+		cache.set(url, { data: text, fetchedAt: Date.now() });
+		return new Response(text, { status: 200 });
+	}
 
-  return response;
+	return response;
 }
 
 export function clearCache(): void {
-  cache.clear();
+	cache.clear();
 }
 ```
 
@@ -217,26 +215,32 @@ export async function addListAllDocumentationTool(
 
 ```markdown
 # Local
+
 source-id: local
 
 ## Components
+
 - Page (page): A versatile page component
 
 ## Docs
+
 - Getting Started (getting-started): Everything you need to know
 
 ---
 
 # Tetra Design System
+
 source-id: tetra
 
 ## Components
+
 - Button (button): A versatile button component
 - Card (card): A flexible container component
 
 ---
 
 # Acme Components
+
 source-id: acme
 error: Authentication required. Private Storybooks are not yet supported...
 ```
@@ -281,26 +285,26 @@ export async function addGetDocumentationTool(...) {
 
 ```typescript
 export function formatMultiSourceManifestsToLists(
-  multiManifests: MultiSourceManifests,
-  format: OutputFormat = 'markdown',
+	multiManifests: MultiSourceManifests,
+	format: OutputFormat = 'markdown',
 ): string {
-  return multiManifests
-    .map(({ sourceId, sourceTitle, manifests, error }) => {
-      const parts: string[] = [];
-      parts.push(`# ${sourceTitle}`);
-      parts.push(`source-id: ${sourceId}`);
-      parts.push('');
+	return multiManifests
+		.map(({ sourceId, sourceTitle, manifests, error }) => {
+			const parts: string[] = [];
+			parts.push(`# ${sourceTitle}`);
+			parts.push(`source-id: ${sourceId}`);
+			parts.push('');
 
-      if (error) {
-        parts.push(`error: ${error}`);
-        return parts.join('\n');
-      }
+			if (error) {
+				parts.push(`error: ${error}`);
+				return parts.join('\n');
+			}
 
-      // Format components and docs using existing logic
-      parts.push(formatManifestsToLists(manifests, format));
-      return parts.join('\n');
-    })
-    .join('\n\n---\n\n');
+			// Format components and docs using existing logic
+			parts.push(formatManifestsToLists(manifests, format));
+			return parts.join('\n');
+		})
+		.join('\n\n---\n\n');
 }
 ```
 
@@ -317,40 +321,38 @@ import type { Options } from 'storybook/internal/types';
 import type { Source, SourcesConfig } from '@storybook/mcp';
 
 type Ref = {
-  title: string;
-  url: string;
-  expanded?: boolean;
-  sourceUrl?: string;
+	title: string;
+	url: string;
+	expanded?: boolean;
+	sourceUrl?: string;
 };
 
 type RefsConfig = Record<string, Ref>;
 type RefsFn = (config: any, options: { configType: string }) => RefsConfig;
 
 export async function getComposedSources(options: Options): Promise<SourcesConfig> {
-  // refs can be an object or a function
-  const refsInput = await options.presets.apply('refs', {});
+	// refs can be an object or a function
+	const refsInput = await options.presets.apply('refs', {});
 
-  let refs: RefsConfig;
-  if (typeof refsInput === 'function') {
-    // For addon-mcp, we're always in development context
-    refs = (refsInput as RefsFn)({}, { configType: 'DEVELOPMENT' });
-  } else {
-    refs = refsInput as RefsConfig;
-  }
+	let refs: RefsConfig;
+	if (typeof refsInput === 'function') {
+		// For addon-mcp, we're always in development context
+		refs = (refsInput as RefsFn)({}, { configType: 'DEVELOPMENT' });
+	} else {
+		refs = refsInput as RefsConfig;
+	}
 
-  const sources: SourcesConfig = [
-    { id: 'local', title: 'Local' }
-  ];
+	const sources: SourcesConfig = [{ id: 'local', title: 'Local' }];
 
-  for (const [id, ref] of Object.entries(refs)) {
-    sources.push({
-      id,
-      title: ref.title || id,
-      url: ref.url,
-    });
-  }
+	for (const [id, ref] of Object.entries(refs)) {
+		sources.push({
+			id,
+			title: ref.title || id,
+			url: ref.url,
+		});
+	}
 
-  return sources;
+	return sources;
 }
 ```
 
@@ -363,21 +365,21 @@ import type { Source } from '@storybook/mcp';
 import { fetchWithCache } from '@storybook/mcp/manifest-cache';
 
 export function createMultiSourceProvider(
-  localOrigin: string,
+	localOrigin: string,
 ): (source: Source, path: string) => Promise<string> {
-  return async (source, path) => {
-    const baseUrl = source.url || localOrigin;
-    const normalizedPath = path.replace(/^\.\//, '/');
-    const manifestUrl = new URL(normalizedPath, baseUrl).toString();
+	return async (source, path) => {
+		const baseUrl = source.url || localOrigin;
+		const normalizedPath = path.replace(/^\.\//, '/');
+		const manifestUrl = new URL(normalizedPath, baseUrl).toString();
 
-    const response = await fetchWithCache(manifestUrl, () => fetch(manifestUrl));
+		const response = await fetchWithCache(manifestUrl, () => fetch(manifestUrl));
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
-    }
+		if (!response.ok) {
+			throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
+		}
 
-    return response.text();
-  };
+		return response.text();
+	};
 }
 ```
 
@@ -392,32 +394,35 @@ import { createMultiSourceProvider } from './utils/multi-source-provider.ts';
 let sources: SourcesConfig | undefined;
 
 const initializeMCPServer = async (options: Options) => {
-  // ... existing init code ...
+	// ... existing init code ...
 
-  // Get composed sources from refs config
-  sources = await getComposedSources(options);
+	// Get composed sources from refs config
+	sources = await getComposedSources(options);
 
-  if (sources.length > 1) {
-    logger.info(`MCP composition enabled with ${sources.length} sources: ${sources.map(s => s.id).join(', ')}`);
-  }
+	if (sources.length > 1) {
+		logger.info(
+			`MCP composition enabled with ${sources.length} sources: ${sources.map((s) => s.id).join(', ')}`,
+		);
+	}
 
-  // ... rest of init
+	// ... rest of init
 };
 
 export const mcpServerHandler = async ({ req, res, options, addonOptions }) => {
-  // ... existing code ...
+	// ... existing code ...
 
-  const addonContext: AddonContext = {
-    // ... existing fields ...
+	const addonContext: AddonContext = {
+		// ... existing fields ...
 
-    // Multi-source support
-    ...(sources && sources.length > 1 && {
-      sources,
-      multiSourceManifestProvider: createMultiSourceProvider(origin),
-    }),
-  };
+		// Multi-source support
+		...(sources &&
+			sources.length > 1 && {
+				sources,
+				multiSourceManifestProvider: createMultiSourceProvider(origin),
+			}),
+	};
 
-  // ... rest of handler
+	// ... rest of handler
 };
 ```
 
@@ -434,21 +439,21 @@ For remote sources, construct URLs from the source config:
 ```typescript
 // In tool input schema
 const PreviewStoriesInput = v.object({
-  // ... existing fields ...
-  sourceId: v.optional(v.string(), 'local'),
+	// ... existing fields ...
+	sourceId: v.optional(v.string(), 'local'),
 });
 
 // In tool handler
 function getPreviewUrl(
-  sourceId: string,
-  componentId: string,
-  storyId: string,
-  sources: SourcesConfig,
-  localOrigin: string,
+	sourceId: string,
+	componentId: string,
+	storyId: string,
+	sources: SourcesConfig,
+	localOrigin: string,
 ): string {
-  const source = sources.find(s => s.id === sourceId);
-  const baseUrl = source?.url || localOrigin;
-  return `${baseUrl}/?path=/story/${componentId}--${storyId}`;
+	const source = sources.find((s) => s.id === sourceId);
+	const baseUrl = source?.url || localOrigin;
+	return `${baseUrl}/?path=/story/${componentId}--${storyId}`;
 }
 ```
 
@@ -468,11 +473,13 @@ This allows agents to construct preview URLs for remote components without needi
 ### 6.1 Unit tests
 
 **New test files:**
+
 - `packages/mcp/src/utils/get-manifest.test.ts` — add multi-source tests
 - `packages/mcp/src/utils/manifest-cache.test.ts` — cache TTL, concurrent requests
 - `packages/mcp/src/utils/manifest-formatter/markdown.test.ts` — multi-source formatting
 
 **Test cases:**
+
 - `getMultiSourceManifests` with all sources succeeding
 - `getMultiSourceManifests` with one source failing (graceful degradation)
 - `getMultiSourceManifests` with auth error (401/403 detection)
@@ -492,11 +499,13 @@ This allows agents to construct preview URLs for remote components without needi
 ### 6.3 Eval: Agent uses multiple sources
 
 **Scenario:**
+
 1. Local Storybook has `Page`, `Layout` components
 2. Remote (public) has `Button`, `Card`, `Input` from design system
 3. Task: "Build a settings page using Button and Card from the design system"
 
 **Expected behavior:**
+
 1. Agent calls `list-all-documentation`
 2. Agent sees both sources with their components
 3. Agent calls `get-documentation` with `sourceId: 'tetra'` for Button
@@ -507,15 +516,15 @@ This allows agents to construct preview URLs for remote components without needi
 
 ## Implementation Order
 
-| Phase | Tasks |
-|-------|-------|
-| 1 | **Auth client** — OAuth flow, discovery, registration, token storage |
-| 2 | Types & schemas in `@storybook/mcp` |
-| 3 | Multi-source fetching + cache (with auth integration) |
-| 4 | Update tools (list-all, get-documentation) |
-| 5 | addon-mcp composition config (read refs, create provider) |
-| 6 | Preview stories sourceId support |
-| 7 | Tests + eval |
+| Phase | Tasks                                                                |
+| ----- | -------------------------------------------------------------------- |
+| 1     | **Auth client** — OAuth flow, discovery, registration, token storage |
+| 2     | Types & schemas in `@storybook/mcp`                                  |
+| 3     | Multi-source fetching + cache (with auth integration)                |
+| 4     | Update tools (list-all, get-documentation)                           |
+| 5     | addon-mcp composition config (read refs, create provider)            |
+| 6     | Preview stories sourceId support                                     |
+| 7     | Tests + eval                                                         |
 
 **Auth is Phase 1** — it's the foundation for private Storybook composition.
 
@@ -524,6 +533,7 @@ This allows agents to construct preview URLs for remote components without needi
 ## Files Summary
 
 **New files (auth):**
+
 - `packages/addon-mcp/src/auth/types.ts`
 - `packages/addon-mcp/src/auth/store.ts`
 - `packages/addon-mcp/src/auth/oauth.ts`
@@ -532,12 +542,14 @@ This allows agents to construct preview URLs for remote components without needi
 - `packages/addon-mcp/src/auth/index.ts`
 
 **New files (composition):**
+
 - `packages/mcp/src/utils/manifest-cache.ts`
 - `packages/addon-mcp/src/composition.ts`
 - `packages/addon-mcp/src/utils/multi-source-provider.ts`
 - `apps/internal-storybook/tests/mcp-composition.e2e.test.ts`
 
 **Modified files:**
+
 - `packages/mcp/src/types.ts`
 - `packages/mcp/src/tools/list-all-documentation.ts`
 - `packages/mcp/src/tools/get-documentation.ts`
@@ -560,6 +572,7 @@ Chromatic's authenticated MCP server is already deployed. addon-mcp needs to imp
 **See [m3-auth-plan.md](./m3-auth-plan.md) for full auth implementation details.**
 
 Summary:
+
 - Detect 401 from private Chromatic Storybook
 - Discover auth server via RFC 9728
 - Dynamic Client Registration (RFC 7591) — no pre-registration needed

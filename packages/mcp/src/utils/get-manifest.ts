@@ -44,16 +44,13 @@ type MCPErrorResult = {
  */
 export const errorToMCPContent = (error: unknown): MCPErrorResult => {
 	const errorPrefix =
-		error instanceof ManifestGetError
-			? 'Error getting manifest'
-			: 'Unexpected error';
+		error instanceof ManifestGetError ? 'Error getting manifest' : 'Unexpected error';
 	const errorMessage = error instanceof Error ? error.message : String(error);
 
 	// Include cause information if available
 	let fullMessage = `${errorPrefix}: ${errorMessage}`;
 	if (error instanceof ManifestGetError && error.cause) {
-		const causeMessage =
-			error.cause instanceof Error ? error.cause.message : String(error.cause);
+		const causeMessage = error.cause instanceof Error ? error.cause.message : String(error.cause);
 		fullMessage += `\nCaused by: ${causeMessage}`;
 	}
 
@@ -71,9 +68,7 @@ export const errorToMCPContent = (error: unknown): MCPErrorResult => {
 /**
  * Parses a JSON string and validates it against a Valibot schema
  */
-function parseManifest<
-	T extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
->({
+function parseManifest<T extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>({
 	jsonString,
 	schema,
 	name,
@@ -122,14 +117,11 @@ export async function getManifests(
 	]);
 
 	const getUrl = (path: string) =>
-		request
-			? getManifestUrlFromRequest(request, path)
-			: 'Unknown manifest source';
+		request ? getManifestUrlFromRequest(request, path) : 'Unknown manifest source';
 
 	if (componentResult.status === 'rejected') {
 		const reason = componentResult.reason;
-		const is404 =
-			reason instanceof ManifestGetError && reason.message.includes('404');
+		const is404 = reason instanceof ManifestGetError && reason.message.includes('404');
 		const hint = is404
 			? `\nHint: The Storybook at this URL may not have the component manifest enabled. Add \`features: { experimentalComponentsManifest: true }\` to its main.ts config.`
 			: '';
@@ -246,8 +238,7 @@ export async function getMultiSourceManifests(
 				};
 			} catch (error) {
 				// Capture error but don't fail the entire request
-				const errorMessage =
-					error instanceof Error ? error.message : String(error);
+				const errorMessage = error instanceof Error ? error.message : String(error);
 				return {
 					source,
 					componentManifest: { v: 1, components: {} },
