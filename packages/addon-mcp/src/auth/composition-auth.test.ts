@@ -280,6 +280,79 @@ describe('CompositionAuth', () => {
       const result = await provider(request, './manifests/components.json', source);
       expect(result).toBe('{"some":"unexpected"}');
     });
+
+    it('caches remote manifest responses', async () => {
+      const auth = new CompositionAuth();
+      const manifestJson = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(manifestJson),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer token' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      // First call — fetches
+      await provider(request, './manifests/components.json', source);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Second call — served from cache
+      await provider(request, './manifests/components.json', source);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not cache local manifest responses', async () => {
+      const auth = new CompositionAuth();
+      const manifestJson = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(manifestJson),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp');
+
+      // No source = local
+      await provider(request, './manifests/components.json');
+      await provider(request, './manifests/components.json');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not cache error responses', async () => {
+      const auth = new CompositionAuth();
+      const manifestJson = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
+
+      const mockFetch = vi.fn()
+        // First call: fails
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        // Second call: succeeds
+        .mockResolvedValueOnce({
+          ok: true,
+          text: () => Promise.resolve(manifestJson),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer token' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      // First call fails — should not cache
+      await expect(provider(request, './manifests/components.json', source)).rejects.toThrow();
+
+      // Second call should fetch again (not cached)
+      const result = await provider(request, './manifests/components.json', source);
+      expect(result).toBe(manifestJson);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('initialize', () => {

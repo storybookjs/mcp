@@ -40,9 +40,17 @@ export type ManifestProvider = (
   source?: Source
 ) => Promise<string>;
 
+const MANIFEST_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+interface CacheEntry {
+  text: string;
+  timestamp: number;
+}
+
 export class CompositionAuth {
   private authRequirement: AuthRequirement | null = null;
   private authRequiredUrls: string[] = [];
+  private manifestCache = new Map<string, CacheEntry>();
 
   /** Initialize by checking which refs require authentication. */
   async initialize(refs: ComposedRef[]): Promise<void> {
@@ -109,7 +117,23 @@ export class CompositionAuth {
       const baseUrl = source?.url ?? localOrigin;
       const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
       const isRemote = !!source?.url;
-      return this.fetchManifest(manifestUrl, isRemote ? token : null);
+
+      // Use cache for remote sources
+      if (isRemote) {
+        const cached = this.manifestCache.get(manifestUrl);
+        if (cached && Date.now() - cached.timestamp < MANIFEST_CACHE_TTL) {
+          return cached.text;
+        }
+      }
+
+      const text = await this.fetchManifest(manifestUrl, isRemote ? token : null);
+
+      // Cache valid remote responses
+      if (isRemote) {
+        this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
+      }
+
+      return text;
     };
   }
 
