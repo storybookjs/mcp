@@ -284,7 +284,7 @@ describe('CompositionAuth', () => {
 			);
 		});
 
-		it('caches remote manifest responses', async () => {
+		it('caches remote manifest responses and revalidates in background', async () => {
 			const auth = new CompositionAuth();
 			const manifestJson =
 				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
@@ -301,16 +301,17 @@ describe('CompositionAuth', () => {
 			});
 			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
 
-			// First call — fetches
+			// First call — fetches (blocking)
 			await provider(request, './manifests/components.json', source);
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 
-			// Second call — served from cache
-			await provider(request, './manifests/components.json', source);
-			expect(mockFetch).toHaveBeenCalledTimes(1);
+			// Second call — served from cache, triggers background revalidation
+			const result = await provider(request, './manifests/components.json', source);
+			expect(result).toBe(manifestJson);
+			expect(mockFetch).toHaveBeenCalledTimes(2); // background fetch started
 		});
 
-		it('serves stale cache and revalidates in background', async () => {
+		it('fetches fresh when cache is expired', async () => {
 			const auth = new CompositionAuth();
 			const oldManifest =
 				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
@@ -339,18 +340,10 @@ describe('CompositionAuth', () => {
 			const entry = cache.get('http://remote.example.com/manifests/components.json');
 			entry.timestamp = Date.now() - 61 * 60 * 1000; // 61 min ago
 
-			// Second call — serves stale, triggers background revalidation
+			// Second call — cache expired, fetches fresh (blocking)
 			const second = await provider(request, './manifests/components.json', source);
-			expect(second).toBe(oldManifest); // still old
-			expect(mockFetch).toHaveBeenCalledTimes(2); // background fetch started
-
-			// Wait for background revalidation to complete
-			await new Promise((r) => setTimeout(r, 10));
-
-			// Third call — serves new cached value
-			const third = await provider(request, './manifests/components.json', source);
-			expect(third).toBe(newManifest);
-			expect(mockFetch).toHaveBeenCalledTimes(2); // no new fetch
+			expect(second).toBe(newManifest);
+			expect(mockFetch).toHaveBeenCalledTimes(2);
 		});
 
 		it('does not cache local manifest responses', async () => {

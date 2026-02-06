@@ -138,18 +138,24 @@ export class CompositionAuth {
 			if (isRemote) {
 				const cached = this.manifestCache.get(manifestUrl);
 				if (cached) {
-					const isStale = Date.now() - cached.timestamp > MANIFEST_CACHE_TTL;
-					if (isStale && !cached.revalidating) {
-						// Stale — serve cached, revalidate in background
-						cached.revalidating = true;
-						this.fetchManifest(manifestUrl, tokenForRequest).then(
-							(text) => this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
-							() => {
-								cached.revalidating = false;
-							},
-						);
+					const age = Date.now() - cached.timestamp;
+					if (age > MANIFEST_CACHE_TTL) {
+						// Expired — discard cache, fetch fresh below
+						this.manifestCache.delete(manifestUrl);
+					} else {
+						// Fresh — serve cached, revalidate in background
+						if (!cached.revalidating) {
+							cached.revalidating = true;
+							this.fetchManifest(manifestUrl, tokenForRequest).then(
+								(text) =>
+									this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
+								() => {
+									cached.revalidating = false;
+								},
+							);
+						}
+						return cached.text;
 					}
-					return cached.text;
 				}
 			}
 
