@@ -1,8 +1,28 @@
-import type { ComponentManifest } from '../../types.ts';
+import type { ComponentManifest, Doc } from '../../types.ts';
 import { MAX_SUMMARY_LENGTH, type ManifestFormatter } from './types.ts';
 import { parseReactDocgen } from '../parse-react-docgen.ts';
 import { dedent } from '../dedent.ts';
 import { extractDocsSummary } from './extract-docs-summary.ts';
+
+function formatComponentLine(component: ComponentManifest): string {
+	const summary =
+		component.summary ??
+		(component.description
+			? component.description.length > MAX_SUMMARY_LENGTH
+				? `${component.description.slice(0, MAX_SUMMARY_LENGTH)}...`
+				: component.description
+			: undefined);
+
+	if (summary) {
+		return `- ${component.name} (${component.id}): ${summary}`;
+	}
+	return `- ${component.name} (${component.id})`;
+}
+
+function formatDocLine(doc: Doc): string {
+	const summary = doc.summary ?? extractDocsSummary(doc.content);
+	return `- ${doc.title} (${doc.id})${summary ? `: ${summary}` : ''}`;
+}
 
 /**
  * Markdown formatter for component manifests.
@@ -119,25 +139,9 @@ export const markdownFormatter: ManifestFormatter = {
 
 		parts.push('# Components');
 		parts.push('');
-
-		for (const component of Object.values(
-			manifests.componentManifest.components,
-		)) {
-			const summary =
-				component.summary ??
-				(component.description
-					? component.description.length > MAX_SUMMARY_LENGTH
-						? `${component.description.slice(0, MAX_SUMMARY_LENGTH)}...`
-						: component.description
-					: undefined);
-
-			if (summary) {
-				parts.push(`- ${component.name} (${component.id}): ${summary}`);
-			} else {
-				parts.push(`- ${component.name} (${component.id})`);
-			}
+		for (const component of Object.values(manifests.componentManifest.components)) {
+			parts.push(formatComponentLine(component));
 		}
-
 		parts.push('');
 
 		if (!manifests.docsManifest) {
@@ -146,10 +150,8 @@ export const markdownFormatter: ManifestFormatter = {
 
 		parts.push('# Docs');
 		parts.push('');
-
 		for (const doc of Object.values(manifests.docsManifest.docs)) {
-			const summary = doc.summary ?? extractDocsSummary(doc.content);
-			parts.push(`- ${doc.title} (${doc.id})${summary ? `: ${summary}` : ''}`);
+			parts.push(formatDocLine(doc));
 		}
 
 		return parts.join('\n').trim();
@@ -158,56 +160,33 @@ export const markdownFormatter: ManifestFormatter = {
 	formatMultiSourceManifestsToLists(manifests) {
 		const parts: string[] = [];
 
-		for (const sourceManifests of manifests) {
-			const { source, componentManifest, docsManifest, error } = sourceManifests;
-
-			// Source header
+		for (const { source, componentManifest, docsManifest, error } of manifests) {
 			parts.push(`# ${source.title}`);
 			parts.push(`id: ${source.id}`);
 			parts.push('');
 
-			// If there was an error fetching this source, show it
 			if (error) {
 				parts.push(`error: ${error}`);
 				parts.push('');
 				continue;
 			}
 
-			// Components section
 			const components = Object.values(componentManifest.components);
 			if (components.length > 0) {
 				parts.push('## Components');
 				parts.push('');
-
 				for (const component of components) {
-					const summary =
-						component.summary ??
-						(component.description
-							? component.description.length > MAX_SUMMARY_LENGTH
-								? `${component.description.slice(0, MAX_SUMMARY_LENGTH)}...`
-								: component.description
-							: undefined);
-
-					if (summary) {
-						parts.push(`- ${component.name} (${component.id}): ${summary}`);
-					} else {
-						parts.push(`- ${component.name} (${component.id})`);
-					}
+					parts.push(formatComponentLine(component));
 				}
-
 				parts.push('');
 			}
 
-			// Docs section
 			if (docsManifest && Object.keys(docsManifest.docs).length > 0) {
 				parts.push('## Docs');
 				parts.push('');
-
 				for (const doc of Object.values(docsManifest.docs)) {
-					const summary = doc.summary ?? extractDocsSummary(doc.content);
-					parts.push(`- ${doc.title} (${doc.id})${summary ? `: ${summary}` : ''}`);
+					parts.push(formatDocLine(doc));
 				}
-
 				parts.push('');
 			}
 		}
