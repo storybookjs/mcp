@@ -142,7 +142,7 @@ export async function runTask({
 			description: quality.description,
 		};
 	}
-	
+
 	await fs.writeFile(
 		path.join(resultsPath, 'summary.json'),
 		JSON.stringify({ ...executionSummary, ...gradingSummary }, null, 2),
