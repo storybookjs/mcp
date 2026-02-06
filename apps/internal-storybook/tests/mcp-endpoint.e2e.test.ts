@@ -337,6 +337,11 @@ describe('MCP Endpoint E2E Tests', () => {
 				      "$schema": "http://json-schema.org/draft-07/schema#",
 				      "properties": {
 				        "id": {
+				          "description": "The component or docs entry ID (e.g., "button")",
+				          "type": "string",
+				        },
+				        "storybookId": {
+				          "description": "The Storybook source ID (e.g., "local", "tetra"). Required when multiple Storybooks are composed. See list-all-documentation for available sources.",
 				          "type": "string",
 				        },
 				      },
