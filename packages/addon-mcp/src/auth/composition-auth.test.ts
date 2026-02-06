@@ -306,6 +306,46 @@ describe('CompositionAuth', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
+    it('serves stale cache and revalidates in background', async () => {
+      const auth = new CompositionAuth();
+      const oldManifest = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
+      const newManifest = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button","description":"updated"}}}';
+
+      const mockFetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(oldManifest) })
+        .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(newManifest) });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer token' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      // First call — fetches and caches
+      const first = await provider(request, './manifests/components.json', source);
+      expect(first).toBe(oldManifest);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Expire the cache
+      const cache = (auth as any).manifestCache;
+      const entry = cache.get('http://remote.example.com/manifests/components.json');
+      entry.timestamp = Date.now() - 61 * 60 * 1000; // 61 min ago
+
+      // Second call — serves stale, triggers background revalidation
+      const second = await provider(request, './manifests/components.json', source);
+      expect(second).toBe(oldManifest); // still old
+      expect(mockFetch).toHaveBeenCalledTimes(2); // background fetch started
+
+      // Wait for background revalidation to complete
+      await new Promise((r) => setTimeout(r, 10));
+
+      // Third call — serves new cached value
+      const third = await provider(request, './manifests/components.json', source);
+      expect(third).toBe(newManifest);
+      expect(mockFetch).toHaveBeenCalledTimes(2); // no new fetch
+    });
+
     it('does not cache local manifest responses', async () => {
       const auth = new CompositionAuth();
       const manifestJson = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';

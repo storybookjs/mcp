@@ -40,11 +40,12 @@ export type ManifestProvider = (
   source?: Source
 ) => Promise<string>;
 
-const MANIFEST_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const MANIFEST_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 
 interface CacheEntry {
   text: string;
   timestamp: number;
+  revalidating?: boolean;
 }
 
 export class CompositionAuth {
@@ -118,17 +119,24 @@ export class CompositionAuth {
       const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
       const isRemote = !!source?.url;
 
-      // Use cache for remote sources
       if (isRemote) {
         const cached = this.manifestCache.get(manifestUrl);
-        if (cached && Date.now() - cached.timestamp < MANIFEST_CACHE_TTL) {
+        if (cached) {
+          const isStale = Date.now() - cached.timestamp > MANIFEST_CACHE_TTL;
+          if (isStale && !cached.revalidating) {
+            // Stale — serve cached, revalidate in background
+            cached.revalidating = true;
+            this.fetchManifest(manifestUrl, token).then(
+              (text) => this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
+              () => { cached.revalidating = false; },
+            );
+          }
           return cached.text;
         }
       }
 
       const text = await this.fetchManifest(manifestUrl, isRemote ? token : null);
 
-      // Cache valid remote responses
       if (isRemote) {
         this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
       }
