@@ -5,13 +5,13 @@
  * Formula: max(0, 1 - count / threshold)
  */
 
-import type { CalculateQualityFn, QualityResult } from '../../types.ts';
+import type { CalculateQualityFn } from '../../types.ts';
 
 /**
  * Quality calculator based on TypeScript type check errors.
  * 0 errors = 1.0, 10+ errors = 0.0, linear progression.
  */
-export const fromTypeCheckErrors: CalculateQualityFn = ({ grading }): QualityResult => {
+export const fromTypeCheckErrors: CalculateQualityFn = ({ grading }) => {
 	const errors = grading.typeCheckErrors;
 	const score = Math.max(0, 1 - errors / 10);
 
@@ -25,7 +25,7 @@ export const fromTypeCheckErrors: CalculateQualityFn = ({ grading }): QualityRes
  * Quality calculator based on ESLint errors.
  * 0 errors = 1.0, 10+ errors = 0.0, linear progression.
  */
-export const fromLintErrors: CalculateQualityFn = ({ grading }): QualityResult => {
+export const fromLintErrors: CalculateQualityFn = ({ grading }) => {
 	const errors = grading.lintErrors;
 	const score = Math.max(0, 1 - errors / 10);
 
@@ -39,7 +39,7 @@ export const fromLintErrors: CalculateQualityFn = ({ grading }): QualityResult =
  * Quality calculator based on accessibility violations.
  * 0 violations = 1.0, 5+ violations = 0.0, linear progression.
  */
-export const fromA11yViolations: CalculateQualityFn = ({ grading }): QualityResult => {
+export const fromA11yViolations: CalculateQualityFn = ({ grading }) => {
 	const violations = grading.a11y.violations;
 	const score = Math.max(0, 1 - violations / 5);
 
