@@ -146,13 +146,13 @@ export class CompositionAuth {
 						// Fresh — serve cached, revalidate in background
 						if (!cached.revalidating) {
 							cached.revalidating = true;
-							this.fetchManifest(manifestUrl, tokenForRequest).then(
-								(text) =>
+							void this.fetchManifest(manifestUrl, tokenForRequest)
+								.then((text) =>
 									this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
-								() => {
+								)
+								.catch(() => {
 									cached.revalidating = false;
-								},
-							);
+								});
 						}
 						return cached.text;
 					}
