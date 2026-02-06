@@ -23,8 +23,16 @@ describe('CompositionAuth', () => {
 			expect(extractBearerToken(null)).toBeNull();
 		});
 
-		it('returns null for array header', () => {
-			expect(extractBearerToken(['Bearer abc'])).toBeNull();
+		it('extracts token from array header', () => {
+			expect(extractBearerToken(['Bearer abc'])).toBe('abc');
+		});
+
+		it('finds Bearer in mixed array', () => {
+			expect(extractBearerToken(['Basic xyz', 'Bearer abc'])).toBe('abc');
+		});
+
+		it('returns null for array without Bearer', () => {
+			expect(extractBearerToken(['Basic xyz'])).toBeNull();
 		});
 	});
 
