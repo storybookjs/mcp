@@ -29,7 +29,6 @@ export type SourceManifests = {
 	error?: string;
 };
 
-
 /**
  * Custom context passed to MCP server and tools.
  * Contains the request object and optional manifest provider.
