@@ -467,12 +467,12 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 
 			expect(results).toHaveLength(2);
-			expect(results[0].source.id).toBe('local');
-			expect(results[0].componentManifest).toEqual(localManifest);
-			expect(results[0].error).toBeUndefined();
-			expect(results[1].source.id).toBe('remote');
-			expect(results[1].componentManifest).toEqual(remoteManifest);
-			expect(results[1].error).toBeUndefined();
+			expect(results[0]!.source.id).toBe('local');
+			expect(results[0]!.componentManifest).toEqual(localManifest);
+			expect(results[0]!.error).toBeUndefined();
+			expect(results[1]!.source.id).toBe('remote');
+			expect(results[1]!.componentManifest).toEqual(remoteManifest);
+			expect(results[1]!.error).toBeUndefined();
 		});
 
 		it('should capture errors for individual sources without failing', async () => {
@@ -495,10 +495,10 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 
 			expect(results).toHaveLength(2);
-			expect(results[0].error).toBeUndefined();
-			expect(results[0].componentManifest).toEqual(localManifest);
-			expect(results[1].error).toContain('401 Unauthorized');
-			expect(results[1].componentManifest).toEqual({ v: 1, components: {} });
+			expect(results[0]!.error).toBeUndefined();
+			expect(results[0]!.componentManifest).toEqual(localManifest);
+			expect(results[1]!.error).toContain('401 Unauthorized');
+			expect(results[1]!.componentManifest).toEqual({ v: 1, components: {} });
 		});
 
 		it('should throw when all sources fail', async () => {

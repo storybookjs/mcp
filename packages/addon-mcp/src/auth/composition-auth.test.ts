@@ -79,7 +79,7 @@ describe('CompositionAuth', () => {
 				{ id: 'my-ref-key', title: 'Some Title', url: 'http://example.com' },
 			]);
 
-			expect(sources[1].id).toBe('my-ref-key');
+			expect(sources[1]!.id).toBe('my-ref-key');
 		});
 
 		it('handles multiple refs', () => {

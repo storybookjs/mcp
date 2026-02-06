@@ -104,11 +104,11 @@ describe('listAllDocumentationTool', () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
-					source: sources[0],
+					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
-					source: sources[1],
+					source: sources[1]!,
 					componentManifest: remoteManifest,
 				},
 			]);
@@ -143,11 +143,11 @@ describe('listAllDocumentationTool', () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
-					source: sources[0],
+					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
-					source: sources[1],
+					source: sources[1]!,
 					componentManifest: remoteManifest,
 				},
 			]);
@@ -189,11 +189,11 @@ describe('listAllDocumentationTool', () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
-					source: sources[0],
+					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
-					source: sources[1],
+					source: sources[1]!,
 					componentManifest: { v: 1, components: {} },
 					error: 'Failed to fetch manifest: 401 Unauthorized',
 				},

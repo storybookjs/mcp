@@ -313,8 +313,6 @@ export function extractBearerToken(
 	authHeader: string | string[] | null | undefined,
 ): string | null {
 	const values = Array.isArray(authHeader) ? authHeader : [authHeader];
-	const bearer = values.find(
-		(value) => typeof value === 'string' && value.startsWith('Bearer '),
-	);
+	const bearer = values.find((value) => typeof value === 'string' && value.startsWith('Bearer '));
 	return bearer ? bearer.slice(7) : null;
 }

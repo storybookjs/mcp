@@ -40,13 +40,14 @@ Example: id="button" returns Primary, Secondary, Large stories with code like <B
 				const ctx = server.ctx.custom;
 				const format = ctx?.format ?? 'markdown';
 				const { id, storybookId } = input;
-				const isMultiSource = ctx?.sources && ctx.sources.length > 0;
+				const sources = ctx?.sources;
+				const isMultiSource = sources && sources.length > 0;
 
 				// In multi-source mode, validate and resolve the source
 				let source;
 				if (isMultiSource) {
 					if (!storybookId) {
-						const availableSources = ctx.sources.map((s) => s.id).join(', ');
+						const availableSources = sources.map((s) => s.id).join(', ');
 						return {
 							content: [
 								{
@@ -58,9 +59,9 @@ Example: id="button" returns Primary, Secondary, Large stories with code like <B
 						};
 					}
 
-					source = ctx.sources.find((s) => s.id === storybookId);
+					source = sources.find((s) => s.id === storybookId);
 					if (!source) {
-						const availableSources = ctx.sources.map((s) => s.id).join(', ');
+						const availableSources = sources.map((s) => s.id).join(', ');
 						return {
 							content: [
 								{
