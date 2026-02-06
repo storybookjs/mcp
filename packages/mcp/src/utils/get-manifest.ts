@@ -127,12 +127,16 @@ export async function getManifests(
 			: 'Unknown manifest source';
 
 	if (componentResult.status === 'rejected') {
+		const reason = componentResult.reason;
+		const is404 =
+			reason instanceof ManifestGetError && reason.message.includes('404');
+		const hint = is404
+			? `\nHint: The Storybook at this URL may not have the component manifest enabled. Add \`features: { experimentalComponentsManifest: true }\` to its main.ts config.`
+			: '';
 		throw new ManifestGetError(
-			`Failed to get component manifest: ${componentResult.reason instanceof Error ? componentResult.reason.message : String(componentResult.reason)}`,
+			`Failed to get component manifest: ${reason instanceof Error ? reason.message : String(reason)}${hint}`,
 			getUrl(COMPONENT_MANIFEST_PATH),
-			componentResult.reason instanceof Error
-				? componentResult.reason
-				: undefined,
+			reason instanceof Error ? reason : undefined,
 		);
 	}
 
