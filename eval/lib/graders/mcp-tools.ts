@@ -225,8 +225,8 @@ export async function gradeMcpTools(trialArgs: TrialArgs): Promise<McpToolsSumma
 		const configPath = path.join(taskPath, 'config.json');
 		let taskConfig: TaskConfig = {};
 		try {
-			const configContent = await fs.readFile(configPath, 'utf-8');
-			taskConfig = JSON.parse(configContent);
+			const configModule = await import(configPath, { with: { type: 'json' } });
+			taskConfig = configModule.default as TaskConfig;
 		} catch {
 			// No config.json or invalid - that's fine
 		}
