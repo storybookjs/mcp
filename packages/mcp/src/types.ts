@@ -29,11 +29,6 @@ export type SourceManifests = {
 	error?: string;
 };
 
-/**
- * Multi-source manifest collection.
- * Array of source manifests, each containing the source info and its manifests.
- */
-export type MultiSourceManifests = SourceManifests[];
 
 /**
  * Custom context passed to MCP server and tools.

@@ -2,8 +2,8 @@ import {
 	ComponentManifestMap,
 	DocsManifestMap,
 	type AllManifests,
-	type MultiSourceManifests,
 	type Source,
+	type SourceManifests,
 } from '../types.ts';
 import * as v from 'valibot';
 
@@ -225,7 +225,7 @@ export async function getMultiSourceManifests(
 		path: string,
 		source?: Source,
 	) => Promise<string>,
-): Promise<MultiSourceManifests> {
+): Promise<SourceManifests[]> {
 	// Fetch all sources in parallel
 	const results = await Promise.all(
 		sources.map(async (source) => {

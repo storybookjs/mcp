@@ -72,7 +72,7 @@ async function waitForMcpEndpoint(maxAttempts = 120, interval = 500): Promise<vo
 				resolve();
 				return;
 			}
-		} catch (error) {
+		} catch {
 			// Server not ready yet
 		}
 

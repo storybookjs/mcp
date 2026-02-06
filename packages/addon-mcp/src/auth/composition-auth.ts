@@ -74,7 +74,7 @@ export class CompositionAuth {
 				}
 			} catch (error) {
 				console.warn(
-					`[addon-mcp] Failed to check auth for composed ref "${ref.title}" (${ref.url}): ${error instanceof Error ? error.message : error}. Skipping this ref.`,
+					`[addon-mcp] Failed to check auth for composed ref "${ref.title}" (${ref.url}): ${error instanceof Error ? error.message : String(error)}. Skipping this ref.`,
 				);
 			}
 		}

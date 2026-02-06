@@ -23,7 +23,7 @@ export {
 } from './utils/get-manifest.ts';
 
 // Export types for reuse
-export type { StorybookContext, Source, SourceManifests, MultiSourceManifests } from './types.ts';
+export type { StorybookContext, Source, SourceManifests } from './types.ts';
 
 // copied from tmcp internals as it's not exposed
 type InitializeRequestParams = {
