@@ -221,7 +221,7 @@ describe('MCP Composition Auth E2E Tests', () => {
 			expect(text).toContain('Button');
 		});
 
-		it('should show error for remote source with invalid token', async () => {
+		it('should show authentication error for remote source with invalid token', async () => {
 			const response = await mcpRequest(
 				'tools/call',
 				{ name: 'list-all-documentation', arguments: {} },
@@ -231,9 +231,9 @@ describe('MCP Composition Auth E2E Tests', () => {
 
 			const text = data.result.content[0].text;
 
-			// Remote source should show an error (invalid token)
+			// Remote source should show an auth error (invalid token)
 			expect(text).toContain('test-private-sb');
-			expect(text).toMatch(/error|Error|failed|Failed/i);
+			expect(text).toContain('Authentication failed');
 		});
 
 		it('should fetch local component documentation with storybookId', async () => {

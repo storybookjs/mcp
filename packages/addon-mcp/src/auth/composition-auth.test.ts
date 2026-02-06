@@ -165,6 +165,49 @@ describe('CompositionAuth', () => {
     });
   });
 
+  describe('fetchManifest (via createManifestProvider)', () => {
+    it('throws auth error when server returns loginUrl response', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          text: () => Promise.resolve('{"loginUrl":"https://www.chromatic.com/login"}'),
+        })
+      );
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer invalid-token' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      await expect(
+        provider(request, './manifests/components.json', source)
+      ).rejects.toThrow('Authentication failed');
+    });
+
+    it('returns manifest content when response is valid JSON manifest', async () => {
+      const auth = new CompositionAuth();
+      const manifestJson = '{"v":1,"components":{"button":{"id":"button"}}}';
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          text: () => Promise.resolve(manifestJson),
+        })
+      );
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp');
+
+      const result = await provider(request, './manifests/components.json');
+      expect(result).toBe(manifestJson);
+    });
+  });
+
   describe('initialize', () => {
     it('detects public refs (no auth needed)', async () => {
       const auth = new CompositionAuth();

@@ -167,7 +167,24 @@ export class CompositionAuth {
       throw new Error(`Failed to fetch ${url}: ${response.status}`);
     }
 
-    return response.text();
+    const text = await response.text();
+
+    // Detect login redirect responses (e.g. Chromatic returns {"loginUrl":"..."} for invalid tokens)
+    try {
+      const json = JSON.parse(text);
+      if (json.loginUrl) {
+        throw new Error(
+          `Authentication failed for ${url}. The server returned a login redirect. Your token may be invalid or expired.`
+        );
+      }
+    } catch (error) {
+      // Re-throw auth errors, ignore JSON parse failures (means it's actual manifest content)
+      if (error instanceof Error && error.message.includes('Authentication failed')) {
+        throw error;
+      }
+    }
+
+    return text;
   }
 
   /**
