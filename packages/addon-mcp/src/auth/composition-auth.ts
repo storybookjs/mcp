@@ -89,6 +89,11 @@ export class CompositionAuth {
 		return this.authRequiredUrls;
 	}
 
+	/** Check if a URL requires authentication based on discovered auth requirements. */
+	private isAuthRequiredUrl(url: string): boolean {
+		return this.authRequiredUrls.some((authUrl) => url.startsWith(authUrl));
+	}
+
 	/** Build .well-known/oauth-protected-resource response. */
 	buildWellKnown(origin: string): object | null {
 		if (!this.authRequirement) return null;
@@ -119,6 +124,8 @@ export class CompositionAuth {
 			const baseUrl = source?.url ?? localOrigin;
 			const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 			const isRemote = !!source?.url;
+			const needsAuth = isRemote && this.isAuthRequiredUrl(baseUrl);
+			const tokenForRequest = needsAuth ? token : null;
 
 			// New token = user re-authenticated, invalidate all cached manifests
 			if (token && token !== this.lastToken) {
@@ -133,7 +140,7 @@ export class CompositionAuth {
 					if (isStale && !cached.revalidating) {
 						// Stale — serve cached, revalidate in background
 						cached.revalidating = true;
-						this.fetchManifest(manifestUrl, token).then(
+						this.fetchManifest(manifestUrl, tokenForRequest).then(
 							(text) => this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
 							() => {
 								cached.revalidating = false;
@@ -144,7 +151,7 @@ export class CompositionAuth {
 				}
 			}
 
-			const text = await this.fetchManifest(manifestUrl, isRemote ? token : null);
+			const text = await this.fetchManifest(manifestUrl, tokenForRequest);
 
 			if (isRemote) {
 				this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
