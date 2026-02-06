@@ -15,18 +15,20 @@ export interface ComposedRef {
 	url: string;
 }
 
-export interface OAuthResourceMetadata {
-	resource: string;
-	authorization_servers: string[];
-	scopes_supported?: string[];
-}
+const OAuthResourceMetadata = v.object({
+	resource: v.optional(v.string()),
+	authorization_servers: v.pipe(v.array(v.string()), v.minLength(1)),
+	scopes_supported: v.optional(v.array(v.string())),
+});
+export type OAuthResourceMetadata = v.InferOutput<typeof OAuthResourceMetadata>;
 
-export interface OAuthServerMetadata {
-	issuer: string;
-	authorization_endpoint: string;
-	token_endpoint: string;
-	scopes_supported?: string[];
-}
+const OAuthServerMetadata = v.object({
+	issuer: v.string(),
+	authorization_endpoint: v.string(),
+	token_endpoint: v.string(),
+	scopes_supported: v.optional(v.array(v.string())),
+});
+export type OAuthServerMetadata = v.InferOutput<typeof OAuthServerMetadata>;
 
 interface AuthRequirement {
 	resourceMetadataUrl: string;
@@ -263,9 +265,15 @@ export class CompositionAuth {
 			);
 			return null;
 		}
-		const resourceMetadata: OAuthResourceMetadata = await resourceResponse.json();
+		const resourceResult = v.safeParse(OAuthResourceMetadata, await resourceResponse.json());
+		if (!resourceResult.success) {
+			console.warn(
+				`[addon-mcp] Invalid OAuth resource metadata from ${resourceMetadataUrl}: ${resourceResult.issues.map((i) => i.message).join(', ')}`,
+			);
+			return null;
+		}
 
-		const authServer = resourceMetadata.authorization_servers[0];
+		const authServer = resourceResult.output.authorization_servers[0];
 		const serverMetadataUrl = `${authServer}/.well-known/oauth-authorization-server`;
 		const serverResponse = await fetch(serverMetadataUrl);
 		if (!serverResponse.ok) {
@@ -274,9 +282,20 @@ export class CompositionAuth {
 			);
 			return null;
 		}
-		const serverMetadata: OAuthServerMetadata = await serverResponse.json();
 
-		return { resourceMetadataUrl, resourceMetadata, serverMetadata };
+		const serverResult = v.safeParse(OAuthServerMetadata, await serverResponse.json());
+		if (!serverResult.success) {
+			console.warn(
+				`[addon-mcp] Invalid OAuth server metadata from ${serverMetadataUrl}: ${serverResult.issues.map((i) => i.message).join(', ')}`,
+			);
+			return null;
+		}
+
+		return {
+			resourceMetadataUrl,
+			resourceMetadata: resourceResult.output,
+			serverMetadata: serverResult.output,
+		};
 	}
 }
 
