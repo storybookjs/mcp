@@ -3,81 +3,90 @@
 applyTo: 'eval/**'
 ---
 
-# Copilot Instructions for Storybook MCP Eval Framework
+# Copilot Instructions for Storybook MCP Eval Harness
 
 ## Project Overview
 
-This is an evaluation framework for testing AI coding agents' ability to build UI components using Storybook and MCP tools. The framework automates the process of running experiments, executing agents with prompts, and evaluating the results through multiple quality metrics.
+This is an eval harness for testing AI coding agents' ability to build UI components using Storybook and MCP tools. The harness automates the process of running trials, executing agents with prompts, and grading the results through multiple quality metrics.
 
 **Core Purpose**: Measure how effectively AI agents can use Storybook's MCP tools to build production-quality UI components.
 
 ## Architecture
 
-### Framework Flow
+### Harness Flow
 
 1. **Prepare**: Create fresh Vite + React + Storybook project from template
 2. **Execute**: Run AI agent (Claude Code CLI) with prompt and optional context
-3. **Evaluate**: Run automated checks (build, typecheck, lint, tests, a11y)
+3. **Grade**: Run automated checks (build, typecheck, lint, tests, a11y)
 4. **Report**: Generate metrics, save results, optionally upload to Google Sheets
 
 ### Key Components
 
-- **CLI Interface**: Interactive and non-interactive modes via `eval.ts`
+- **CLI Interface**: Two modes:
+  - `eval.ts` - Batch eval runner for running multiple trials across variants
+  - `advanced-eval.ts` - Single trial runner with interactive CLI
 - **Context System**: Five context modes (none, Storybook MCP - Dev, Storybook MCP - Docs, custom MCP server, extra prompts)
 - **Agent Abstraction**: Pluggable agent implementations (currently Claude Code CLI)
-- **Evaluation Pipeline**: Parallel execution of multiple quality checks
-- **Hooks System**: Lifecycle hooks for custom experiment logic
+- **Grading Pipeline**: Parallel execution of multiple quality checks
+- **Hooks System**: Lifecycle hooks for custom trial logic
 - **Telemetry**: Optional results upload to Google Sheets for tracking
 
 ### File Structure
 
 ```
 eval/
-├── eval.ts                          # Main CLI entry point
+├── eval.ts                          # Batch eval runner (multiple trials)
+├── advanced-eval.ts                 # Single trial runner (interactive)
 ├── types.ts                         # Core types and schemas
 ├── lib/
-│   ├── collect-args.ts              # Interactive CLI argument collection
+│   ├── collect-args.ts              # Interactive CLI argument collection (for advanced-eval)
 │   ├── show-help.ts                 # Help text formatting
 │   ├── generate-prompt.ts           # Combines prompt parts
-│   ├── prepare-experiment.ts        # Project template setup
-│   ├── teardown-experiment.ts       # Experiment cleanup (stop dev servers, etc.)
+│   ├── prepare-trial.ts             # Project template setup
+│   ├── teardown-trial.ts            # Trial cleanup (stop dev servers, etc.)
 │   ├── storybook-dev-server.ts      # Storybook dev server management
 │   ├── agents/
 │   │   └── claude-code-cli.ts       # Claude Code CLI agent implementation
-│   └── evaluations/
-│       ├── evaluate.ts              # Main evaluation orchestrator
-│       ├── prepare-evaluations.ts   # Install test dependencies
+│   ├── eval/                        # Batch eval runner logic
+│   │   ├── collect-eval-args.ts     # Collect args for batch eval
+│   │   ├── run-eval.ts              # Main eval orchestration
+│   │   ├── types.ts                 # Eval-specific types
+│   │   └── progress-ui.ts           # Progress display
+│   └── graders/
+│       ├── grade.ts                 # Main grading orchestrator
+│       ├── prepare-grading.ts       # Install test dependencies
 │       ├── build.ts                 # Vite build check
 │       ├── typecheck.ts             # TypeScript checking
 │       ├── lint.ts                  # ESLint execution
 │       ├── test-stories.ts          # Vitest + a11y testing
 │       ├── environment.ts           # Git branch/commit tracking
 │       └── save-to-sheets.ts        # Google Sheets upload
-├── evals/                           # Evaluation definitions
+├── variant-configs/                 # Variant configs (variants, context combinations)
+├── tasks/                           # Task definitions
 │   └── {number}-{name}/
 │       ├── prompt.md                # Main prompt
 │       ├── hooks.ts                 # Optional lifecycle hooks
 │       ├── components.json          # Optional component manifest
 │       ├── mcp.config.json          # Optional MCP server config
 │       ├── *.md                     # Optional additional context
-│       ├── pre-evaluate/            # Optional files to copy before evaluation
+│       ├── pre-grade/               # Optional files to copy before grading
 │       ├── {hook-name}/             # Optional hook directories (see Lifecycle Hooks)
-│       └── experiments/             # Generated experiment runs
+│       └── trials/                  # Generated trial runs
 └── templates/
     ├── project/                     # Base Vite + React template
-    └── evaluation/                  # Test/lint configs
+    └── grading/                     # Test/lint configs
 ```
 
 ### Context Modes
 
-The framework supports five distinct context types:
+The harness supports five distinct context types:
 
 1. **No Context** (`--no-context`):
    - Agent uses only built-in tools
    - Tests baseline agent capabilities
 
 2. **Storybook MCP - Dev** (`--context storybook-dev`):
-   - Sets up Storybook in the experiment project with `@storybook/addon-mcp`
+   - Sets up Storybook in the trial project with `@storybook/addon-mcp`
    - Starts a local Storybook dev server
    - Configures the MCP server endpoint (`/mcp`) for the agent
    - Best for testing agents in a live development environment
@@ -110,32 +119,38 @@ The framework supports five distinct context types:
 
 ### Running Evaluations
 
-**Interactive mode (recommended):**
+**Batch eval mode (recommended for comparison testing):**
 ```bash
 cd eval
 node eval.ts
 ```
 
-**Non-interactive mode:**
+**Single trial mode (interactive):**
 ```bash
-node eval.ts --agent claude-code --context components.json --upload-id batch-1 --no-storybook 100-flight-booking-plain
-
-# With Storybook MCP - Dev context (starts local dev server)
-node eval.ts --agent claude-code --context storybook-dev --no-storybook 200-build-ui-with-storybook
+cd eval
+node advanced-eval.ts
 ```
 
-**IMPORTANT**: Always use the `--no-storybook` flag when running evals to prevent the process from hanging at the end waiting for user input about starting Storybook.
+**Non-interactive single trial:**
+```bash
+node advanced-eval.ts --agent claude-code --context components.json --upload-id batch-1 --no-storybook 100-flight-booking-plain
+
+# With Storybook MCP - Dev context (starts local dev server)
+node advanced-eval.ts --agent claude-code --context storybook-dev --no-storybook 200-build-ui-with-storybook
+```
+
+**IMPORTANT**: Always use the `--no-storybook` flag when running tasks to prevent the process from hanging at the end waiting for user input about starting Storybook.
 
 **Get help:**
 ```bash
-node eval.ts --help
+node advanced-eval.ts --help
 ```
 
-### Creating a New Eval
+### Creating a New Task
 
 1. **Create directory:**
    ```bash
-   mkdir evals/200-my-component
+   mkdir tasks/200-my-component
    ```
 
 2. **Write `prompt.md`:**
@@ -158,10 +173,10 @@ node eval.ts --help
    import type { Hooks } from '../../types.ts';
 
    export default {
-     async postPrepareExperiment(args, log) {
+     async postPrepareTrial(args, log) {
        // Custom setup (e.g., copy fixture data)
        await fs.cp(
-         path.join(args.evalPath, 'fixtures'),
+         path.join(args.taskPath, 'fixtures'),
          path.join(args.projectPath, 'public/fixtures'),
          { recursive: true }
        );
@@ -172,20 +187,16 @@ node eval.ts --help
 5. **Optional: Create hook directories:**
    - Create directories named after lifecycle hooks in kebab-case
    - Files in these directories are copied to `projectPath` at that lifecycle point
-   - Example: `pre-evaluate/stories/MyComponent.stories.ts` copies test stories before evaluation
+   - Example: `pre-grade/stories/MyComponent.stories.ts` copies test stories before grading
    - See [Lifecycle Hooks](#lifecycle-hooks) for the full list of supported directories
 
 ### Viewing Results
 
-**Conversation viewer (visualize agent activity):**
-```bash
-open conversation-viewer.html
-# Select the full-conversation.js file from results/
-```
+**View transcript:** Open `results/transcript.json` to see agent activity.
 
 **Inspect generated project:**
 ```bash
-cd evals/{eval-name}/experiments/{experiment-name}/project
+cd tasks/{task-name}/trials/{trial-name}/project
 pnpm storybook
 ```
 
@@ -209,8 +220,8 @@ pnpm storybook
 ### Naming Conventions
 
 - Constants: SCREAMING_SNAKE_CASE (rare in this codebase)
-- Functions: camelCase (e.g., `collectArgs`, `prepareExperiment`)
-- Types/Interfaces: PascalCase (e.g., `ExperimentArgs`, `Context`)
+- Functions: camelCase (e.g., `collectArgs`, `prepareTrial`)
+- Types/Interfaces: PascalCase (e.g., `TrialArgs`, `Context`)
 
 ### Argument Parsing Pattern
 
@@ -228,8 +239,8 @@ The `collect-args.ts` module uses Commander for CLI argument parsing:
 **Example:**
 ```typescript
 const program = new Command()
-  .name('eval.ts')
-  .argument('[eval-name]', 'Name of the eval directory')
+  .name('advanced-eval.ts')
+  .argument('[task-name]', 'Name of the task directory')
   .addOption(
     new Option('-a, --agent <name>', 'Which coding agent to use')
       .choices(['claude-code'])
@@ -252,14 +263,17 @@ const result = await p.group({
 
 ## Important Files
 
-### Core Framework
+### Core Harness
 
-- `eval.ts` - Main entry point, orchestrates entire flow
+- `eval.ts` - Batch eval runner for comparing variants
+- `advanced-eval.ts` - Single trial runner with interactive CLI
 - `types.ts` - All TypeScript types and Valibot schemas
-- `lib/collect-args.ts` - CLI argument parsing and validation
+- `lib/collect-args.ts` - CLI argument parsing and validation (for advanced-eval)
+- `lib/eval/collect-eval-args.ts` - CLI argument parsing (for eval)
+- `lib/eval/run-eval.ts` - Main batch eval orchestration
 - `lib/show-help.ts` - Help text formatting
 - `lib/generate-prompt.ts` - Combines prompt parts with constraints
-- `lib/prepare-experiment.ts` - Project template setup
+- `lib/prepare-trial.ts` - Project template setup
 
 ### Agent Integration
 
@@ -267,25 +281,25 @@ const result = await p.group({
   - Streams JSON messages from Claude
   - Parses tool calls and todo lists
   - Calculates token counts using `ai-tokenizer`
-  - Tracks conversation for debugging
+  - Tracks transcript for debugging
 - `lib/agents/copilot-cli.ts` - GitHub Copilot CLI wrapper
   - Runs `copilot -p "<prompt>" --allow-all-tools` from `projectPath`
   - Captures plain stdout/stderr (no structured tool events)
-  - Writes `conversation.json` with minimal metadata (no token/cost)
+  - Writes `transcript.json` with minimal metadata (no token/cost)
   - Requires global CLI install/auth (`npm i -g @github/copilot`, `copilot login`)
 
-### Evaluation Pipeline
+### Grading Pipeline
 
-- `lib/evaluations/evaluate.ts` - Main orchestrator
+- `lib/graders/grade.ts` - Main orchestrator
   - Runs checks in parallel: build, typecheck, lint, test, environment
   - Creates unified logging interface (verbose vs. normal)
   - Formats results and optionally uploads
-- `lib/evaluations/prepare-evaluations.ts` - Installs test dependencies
-- `lib/evaluations/build.ts` - Vite build verification
-- `lib/evaluations/typecheck.ts` - TypeScript compilation check
-- `lib/evaluations/lint.ts` - ESLint execution
-- `lib/evaluations/test-stories.ts` - Vitest + a11y testing
-- `lib/evaluations/save-to-sheets.ts` - Google Sheets upload
+- `lib/graders/prepare-grading.ts` - Installs test dependencies
+- `lib/graders/build.ts` - Vite build verification
+- `lib/graders/typecheck.ts` - TypeScript compilation check
+- `lib/graders/lint.ts` - ESLint execution
+- `lib/graders/test-stories.ts` - Vitest + a11y testing
+- `lib/graders/save-to-sheets.ts` - Google Sheets upload
 
 ### Templates
 
@@ -293,7 +307,7 @@ const result = await p.group({
   - Minimal setup with TypeScript
   - `src/main.tsx` - React root (agents modify this)
   - `vite.config.ts` - Vite configuration
-- `templates/evaluation/` - Testing infrastructure
+- `templates/grading/` - Testing infrastructure
   - `.storybook/` - Storybook config with Vitest addon
   - `eslint.config.js` - ESLint rules
   - `vitest.config.ts` - Vitest + a11y setup
@@ -311,7 +325,7 @@ The Claude Code CLI agent (`lib/agents/claude-code-cli.ts`) implements a sophist
 3. **Token counting**: Uses `ai-tokenizer` with Claude encoding to calculate tokens per message
 4. **Cost tracking**: Calculates USD cost based on Anthropic pricing
 5. **Todo list tracking**: Extracts todo progress from `TodoWrite` tool calls for progress display
-6. **Conversation logging**: Saves complete conversation with metadata to `full-conversation.js`
+6. **Transcript logging**: Saves complete transcript with metadata to `transcript.json`
 
 **Message Types:**
 
@@ -322,13 +336,13 @@ The Claude Code CLI agent (`lib/agents/claude-code-cli.ts`) implements a sophist
 
 **Output Format:**
 
-The agent generates `full-conversation.js` that's viewable in `conversation-viewer.html`:
-```javascript
-const prompt = `...`;
-const promptTokenCount = 1234;
-const promptCost = 0.0123;
-const messages = [...]; // All messages with metadata
-globalThis.loadConversation?.({ prompt, promptTokenCount, promptCost, messages });
+The agent generates `transcript.json` with all messages and metadata:
+
+```json
+{
+  "prompt": "...",
+  "messages": [...]
+}
 ```
 
 ### Copilot CLI Integration
@@ -337,9 +351,9 @@ The Copilot CLI agent (`lib/agents/copilot-cli.ts`) provides a simpler, best-eff
 
 **Key Behaviors:**
 
-1. **Programmatic mode:** Executes `copilot -p "<prompt>" --allow-all-tools` in the experiment `projectPath`.
+1. **Programmatic mode:** Executes `copilot -p "<prompt>" --allow-all-tools` in the trial `projectPath`.
 2. **Text-mode CLI output:** Captures stdout/stderr from the Copilot CLI (which currently does not expose a streaming JSON format) and parses it using regex patterns to detect tool calls (for example, lines like `✓ tool_name args`) and their outputs.
-3. **Conversation logging:** Writes `conversation.json` with a synthetic init message and reconstructs a full conversation timeline, including assistant/user messages and structured `tool_use` / `tool_result` messages synthesized from the parsed CLI output. Token counts and costs are currently zeroed.
+3. **Transcript logging:** Writes `transcript.json` with a synthetic init message and reconstructs a full transcript timeline, including assistant/user messages and structured `tool_use` / `tool_result` messages synthesized from the parsed CLI output. Token counts and costs are currently zeroed.
 4. **No direct MCP transport:** There is no live MCP session over a structured streaming protocol; instead, tool metadata is inferred from the Copilot CLI's plain-text output rather than received as JSON.
 
 **Requirements:**
@@ -355,31 +369,31 @@ To add support for a new coding agent:
 2. Implement the `Agent` interface from `types.ts`:
    ```typescript
    export const myAgent: Agent = {
-     async execute(prompt, experimentArgs, mcpServerConfig) {
+     async execute(prompt, trialArgs, mcpServerConfig) {
        // 1. Setup MCP config if provided
        // 2. Execute agent with prompt
        // 3. Stream/parse output
-       // 4. Save conversation log
+       // 4. Save transcript log
        // 5. Return ExecutionSummary
        return { cost, duration, durationApi, turns };
      }
    };
    ```
-3. Add to `agents` object in `eval.ts`
+3. Add to `agents` object in `config.ts`
 4. Update Commander options in `collect-args.ts` to include new agent choice
 
-## Evaluation Metrics
+## Grading Metrics
 
-Each experiment produces comprehensive metrics:
+Each trial produces comprehensive metrics:
 
 ### Execution Metrics (from agent)
 
 - **cost**: Total API cost in USD
 - **duration**: Total execution time in seconds
 - **durationApi**: API request time in seconds
-- **turns**: Number of conversation turns
+- **turns**: Number of transcript turns
 
-### Quality Metrics (from evaluation)
+### Quality Metrics (from grading)
 
 - **buildSuccess**: Boolean - can the project build?
 - **typeCheckErrors**: Number of TypeScript errors
@@ -405,7 +419,7 @@ Each experiment produces comprehensive metrics:
 }
 ```
 
-**`full-conversation.js`**: Complete conversation log for debugging
+**`transcript.json`**: Complete transcript log for debugging
 **`test-results.json`**: Detailed Vitest results with a11y violations
 **`build-output.txt`**: Vite build logs
 **`typecheck-output.txt`**: TypeScript compiler output
@@ -413,7 +427,7 @@ Each experiment produces comprehensive metrics:
 
 ## Lifecycle Hooks
 
-Evals can customize behavior at each lifecycle step through two mechanisms:
+Tasks can customize behavior at each lifecycle step through two mechanisms:
 
 ### Hook Directories
 
@@ -421,25 +435,25 @@ Create directories named after lifecycle hooks (kebab-case) to automatically cop
 
 | Directory | When Contents Are Copied |
 |-----------|-------------------------|
-| `pre-prepare-experiment/` | Before project template is copied |
-| `post-prepare-experiment/` | After dependencies are installed |
+| `pre-prepare-trial/` | Before project template is copied |
+| `post-prepare-trial/` | After dependencies are installed |
 | `pre-execute-agent/` | Before agent starts execution |
 | `post-execute-agent/` | After agent completes |
-| `pre-evaluate/` | Before evaluation runs |
-| `post-evaluate/` | After evaluation completes |
+| `pre-grade/` | Before grading runs |
+| `post-grade/` | After grading completes |
 | `pre-save/` | Before results are saved |
 | `post-save/` | After results are saved |
 
 **Example:** To add test stories that run against agent-generated components:
 ```
-evals/200-my-component/
+tasks/200-my-component/
 ├── prompt.md
-├── pre-evaluate/
+├── pre-grade/
 │   └── stories/
 │       └── MyComponent.stories.ts
 ```
 
-The `pre-evaluate/stories/MyComponent.stories.ts` file will be copied to `project/stories/MyComponent.stories.ts` before evaluation runs.
+The `pre-grade/stories/MyComponent.stories.ts` file will be copied to `project/stories/MyComponent.stories.ts` before grading runs.
 
 Directories merge with existing content in `projectPath`, and files overwrite if they already exist.
 
@@ -453,13 +467,13 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 export default {
-  // Before project template is copied (after pre-prepare-experiment/ is copied)
-  prePrepareExperiment: async (args, log) => {
+  // Before project template is copied (after pre-prepare-trial/ is copied)
+  prePrepareTrial: async (args, log) => {
     log.message('Custom pre-preparation');
   },
 
-  // After dependencies are installed (after post-prepare-experiment/ is copied)
-  postPrepareExperiment: async (args, log) => {
+  // After dependencies are installed (after post-prepare-trial/ is copied)
+  postPrepareTrial: async (args, log) => {
     // Install additional dependencies
     await addDependency('some-package', { cwd: args.projectPath, silent: true });
   },
@@ -474,14 +488,14 @@ export default {
     log.message('Agent finished');
   },
 
-  // Before evaluation runs (after pre-evaluate/ is copied)
-  preEvaluate: async (args, log) => {
-    log.start('Custom pre-evaluation');
+  // Before grading runs (after pre-grade/ is copied)
+  preGrade: async (args, log) => {
+    log.start('Custom pre-grading');
   },
 
-  // After evaluation completes (after post-evaluate/ is copied)
-  postEvaluate: async (args, log) => {
-    log.success('Custom post-evaluation');
+  // After grading completes (after post-grade/ is copied)
+  postGrade: async (args, log) => {
+    log.success('Custom post-grading');
   },
 
   // Before results are saved (after pre-save/ is copied)
@@ -496,7 +510,7 @@ export default {
 } satisfies Hooks;
 ```
 
-**Execution Order:** For each lifecycle step, the framework first copies files from the hook directory (if it exists), then calls the hook function (if defined).
+**Execution Order:** For each lifecycle step, the harness first copies files from the hook directory (if it exists), then calls the hook function (if defined).
 
 **Logger Interface:**
 
@@ -537,7 +551,7 @@ Build a {component} that includes:
 
 ### Constraints System
 
-The framework automatically appends constraints to all prompts (see `generate-prompt.ts`):
+The harness automatically appends constraints to all prompts (see `generate-prompt.ts`):
 
 ```markdown
 <constraints>
@@ -553,7 +567,7 @@ This prevents agents from running unnecessary commands and keeps them focused on
 
 ### Test Infrastructure
 
-Each experiment's project includes:
+Each trial's project includes:
 
 - **Vitest**: For running component tests
 - **Playwright**: For browser automation
@@ -563,7 +577,7 @@ Each experiment's project includes:
 
 ### Expected Stories
 
-Evals should include `pre-evaluate/stories/*.stories.ts` files that:
+Tasks should include `pre-grade/stories/*.stories.ts` files that:
 
 1. Import the component
 2. Define basic stories (e.g., Default)
@@ -594,7 +608,7 @@ export const Default: Story = {
 
 ### Accessibility Testing
 
-The framework uses `@storybook/addon-a11y` which runs Axe checks on all stories:
+The harness uses `@storybook/addon-a11y` which runs Axe checks on all stories:
 
 - Violations are counted per story
 - Total violations across all passing tests are reported
@@ -602,7 +616,7 @@ The framework uses `@storybook/addon-a11y` which runs Axe checks on all stories:
 
 ## Dependencies
 
-### Framework Dependencies
+### Harness Dependencies
 
 - `commander` - CLI argument parsing with environment variable support
 - `@clack/prompts` - Interactive CLI prompts
@@ -614,7 +628,7 @@ The framework uses `@storybook/addon-a11y` which runs Axe checks on all stories:
 ### Template Dependencies
 
 - **Project template**: Vite + React + TypeScript (minimal)
-- **Evaluation template**: Vitest + Playwright + Storybook + ESLint + a11y
+- **Grading template**: Vitest + Playwright + Storybook + ESLint + a11y
 
 ### Agent Dependencies
 
@@ -622,7 +636,7 @@ The framework uses `@storybook/addon-a11y` which runs Axe checks on all stories:
 
 ## Google Sheets Integration
 
-The framework can optionally upload results to Google Sheets for tracking experiments over time.
+The harness can optionally upload results to Google Sheets for tracking trials over time.
 
 **How it works:**
 
@@ -637,32 +651,14 @@ The framework can optionally upload results to Google Sheets for tracking experi
 - Deployed as web app with spreadsheet access
 - URL is hardcoded in `save-to-sheets.ts`
 
-## Conversation Viewer
-
-The `conversation-viewer.html` file provides a web-based interface for viewing agent conversations:
-
-**Features:**
-
-- Timeline view of all messages
-- Token counts and costs per message
-- Tool call visualization
-- Todo list progress tracking
-- Collapsible message details
-
-**Usage:**
-
-1. Open `conversation-viewer.html` in browser
-2. Select `results/full-conversation.js` file
-3. Browse conversation chronologically
-
 ## MCP Server Configuration
 
 ### Storybook MCP - Dev Pattern
 
-When using `--context storybook-dev`, the framework:
+When using `--context storybook-dev`, the harness:
 
-1. Copies the evaluation template with `.storybook` config (includes `@storybook/addon-mcp`)
-2. Installs Storybook packages in the experiment project
+1. Copies the grading template with `.storybook` config (includes `@storybook/addon-mcp`)
+2. Installs Storybook packages in the trial project
 3. Starts a Storybook dev server on a random available port
 4. Provides MCP config to the agent:
    ```json
@@ -680,7 +676,7 @@ When using `--context storybook-dev`, the framework:
 
 ### Storybook MCP - Docs Pattern (Component Manifest)
 
-When using `--context storybook-docs`, the framework:
+When using `--context storybook-docs`, the harness:
 
 1. Reads the manifest files from the eval directory, components.json and optionally docs.json
 2. Creates `.mcp.json` in project with stdio server config:
@@ -699,7 +695,7 @@ When using `--context storybook-docs`, the framework:
 
 ### Custom MCP Server Pattern
 
-When using `--context mcp.config.json`, the framework:
+When using `--context mcp.config.json`, the harness:
 
 1. Reads the config file (or parses inline JSON)
 2. Validates against `McpServerConfigSchema`
@@ -719,39 +715,39 @@ When using `--context mcp.config.json`, the framework:
 
 ## Tips for Development
 
-### Debugging Failed Experiments
+### Debugging Failed Trials
 
-1. **Check `full-conversation.js`**: See exact agent activity
+1. **Check `transcript.json`**: See exact agent activity
 2. **Review `build-output.txt`**: Build errors
 3. **Check `typecheck-output.txt`**: TypeScript issues
 4. **Inspect `lint-output.txt`**: Code quality problems
 5. **Read `test-results.json`**: Test failures and a11y violations
-6. **Compare with `pre-evaluate/`**: See reference files copied before evaluation
+6. **Compare with `pre-grade/`**: See reference files copied before grading
 
 ### Common Issues
 
-- **Dependencies not installed**: Framework handles this, but hooks may need to wait
-- **MCP server not trusted**: Framework auto-approves via stdin
+- **Dependencies not installed**: Harness handles this, but hooks may need to wait
+- **MCP server not trusted**: Harness auto-approves via stdin
 - **Tests fail to run**: Check that stories are in `stories/` directory and have `tags: ['test']`
 - **Build fails**: Agent may have created invalid TypeScript
 
 ### Performance Optimization
 
-- Evaluations run in parallel (build, typecheck, lint, test)
+- Grading checks run in parallel (build, typecheck, lint, test)
 - Use `--verbose` only for debugging (slower)
 - Skip `--upload-id` for faster local iteration
 
 ## Notes for AI Assistants
 
-- The framework is designed for reproducibility - same inputs should give comparable outputs
+- The harness is designed for reproducibility - same inputs should give comparable outputs
 - Always check `collect-args.ts` for the canonical list of CLI options
-- Hooks are optional - most evals only need `pre-evaluate/` for test stories
+- Hooks are optional - most tasks only need `pre-grade/` for test stories
 - Hook directories copy files first, then hook functions run
 - Extra prompts are append-only - they don't replace the main prompt
 - The `CONSTRAINTS_PROMPT` is always appended to prevent package manager usage
 - Agent token counting is approximate - uses client-side tokenizer, not actual API response
-- Coverage metrics track quality trends across experiments
-- The conversation viewer is critical for debugging agent behavior
-- All experiment artifacts are saved - nothing is deleted automatically
+- Coverage metrics track quality trends across trials
+- Check `transcript.json` for debugging agent behavior
+- All trial artifacts are saved - nothing is deleted automatically
 - Timestamps use local time with timezone offset for consistent naming
 ````

@@ -1,5 +1,5 @@
-import type { ComponentManifest, Doc } from '../../types.ts';
-import { MAX_SUMMARY_LENGTH, type ManifestFormatter } from './types.ts';
+import type { ComponentManifest, Doc, Story } from '../../types.ts';
+import { MAX_SUMMARY_LENGTH, MAX_STORIES_TO_SHOW, type ManifestFormatter } from './types.ts';
 import { parseReactDocgen } from '../parse-react-docgen.ts';
 import { dedent } from '../dedent.ts';
 import { extractDocsSummary } from './extract-docs-summary.ts';
@@ -22,6 +22,48 @@ function formatComponentLine(component: ComponentManifest): string {
 function formatDocLine(doc: Doc): string {
 	const summary = doc.summary ?? extractDocsSummary(doc.content);
 	return `- ${doc.title} (${doc.id})${summary ? `: ${summary}` : ''}`;
+}
+
+/**
+ * Extracts a summary from an object with optional summary and description fields.
+ * Prefers summary if available, otherwise truncates description to maxLength.
+ */
+function extractSummary(
+	item: { summary?: string; description?: string },
+	maxLength: number = MAX_SUMMARY_LENGTH,
+): string | undefined {
+	if (item.summary) {
+		return item.summary;
+	}
+	if (item.description) {
+		return item.description.length > maxLength
+			? `${item.description.slice(0, maxLength)}...`
+			: item.description;
+	}
+	return undefined;
+}
+
+/**
+ * Formats a story's content (description + code snippet) into markdown.
+ * Reusable helper for both formatComponentManifest and formatStoryDocumentation.
+ */
+function formatStoryContent(story: Story, importStatement: string | undefined): string[] {
+	const parts: string[] = [];
+
+	if (story.description) {
+		parts.push(story.description);
+		parts.push('');
+	}
+
+	parts.push('```');
+	if (importStatement) {
+		parts.push(importStatement);
+		parts.push('');
+	}
+	parts.push(story.snippet ?? '');
+	parts.push('```');
+
+	return parts;
 }
 
 /**
@@ -50,28 +92,37 @@ export const markdownFormatter: ManifestFormatter = {
 			parts.push('## Stories');
 			parts.push('');
 
-			for (const story of componentManifest.stories) {
-				if (!story.snippet) {
-					continue;
-				}
+			const storiesWithSnippets = componentManifest.stories.filter((s) => s.snippet);
 
-				// Convert PascalCase to Human Readable Case
-				const storyName = story.name.replace(/([A-Z])/g, ' $1').trim();
-				parts.push(`### ${storyName}`);
+			// Check if component has props - if not, show all stories fully
+			const hasProps =
+				componentManifest.reactDocgen &&
+				Object.keys(componentManifest.reactDocgen.props ?? {}).length > 0;
 
-				if (story.description) {
-					parts.push('');
-					parts.push(story.description);
-				}
+			const storiesToShow = hasProps
+				? storiesWithSnippets.slice(0, MAX_STORIES_TO_SHOW)
+				: storiesWithSnippets;
+			const remainingStories = hasProps ? storiesWithSnippets.slice(MAX_STORIES_TO_SHOW) : [];
 
+			// Show first X stories in full detail (or all if no props)
+			for (const story of storiesToShow) {
+				parts.push(`### ${story.name}`);
 				parts.push('');
-				parts.push('```');
-				if (componentManifest.import) {
-					parts.push(componentManifest.import);
-					parts.push('');
+				parts.push(...formatStoryContent(story, componentManifest.import));
+				parts.push('');
+			}
+
+			// Show remaining stories as names only
+			if (remainingStories.length > 0) {
+				if (storiesToShow.length > 0) {
+					parts.push('### Other Stories');
 				}
-				parts.push(story.snippet);
-				parts.push('```');
+				parts.push('');
+				for (const story of remainingStories) {
+					const summary = extractSummary(story);
+					const summaryPart = summary ? `: ${summary}` : '';
+					parts.push(`- ${story.name}${summaryPart}`);
+				}
 				parts.push('');
 			}
 		}
@@ -190,6 +241,23 @@ export const markdownFormatter: ManifestFormatter = {
 				parts.push('');
 			}
 		}
+
+		return parts.join('\n').trim();
+	},
+
+	formatStoryDocumentation(componentManifest, storyName) {
+		const story = componentManifest.stories?.find((s) => s.name === storyName);
+
+		if (!story || !story.snippet) {
+			return '';
+		}
+
+		const parts: string[] = [];
+
+		// Component name - Story name header
+		parts.push(`# ${componentManifest.name} - ${story.name}`);
+		parts.push('');
+		parts.push(...formatStoryContent(story, componentManifest.import));
 
 		return parts.join('\n').trim();
 	},

@@ -10,5 +10,6 @@ test-report.junit.xml
 .turbo
 
 *storybook.log
-experiments/
+trials/
+orchestration-logs/
 CLAUDE.local.md

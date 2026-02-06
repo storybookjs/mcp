@@ -1,12 +1,12 @@
 import * as v from 'valibot';
 
 /**
- * Supported models for the eval CLI.
+ * Supported models for the task harness CLI.
  * These names are used consistently across agents - each agent maps them to their native format.
  */
 export const SUPPORTED_MODELS = [
-	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-sonnet-4.5',
 	'claude-haiku-4.5',
 	'gpt-5.1-codex-max',
 	'gpt-5.1-codex',
@@ -20,8 +20,8 @@ export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
  * Models that are supported by the Claude Code CLI.
  */
 export const CLAUDE_MODELS = [
-	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-sonnet-4.5',
 	'claude-haiku-4.5',
 ] as const satisfies readonly SupportedModel[];
 
@@ -31,8 +31,8 @@ export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
  * Models that are supported by the Copilot CLI.
  */
 export const COPILOT_MODELS = [
-	'claude-sonnet-4.5',
 	'claude-opus-4.5',
+	'claude-sonnet-4.5',
 	'claude-haiku-4.5',
 	'gpt-5.1-codex-max',
 	'gpt-5.1-codex',
@@ -42,18 +42,20 @@ export const COPILOT_MODELS = [
 
 export type CopilotModel = (typeof COPILOT_MODELS)[number];
 
-export type ExperimentArgs = {
-	experimentPath: string;
-	evalPath: string;
+export type TrialArgs = {
+	trialPath: string;
+	taskPath: string;
 	projectPath: string;
 	resultsPath: string;
 	verbose: boolean;
 	hooks: Hooks;
 	uploadId: string | false;
-	evalName: string;
+	runId?: string;
+	taskName: string;
 	context: Context;
 	agent: string;
 	model: SupportedModel;
+	label?: string;
 };
 
 export type ExecutionSummary = {
@@ -65,7 +67,7 @@ export type ExecutionSummary = {
 	turns: number;
 };
 
-export type EvaluationSummary = {
+export type GradingSummary = {
 	buildSuccess: boolean;
 	typeCheckErrors: number;
 	lintErrors: number;
@@ -82,6 +84,19 @@ export type EvaluationSummary = {
 		lines: number | null;
 		statements: number | null;
 	};
+	componentUsage?: {
+		score: number;
+		matched: number;
+		missing: number;
+		unexpected: number;
+	};
+};
+
+/**
+ * Configuration for a task, loaded from config.json in the task directory.
+ */
+export type TaskConfig = {
+	expectedImports?: Record<string, string[]>;
 };
 
 export const McpServerConfigSchema = v.record(
@@ -107,6 +122,10 @@ export type ContextItem =
 			type: false;
 	  }
 	| {
+			type: 'inline-prompt';
+			content: string;
+	  }
+	| {
 			type: 'extra-prompts';
 			prompts: string[];
 	  }
@@ -126,20 +145,20 @@ export type Context = ContextItem[];
 export interface Agent {
 	execute: (
 		prompt: string,
-		experimentArgs: ExperimentArgs,
+		trialArgs: TrialArgs,
 		mcpServerConfig?: McpServerConfig,
 	) => Promise<ExecutionSummary>;
 }
 
-export type Hook = (experimentArgs: ExperimentArgs) => Promise<void>;
+export type Hook = (trialArgs: TrialArgs) => Promise<void>;
 
 export type Hooks = {
-	prePrepareExperiment?: Hook;
-	postPrepareExperiment?: Hook;
+	prePrepareTrial?: Hook;
+	postPrepareTrial?: Hook;
 	preExecuteAgent?: Hook;
 	postExecuteAgent?: Hook;
-	preEvaluate?: Hook;
-	postEvaluate?: Hook;
+	preGrade?: Hook;
+	postGrade?: Hook;
 	preSave?: Hook;
 	postSave?: Hook;
 };

@@ -27,7 +27,7 @@ src/
   serve.ts          # Development server setup
   tools/
     list-all-documentation.ts              # List all documentation tool
-    get-component-documentation.ts      # Get component documentation tool
+    get-documentation.ts      # Get component documentation tool
   utils/
     format-manifest.ts                  # Format component manifest to XML
     parse-react-docgen.ts              # Parse react-docgen output
@@ -166,7 +166,7 @@ Runs the development server with hot reload using Node's `--watch` flag.
 pnpm format
 ```
 
-Formats code using prettier.
+Formats code using oxfmt.
 
 To check formatting without applying changes:
 
@@ -211,7 +211,7 @@ Launches the MCP inspector for debugging the MCP server using the configuration 
 
 ### Code Style
 
-- Use prettier for formatting (config: `.prettierrc`)
+- Use oxfmt for formatting (config: `.oxfmtrc.json`)
 - Prefer async/await over callbacks
 - Export types and interfaces explicitly
 - Use descriptive variable and function names

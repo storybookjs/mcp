@@ -5,7 +5,8 @@
 	"description": "The project for evaluating UI component development with and without Storybook MCP",
 	"type": "module",
 	"scripts": {
-		"clean-experiments": "node clean-experiments.ts",
+		"clean-trials": "node clean-trials.ts",
+		"advanced-eval": "node advanced-eval.ts",
 		"eval": "node eval.ts",
 		"storybook": "storybook dev --port 6007 --no-open",
 		"typecheck": "tsc"
@@ -36,8 +37,8 @@
 		"globals": "^16.4.0",
 		"istanbul-lib-coverage": "^3.2.0",
 		"nypm": "^0.6.2",
+		"oxfmt": "^0.27.0",
 		"playwright": "^1.56.1",
-		"prettier": "^3.6.2",
 		"radix-ui": "^1.4.3",
 		"react": "^19.1.1",
 		"react-dom": "^19.1.1",

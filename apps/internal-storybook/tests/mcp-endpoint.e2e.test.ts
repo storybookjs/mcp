@@ -62,7 +62,7 @@ async function waitForMcpEndpoint(maxAttempts = 90, interval = 500): Promise<voi
 				resolve();
 				return;
 			}
-		} catch (error) {
+		} catch {
 			// Server not ready yet
 		}
 
@@ -77,22 +77,6 @@ async function waitForMcpEndpoint(maxAttempts = 90, interval = 500): Promise<voi
 
 describe('MCP Endpoint E2E Tests', () => {
 	beforeAll(async () => {
-		// Kill any existing process on port 6006 (cross-platform)
-		try {
-			if (process.platform === 'win32') {
-				await x('npx', ['kill-port', '6006']);
-			} else {
-				// macOS and Linux: use lsof (commonly available on both)
-				const { stdout } = await x('lsof', ['-ti', ':6006']);
-				if (stdout.trim()) {
-					await x('kill', ['-9', ...stdout.trim().split('\n')]);
-				}
-			}
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-		} catch {
-			// No process on port, continue
-		}
-
 		storybookProcess = x('pnpm', ['storybook'], {
 			nodeOptions: {
 				cwd: STORYBOOK_DIR,
@@ -344,16 +328,15 @@ describe('MCP Endpoint E2E Tests', () => {
 				    "title": "List All Documentation",
 				  },
 				  {
-				    "description": "Get detailed documentation for a specific UI component or docs entry",
+				    "description": "Get documentation for a UI component or docs entry.
+
+				Returns the first 3 stories with code snippets showing how props are used, plus TypeScript prop definitions. Call this before using a component to avoid hallucinating prop names, types, or valid combinations. Stories reveal real prop usage patterns, interactions, and edge cases that type definitions alone don't show. If the example stories don't show the prop you need, use the get-documentation-for-story tool to fetch the story documentation for the specific story variant you need.
+
+				Example: id="button" returns Primary, Secondary, Large stories with code like <Button variant="primary" size="large"> showing actual prop combinations.",
 				    "inputSchema": {
 				      "$schema": "http://json-schema.org/draft-07/schema#",
 				      "properties": {
 				        "id": {
-				          "description": "The component or docs entry ID (e.g., "button")",
-				          "type": "string",
-				        },
-				        "storybookId": {
-				          "description": "The Storybook source ID (e.g., "local", "tetra"). Required when multiple Storybooks are composed. See list-all-documentation for available sources.",
 				          "type": "string",
 				        },
 				      },
@@ -453,38 +436,121 @@ describe('MCP Endpoint E2E Tests', () => {
 				arguments: {},
 			});
 
-			expect(response.result).toHaveProperty('content');
-			expect(response.result.content[0]).toHaveProperty('type', 'text');
+			expect(response.result).toMatchInlineSnapshot(`
+				{
+				  "content": [
+				    {
+				      "text": "# Components
 
-			const text = response.result.content[0].text;
+				- Button (example-button): A customizable button component for user interactions.
+				- Header (header)
+				- Page (page)
+				- Card (other-ui-card): Card component with title, image, content, and action button
 
-			// Single-source mode: direct component list without source headers
-			expect(text).toContain('# Components');
-			expect(text).toContain('Button (example-button)');
-			expect(text).toContain('Header (header)');
-			expect(text).toContain('Card (other-ui-card)');
+				# Docs
+
+				- getting-started (getting-started--docs): # Getting Started This is the getting started documentation of this design system. ## Usag...",
+				      "type": "text",
+				    },
+				  ],
+				}
+			`);
 		});
 	});
 
 	describe('Tool: get-documentation', () => {
 		it('should return documentation for a specific component', async () => {
-			// Single-source mode: no storybookId needed
+			// First, get the list to find a valid component ID
+			const listResponse = await mcpRequest('tools/call', {
+				name: 'list-all-documentation',
+				arguments: {},
+			});
+
+			const listText = listResponse.result.content[0].text;
+			// Match markdown format: - ComponentName (component-id)
+			const idMatch = listText.match(/- \w+ \(([^)]+)\)/);
+			expect(idMatch).toBeTruthy();
+			const componentId = idMatch![1];
+
+			// Now get documentation for that component
 			const response = await mcpRequest('tools/call', {
 				name: 'get-documentation',
 				arguments: {
-					id: 'example-button',
+					id: componentId,
 				},
 			});
 
-			expect(response.result).toHaveProperty('content');
-			expect(response.result.content[0]).toHaveProperty('type', 'text');
+			expect(response.result).toMatchInlineSnapshot(`
+				{
+				  "content": [
+				    {
+				      "text": "# Button
 
-			const text = response.result.content[0].text;
-			expect(text).toContain('# Button');
-			expect(text).toContain('ID: example-button');
-			expect(text).toContain('Primary UI component for user interaction');
-			expect(text).toContain('## Stories');
-			expect(text).toContain('## Props');
+				ID: example-button
+
+				Primary UI component for user interaction
+
+				## Stories
+
+				### Primary
+
+				\`\`\`
+				import { Button } from "@my-org/my-component-library";
+
+				const Primary = () => <Button onClick={fn()} primary label="Button" />;
+				\`\`\`
+
+				### Secondary
+
+				\`\`\`
+				import { Button } from "@my-org/my-component-library";
+
+				const Secondary = () => <Button onClick={fn()} label="Button" />;
+				\`\`\`
+
+				### Large
+
+				\`\`\`
+				import { Button } from "@my-org/my-component-library";
+
+				const Large = () => <Button onClick={fn()} size="large" label="Button" />;
+				\`\`\`
+
+				### Other Stories
+
+				- Small
+
+				## Props
+
+				\`\`\`
+				export type Props = {
+				  /**
+				    Is this the principal call to action on the page?
+				  */
+				  primary?: boolean = false;
+				  /**
+				    What background color to use
+				  */
+				  backgroundColor?: string;
+				  /**
+				    How large should the button be?
+				  */
+				  size?: 'small' | 'medium' | 'large' = 'medium';
+				  /**
+				    Button contents
+				  */
+				  label: string;
+				  /**
+				    Optional click handler
+				  */
+				  onClick?: () => void;
+				}
+				\`\`\`",
+				      "type": "text",
+				    },
+				  ],
+				}
+			`);
 		});
 
 		it('should return error for non-existent component', async () => {
@@ -495,8 +561,17 @@ describe('MCP Endpoint E2E Tests', () => {
 				},
 			});
 
-			expect(response.result).toHaveProperty('isError', true);
-			expect(response.result.content[0].text).toContain('not found');
+			expect(response.result).toMatchInlineSnapshot(`
+				{
+				  "content": [
+				    {
+				      "text": "Component or Docs Entry not found: "non-existent-component-id". Use the list-all-documentation tool to see available components and documentation entries.",
+				      "type": "text",
+				    },
+				  ],
+				  "isError": true,
+				}
+			`);
 		});
 	});
 

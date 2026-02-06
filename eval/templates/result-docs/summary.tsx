@@ -21,6 +21,12 @@ interface SummaryProps {
 		lines: number | null;
 		statements: number | null;
 	};
+	componentUsage?: {
+		score: number;
+		matched: number;
+		missing: number;
+		unexpected: number;
+	};
 }
 
 const StatusBadge = ({
@@ -165,7 +171,7 @@ export const Summary = (props: SummaryProps) => {
 
 	return (
 		<div style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
-			<h1 style={{ marginTop: 0 }}>Evaluation Summary</h1>
+			<h1 style={{ marginTop: 0 }}>Grading Summary</h1>
 
 			<div style={{ marginBottom: '2rem' }}>
 				<h2
@@ -210,6 +216,13 @@ export const Summary = (props: SummaryProps) => {
 						title="Coverage (lines)"
 						value={formatPct(props.coverage.lines)}
 						subvalue={`Statements ${formatPct(props.coverage.statements)}, Branches ${formatPct(props.coverage.branches)}`}
+					/>
+				)}
+				{props.componentUsage && (
+					<MetricCard
+						title="Component Usage"
+						value={props.componentUsage.score}
+						subvalue={`Matched ${props.componentUsage.matched}, Missing ${props.componentUsage.missing}, Unexpected ${props.componentUsage.unexpected}`}
 					/>
 				)}
 			</div>

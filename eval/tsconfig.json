@@ -14,11 +14,13 @@
 		]
 	},
 	"include": [
+		"advanced-eval.ts",
 		"eval.ts",
-		"clean-experiments.ts",
+		"clean-trials.ts",
 		"lib",
+		"variant-configs",
 		"templates/result-docs",
-		"templates/evaluation",
+		"templates/grading",
 		"google-apps-script.js",
 		"types"
 	]

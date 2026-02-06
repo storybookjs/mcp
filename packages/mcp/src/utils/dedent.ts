@@ -53,7 +53,7 @@ export function dedent(templ: TemplateStringsArray | string, ...values: unknown[
 				.join('\n');
 		}
 
-		string += `${indentedValue}${strings[i + 1]}`;
+		string += `${String(indentedValue)}${strings[i + 1]}`;
 	});
 
 	return string;

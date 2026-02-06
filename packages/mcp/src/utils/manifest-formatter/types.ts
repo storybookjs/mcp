@@ -6,6 +6,12 @@ import type { AllManifests, ComponentManifest, Doc, MultiSourceManifests } from 
 export const MAX_SUMMARY_LENGTH = 90;
 
 /**
+ * Maximum number of stories to show in full detail in component manifests.
+ * Remaining stories will be shown as names only.
+ */
+export const MAX_STORIES_TO_SHOW = 3;
+
+/**
  * Interface for manifest formatters.
  * Implementations must provide methods to format both single components
  * and component lists in their respective formats (XML, Markdown, etc).
@@ -35,4 +41,9 @@ export interface ManifestFormatter {
 	 * @returns Formatted string representation grouped by source
 	 */
 	formatMultiSourceManifestsToLists(manifests: MultiSourceManifests): string;
+
+	/**
+	 * Format a single story's documentation.
+	 */
+	formatStoryDocumentation(componentManifest: ComponentManifest, storyName: string): string;
 }

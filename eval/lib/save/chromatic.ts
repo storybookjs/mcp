@@ -1,4 +1,4 @@
-import type { ExperimentArgs } from '../../types.ts';
+import type { TrialArgs } from '../../types.ts';
 import { runScript } from 'nypm';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -12,8 +12,8 @@ type ChromaticDiagnostics = {
 	webUrl?: string;
 };
 
-export async function buildStorybook(experimentArgs: ExperimentArgs): Promise<boolean> {
-	const { projectPath, resultsPath } = experimentArgs;
+export async function buildStorybook(trialArgs: TrialArgs): Promise<boolean> {
+	const { projectPath, resultsPath } = trialArgs;
 
 	let buildSuccess = false;
 	let buildOutput = '';
@@ -66,9 +66,7 @@ export async function buildStorybook(experimentArgs: ExperimentArgs): Promise<bo
 	return true;
 }
 
-export async function uploadToChromatic(
-	experimentArgs: ExperimentArgs,
-): Promise<string | undefined> {
+export async function uploadToChromatic(trialArgs: TrialArgs): Promise<string | undefined> {
 	await x(
 		'npx',
 		[
@@ -83,12 +81,12 @@ export async function uploadToChromatic(
 		],
 		{
 			nodeOptions: {
-				cwd: experimentArgs.projectPath,
+				cwd: trialArgs.projectPath,
 			},
 		},
 	);
 
-	const diagnosticsPath = path.join(experimentArgs.projectPath, 'chromatic-diagnostics.json');
+	const diagnosticsPath = path.join(trialArgs.projectPath, 'chromatic-diagnostics.json');
 	const { default: diagnostics } = (await import(diagnosticsPath, {
 		with: { type: 'json' },
 	})) as { default: ChromaticDiagnostics };
