@@ -54,9 +54,16 @@ export class CompositionAuth {
 
       if (authReq) {
         this.authRequiredUrls.push(ref.url);
-        // Use first auth requirement for .well-known (all must use same OAuth server)
         if (!this.authRequirement) {
           this.authRequirement = authReq;
+        } else {
+          const existingServer = this.authRequirement.resourceMetadata.authorization_servers[0];
+          const newServer = authReq.resourceMetadata.authorization_servers[0];
+          if (existingServer !== newServer) {
+            console.warn(
+              `[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`
+            );
+          }
         }
       }
     }

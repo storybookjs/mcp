@@ -41,10 +41,11 @@ export async function addGetDocumentationTool(
 				const ctx = server.ctx.custom;
 				const format = ctx?.format ?? 'markdown';
 				const { id, storybookId } = input;
+				const isMultiSource = ctx?.sources && ctx.sources.length > 0;
 
-				// Multi-source mode: when sources are configured
-				if (ctx?.sources && ctx.sources.length > 0) {
-					// storybookId is required in multi-source mode
+				// In multi-source mode, validate and resolve the source
+				let source;
+				if (isMultiSource) {
 					if (!storybookId) {
 						const availableSources = ctx.sources.map((s) => s.id).join(', ');
 						return {
@@ -58,8 +59,7 @@ export async function addGetDocumentationTool(
 						};
 					}
 
-					// Find the requested source
-					const source = ctx.sources.find((s) => s.id === storybookId);
+					source = ctx.sources.find((s) => s.id === storybookId);
 					if (!source) {
 						const availableSources = ctx.sources.map((s) => s.id).join(', ');
 						return {
@@ -72,75 +72,29 @@ export async function addGetDocumentationTool(
 							isError: true,
 						};
 					}
-
-					const { componentManifest, docsManifest } = await getManifests(
-						ctx.request,
-						ctx.manifestProvider,
-						source,
-					);
-
-					const component = componentManifest.components[id];
-					const docsEntry = docsManifest?.docs[id];
-
-					if (!component && !docsEntry) {
-						await ctx.onGetDocumentation?.({
-							context: ctx,
-							input: { id, storybookId },
-						});
-
-						return {
-							content: [
-								{
-									type: 'text' as const,
-									text: `Component or Docs Entry not found: "${id}" in source "${storybookId}". Use the ${LIST_TOOL_NAME} tool to see available components and documentation entries.`,
-								},
-							],
-							isError: true,
-						};
-					}
-
-					const documentation = component ?? docsEntry!;
-					const text = component
-						? formatComponentManifest(documentation as ComponentManifest, format)
-						: formatDocsManifest(documentation as Doc, format);
-
-					await ctx.onGetDocumentation?.({
-						context: ctx,
-						input: { id, storybookId },
-						foundDocumentation: documentation,
-						resultText: text,
-					});
-
-					return {
-						content: [
-							{
-								type: 'text' as const,
-								text,
-							},
-						],
-					};
 				}
 
-				// Single-source mode: no composition (storybookId ignored)
 				const { componentManifest, docsManifest } = await getManifests(
 					ctx?.request,
 					ctx?.manifestProvider,
+					source,
 				);
 
 				const component = componentManifest.components[id];
 				const docsEntry = docsManifest?.docs[id];
 
 				if (!component && !docsEntry) {
+					const suffix = storybookId ? ` in source "${storybookId}"` : '';
 					await ctx?.onGetDocumentation?.({
 						context: ctx,
-						input: { id },
+						input: { id, storybookId },
 					});
 
 					return {
 						content: [
 							{
 								type: 'text' as const,
-								text: `Component or Docs Entry not found: "${id}". Use the ${LIST_TOOL_NAME} tool to see available components and documentation entries.`,
+								text: `Component or Docs Entry not found: "${id}"${suffix}. Use the ${LIST_TOOL_NAME} tool to see available components and documentation entries.`,
 							},
 						],
 						isError: true,
@@ -154,7 +108,7 @@ export async function addGetDocumentationTool(
 
 				await ctx?.onGetDocumentation?.({
 					context: ctx,
-					input: { id },
+					input: { id, storybookId },
 					foundDocumentation: documentation,
 					resultText: text,
 				});

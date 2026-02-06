@@ -150,6 +150,78 @@ describe('CompositionAuth', () => {
       expect(auth.authUrls).toHaveLength(0);
     });
 
+    it('warns when refs use different OAuth servers', async () => {
+      const auth = new CompositionAuth();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Mock two refs with different OAuth servers
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // First ref: Chromatic OAuth
+          .mockResolvedValueOnce({
+            ok: true,
+            text: () => Promise.resolve('{"loginUrl":"https://chromatic.com/login"}'),
+          })
+          .mockResolvedValueOnce({
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate': 'Bearer resource_metadata="https://chromatic.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              resource: 'https://chromatic.com/mcp',
+              authorization_servers: ['https://www.chromatic.com'],
+            }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              issuer: 'https://www.chromatic.com',
+              authorization_endpoint: 'https://www.chromatic.com/authorize',
+              token_endpoint: 'https://www.chromatic.com/token',
+            }),
+          })
+          // Second ref: different OAuth server
+          .mockResolvedValueOnce({
+            ok: true,
+            text: () => Promise.resolve('{"loginUrl":"https://other.example.com/login"}'),
+          })
+          .mockResolvedValueOnce({
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate': 'Bearer resource_metadata="https://other.example.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              resource: 'https://other.example.com/mcp',
+              authorization_servers: ['https://other.example.com'],
+            }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              issuer: 'https://other.example.com',
+              authorization_endpoint: 'https://other.example.com/authorize',
+              token_endpoint: 'https://other.example.com/token',
+            }),
+          })
+      );
+
+      await auth.initialize([
+        { id: 'chromatic', title: 'Chromatic', url: 'https://private.chromatic.com' },
+        { id: 'other', title: 'Other', url: 'https://other.example.com' },
+      ]);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('different OAuth server')
+      );
+    });
+
     it('detects private refs via loginUrl response', async () => {
       const auth = new CompositionAuth();
 
