@@ -144,7 +144,7 @@ describe('CompositionAuth', () => {
         })
       );
 
-      await auth.initialize([{ title: 'public', url: 'http://public.example.com' }]);
+      await auth.initialize([{ id: 'public', title: 'public', url: 'http://public.example.com' }]);
 
       expect(auth.requiresAuth).toBe(false);
       expect(auth.authUrls).toHaveLength(0);
@@ -187,7 +187,7 @@ describe('CompositionAuth', () => {
           })
       );
 
-      await auth.initialize([{ title: 'private', url: 'https://private.chromatic.com' }]);
+      await auth.initialize([{ id: 'private', title: 'private', url: 'https://private.chromatic.com' }]);
 
       expect(auth.requiresAuth).toBe(true);
       expect(auth.authUrls).toContain('https://private.chromatic.com');

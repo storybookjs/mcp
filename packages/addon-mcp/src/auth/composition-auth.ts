@@ -9,6 +9,7 @@
 import type { Source } from '@storybook/mcp';
 
 export interface ComposedRef {
+  id: string;
   title: string;
   url: string;
 }
@@ -103,10 +104,8 @@ export class CompositionAuth {
     const sources: Source[] = [{ id: 'local', title: 'Local' }];
 
     for (const ref of refs) {
-      // Create a URL-safe ID from the title
-      const id = ref.title.toLowerCase().replace(/\s+/g, '-');
       sources.push({
-        id,
+        id: ref.id,
         title: ref.title,
         url: ref.url,
       });

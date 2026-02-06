@@ -230,34 +230,28 @@ export async function getMultiSourceManifests(
 		source?: Source,
 	) => Promise<string>,
 ): Promise<MultiSourceManifests> {
-	const results: MultiSourceManifests = [];
-
 	// Fetch all sources in parallel
-	const fetchPromises = sources.map(async (source) => {
-		try {
-			const manifests = await getManifests(request, manifestProvider, source);
-			return {
-				source,
-				componentManifest: manifests.componentManifest,
-				docsManifest: manifests.docsManifest,
-			};
-		} catch (error) {
-			// Capture error but don't fail the entire request
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			return {
-				source,
-				componentManifest: { v: 1, components: {} },
-				error: errorMessage,
-			};
-		}
-	});
-
-	const settled = await Promise.all(fetchPromises);
-
-	for (const result of settled) {
-		results.push(result);
-	}
+	const results = await Promise.all(
+		sources.map(async (source) => {
+			try {
+				const manifests = await getManifests(request, manifestProvider, source);
+				return {
+					source,
+					componentManifest: manifests.componentManifest,
+					docsManifest: manifests.docsManifest,
+				};
+			} catch (error) {
+				// Capture error but don't fail the entire request
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				return {
+					source,
+					componentManifest: { v: 1, components: {} },
+					error: errorMessage,
+				};
+			}
+		}),
+	);
 
 	// Check if at least one source succeeded
 	const successCount = results.filter((r) => !r.error).length;

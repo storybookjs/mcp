@@ -74,8 +74,10 @@ export const experimental_devServer: PresetPropertyFn<
 		res.end(JSON.stringify(wellKnown));
 	});
 
-	app!.post('/mcp', (req, res) => {
-		// If auth is required and no token provided, return 401
+	const requireAuth = (
+		req: import('node:http').IncomingMessage,
+		res: import('node:http').ServerResponse,
+	): boolean => {
 		const token = extractBearerToken(req.headers['authorization']);
 		if (compositionAuth.requiresAuth && !token) {
 			res.writeHead(401, {
@@ -83,8 +85,13 @@ export const experimental_devServer: PresetPropertyFn<
 				'WWW-Authenticate': compositionAuth.buildWwwAuthenticate(origin),
 			});
 			res.end('401 - Unauthorized');
-			return;
+			return true;
 		}
+		return false;
+	};
+
+	app!.post('/mcp', (req, res) => {
+		if (requireAuth(req, res)) return;
 
 		return mcpServerHandler({
 			req,
@@ -104,16 +111,7 @@ export const experimental_devServer: PresetPropertyFn<
 
 	app!.get('/mcp', (req, res) => {
 		if (!req.headers['accept']?.includes('text/html')) {
-			// If auth is required and no token provided, return 401
-			const token = extractBearerToken(req.headers['authorization']);
-			if (compositionAuth.requiresAuth && !token) {
-				res.writeHead(401, {
-					'Content-Type': 'text/plain',
-					'WWW-Authenticate': compositionAuth.buildWwwAuthenticate(origin),
-				});
-				res.end('401 - Unauthorized');
-				return;
-			}
+			if (requireAuth(req, res)) return;
 
 			return mcpServerHandler({
 				req,
@@ -170,8 +168,9 @@ async function getRefsFromConfig(options: any): Promise<ComposedRef[]> {
 			return [];
 		}
 
-		// Convert refs object to array
+		// Convert refs object to array, using the config key as the stable ID
 		return Object.entries(refs).map(([key, value]: [string, any]) => ({
+			id: key,
 			title: value.title || key,
 			url: value.url,
 		})).filter((ref) => ref.url); // Only include refs with URLs
