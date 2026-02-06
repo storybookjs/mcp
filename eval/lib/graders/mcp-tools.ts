@@ -163,10 +163,15 @@ export function extractMcpToolsSummary(
 	const totalCalls = invocations.length;
 	const totalOutputTokens = invocations.reduce((sum, inv) => sum + inv.outputTokens, 0);
 
-	// Check if all expectations passed
+	// Check if all expectations passed and count expected vs called tools
 	let allExpectationsPassed: boolean | undefined;
+	let expectedToolCount: number | undefined;
+	let calledExpectedToolCount: number | undefined;
+
 	if (expectations && Object.keys(expectations).length > 0) {
 		allExpectationsPassed = true;
+		expectedToolCount = Object.keys(expectations).length;
+		calledExpectedToolCount = 0;
 
 		for (const expectedName of Object.keys(expectations)) {
 			// Find if the expected tool was called
@@ -177,8 +182,10 @@ export function extractMcpToolsSummary(
 			if (!matchingTool) {
 				// Expected tool was not called
 				allExpectationsPassed = false;
-				break;
+				continue;
 			}
+
+			calledExpectedToolCount++;
 
 			if (matchingTool.validation) {
 				if (
@@ -186,7 +193,6 @@ export function extractMcpToolsSummary(
 					matchingTool.validation.outputTokensWithinLimit === false
 				) {
 					allExpectationsPassed = false;
-					break;
 				}
 			}
 		}
@@ -197,6 +203,8 @@ export function extractMcpToolsSummary(
 		totalCalls,
 		totalOutputTokens,
 		allExpectationsPassed,
+		expectedToolCount,
+		calledExpectedToolCount,
 	};
 }
 

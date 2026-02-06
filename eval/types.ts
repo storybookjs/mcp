@@ -166,6 +166,10 @@ export type McpToolsSummary = {
 	totalOutputTokens: number;
 	/** Whether all expectations passed (undefined if no expectations configured) */
 	allExpectationsPassed?: boolean;
+	/** Number of expected tools configured */
+	expectedToolCount?: number;
+	/** Number of expected tools that were actually called */
+	calledExpectedToolCount?: number;
 };
 
 /**

@@ -69,9 +69,11 @@ export const fromMcpToolsCoverage: CalculateQualityFn = ({
 	let totalWeight = 0;
 	let weightedScore = 0;
 
-	// Tools that were expected are implicitly present (they have validation)
-	// All expected tools were called = 100% for this category
-	const toolPresenceScore = 1.0; // If we have toolsWithValidation, they were called
+	// Tool presence: What percentage of expected tools were called
+	const toolPresenceScore =
+		mcp.expectedToolCount && mcp.calledExpectedToolCount !== undefined
+			? mcp.calledExpectedToolCount / mcp.expectedToolCount
+			: 1.0;
 	totalWeight += 0.4;
 	weightedScore += toolPresenceScore * 0.4;
 
