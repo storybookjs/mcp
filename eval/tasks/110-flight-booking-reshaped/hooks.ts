@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import type { Hooks } from '../../types.ts';
 import { addDependency } from 'nypm';
 import { log } from '@clack/prompts';
+import { fromComponentUsage } from '../../lib/quality/index.ts';
 
 const hooks: Hooks = {
 	postPrepareTrial: async (trialArgs) => {
@@ -20,6 +21,8 @@ export default config;
 		);
 		log.success('Reshaped package installed, PostCSS config added');
 	},
+
+	calculateQuality: fromComponentUsage,
 };
 
 export default hooks;

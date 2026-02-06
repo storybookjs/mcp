@@ -9,5 +9,19 @@
 			"ToggleButtonGroup",
 			"View"
 		]
+	},
+	"expectedMcpTools": {
+		"list-all-documentation": {
+			"maxOutputTokens": 1000
+		},
+		"get-documentation": {
+			"expectedCalls": [
+				{ "id": "components-autocomplete" },
+				{ "id": "components-button" },
+				{ "id": "components-calendar" },
+				{ "id": "components-popover" },
+				{ "id": "components-togglebuttongroup" }
+			]
+		}
 	}
 }
