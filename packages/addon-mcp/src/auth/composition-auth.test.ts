@@ -205,6 +205,28 @@ describe('CompositionAuth', () => {
       ).rejects.toThrow('Failed to fetch');
     });
 
+    it('throws auth error when remote returns 401 directly', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 401,
+        })
+      );
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer expired-token' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      await expect(
+        provider(request, './manifests/components.json', source)
+      ).rejects.toThrow('Authentication failed');
+    });
+
     it('throws auth error when response is invalid manifest and /mcp returns 401', async () => {
       const auth = new CompositionAuth();
 
@@ -479,6 +501,94 @@ describe('CompositionAuth', () => {
 
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('different OAuth server')
+      );
+    });
+
+    it('gracefully skips refs that fail during auth discovery', async () => {
+      const auth = new CompositionAuth();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('Network error: ECONNREFUSED'))
+      );
+
+      await auth.initialize([
+        { id: 'down', title: 'Down Service', url: 'http://unreachable.example.com' },
+      ]);
+
+      expect(auth.requiresAuth).toBe(false);
+      expect(auth.authUrls).toHaveLength(0);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to check auth for composed ref "Down Service"')
+      );
+    });
+
+    it('warns when OAuth resource metadata fetch fails', async () => {
+      const auth = new CompositionAuth();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // manifest returns 401
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate': 'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          // resource metadata fetch fails
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 503,
+          })
+      );
+
+      await auth.initialize([{ id: 'broken', title: 'Broken', url: 'https://broken.example.com' }]);
+
+      expect(auth.requiresAuth).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to fetch OAuth resource metadata')
+      );
+    });
+
+    it('warns when OAuth server metadata fetch fails', async () => {
+      const auth = new CompositionAuth();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // manifest returns 401
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate': 'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          // resource metadata succeeds
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              resource: 'https://example.com/mcp',
+              authorization_servers: ['https://auth.example.com'],
+            }),
+          })
+          // server metadata fails
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+          })
+      );
+
+      await auth.initialize([{ id: 'broken', title: 'Broken', url: 'https://broken.example.com' }]);
+
+      expect(auth.requiresAuth).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to fetch OAuth server metadata')
       );
     });
   });

@@ -47,20 +47,26 @@ export class CompositionAuth {
   /** Initialize by checking which refs require authentication. */
   async initialize(refs: ComposedRef[]): Promise<void> {
     for (const ref of refs) {
-      const authReq = await this.checkAuthRequired(ref.url);
-      if (!authReq) continue;
+      try {
+        const authReq = await this.checkAuthRequired(ref.url);
+        if (!authReq) continue;
 
-      this.authRequiredUrls.push(ref.url);
-      if (!this.authRequirement) {
-        this.authRequirement = authReq;
-      } else {
-        const existingServer = this.authRequirement.resourceMetadata.authorization_servers[0];
-        const newServer = authReq.resourceMetadata.authorization_servers[0];
-        if (existingServer !== newServer) {
-          console.warn(
-            `[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`
-          );
+        this.authRequiredUrls.push(ref.url);
+        if (!this.authRequirement) {
+          this.authRequirement = authReq;
+        } else {
+          const existingServer = this.authRequirement.resourceMetadata.authorization_servers[0];
+          const newServer = authReq.resourceMetadata.authorization_servers[0];
+          if (existingServer !== newServer) {
+            console.warn(
+              `[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`
+            );
+          }
         }
+      } catch (error) {
+        console.warn(
+          `[addon-mcp] Failed to check auth for composed ref "${ref.title}" (${ref.url}): ${error instanceof Error ? error.message : error}. Skipping this ref.`
+        );
       }
     }
   }
@@ -116,7 +122,14 @@ export class CompositionAuth {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(url, { headers });
-    if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
+
+    if (response.status === 401) {
+      throw new Error(`Authentication failed for ${url}. Your token may be invalid or expired.`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status}`);
+    }
 
     const text = await response.text();
     const schema = url.includes('docs.json') ? DocsManifestMap : ComponentManifestMap;
@@ -171,12 +184,16 @@ export class CompositionAuth {
 
   /** Quick check: does the remote /mcp return 401? */
   private async isMcpUnauthorized(origin: string): Promise<boolean> {
-    const response = await fetch(`${origin}/mcp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
-    });
-    return response.status === 401;
+    try {
+      const response = await fetch(`${origin}/mcp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+      });
+      return response.status === 401;
+    } catch {
+      return false;
+    }
   }
 
   /** Extract auth requirement from a 401 response's WWW-Authenticate header. */
@@ -190,12 +207,19 @@ export class CompositionAuth {
 
     const resourceMetadataUrl = match[1];
     const resourceResponse = await fetch(resourceMetadataUrl);
-    if (!resourceResponse.ok) return null;
+    if (!resourceResponse.ok) {
+      console.warn(`[addon-mcp] Failed to fetch OAuth resource metadata from ${resourceMetadataUrl}: ${resourceResponse.status}`);
+      return null;
+    }
     const resourceMetadata: OAuthResourceMetadata = await resourceResponse.json();
 
     const authServer = resourceMetadata.authorization_servers[0];
-    const serverResponse = await fetch(`${authServer}/.well-known/oauth-authorization-server`);
-    if (!serverResponse.ok) return null;
+    const serverMetadataUrl = `${authServer}/.well-known/oauth-authorization-server`;
+    const serverResponse = await fetch(serverMetadataUrl);
+    if (!serverResponse.ok) {
+      console.warn(`[addon-mcp] Failed to fetch OAuth server metadata from ${serverMetadataUrl}: ${serverResponse.status}`);
+      return null;
+    }
     const serverMetadata: OAuthServerMetadata = await serverResponse.json();
 
     return { resourceMetadataUrl, resourceMetadata, serverMetadata };
