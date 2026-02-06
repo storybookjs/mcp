@@ -52,6 +52,40 @@ describe('CompositionAuth', () => {
     });
   });
 
+  describe('buildSources', () => {
+    it('creates sources array with local first', () => {
+      const auth = new CompositionAuth();
+      const sources = auth.buildSources([
+        { id: 'design-system', title: 'Design System', url: 'http://ds.example.com' },
+      ]);
+
+      expect(sources).toEqual([
+        { id: 'local', title: 'Local' },
+        { id: 'design-system', title: 'Design System', url: 'http://ds.example.com' },
+      ]);
+    });
+
+    it('uses ref id as source id', () => {
+      const auth = new CompositionAuth();
+      const sources = auth.buildSources([
+        { id: 'my-ref-key', title: 'Some Title', url: 'http://example.com' },
+      ]);
+
+      expect(sources[1].id).toBe('my-ref-key');
+    });
+
+    it('handles multiple refs', () => {
+      const auth = new CompositionAuth();
+      const sources = auth.buildSources([
+        { id: 'ref-a', title: 'Ref A', url: 'http://a.example.com' },
+        { id: 'ref-b', title: 'Ref B', url: 'http://b.example.com' },
+      ]);
+
+      expect(sources).toHaveLength(3);
+      expect(sources.map((s) => s.id)).toEqual(['local', 'ref-a', 'ref-b']);
+    });
+  });
+
   describe('createManifestProvider', () => {
     it('creates a manifest provider function', () => {
       const auth = new CompositionAuth();

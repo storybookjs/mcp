@@ -330,6 +330,192 @@ describe('getDocumentationTool', () => {
 		`);
 	});
 
+	describe('multi-source mode', () => {
+		const sources = [
+			{ id: 'local', title: 'Local' },
+			{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' },
+		];
+
+		const remoteManifest = {
+			v: 1,
+			components: {
+				badge: {
+					id: 'badge',
+					path: 'src/Badge.tsx',
+					name: 'Badge',
+					summary: 'A badge component',
+				},
+			},
+		};
+
+		it('should return error when storybookId is missing', async () => {
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: GET_TOOL_NAME,
+					arguments: { id: 'button' },
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			const response = await server.receive(request, {
+				custom: { request: mockHttpRequest, sources },
+			});
+
+			expect((response.result as any).isError).toBe(true);
+			expect((response.result as any).content[0].text).toContain(
+				'storybookId is required',
+			);
+			expect((response.result as any).content[0].text).toContain(
+				'local, remote',
+			);
+		});
+
+		it('should return error when storybookId is invalid', async () => {
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: GET_TOOL_NAME,
+					arguments: { id: 'button', storybookId: 'nonexistent' },
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			const response = await server.receive(request, {
+				custom: { request: mockHttpRequest, sources },
+			});
+
+			expect((response.result as any).isError).toBe(true);
+			expect((response.result as any).content[0].text).toContain(
+				'Storybook source not found: "nonexistent"',
+			);
+			expect((response.result as any).content[0].text).toContain(
+				'local, remote',
+			);
+		});
+
+		it('should fetch documentation with storybookId', async () => {
+			getManifestsSpy.mockResolvedValue({
+				componentManifest: smallManifestFixture,
+			});
+
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: GET_TOOL_NAME,
+					arguments: { id: 'button', storybookId: 'local' },
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			const response = await server.receive(request, {
+				custom: { request: mockHttpRequest, sources },
+			});
+
+			expect((response.result as any).content[0].text).toContain('# Button');
+			expect(getManifestsSpy).toHaveBeenCalledWith(
+				mockHttpRequest,
+				undefined,
+				sources[0],
+			);
+		});
+
+		it('should pass remote source to getManifests', async () => {
+			getManifestsSpy.mockResolvedValue({
+				componentManifest: remoteManifest,
+			});
+
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: GET_TOOL_NAME,
+					arguments: { id: 'badge', storybookId: 'remote' },
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			const response = await server.receive(request, {
+				custom: { request: mockHttpRequest, sources },
+			});
+
+			expect((response.result as any).content[0].text).toContain('# Badge');
+			expect(getManifestsSpy).toHaveBeenCalledWith(
+				mockHttpRequest,
+				undefined,
+				sources[1],
+			);
+		});
+
+		it('should include source in not-found error message', async () => {
+			getManifestsSpy.mockResolvedValue({
+				componentManifest: smallManifestFixture,
+			});
+
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: GET_TOOL_NAME,
+					arguments: { id: 'nonexistent', storybookId: 'local' },
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			const response = await server.receive(request, {
+				custom: { request: mockHttpRequest, sources },
+			});
+
+			expect((response.result as any).isError).toBe(true);
+			expect((response.result as any).content[0].text).toContain(
+				'in source "local"',
+			);
+		});
+
+		it('should call onGetDocumentation with storybookId', async () => {
+			getManifestsSpy.mockResolvedValue({
+				componentManifest: smallManifestFixture,
+			});
+
+			const handler = vi.fn();
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: GET_TOOL_NAME,
+					arguments: { id: 'button', storybookId: 'local' },
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			await server.receive(request, {
+				custom: {
+					request: mockHttpRequest,
+					sources,
+					onGetDocumentation: handler,
+				},
+			});
+
+			expect(handler).toHaveBeenCalledTimes(1);
+			expect(handler).toHaveBeenCalledWith(
+				expect.objectContaining({
+					input: { id: 'button', storybookId: 'local' },
+					foundDocumentation: expect.objectContaining({ id: 'button' }),
+					resultText: expect.any(String),
+				}),
+			);
+		});
+	});
+
 	describe('docs manifest entries', () => {
 		beforeEach(() => {
 			getManifestsSpy.mockResolvedValue({
