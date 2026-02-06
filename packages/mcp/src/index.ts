@@ -73,7 +73,11 @@ export interface StorybookMcpHandlerOptions extends StorybookContext {
 		initializeRequestParams: InitializeRequestParams,
 	) => void | Promise<void>;
 }
-export type { ComponentManifest, ComponentManifestMap } from './types.ts';
+export type { ComponentManifest } from './types.ts';
+export {
+	ComponentManifestMap,
+	DocsManifestMap,
+} from './types.ts';
 
 type Handler = (req: Request, context?: StorybookContext) => Promise<Response>;
 

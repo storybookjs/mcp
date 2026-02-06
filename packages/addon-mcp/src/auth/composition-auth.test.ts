@@ -166,31 +166,9 @@ describe('CompositionAuth', () => {
   });
 
   describe('fetchManifest (via createManifestProvider)', () => {
-    it('throws auth error when server returns loginUrl response', async () => {
+    it('returns manifest content when response is valid', async () => {
       const auth = new CompositionAuth();
-
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          text: () => Promise.resolve('{"loginUrl":"https://www.chromatic.com/login"}'),
-        })
-      );
-
-      const provider = auth.createManifestProvider('http://localhost:6006');
-      const request = new Request('http://localhost:6006/mcp', {
-        headers: { Authorization: 'Bearer invalid-token' },
-      });
-      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-      await expect(
-        provider(request, './manifests/components.json', source)
-      ).rejects.toThrow('Authentication failed');
-    });
-
-    it('returns manifest content when response is valid JSON manifest', async () => {
-      const auth = new CompositionAuth();
-      const manifestJson = '{"v":1,"components":{"button":{"id":"button"}}}';
+      const manifestJson = '{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
 
       vi.stubGlobal(
         'fetch',
@@ -206,18 +184,93 @@ describe('CompositionAuth', () => {
       const result = await provider(request, './manifests/components.json');
       expect(result).toBe(manifestJson);
     });
+
+    it('throws when fetch returns non-ok response', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 403,
+        })
+      );
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp');
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      await expect(
+        provider(request, './manifests/components.json', source)
+      ).rejects.toThrow('Failed to fetch');
+    });
+
+    it('throws auth error when response is invalid manifest and /mcp returns 401', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // First call: manifest fetch returns 200 with unexpected JSON
+          .mockResolvedValueOnce({
+            ok: true,
+            text: () => Promise.resolve('{"some":"unexpected"}'),
+          })
+          // Second call: /mcp returns 401
+          .mockResolvedValueOnce({
+            status: 401,
+          })
+      );
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp', {
+        headers: { Authorization: 'Bearer invalid-token' },
+      });
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      await expect(
+        provider(request, './manifests/components.json', source)
+      ).rejects.toThrow('Authentication failed');
+    });
+
+    it('returns invalid response when /mcp does not return 401', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // First call: manifest fetch returns 200 with unexpected JSON
+          .mockResolvedValueOnce({
+            ok: true,
+            text: () => Promise.resolve('{"some":"unexpected"}'),
+          })
+          // Second call: /mcp returns 200 (no auth issue)
+          .mockResolvedValueOnce({
+            status: 200,
+          })
+      );
+
+      const provider = auth.createManifestProvider('http://localhost:6006');
+      const request = new Request('http://localhost:6006/mcp');
+      const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+
+      // Should return the raw text — manifest parser will handle the error
+      const result = await provider(request, './manifests/components.json', source);
+      expect(result).toBe('{"some":"unexpected"}');
+    });
   });
 
   describe('initialize', () => {
-    it('detects public refs (no auth needed)', async () => {
+    it('detects public refs when manifest returns valid content', async () => {
       const auth = new CompositionAuth();
 
-      // Mock: /mcp returns 200 (no auth required)
+      // Mock: manifest returns valid manifest JSON
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
           ok: true,
           status: 200,
+          text: () => Promise.resolve('{"v":1,"components":{"button":{}}}'),
         })
       );
 
@@ -227,22 +280,158 @@ describe('CompositionAuth', () => {
       expect(auth.authUrls).toHaveLength(0);
     });
 
+    it('detects private refs via manifest 401 response', async () => {
+      const auth = new CompositionAuth();
+
+      // Mock: manifest returns 401, then resource + server metadata
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate':
+                'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                resource: 'https://example.com/mcp',
+                authorization_servers: ['https://auth.example.com'],
+              }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                issuer: 'https://auth.example.com',
+                authorization_endpoint: 'https://auth.example.com/authorize',
+                token_endpoint: 'https://auth.example.com/token',
+              }),
+          })
+      );
+
+      await auth.initialize([{ id: 'private', title: 'private', url: 'https://private.example.com' }]);
+
+      expect(auth.requiresAuth).toBe(true);
+      expect(auth.authUrls).toContain('https://private.example.com');
+
+      const wellKnown = auth.buildWellKnown('http://localhost:6006');
+      expect(wellKnown).toEqual({
+        resource: 'http://localhost:6006/mcp',
+        authorization_servers: ['https://auth.example.com'],
+        scopes_supported: undefined,
+      });
+    });
+
+    it('falls back to /mcp when manifest returns unexpected JSON', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // manifest returns 200 with unexpected JSON (not a valid manifest)
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('{"some":"unexpected","response":true}'),
+          })
+          // /mcp returns 401
+          .mockResolvedValueOnce({
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate':
+                'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          // resource metadata
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                resource: 'https://example.com/mcp',
+                authorization_servers: ['https://auth.example.com'],
+              }),
+          })
+          // server metadata
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                issuer: 'https://auth.example.com',
+                authorization_endpoint: 'https://auth.example.com/authorize',
+                token_endpoint: 'https://auth.example.com/token',
+              }),
+          })
+      );
+
+      await auth.initialize([{ id: 'private', title: 'private', url: 'https://private.example.com' }]);
+
+      expect(auth.requiresAuth).toBe(true);
+    });
+
+    it('falls back to /mcp when manifest returns non-JSON', async () => {
+      const auth = new CompositionAuth();
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn()
+          // manifest returns 200 with HTML (not JSON)
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('<html>Login page</html>'),
+          })
+          // /mcp returns 401
+          .mockResolvedValueOnce({
+            status: 401,
+            headers: new Headers({
+              'WWW-Authenticate':
+                'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+            }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                resource: 'https://example.com/mcp',
+                authorization_servers: ['https://auth.example.com'],
+              }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                issuer: 'https://auth.example.com',
+                authorization_endpoint: 'https://auth.example.com/authorize',
+                token_endpoint: 'https://auth.example.com/token',
+              }),
+          })
+      );
+
+      await auth.initialize([{ id: 'private', title: 'private', url: 'https://private.example.com' }]);
+
+      expect(auth.requiresAuth).toBe(true);
+    });
+
     it('warns when refs use different OAuth servers', async () => {
       const auth = new CompositionAuth();
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      // Mock two refs: both /mcp endpoints return 401 with different OAuth servers
       vi.stubGlobal(
         'fetch',
         vi.fn()
-          // First ref: /mcp returns 401
+          // First ref: manifest returns 401
           .mockResolvedValueOnce({
+            ok: false,
             status: 401,
             headers: new Headers({
               'WWW-Authenticate': 'Bearer resource_metadata="https://chromatic.com/.well-known/oauth-protected-resource"',
             }),
           })
-          // First ref: resource metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -250,7 +439,6 @@ describe('CompositionAuth', () => {
               authorization_servers: ['https://www.chromatic.com'],
             }),
           })
-          // First ref: server metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -259,14 +447,14 @@ describe('CompositionAuth', () => {
               token_endpoint: 'https://www.chromatic.com/token',
             }),
           })
-          // Second ref: /mcp returns 401 with different server
+          // Second ref: manifest returns 401 with different server
           .mockResolvedValueOnce({
+            ok: false,
             status: 401,
             headers: new Headers({
               'WWW-Authenticate': 'Bearer resource_metadata="https://other.example.com/.well-known/oauth-protected-resource"',
             }),
           })
-          // Second ref: resource metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -274,7 +462,6 @@ describe('CompositionAuth', () => {
               authorization_servers: ['https://other.example.com'],
             }),
           })
-          // Second ref: server metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -293,52 +480,6 @@ describe('CompositionAuth', () => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('different OAuth server')
       );
-    });
-
-    it('detects private refs via /mcp 401 response', async () => {
-      const auth = new CompositionAuth();
-
-      // Mock: /mcp returns 401, then resource + server metadata
-      vi.stubGlobal(
-        'fetch',
-        vi.fn()
-          .mockResolvedValueOnce({
-            status: 401,
-            headers: new Headers({
-              'WWW-Authenticate':
-                'Bearer resource_metadata="https://chromatic.com/.well-known/oauth-protected-resource"',
-            }),
-          })
-          .mockResolvedValueOnce({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                resource: 'https://chromatic.com/mcp',
-                authorization_servers: ['https://www.chromatic.com'],
-              }),
-          })
-          .mockResolvedValueOnce({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                issuer: 'https://www.chromatic.com',
-                authorization_endpoint: 'https://www.chromatic.com/authorize',
-                token_endpoint: 'https://www.chromatic.com/token',
-              }),
-          })
-      );
-
-      await auth.initialize([{ id: 'private', title: 'private', url: 'https://private.chromatic.com' }]);
-
-      expect(auth.requiresAuth).toBe(true);
-      expect(auth.authUrls).toContain('https://private.chromatic.com');
-
-      const wellKnown = auth.buildWellKnown('http://localhost:6006');
-      expect(wellKnown).toEqual({
-        resource: 'http://localhost:6006/mcp',
-        authorization_servers: ['https://www.chromatic.com'],
-        scopes_supported: undefined,
-      });
     });
   });
 });

@@ -231,7 +231,7 @@ describe('MCP Composition Auth E2E Tests', () => {
 
 			const text = data.result.content[0].text;
 
-			// Remote source should show an auth error (invalid token)
+			// Remote source should show an auth error (invalid token triggers /mcp 401 check)
 			expect(text).toContain('test-private-sb');
 			expect(text).toContain('Authentication failed');
 		});

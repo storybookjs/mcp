@@ -6,7 +6,8 @@
  * MCP clients like VS Code to handle the OAuth flow with Chromatic.
  */
 
-import type { Source } from '@storybook/mcp';
+import { ComponentManifestMap, DocsManifestMap, type Source } from '@storybook/mcp';
+import * as v from 'valibot';
 
 export interface ComposedRef {
   id: string;
@@ -49,8 +50,7 @@ export class CompositionAuth {
    */
   async initialize(refs: ComposedRef[]): Promise<void> {
     for (const ref of refs) {
-      const mcpUrl = `${ref.url}/mcp`;
-      const authReq = await this.checkAuthRequired(mcpUrl);
+      const authReq = await this.checkAuthRequired(ref.url);
 
       if (authReq) {
         this.authRequiredUrls.push(ref.url);
@@ -148,6 +148,7 @@ export class CompositionAuth {
 
   /**
    * Fetch a manifest with optional auth token.
+   * If the response is 200 but not a valid manifest, checks /mcp for auth issues.
    */
   private async fetchManifest(
     url: string,
@@ -169,38 +170,47 @@ export class CompositionAuth {
 
     const text = await response.text();
 
-    // Detect login redirect responses (e.g. Chromatic returns {"loginUrl":"..."} for invalid tokens)
-    try {
-      const json = JSON.parse(text);
-      if (json.loginUrl) {
-        throw new Error(
-          `Authentication failed for ${url}. The server returned a login redirect. Your token may be invalid or expired.`
-        );
-      }
-    } catch (error) {
-      // Re-throw auth errors, ignore JSON parse failures (means it's actual manifest content)
-      if (error instanceof Error && error.message.includes('Authentication failed')) {
-        throw error;
-      }
+    // Validate the response against the manifest schemas
+    const schema = url.includes('docs.json') ? DocsManifestMap : ComponentManifestMap;
+    const parseResult = v.safeParse(v.pipe(v.string(), v.parseJson(), schema), text);
+
+    if (parseResult.success) {
+      return text;
     }
 
-    return text;
-  }
-
-  /**
-   * Check if a remote MCP endpoint requires authentication.
-   * Sends a request to the /mcp endpoint and checks for 401 + WWW-Authenticate.
-   */
-  private async checkAuthRequired(
-    mcpUrl: string
-  ): Promise<AuthRequirement | null> {
-    const response = await fetch(mcpUrl, {
+    // Invalid manifest response — check /mcp to see if it's an auth issue
+    const baseUrl = new URL(url).origin;
+    const mcpResponse = await fetch(`${baseUrl}/mcp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
     });
 
-    // 401 with WWW-Authenticate = OAuth required
+    if (mcpResponse.status === 401) {
+      throw new Error(
+        `Authentication failed for ${url}. Your token may be invalid or expired.`
+      );
+    }
+
+    // Not an auth issue — return the text, let the manifest parser handle the error
+    return text;
+  }
+
+  /**
+   * Check if a remote Storybook requires authentication.
+   * First checks the manifest endpoint directly (401 = auth needed).
+   * If the manifest returns 200 but with unexpected content, falls back to /mcp.
+   */
+  private async checkAuthRequired(
+    refUrl: string
+  ): Promise<AuthRequirement | null> {
+    const manifestUrl = `${refUrl}/manifests/components.json`;
+
+    const response = await fetch(manifestUrl, {
+      headers: { Accept: 'application/json' },
+    });
+
+    // 401 with WWW-Authenticate from manifest endpoint = auth needed
     if (response.status === 401) {
       const wwwAuth = response.headers.get('WWW-Authenticate');
       if (wwwAuth) {
@@ -208,7 +218,45 @@ export class CompositionAuth {
       }
     }
 
-    // Any other response = no auth needed (public or no MCP endpoint)
+    // 200 = check if it's a valid manifest
+    if (response.ok) {
+      const text = await response.text();
+      const parseResult = v.safeParse(
+        v.pipe(v.string(), v.parseJson(), ComponentManifestMap),
+        text,
+      );
+      if (parseResult.success) {
+        // Valid manifest, no auth needed
+        return null;
+      }
+      // 200 but not a valid manifest — fall back to /mcp
+      return this.checkMcpEndpointAuth(refUrl);
+    }
+
+    // Other status codes — fall back to /mcp
+    return this.checkMcpEndpointAuth(refUrl);
+  }
+
+  /**
+   * Fall back to checking the /mcp endpoint for auth requirements.
+   */
+  private async checkMcpEndpointAuth(
+    refUrl: string
+  ): Promise<AuthRequirement | null> {
+    const mcpUrl = `${refUrl}/mcp`;
+    const response = await fetch(mcpUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+
+    if (response.status === 401) {
+      const wwwAuth = response.headers.get('WWW-Authenticate');
+      if (wwwAuth) {
+        return this.parseAuthFromWwwAuthenticate(wwwAuth);
+      }
+    }
+
     return null;
   }
 
