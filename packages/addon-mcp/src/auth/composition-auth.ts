@@ -49,8 +49,8 @@ export class CompositionAuth {
    */
   async initialize(refs: ComposedRef[]): Promise<void> {
     for (const ref of refs) {
-      const manifestUrl = `${ref.url}/manifests/components.json`;
-      const authReq = await this.checkAuthRequired(manifestUrl);
+      const mcpUrl = `${ref.url}/mcp`;
+      const authReq = await this.checkAuthRequired(mcpUrl);
 
       if (authReq) {
         this.authRequiredUrls.push(ref.url);
@@ -188,41 +188,19 @@ export class CompositionAuth {
   }
 
   /**
-   * Check if a manifest URL requires authentication.
-   * Returns auth info if auth is needed, null if publicly accessible.
+   * Check if a remote MCP endpoint requires authentication.
+   * Sends a request to the /mcp endpoint and checks for 401 + WWW-Authenticate.
    */
   private async checkAuthRequired(
-    manifestUrl: string
+    mcpUrl: string
   ): Promise<AuthRequirement | null> {
-    // Try to fetch with Accept: application/json to detect auth requirement
-    const response = await fetch(manifestUrl, {
-      headers: { Accept: 'application/json' },
-      redirect: 'manual', // Don't follow 302 redirects
+    const response = await fetch(mcpUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
     });
 
-    // 200 with actual manifest content = no auth needed
-    if (response.ok) {
-      const text = await response.text();
-      try {
-        const json = JSON.parse(text);
-        // If it has loginUrl, auth is needed
-        if (json.loginUrl) {
-          return this.discoverOAuthFromMcp(manifestUrl);
-        }
-        // Actual manifest content, no auth needed
-        return null;
-      } catch {
-        // Not JSON, assume it's the manifest
-        return null;
-      }
-    }
-
-    // 302 = redirect to login, auth needed
-    if (response.status === 302) {
-      return this.discoverOAuthFromMcp(manifestUrl);
-    }
-
-    // 401 with WWW-Authenticate = proper OAuth, parse directly
+    // 401 with WWW-Authenticate = OAuth required
     if (response.status === 401) {
       const wwwAuth = response.headers.get('WWW-Authenticate');
       if (wwwAuth) {
@@ -230,31 +208,8 @@ export class CompositionAuth {
       }
     }
 
+    // Any other response = no auth needed (public or no MCP endpoint)
     return null;
-  }
-
-  /**
-   * Discover OAuth by hitting the /mcp endpoint (fallback for 302 responses).
-   */
-  private async discoverOAuthFromMcp(
-    manifestUrl: string
-  ): Promise<AuthRequirement | null> {
-    // Replace manifest path with /mcp
-    const url = new URL(manifestUrl);
-    url.pathname = '/mcp';
-
-    const response = await fetch(url.toString());
-
-    if (response.status !== 401) {
-      return null;
-    }
-
-    const wwwAuth = response.headers.get('WWW-Authenticate');
-    if (!wwwAuth) {
-      return null;
-    }
-
-    return this.parseAuthFromWwwAuthenticate(wwwAuth);
   }
 
   /**

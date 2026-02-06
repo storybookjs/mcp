@@ -212,12 +212,12 @@ describe('CompositionAuth', () => {
     it('detects public refs (no auth needed)', async () => {
       const auth = new CompositionAuth();
 
-      // Mock fetch to return public manifest
+      // Mock: /mcp returns 200 (no auth required)
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
           ok: true,
-          text: () => Promise.resolve('{"v":1,"components":{}}'),
+          status: 200,
         })
       );
 
@@ -231,21 +231,18 @@ describe('CompositionAuth', () => {
       const auth = new CompositionAuth();
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      // Mock two refs with different OAuth servers
+      // Mock two refs: both /mcp endpoints return 401 with different OAuth servers
       vi.stubGlobal(
         'fetch',
         vi.fn()
-          // First ref: Chromatic OAuth
-          .mockResolvedValueOnce({
-            ok: true,
-            text: () => Promise.resolve('{"loginUrl":"https://chromatic.com/login"}'),
-          })
+          // First ref: /mcp returns 401
           .mockResolvedValueOnce({
             status: 401,
             headers: new Headers({
               'WWW-Authenticate': 'Bearer resource_metadata="https://chromatic.com/.well-known/oauth-protected-resource"',
             }),
           })
+          // First ref: resource metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -253,6 +250,7 @@ describe('CompositionAuth', () => {
               authorization_servers: ['https://www.chromatic.com'],
             }),
           })
+          // First ref: server metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -261,17 +259,14 @@ describe('CompositionAuth', () => {
               token_endpoint: 'https://www.chromatic.com/token',
             }),
           })
-          // Second ref: different OAuth server
-          .mockResolvedValueOnce({
-            ok: true,
-            text: () => Promise.resolve('{"loginUrl":"https://other.example.com/login"}'),
-          })
+          // Second ref: /mcp returns 401 with different server
           .mockResolvedValueOnce({
             status: 401,
             headers: new Headers({
               'WWW-Authenticate': 'Bearer resource_metadata="https://other.example.com/.well-known/oauth-protected-resource"',
             }),
           })
+          // Second ref: resource metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -279,6 +274,7 @@ describe('CompositionAuth', () => {
               authorization_servers: ['https://other.example.com'],
             }),
           })
+          // Second ref: server metadata
           .mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
@@ -299,17 +295,13 @@ describe('CompositionAuth', () => {
       );
     });
 
-    it('detects private refs via loginUrl response', async () => {
+    it('detects private refs via /mcp 401 response', async () => {
       const auth = new CompositionAuth();
 
-      // Mock fetch sequence: manifest returns loginUrl, then /mcp returns 401
+      // Mock: /mcp returns 401, then resource + server metadata
       vi.stubGlobal(
         'fetch',
         vi.fn()
-          .mockResolvedValueOnce({
-            ok: true,
-            text: () => Promise.resolve('{"loginUrl":"https://chromatic.com/login"}'),
-          })
           .mockResolvedValueOnce({
             status: 401,
             headers: new Headers({
