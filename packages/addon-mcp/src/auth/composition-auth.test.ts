@@ -98,7 +98,7 @@ describe('CompositionAuth', () => {
 
 			const mockFetch = vi.fn().mockResolvedValue({
 				ok: true,
-				text: () => Promise.resolve('{"components":{}}'),
+				text: () => Promise.resolve('{"v":1,"components":{}}'),
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
@@ -118,7 +118,7 @@ describe('CompositionAuth', () => {
 
 			const mockFetch = vi.fn().mockResolvedValue({
 				ok: true,
-				text: () => Promise.resolve('{"components":{}}'),
+				text: () => Promise.resolve('{"v":1,"components":{}}'),
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
@@ -141,7 +141,7 @@ describe('CompositionAuth', () => {
 
 			const mockFetch = vi.fn().mockResolvedValue({
 				ok: true,
-				text: () => Promise.resolve('{"components":{}}'),
+				text: () => Promise.resolve('{"v":1,"components":{}}'),
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
@@ -257,7 +257,7 @@ describe('CompositionAuth', () => {
 			);
 		});
 
-		it('returns invalid response when /mcp does not return 401', async () => {
+		it('throws when response is invalid manifest and /mcp does not return 401', async () => {
 			const auth = new CompositionAuth();
 
 			vi.stubGlobal(
@@ -279,9 +279,9 @@ describe('CompositionAuth', () => {
 			const request = new Request('http://localhost:6006/mcp');
 			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
 
-			// Should return the raw text — manifest parser will handle the error
-			const result = await provider(request, './manifests/components.json', source);
-			expect(result).toBe('{"some":"unexpected"}');
+			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
+				'Invalid manifest response',
+			);
 		});
 
 		it('caches remote manifest responses', async () => {

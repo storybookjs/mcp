@@ -52,6 +52,7 @@ export class CompositionAuth {
 	private authRequirement: AuthRequirement | null = null;
 	private authRequiredUrls: string[] = [];
 	private manifestCache = new Map<string, CacheEntry>();
+	private lastToken: string | null = null;
 
 	/** Initialize by checking which refs require authentication. */
 	async initialize(refs: ComposedRef[]): Promise<void> {
@@ -119,6 +120,12 @@ export class CompositionAuth {
 			const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 			const isRemote = !!source?.url;
 
+			// New token = user re-authenticated, invalidate all cached manifests
+			if (token && token !== this.lastToken) {
+				this.manifestCache.clear();
+				this.lastToken = token;
+			}
+
 			if (isRemote) {
 				const cached = this.manifestCache.get(manifestUrl);
 				if (cached) {
@@ -177,7 +184,9 @@ export class CompositionAuth {
 			throw new Error(`Authentication failed for ${url}. Your token may be invalid or expired.`);
 		}
 
-		return text;
+		throw new Error(
+			`Invalid manifest response from ${url}: expected valid JSON manifest but got unexpected content.`,
+		);
 	}
 
 	/**
