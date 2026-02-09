@@ -8,14 +8,14 @@ import { startStorybookDevServer } from './storybook-dev-server.ts';
 import { isDevContext, isDocsContext } from './context-utils.ts';
 
 const STORYBOOK_DEV_PACKAGES = [
-	'vitest@catalog:experiments',
-	'@vitest/browser-playwright@catalog:experiments',
-	'storybook@catalog:experiments',
-	'@storybook/addon-docs@catalog:experiments',
-	'@storybook/addon-a11y@catalog:experiments',
+	'vitest@catalog:trials',
+	'@vitest/browser-playwright@catalog:trials',
+	'storybook@catalog:trials',
+	'@storybook/addon-docs@catalog:trials',
+	'@storybook/addon-a11y@catalog:trials',
 	'@storybook/addon-mcp@workspace:*',
-	'@storybook/addon-vitest@catalog:experiments',
-	'@storybook/react-vite@catalog:experiments',
+	'@storybook/addon-vitest@catalog:trials',
+	'@storybook/react-vite@catalog:trials',
 ];
 
 export type PrepareTrialResult = {
