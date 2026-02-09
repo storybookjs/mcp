@@ -60,12 +60,13 @@ Different agents support different models:
 
 | Model                  | Claude Code CLI | Copilot CLI |
 | ---------------------- | :-------------: | :---------: |
+| `claude-opus-4.6`      |       ✅        |     ✅      |
+| `claude-opus-4.5`      |       ❌        |     ✅      |
 | `claude-sonnet-4.5`    |       ✅        |     ✅      |
-| `claude-opus-4.5`      |       ✅        |     ✅      |
 | `claude-haiku-4.5`     |       ✅        |     ✅      |
-| `gpt-5.1-codex`        |       ❌        |     ✅      |
-| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
 | `gpt-5.2`              |       ❌        |     ✅      |
+| `gpt-5.2-codex`        |       ❌        |     ✅      |
+| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
 | `gemini-3-pro-preview` |       ❌        |     ✅      |
 
 **Example usage:**
