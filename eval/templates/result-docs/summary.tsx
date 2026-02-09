@@ -146,9 +146,14 @@ const formatDuration = (seconds: number): string => {
 	return `${mins}m ${secs}s`;
 };
 
-const formatPct = (value: number | null | undefined): string => {
+const formatPct = (value: number | null | undefined) => {
 	if (value === null || value === undefined || Number.isNaN(value)) return '–';
-	return `${value.toFixed(1)}%`;
+
+	try {
+		return `${value.toFixed(1)}%`;
+	} catch {
+		return JSON.stringify(value);
+	}
 };
 
 const formatTokens = (tokens: number): string => {
