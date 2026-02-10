@@ -1,9 +1,9 @@
 packages:
   - packages/*
   - apps/*
-  - eval/
-  - eval/template/project
-  - eval/evals/*/experiments/*/project
+  - eval
+  - '!eval/templates/project'
+  - '!eval/tasks/*/trials/*/project'
 
 catalog:
   '@storybook/addon-a11y': 10.3.0-alpha.4
@@ -23,7 +23,7 @@ catalog:
   vitest: 4.0.6
 
 catalogs:
-  experiments:
+  trials:
     '@eslint/js': 9.39.1
     '@storybook/addon-a11y': 10.3.0-alpha.4
     '@storybook/addon-docs': 10.3.0-alpha.4

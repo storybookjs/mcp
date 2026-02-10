@@ -14,21 +14,21 @@
 		"eval:typecheck": "tsc --noEmit --project ./tsconfig.app.json"
 	},
 	"dependencies": {
-		"react": "catalog:experiments",
-		"react-dom": "catalog:experiments"
+		"react": "catalog:trials",
+		"react-dom": "catalog:trials"
 	},
 	"devDependencies": {
-		"@eslint/js": "catalog:experiments",
-		"@types/node": "catalog:experiments",
-		"@types/react": "catalog:experiments",
-		"@types/react-dom": "catalog:experiments",
-		"@vitejs/plugin-react-swc": "catalog:experiments",
-		"eslint": "catalog:experiments",
-		"eslint-plugin-react-hooks": "catalog:experiments",
-		"eslint-plugin-react-refresh": "catalog:experiments",
-		"globals": "catalog:experiments",
-		"typescript": "catalog:experiments",
-		"typescript-eslint": "catalog:experiments",
-		"vite": "catalog:experiments"
+		"@eslint/js": "catalog:trials",
+		"@types/node": "catalog:trials",
+		"@types/react": "catalog:trials",
+		"@types/react-dom": "catalog:trials",
+		"@vitejs/plugin-react-swc": "catalog:trials",
+		"eslint": "catalog:trials",
+		"eslint-plugin-react-hooks": "catalog:trials",
+		"eslint-plugin-react-refresh": "catalog:trials",
+		"globals": "catalog:trials",
+		"typescript": "catalog:trials",
+		"typescript-eslint": "catalog:trials",
+		"vite": "catalog:trials"
 	}
 }
