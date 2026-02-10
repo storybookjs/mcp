@@ -78,7 +78,7 @@ export async function prepareTrial(trialArgs: TrialArgs): Promise<PrepareTrialRe
 			args: [
 				path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
 				'--manifestsDir',
-				trialArgs.taskPath,
+				path.join(trialArgs.taskPath, 'manifests'),
 			],
 		};
 	}
