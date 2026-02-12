@@ -21,7 +21,7 @@ let origin: string | undefined;
 let initialize: Promise<McpServer<any, AddonContext>> | undefined;
 let disableTelemetry: boolean | undefined;
 
-const initializeMCPServer = async (options: Options) => {
+const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	const core = await options.presets.apply('core', {});
 	disableTelemetry = core?.disableTelemetry ?? false;
 
@@ -56,7 +56,7 @@ const initializeMCPServer = async (options: Options) => {
 		logger.info('Experimental components manifest feature detected - registering component tools');
 		const contextAwareEnabled = () => server.ctx.custom?.toolsets?.docs ?? true;
 		await addListAllDocumentationTool(server, contextAwareEnabled);
-		await addGetDocumentationTool(server, contextAwareEnabled);
+		await addGetDocumentationTool(server, contextAwareEnabled, { multiSource });
 	}
 
 	transport = new HttpTransport(server, { path: null });
@@ -98,7 +98,7 @@ export const mcpServerHandler = async ({
 }: McpServerHandlerParams) => {
 	// Initialize MCP server and transport on first request, with concurrency safety
 	if (!initialize) {
-		initialize = initializeMCPServer(options);
+		initialize = initializeMCPServer(options, sources && sources.length > 0);
 	}
 	const server = await initialize;
 
@@ -116,7 +116,7 @@ export const mcpServerHandler = async ({
 		manifestProvider,
 		// Telemetry handlers for component manifest tools
 		...(!disableTelemetry && {
-			onListAllDocumentation: async ({ manifests, resultText }) => {
+			onListAllDocumentation: async ({ manifests, resultText, sources: sourceManifests }) => {
 				await collectTelemetry({
 					event: 'tool:listAllDocumentation',
 					server,
@@ -124,6 +124,7 @@ export const mcpServerHandler = async ({
 					componentCount: Object.keys(manifests.componentManifest.components).length,
 					docsCount: Object.keys(manifests.docsManifest?.docs || {}).length,
 					resultTokenCount: estimateTokens(resultText),
+					sourceCount: sourceManifests?.length,
 				});
 			},
 			onGetDocumentation: async ({ input, foundDocumentation, resultText }) => {

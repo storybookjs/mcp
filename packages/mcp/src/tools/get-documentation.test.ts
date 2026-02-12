@@ -348,7 +348,43 @@ describe('getDocumentationTool', () => {
 			},
 		};
 
-		it('should return error when storybookId is missing', async () => {
+		// Re-create server with multiSource schema so storybookId is in the schema
+		beforeEach(async () => {
+			const adapter = new ValibotJsonSchemaAdapter();
+			server = new McpServer(
+				{
+					name: 'test-server',
+					version: '1.0.0',
+					description: 'Test server for get tool',
+				},
+				{
+					adapter,
+					capabilities: { tools: { listChanged: true } },
+				},
+			).withContext<StorybookContext>();
+
+			await server.receive(
+				{
+					jsonrpc: '2.0',
+					id: 1,
+					method: 'initialize',
+					params: {
+						protocolVersion: '2025-06-18',
+						capabilities: {},
+						clientInfo: { name: 'test', version: '1.0.0' },
+					},
+				},
+				{ sessionId: 'test-session' },
+			);
+			await addGetDocumentationTool(server, undefined, { multiSource: true });
+
+			getManifestsSpy = vi.spyOn(getManifest, 'getManifests');
+			getManifestsSpy.mockResolvedValue({
+				componentManifest: smallManifestFixture,
+			});
+		});
+
+		it('should return schema validation error when storybookId is missing', async () => {
 			const request = {
 				jsonrpc: '2.0' as const,
 				id: 1,
@@ -364,9 +400,9 @@ describe('getDocumentationTool', () => {
 				custom: { request: mockHttpRequest, sources },
 			});
 
+			// storybookId is required in multi-source mode — schema validation rejects it
 			expect((response.result as any).isError).toBe(true);
-			expect((response.result as any).content[0].text).toContain('storybookId is required');
-			expect((response.result as any).content[0].text).toContain('local, remote');
+			expect((response.result as any).content[0].text).toContain('storybookId');
 		});
 
 		it('should return error when storybookId is invalid', async () => {

@@ -34,9 +34,6 @@ export async function addListAllDocumentationTool(
 
 					const lists = formatMultiSourceManifestsToLists(multiSourceManifests, format);
 
-					// Note: onListAllDocumentation callback uses AllManifests type
-					// In multi-source mode, we pass the first successful source's manifests
-					// for backwards compatibility with telemetry
 					const firstSuccess = multiSourceManifests.find((m) => !m.error);
 					if (firstSuccess) {
 						await ctx.onListAllDocumentation?.({
@@ -46,6 +43,7 @@ export async function addListAllDocumentationTool(
 								docsManifest: firstSuccess.docsManifest,
 							},
 							resultText: lists,
+							sources: multiSourceManifests,
 						});
 					}
 

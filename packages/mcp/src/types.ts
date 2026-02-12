@@ -70,6 +70,8 @@ export type StorybookContext = {
 		context: StorybookContext;
 		manifests: AllManifests;
 		resultText: string;
+		/** Present in multi-source mode — all source manifests including errors */
+		sources?: SourceManifests[];
 	}) => void | Promise<void>;
 	/**
 	 * Optional handler called when get-documentation tool is invoked.
