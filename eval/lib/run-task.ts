@@ -130,6 +130,19 @@ export async function runTask({
 
 	const gradingSummary = await grade(trialArgs);
 
+	const quality = hooks.calculateQuality?.({
+		trialArgs,
+		execution: executionSummary,
+		grading: gradingSummary,
+	});
+
+	if (quality !== undefined) {
+		gradingSummary.quality = {
+			score: Math.max(0, Math.min(1, quality.score)),
+			description: quality.description,
+		};
+	}
+
 	await fs.writeFile(
 		path.join(resultsPath, 'summary.json'),
 		JSON.stringify({ ...executionSummary, ...gradingSummary }, null, 2),
@@ -287,6 +300,35 @@ function logSummary(
 		p.log.message(
 			`🧩 Component Usage: ${badge} Score ${cu.score} (matched: ${cu.matched}, missing: ${cu.missing}, unexpected: ${cu.unexpected})`,
 		);
+	}
+
+	if (gradingSummary.mcpTools) {
+		const mcp = gradingSummary.mcpTools;
+		const badge =
+			mcp.allExpectationsPassed === undefined ? 'ℹ️' : mcp.allExpectationsPassed ? '✅' : '❌';
+		const toolNames = mcp.tools.map((t) => t.name).join(', ');
+		const tokens =
+			mcp.totalOutputTokens >= 1000
+				? `${(mcp.totalOutputTokens / 1000).toFixed(1)}K`
+				: String(mcp.totalOutputTokens);
+		p.log.message(`🔧 MCP Tools: ${badge} ${mcp.totalCalls} calls, ${tokens} output tokens`);
+		if (verbose && toolNames) {
+			p.log.message(`   Tools: ${toolNames}`);
+		}
+	}
+
+	if (gradingSummary.quality !== undefined) {
+		const pct = (gradingSummary.quality.score * 100).toFixed(0);
+		const badge =
+			gradingSummary.quality.score >= 0.9
+				? '✅'
+				: gradingSummary.quality.score >= 0.7
+					? '⚠️'
+					: '❌';
+		p.log.message(`📊 Quality: ${badge} ${pct}%`);
+		if (verbose) {
+			p.log.message(`   ${gradingSummary.quality.description}`);
+		}
 	}
 
 	p.log.message(

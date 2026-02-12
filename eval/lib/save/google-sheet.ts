@@ -21,7 +21,8 @@ type SheetsData = {
 	duration: number;
 	turns: number;
 	coverageLines: number | null;
-	componentUsageScore: number | null;
+	qualityScore: number | null;
+	qualityDescription: string | null;
 	contextType: string;
 	agent: string;
 	gitBranch: string;
@@ -88,11 +89,11 @@ export async function saveToGoogleSheets(
 			gradingSummary.test.passed / (gradingSummary.test.passed + gradingSummary.test.failed),
 		a11yViolations: gradingSummary.a11y.violations,
 		coverageLines: gradingSummary.coverage?.lines ? gradingSummary.coverage.lines / 100 : null,
-		componentUsageScore: gradingSummary.componentUsage?.score ?? null,
 		cost: executionSummary.cost ?? 'unknown',
-
 		duration: executionSummary.duration,
 		turns: executionSummary.turns,
+		qualityDescription: gradingSummary.quality?.description ?? null,
+		qualityScore: gradingSummary.quality?.score ?? null,
 		contextType:
 			context.length === 0 || (context.length === 1 && context[0]!.type === false)
 				? 'none'

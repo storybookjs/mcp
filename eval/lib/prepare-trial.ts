@@ -8,14 +8,14 @@ import { startStorybookDevServer } from './storybook-dev-server.ts';
 import { isDevContext, isDocsContext } from './context-utils.ts';
 
 const STORYBOOK_DEV_PACKAGES = [
-	'vitest@catalog:tasks',
-	'@vitest/browser-playwright@catalog:tasks',
-	'storybook@catalog:tasks',
-	'@storybook/addon-docs@catalog:tasks',
-	'@storybook/addon-a11y@catalog:tasks',
+	'vitest@catalog:trials',
+	'@vitest/browser-playwright@catalog:trials',
+	'storybook@catalog:trials',
+	'@storybook/addon-docs@catalog:trials',
+	'@storybook/addon-a11y@catalog:trials',
 	'@storybook/addon-mcp@workspace:*',
-	'@storybook/addon-vitest@catalog:tasks',
-	'@storybook/react-vite@catalog:tasks',
+	'@storybook/addon-vitest@catalog:trials',
+	'@storybook/react-vite@catalog:trials',
 ];
 
 export type PrepareTrialResult = {
@@ -78,7 +78,7 @@ export async function prepareTrial(trialArgs: TrialArgs): Promise<PrepareTrialRe
 			args: [
 				path.join(process.cwd(), '..', 'packages', 'mcp', 'bin.ts'),
 				'--manifestsDir',
-				trialArgs.taskPath,
+				path.join(trialArgs.taskPath, 'manifests'),
 			],
 		};
 	}

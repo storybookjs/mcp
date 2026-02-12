@@ -5,6 +5,7 @@ import { testStories } from './test-stories.ts';
 import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
 import { computeComponentUsageScore } from './component-usage.ts';
+import { gradeMcpTools } from './mcp-tools.ts';
 import { taskLog } from '@clack/prompts';
 import { x } from 'tinyexec';
 import { runHook } from '../run-hook.ts';
@@ -85,8 +86,36 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 		return result;
 	};
 
-	const [buildSuccess, typeCheckErrors, lintErrors, componentUsage, testResults] =
-		await Promise.all([buildTask(), typeCheckTask(), lintTask(), componentUsageTask(), testTask()]);
+	const mcpToolsTask = async () => {
+		const group = log.group('Extracting MCP tools metrics');
+		const result = await gradeMcpTools(trialArgs);
+		if (result === undefined) {
+			group.success('No MCP tools used');
+		} else {
+			const badge =
+				result.allExpectationsPassed === undefined
+					? ''
+					: result.allExpectationsPassed
+						? ' ✓'
+						: ' ✗';
+			const tokens =
+				result.totalOutputTokens >= 1000
+					? `${(result.totalOutputTokens / 1000).toFixed(1)}k`
+					: String(result.totalOutputTokens);
+			group.success(`${result.totalCalls} calls, ${tokens} output tokens${badge}`);
+		}
+		return result;
+	};
+
+	const [buildSuccess, typeCheckErrors, lintErrors, componentUsage, testResults, mcpTools] =
+		await Promise.all([
+			buildTask(),
+			typeCheckTask(),
+			lintTask(),
+			componentUsageTask(),
+			testTask(),
+			mcpToolsTask(),
+		]);
 
 	const formatGroup = log.group('Formatting results');
 	await x('pnpm', ['exec', 'oxfmt', trialArgs.resultsPath]);
@@ -97,6 +126,7 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 		typeCheckErrors,
 		lintErrors,
 		componentUsage,
+		mcpTools,
 		...testResults,
 	};
 

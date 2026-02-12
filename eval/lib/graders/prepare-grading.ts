@@ -6,15 +6,15 @@ import type { TrialArgs } from '../../types.ts';
 export async function prepareGrading({ projectPath }: TrialArgs) {
 	await addDevDependency(
 		[
-			'vitest@catalog:tasks',
-			'@vitest/browser-playwright@catalog:tasks',
-			'storybook@catalog:tasks',
-			'@storybook/addon-docs@catalog:tasks',
-			'@storybook/addon-a11y@catalog:tasks',
+			'vitest@catalog:trials',
+			'@vitest/browser-playwright@catalog:trials',
+			'storybook@catalog:trials',
+			'@storybook/addon-docs@catalog:trials',
+			'@storybook/addon-a11y@catalog:trials',
 			'@storybook/addon-mcp@workspace:*',
-			'@storybook/addon-vitest@catalog:tasks',
-			'@storybook/react-vite@catalog:tasks',
-			'eslint-plugin-storybook@catalog:tasks',
+			'@storybook/addon-vitest@catalog:trials',
+			'@storybook/react-vite@catalog:trials',
+			'eslint-plugin-storybook@catalog:trials',
 		],
 		{ cwd: projectPath, silent: true },
 	);

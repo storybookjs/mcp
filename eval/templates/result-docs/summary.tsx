@@ -1,3 +1,30 @@
+interface McpToolMetrics {
+	name: string;
+	fullName: string;
+	callCount: number;
+	totalOutputTokens: number;
+	invocations: Array<{
+		input: Record<string, unknown>;
+		outputTokens: number;
+	}>;
+	validation?: {
+		inputMatch?: boolean;
+		outputTokensWithinLimit?: boolean;
+	};
+}
+
+interface McpToolsSummary {
+	tools: McpToolMetrics[];
+	totalCalls: number;
+	totalOutputTokens: number;
+	allExpectationsPassed?: boolean;
+}
+
+interface QualityResult {
+	score: number;
+	description: string;
+}
+
 interface SummaryProps {
 	agent: string;
 	model: string;
@@ -27,6 +54,8 @@ interface SummaryProps {
 		missing: number;
 		unexpected: number;
 	};
+	mcpTools?: McpToolsSummary;
+	quality?: QualityResult;
 }
 
 const StatusBadge = ({
@@ -117,9 +146,169 @@ const formatDuration = (seconds: number): string => {
 	return `${mins}m ${secs}s`;
 };
 
-const formatPct = (value: number | null | undefined): string => {
+const formatPct = (value: number | null | undefined) => {
 	if (value === null || value === undefined || Number.isNaN(value)) return '–';
-	return `${value.toFixed(1)}%`;
+
+	try {
+		return `${value.toFixed(1)}%`;
+	} catch {
+		return JSON.stringify(value);
+	}
+};
+
+const formatTokens = (tokens: number): string => {
+	if (tokens >= 1000) {
+		return `${(tokens / 1000).toFixed(1)}k`;
+	}
+	return String(tokens);
+};
+
+const QualityCard = ({ quality }: { quality: QualityResult }) => {
+	const pct = (quality.score * 100).toFixed(0);
+	const status = quality.score >= 0.9 ? 'success' : quality.score >= 0.7 ? 'warning' : 'error';
+	const icon = quality.score >= 0.9 ? '✅' : quality.score >= 0.7 ? '⚠️' : '❌';
+
+	const colorMap = {
+		success: { bg: '#dcfce7', bar: '#22c55e' },
+		warning: { bg: '#fef3c7', bar: '#f59e0b' },
+		error: { bg: '#fee2e2', bar: '#ef4444' },
+	};
+
+	const colors = colorMap[status];
+
+	return (
+		<div
+			style={{
+				padding: '1.5rem',
+				backgroundColor: '#f9fafb',
+				border: '1px solid #e5e7eb',
+				borderRadius: '8px',
+			}}
+		>
+			<h3
+				style={{
+					margin: '0 0 0.5rem 0',
+					fontSize: '0.875rem',
+					fontWeight: 600,
+					color: '#6b7280',
+					textTransform: 'uppercase',
+					letterSpacing: '0.05em',
+				}}
+			>
+				Quality {icon}
+			</h3>
+			<div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>{pct}%</div>
+			<div
+				style={{
+					fontSize: '0.75rem',
+					color: '#6b7280',
+					marginTop: '0.25rem',
+				}}
+			>
+				{quality.description}
+			</div>
+			<div
+				style={{
+					marginTop: '0.75rem',
+					height: '8px',
+					backgroundColor: colors.bg,
+					borderRadius: '4px',
+					overflow: 'hidden',
+				}}
+			>
+				<div
+					style={{
+						width: `${pct}%`,
+						height: '100%',
+						backgroundColor: colors.bar,
+						transition: 'width 0.3s ease',
+					}}
+				/>
+			</div>
+		</div>
+	);
+};
+
+const McpToolsCard = ({ mcpTools }: { mcpTools: McpToolsSummary }) => {
+	const getValidationIcon = (metrics: McpToolMetrics): string => {
+		if (!metrics.validation) return '';
+		const inputOk = metrics.validation.inputMatch !== false;
+		const tokensOk = metrics.validation.outputTokensWithinLimit !== false;
+		return inputOk && tokensOk ? '✅' : '❌';
+	};
+
+	return (
+		<div
+			style={{
+				padding: '1.5rem',
+				backgroundColor: '#f9fafb',
+				border: '1px solid #e5e7eb',
+				borderRadius: '8px',
+				gridColumn: 'span 2',
+			}}
+		>
+			<h3
+				style={{
+					margin: '0 0 0.5rem 0',
+					fontSize: '0.875rem',
+					fontWeight: 600,
+					color: '#6b7280',
+					textTransform: 'uppercase',
+					letterSpacing: '0.05em',
+				}}
+			>
+				MCP Tools{' '}
+				{mcpTools.allExpectationsPassed !== undefined && (
+					<span>{mcpTools.allExpectationsPassed ? '✅' : '❌'}</span>
+				)}
+			</h3>
+			<div
+				style={{
+					fontSize: '1.25rem',
+					fontWeight: 700,
+					color: '#111827',
+					marginBottom: '0.75rem',
+				}}
+			>
+				{mcpTools.totalCalls} calls, {formatTokens(mcpTools.totalOutputTokens)} tokens
+			</div>
+			<div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+				{mcpTools.tools.map((tool) => (
+					<div
+						key={tool.name}
+						style={{
+							display: 'flex',
+							justifyContent: 'space-between',
+							alignItems: 'center',
+							padding: '0.5rem 0.75rem',
+							backgroundColor: '#ffffff',
+							border: '1px solid #e5e7eb',
+							borderRadius: '4px',
+							fontSize: '0.875rem',
+						}}
+					>
+						<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+							<code
+								style={{
+									backgroundColor: '#f3f4f6',
+									padding: '0.125rem 0.375rem',
+									borderRadius: '3px',
+									fontFamily: 'monospace',
+									fontSize: '0.8125rem',
+								}}
+							>
+								{tool.name}
+							</code>
+							<span>{getValidationIcon(tool)}</span>
+						</div>
+						<div style={{ color: '#6b7280' }}>
+							{tool.callCount}x · {formatTokens(tool.totalOutputTokens)} tokens
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	);
 };
 
 export const Summary = (props: SummaryProps) => {
@@ -225,6 +414,8 @@ export const Summary = (props: SummaryProps) => {
 						subvalue={`Matched ${props.componentUsage.matched}, Missing ${props.componentUsage.missing}, Unexpected ${props.componentUsage.unexpected}`}
 					/>
 				)}
+				{props.quality !== undefined && <QualityCard quality={props.quality} />}
+				{props.mcpTools && <McpToolsCard mcpTools={props.mcpTools} />}
 			</div>
 		</div>
 	);

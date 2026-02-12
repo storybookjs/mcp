@@ -403,18 +403,26 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				const availableExtraPrompts: Record<string, string> = {};
 				const availableSystemPrompts: Record<string, string> = {};
 				let availableManifest: string[] | undefined = undefined;
+
+				// Check for manifest files in the manifests/ subdirectory
+				const manifestsDir = path.join(taskDir, 'manifests');
+				const manifestPath = path.join(manifestsDir, 'components.json');
+				try {
+					const { default: manifestContent } = await import(manifestPath, {
+						with: { type: 'json' },
+					});
+					availableManifest = Object.keys(manifestContent.components || {});
+				} catch {
+					// No manifest available for this task
+				}
+
 				for (const dirent of await fs.readdir(taskDir, {
 					withFileTypes: true,
 				})) {
 					if (!dirent.isFile()) {
 						continue;
 					}
-					if (dirent.name === 'components.json') {
-						const { default: manifestContent } = await import(path.join(taskDir, dirent.name), {
-							with: { type: 'json' },
-						});
-						availableManifest = Object.keys(manifestContent.components || {});
-					} else if (dirent.name.startsWith('system.') && dirent.name.endsWith('.md')) {
+					if (dirent.name.startsWith('system.') && dirent.name.endsWith('.md')) {
 						const content = await fs.readFile(path.join(taskDir, dirent.name), 'utf8');
 						availableSystemPrompts[dirent.name] = content;
 					} else if (

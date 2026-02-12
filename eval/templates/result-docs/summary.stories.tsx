@@ -204,3 +204,365 @@ export const MultipleFailures: Story = {
 		},
 	},
 };
+
+/**
+ * Shows MCP tools usage without any expectations configured.
+ * Just displays which tools were called and their token counts.
+ */
+export const WithMcpToolsNoExpectations: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.3456,
+		duration: 289,
+		durationApi: 234,
+		turns: 14,
+		buildSuccess: true,
+		typeCheckErrors: 0,
+		lintErrors: 0,
+		test: {
+			passed: 18,
+			failed: 0,
+		},
+		a11y: {
+			violations: 0,
+		},
+		mcpTools: {
+			tools: [
+				{
+					name: 'list-all-documentation',
+					fullName: 'mcp__storybook__list-all-documentation',
+					callCount: 1,
+					totalOutputTokens: 12500,
+					invocations: [{ input: {}, outputTokens: 12500 }],
+				},
+				{
+					name: 'get-documentation',
+					fullName: 'mcp__storybook__get-documentation',
+					callCount: 3,
+					totalOutputTokens: 4200,
+					invocations: [
+						{ input: { id: 'button' }, outputTokens: 1400 },
+						{ input: { id: 'calendar' }, outputTokens: 1500 },
+						{ input: { id: 'autocomplete' }, outputTokens: 1300 },
+					],
+				},
+			],
+			totalCalls: 4,
+			totalOutputTokens: 16700,
+		},
+	},
+};
+
+/**
+ * Shows MCP tools usage where all expectations pass.
+ * Tools were called with expected inputs and within token limits.
+ */
+export const WithMcpToolsExpectationsPassed: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.2987,
+		duration: 267,
+		durationApi: 212,
+		turns: 12,
+		buildSuccess: true,
+		typeCheckErrors: 0,
+		lintErrors: 0,
+		test: {
+			passed: 15,
+			failed: 0,
+		},
+		a11y: {
+			violations: 0,
+		},
+		mcpTools: {
+			tools: [
+				{
+					name: 'list-all-documentation',
+					fullName: 'mcp__storybook__list-all-documentation',
+					callCount: 1,
+					totalOutputTokens: 8500,
+					invocations: [{ input: {}, outputTokens: 8500 }],
+					validation: {
+						outputTokensWithinLimit: true,
+					},
+				},
+				{
+					name: 'get-documentation',
+					fullName: 'mcp__storybook__get-documentation',
+					callCount: 2,
+					totalOutputTokens: 2800,
+					invocations: [
+						{ input: { id: 'button' }, outputTokens: 1400 },
+						{ input: { id: 'popover' }, outputTokens: 1400 },
+					],
+					validation: {
+						inputMatch: true,
+						outputTokensWithinLimit: true,
+					},
+				},
+			],
+			totalCalls: 3,
+			totalOutputTokens: 11300,
+			allExpectationsPassed: true,
+		},
+	},
+};
+
+/**
+ * Shows MCP tools usage where some expectations failed.
+ * Output tokens exceeded the configured limit.
+ */
+export const WithMcpToolsExpectationsFailed: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.4123,
+		duration: 345,
+		durationApi: 289,
+		turns: 16,
+		buildSuccess: true,
+		typeCheckErrors: 0,
+		lintErrors: 2,
+		test: {
+			passed: 12,
+			failed: 2,
+		},
+		a11y: {
+			violations: 1,
+		},
+		mcpTools: {
+			tools: [
+				{
+					name: 'list-all-documentation',
+					fullName: 'mcp__storybook__list-all-documentation',
+					callCount: 2,
+					totalOutputTokens: 65000,
+					invocations: [
+						{ input: {}, outputTokens: 32000 },
+						{ input: {}, outputTokens: 33000 },
+					],
+					validation: {
+						outputTokensWithinLimit: false,
+					},
+				},
+				{
+					name: 'get-documentation',
+					fullName: 'mcp__storybook__get-documentation',
+					callCount: 5,
+					totalOutputTokens: 7500,
+					invocations: [
+						{ input: { id: 'button' }, outputTokens: 1500 },
+						{ input: { id: 'calendar' }, outputTokens: 1500 },
+						{ input: { id: 'autocomplete' }, outputTokens: 1500 },
+						{ input: { id: 'popover' }, outputTokens: 1500 },
+						{ input: { id: 'view' }, outputTokens: 1500 },
+					],
+					validation: {
+						inputMatch: true,
+						outputTokensWithinLimit: true,
+					},
+				},
+			],
+			totalCalls: 7,
+			totalOutputTokens: 72500,
+			allExpectationsPassed: false,
+		},
+	},
+};
+
+/**
+ * Shows a single MCP tool with many invocations.
+ */
+export const WithMcpToolsManyInvocations: Story = {
+	args: {
+		agent: 'Copilot CLI',
+		model: 'gpt-5.1-codex-max',
+		cost: 0.5234,
+		duration: 423,
+		durationApi: 378,
+		turns: 20,
+		buildSuccess: true,
+		typeCheckErrors: 0,
+		lintErrors: 0,
+		test: {
+			passed: 22,
+			failed: 0,
+		},
+		a11y: {
+			violations: 0,
+		},
+		mcpTools: {
+			tools: [
+				{
+					name: 'get-documentation',
+					fullName: 'mcp__storybook__get-documentation',
+					callCount: 8,
+					totalOutputTokens: 11200,
+					invocations: [
+						{ input: { id: 'button' }, outputTokens: 1400 },
+						{ input: { id: 'calendar' }, outputTokens: 1400 },
+						{ input: { id: 'autocomplete' }, outputTokens: 1400 },
+						{ input: { id: 'popover' }, outputTokens: 1400 },
+						{ input: { id: 'view' }, outputTokens: 1400 },
+						{ input: { id: 'toggle-button' }, outputTokens: 1400 },
+						{ input: { id: 'toggle-button-group' }, outputTokens: 1400 },
+						{ input: { id: 'dialog' }, outputTokens: 1400 },
+					],
+				},
+			],
+			totalCalls: 8,
+			totalOutputTokens: 11200,
+		},
+	},
+};
+
+/**
+ * Shows a high quality score (90%+) with a green indicator.
+ */
+export const WithHighQuality: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.2543,
+		duration: 245,
+		durationApi: 198,
+		turns: 12,
+		buildSuccess: true,
+		typeCheckErrors: 0,
+		lintErrors: 0,
+		test: {
+			passed: 15,
+			failed: 0,
+		},
+		a11y: {
+			violations: 0,
+		},
+		quality: {
+			score: 0.95,
+			description: 'Component Usage',
+		},
+	},
+};
+
+/**
+ * Shows a medium quality score (70-89%) with a warning indicator.
+ */
+export const WithMediumQuality: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.3421,
+		duration: 312,
+		durationApi: 245,
+		turns: 15,
+		buildSuccess: true,
+		typeCheckErrors: 2,
+		lintErrors: 0,
+		test: {
+			passed: 12,
+			failed: 2,
+		},
+		a11y: {
+			violations: 1,
+		},
+		quality: {
+			score: 0.78,
+			description: 'Component Usage, MCP Tools',
+		},
+	},
+};
+
+/**
+ * Shows a low quality score (<70%) with an error indicator.
+ */
+export const WithLowQuality: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.1234,
+		duration: 120,
+		durationApi: 95,
+		turns: 8,
+		buildSuccess: false,
+		typeCheckErrors: 5,
+		lintErrors: 12,
+		test: {
+			passed: 3,
+			failed: 8,
+		},
+		a11y: {
+			violations: 4,
+		},
+		quality: {
+			score: 0.42,
+			description: 'Component Usage',
+		},
+	},
+};
+
+/**
+ * Shows quality combined with MCP tools and component usage.
+ */
+export const WithQualityAndAllMetrics: Story = {
+	args: {
+		agent: 'Claude Code v1.0.37',
+		model: 'claude-sonnet-4-20250514',
+		cost: 0.3944,
+		duration: 100,
+		durationApi: 99,
+		turns: 18,
+		buildSuccess: true,
+		typeCheckErrors: 0,
+		lintErrors: 3,
+		test: {
+			passed: 4,
+			failed: 1,
+		},
+		a11y: {
+			violations: 2,
+		},
+		componentUsage: {
+			score: 6,
+			matched: 7,
+			missing: 0,
+			unexpected: 1,
+		},
+		mcpTools: {
+			tools: [
+				{
+					name: 'list-all-documentation',
+					fullName: 'mcp__storybook__list-all-documentation',
+					callCount: 1,
+					totalOutputTokens: 845,
+					invocations: [{ input: {}, outputTokens: 845 }],
+					validation: { outputTokensWithinLimit: true },
+				},
+				{
+					name: 'get-documentation',
+					fullName: 'mcp__storybook__get-documentation',
+					callCount: 5,
+					totalOutputTokens: 13922,
+					invocations: [
+						{ input: { id: 'components-autocomplete' }, outputTokens: 1673 },
+						{
+							input: { id: 'components-togglebuttongroup' },
+							outputTokens: 1000,
+						},
+						{ input: { id: 'components-calendar' }, outputTokens: 1392 },
+						{ input: { id: 'components-popover' }, outputTokens: 2681 },
+						{ input: { id: 'components-button' }, outputTokens: 7176 },
+					],
+				},
+			],
+			totalCalls: 6,
+			totalOutputTokens: 14767,
+			allExpectationsPassed: true,
+		},
+		quality: {
+			score: 0.88,
+			description: 'Component Usage, MCP Tools',
+		},
+	},
+};
