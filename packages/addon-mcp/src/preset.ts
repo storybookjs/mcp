@@ -46,7 +46,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 		}
 
 		// Build sources array (local + refs)
-		sources = compositionAuth.buildSources(refs);
+		sources = compositionAuth.buildSources();
 		logger.info(`Sources: ${sources.map((s) => s.id).join(', ')}`);
 
 		// Create manifest provider that handles multi-source

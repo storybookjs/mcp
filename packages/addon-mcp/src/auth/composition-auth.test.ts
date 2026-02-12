@@ -61,11 +61,24 @@ describe('CompositionAuth', () => {
 	});
 
 	describe('buildSources', () => {
-		it('creates sources array with local first', () => {
+		it('creates sources array with local first', async () => {
 			const auth = new CompositionAuth();
-			const sources = auth.buildSources([
+			vi.stubGlobal(
+				'fetch',
+				vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () =>
+						Promise.resolve(
+							'{"v":1,"components":{"button":{"id":"button","name":"Button","path":"src/Button.tsx"}}}',
+						),
+				}),
+			);
+
+			await auth.initialize([
 				{ id: 'design-system', title: 'Design System', url: 'http://ds.example.com' },
 			]);
+			const sources = auth.buildSources();
 
 			expect(sources).toEqual([
 				{ id: 'local', title: 'Local' },
@@ -73,24 +86,84 @@ describe('CompositionAuth', () => {
 			]);
 		});
 
-		it('uses ref id as source id', () => {
+		it('uses ref id as source id', async () => {
 			const auth = new CompositionAuth();
-			const sources = auth.buildSources([
-				{ id: 'my-ref-key', title: 'Some Title', url: 'http://example.com' },
-			]);
+			vi.stubGlobal(
+				'fetch',
+				vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () =>
+						Promise.resolve(
+							'{"v":1,"components":{"button":{"id":"button","name":"Button","path":"src/Button.tsx"}}}',
+						),
+				}),
+			);
+
+			await auth.initialize([{ id: 'my-ref-key', title: 'Some Title', url: 'http://example.com' }]);
+			const sources = auth.buildSources();
 
 			expect(sources[1]!.id).toBe('my-ref-key');
 		});
 
-		it('handles multiple refs', () => {
+		it('handles multiple refs', async () => {
 			const auth = new CompositionAuth();
-			const sources = auth.buildSources([
+			vi.stubGlobal(
+				'fetch',
+				vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () =>
+						Promise.resolve(
+							'{"v":1,"components":{"button":{"id":"button","name":"Button","path":"src/Button.tsx"}}}',
+						),
+				}),
+			);
+
+			await auth.initialize([
 				{ id: 'ref-a', title: 'Ref A', url: 'http://a.example.com' },
 				{ id: 'ref-b', title: 'Ref B', url: 'http://b.example.com' },
 			]);
+			const sources = auth.buildSources();
 
 			expect(sources).toHaveLength(3);
 			expect(sources.map((s) => s.id)).toEqual(['local', 'ref-a', 'ref-b']);
+		});
+
+		it('excludes refs without manifests', async () => {
+			const auth = new CompositionAuth();
+			vi.stubGlobal(
+				'fetch',
+				vi
+					.fn()
+					// ref-a: valid manifest
+					.mockResolvedValueOnce({
+						ok: true,
+						status: 200,
+						text: () =>
+							Promise.resolve(
+								'{"v":1,"components":{"button":{"id":"button","name":"Button","path":"src/Button.tsx"}}}',
+							),
+					})
+					// ref-b: 404 (no manifest)
+					.mockResolvedValueOnce({
+						ok: false,
+						status: 404,
+					})
+					// ref-b fallback: /mcp returns 200 (no auth either)
+					.mockResolvedValueOnce({
+						status: 200,
+					}),
+			);
+
+			await auth.initialize([
+				{ id: 'ref-a', title: 'Ref A', url: 'http://a.example.com' },
+				{ id: 'ref-b', title: 'Ref B', url: 'http://b.example.com' },
+			]);
+			const sources = auth.buildSources();
+
+			expect(sources).toHaveLength(2);
+			expect(sources.map((s) => s.id)).toEqual(['local', 'ref-a']);
 		});
 	});
 
@@ -416,7 +489,10 @@ describe('CompositionAuth', () => {
 				vi.fn().mockResolvedValue({
 					ok: true,
 					status: 200,
-					text: () => Promise.resolve('{"v":1,"components":{"button":{}}}'),
+					text: () =>
+						Promise.resolve(
+							'{"v":1,"components":{"button":{"id":"button","name":"Button","path":"src/Button.tsx"}}}',
+						),
 				}),
 			);
 

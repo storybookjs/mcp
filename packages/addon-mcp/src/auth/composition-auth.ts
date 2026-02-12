@@ -53,22 +53,28 @@ interface CacheEntry {
 export class CompositionAuth {
 	private authRequirement: AuthRequirement | null = null;
 	private authRequiredUrls: string[] = [];
+	private refsWithManifests: ComposedRef[] = [];
 	private manifestCache = new Map<string, CacheEntry>();
 	private lastToken: string | null = null;
 
-	/** Initialize by checking which refs require authentication. */
+	/** Initialize by checking which refs require authentication and have manifests. */
 	async initialize(refs: ComposedRef[]): Promise<void> {
 		for (const ref of refs) {
 			try {
-				const authReq = await this.checkAuthRequired(ref.url);
-				if (!authReq) continue;
+				const result = await this.checkRef(ref.url);
+				if (result === 'no-manifest') continue;
 
+				this.refsWithManifests.push(ref);
+
+				if (result === 'public') continue;
+
+				// Auth required
 				this.authRequiredUrls.push(ref.url);
 				if (!this.authRequirement) {
-					this.authRequirement = authReq;
+					this.authRequirement = result;
 				} else {
 					const existingServer = this.authRequirement.resourceMetadata.authorization_servers[0];
-					const newServer = authReq.resourceMetadata.authorization_servers[0];
+					const newServer = result.resourceMetadata.authorization_servers[0];
 					if (existingServer !== newServer) {
 						console.warn(
 							`[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`,
@@ -111,11 +117,15 @@ export class CompositionAuth {
 		return `Bearer error="unauthorized", error_description="Authorization needed for composed Storybooks", resource_metadata="${origin}/.well-known/oauth-protected-resource"`;
 	}
 
-	/** Build sources configuration: local first, then each ref. */
-	buildSources(refs: ComposedRef[]): Source[] {
+	/** Build sources configuration: local first, then refs that have manifests. */
+	buildSources(): Source[] {
 		return [
 			{ id: 'local', title: 'Local' },
-			...refs.map((ref) => ({ id: ref.id, title: ref.title, url: ref.url })),
+			...this.refsWithManifests.map((ref) => ({
+				id: ref.id,
+				title: ref.title,
+				url: ref.url,
+			})),
 		];
 	}
 
@@ -205,11 +215,11 @@ export class CompositionAuth {
 	}
 
 	/**
-	 * Check if a remote Storybook requires authentication.
-	 * Tries the manifest endpoint first (401 = direct auth signal),
-	 * falls back to /mcp if the manifest response is unexpected.
+	 * Check a ref to determine if it has a manifest and whether it requires auth.
+	 * Returns 'public' if the ref has a valid manifest without auth,
+	 * 'no-manifest' if no manifest is available, or an AuthRequirement if auth is needed.
 	 */
-	private async checkAuthRequired(refUrl: string): Promise<AuthRequirement | null> {
+	private async checkRef(refUrl: string): Promise<'public' | 'no-manifest' | AuthRequirement> {
 		const response = await fetch(`${refUrl}/manifests/components.json`, {
 			headers: { Accept: 'application/json' },
 		});
@@ -218,16 +228,20 @@ export class CompositionAuth {
 		const authReq = await this.parseAuthFromResponse(response);
 		if (authReq) return authReq;
 
-		// 200 with valid manifest = no auth needed
+		// 200 with valid manifest = public, has manifest
 		if (response.ok) {
 			const text = await response.text();
 			if (v.safeParse(v.pipe(v.string(), v.parseJson(), ComponentManifestMap), text).success) {
-				return null;
+				return 'public';
 			}
 		}
 
 		// Unexpected response — fall back to /mcp
-		return this.checkMcpAuth(refUrl);
+		const mcpAuth = await this.checkMcpAuth(refUrl);
+		if (mcpAuth) return mcpAuth;
+
+		// No manifest and no auth — this ref doesn't have manifests
+		return 'no-manifest';
 	}
 
 	/** Check /mcp endpoint for 401 auth requirement. */
