@@ -114,7 +114,10 @@ export type QualityResult = {
  * (e.g., "mcp__list_components" matches expected "list_components").
  */
 export type McpToolExpectation = {
-	/** Expected calls to this tool (array of expected inputs, strict equality check) */
+	/**
+	 * Expected calls to this tool (array of expected input patterns).
+	 * Matching is deep-partial: only the keys present in the expected input are validated.
+	 */
 	expectedCalls?: Array<Record<string, unknown>>;
 	/** Maximum allowed output tokens for this tool (expect less than X) */
 	maxOutputTokens?: number;
