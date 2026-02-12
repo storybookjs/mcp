@@ -43,11 +43,12 @@ export type ManifestProvider = (
 ) => Promise<string>;
 
 const MANIFEST_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
+const REVALIDATION_TTL = 60 * 1000; // 60 seconds
 
 interface CacheEntry {
 	text: string;
 	timestamp: number;
-	revalidating?: boolean;
+	lastRevalidatedAt?: number;
 }
 
 export class CompositionAuth {
@@ -153,16 +154,17 @@ export class CompositionAuth {
 						// Expired — discard cache, fetch fresh below
 						this.#manifestCache.delete(manifestUrl);
 					} else {
-						// Fresh — serve cached, revalidate in background
-						if (!cached.revalidating) {
-							cached.revalidating = true;
+						// Fresh — serve cached, revalidate in background (at most once per 60s)
+						const shouldRevalidate =
+							!cached.lastRevalidatedAt ||
+							Date.now() - cached.lastRevalidatedAt > REVALIDATION_TTL;
+						if (shouldRevalidate) {
+							cached.lastRevalidatedAt = Date.now();
 							void this.#fetchManifest(manifestUrl, tokenForRequest)
 								.then((text) =>
 									this.#manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
 								)
-								.catch(() => {
-									cached.revalidating = false;
-								});
+								.catch(() => {});
 						}
 						return cached.text;
 					}
