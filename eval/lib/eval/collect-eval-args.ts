@@ -114,6 +114,7 @@ async function loadVariantConfigs(): Promise<LoadedConfig[]> {
 async function chooseDesignSystem(): Promise<string> {
 	const taskOptions = (await fs.readdir(TASKS_DIR, { withFileTypes: true }))
 		.filter((dirent) => dirent.isDirectory())
+		.filter((dirent) => !dirent.name.startsWith('9')) // 9XX tasks are internal
 		.map((dirent) => ({
 			value: dirent.name.split('-').at(-1)!,
 			label: dirent.name.split('-').at(-1)!,
@@ -134,21 +135,10 @@ async function chooseDesignSystem(): Promise<string> {
 }
 
 async function chooseTaskName(designSystem: string): Promise<string> {
-	// Temporary blacklist for tasks which we don't want to expose for now
-	const BLACK_LISTED_TASKS = [
-		'111-create-component-atom-reshaped',
-		'112-create-component-composite-reshaped',
-		'113-create-component-async-fetch-reshaped',
-		'114-create-component-async-module-reshaped',
-		'115-existing-component-write-story-reshaped',
-		'116-existing-component-edit-story-reshaped',
-		'117-existing-component-change-component-reshaped',
-	];
-
 	const taskOptions = (await fs.readdir(TASKS_DIR, { withFileTypes: true }))
 		.filter((dirent) => dirent.isDirectory())
 		.filter((dirent) => dirent.name.endsWith(designSystem))
-		.filter((dirent) => !BLACK_LISTED_TASKS.includes(dirent.name))
+		.filter((dirent) => !dirent.name.startsWith('9')) // 9XX tasks are internal
 		.map((dirent) => ({
 			value: dirent.name,
 			label: dirent.name,
