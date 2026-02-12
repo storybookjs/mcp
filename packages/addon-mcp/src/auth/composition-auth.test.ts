@@ -230,9 +230,7 @@ describe('CompositionAuth', () => {
 					}),
 			);
 
-			await auth.initialize([
-				{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' },
-			]);
+			await auth.initialize([{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' }]);
 
 			// Now set up mock for manifest fetching
 			const mockFetch = vi.fn().mockResolvedValue({

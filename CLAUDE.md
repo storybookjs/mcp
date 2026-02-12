@@ -56,4 +56,3 @@ pnpm format                         # oxfmt
 - Use `toMatchInlineSnapshot()` for assertions where possible. Inline snapshots show the full response shape and catch regressions better than individual field checks.
 - E2E tests (`apps/internal-storybook/tests/`) start real Storybook servers and take 30+ seconds. Run `turbo run build` first so the addon dist is up to date.
 - Unit tests and e2e tests are separate vitest projects. `turbo run test` runs all of them, including e2e.
-

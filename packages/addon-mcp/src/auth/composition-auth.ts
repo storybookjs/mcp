@@ -169,8 +169,7 @@ export class CompositionAuth {
 					} else {
 						// Fresh — serve cached, revalidate in background (at most once per 60s)
 						const shouldRevalidate =
-							!cached.lastRevalidatedAt ||
-							Date.now() - cached.lastRevalidatedAt > REVALIDATION_TTL;
+							!cached.lastRevalidatedAt || Date.now() - cached.lastRevalidatedAt > REVALIDATION_TTL;
 						if (shouldRevalidate) {
 							cached.lastRevalidatedAt = Date.now();
 							void this.#fetchManifest(manifestUrl, tokenForRequest)

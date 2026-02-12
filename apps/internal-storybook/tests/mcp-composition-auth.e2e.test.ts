@@ -82,7 +82,9 @@ describe('MCP Composition Auth E2E Tests', () => {
 			const response = await mcpRequest('tools/list');
 
 			expect(response.status).toBe(401);
-			expect(response.headers.get('www-authenticate')).toMatchInlineSnapshot(`"Bearer error="unauthorized", error_description="Authorization needed for composed Storybooks", resource_metadata="http://localhost:6008/.well-known/oauth-protected-resource""`);
+			expect(response.headers.get('www-authenticate')).toMatchInlineSnapshot(
+				`"Bearer error="unauthorized", error_description="Authorization needed for composed Storybooks", resource_metadata="http://localhost:6008/.well-known/oauth-protected-resource""`,
+			);
 		});
 
 		it('should reject requests without valid token', async () => {
