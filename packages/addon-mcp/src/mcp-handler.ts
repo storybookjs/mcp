@@ -13,6 +13,7 @@ import type { AddonContext, AddonOptionsOutput } from './types.ts';
 import { logger } from 'storybook/internal/node-logger';
 import { getManifestStatus } from './tools/is-manifest-available.ts';
 import { estimateTokens } from './utils/estimate-tokens.ts';
+import type { CompositionAuth } from './auth/index.ts';
 
 let transport: HttpTransport<AddonContext> | undefined;
 let origin: string | undefined;
@@ -82,6 +83,8 @@ type McpServerHandlerParams = {
 		path: string,
 		source?: Source,
 	) => Promise<string>;
+	/** Composition auth handler for multi-source mode */
+	compositionAuth: CompositionAuth;
 };
 
 export const mcpServerHandler = async ({
@@ -91,6 +94,7 @@ export const mcpServerHandler = async ({
 	addonOptions,
 	sources,
 	manifestProvider,
+	compositionAuth,
 }: McpServerHandlerParams) => {
 	// Initialize MCP server and transport on first request, with concurrency safety
 	if (!initialize) {
@@ -136,10 +140,23 @@ export const mcpServerHandler = async ({
 	};
 
 	const response = await transport!.respond(webRequest, addonContext);
-
-	// Convert Web API Response to Node.js response
 	if (response) {
-		await webResponseToServerResponse(response, res);
+		// Buffer body first — tool execution happens lazily during stream consumption
+		// (tmcp's transport fires handle() without awaiting it). Only after the body
+		// is fully consumed can we check whether a tool hit an auth error.
+		const body = await response.arrayBuffer();
+
+		const finalResponse = compositionAuth.hadAuthError(webRequest)
+			? new Response('401 - Unauthorized', {
+					status: 401,
+					headers: {
+						'Content-Type': 'text/plain',
+						'WWW-Authenticate': compositionAuth.buildWwwAuthenticate(origin!),
+					},
+				})
+			: new Response(body, { status: response.status, headers: response.headers });
+
+		await webResponseToServerResponse(finalResponse, res);
 	}
 };
 

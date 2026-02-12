@@ -4,6 +4,7 @@
 
 export {
 	CompositionAuth,
+	AuthenticationError,
 	extractBearerToken,
 	type ComposedRef,
 	type ManifestProvider,

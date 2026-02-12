@@ -92,6 +92,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 			addonOptions,
 			sources,
 			manifestProvider,
+			compositionAuth,
 		});
 	});
 
@@ -111,6 +112,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 				addonOptions,
 				sources,
 				manifestProvider,
+				compositionAuth,
 			});
 		}
 

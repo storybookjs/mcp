@@ -51,12 +51,20 @@ interface CacheEntry {
 	lastRevalidatedAt?: number;
 }
 
+export class AuthenticationError extends Error {
+	constructor(url: string) {
+		super(`Authentication failed for ${url}. Your token may be invalid or expired.`);
+		this.name = 'AuthenticationError';
+	}
+}
+
 export class CompositionAuth {
 	#authRequirement: AuthRequirement | null = null;
 	#authRequiredUrls: string[] = [];
 	#refsWithManifests: ComposedRef[] = [];
 	#manifestCache = new Map<string, CacheEntry>();
 	#lastToken: string | null = null;
+	#authErrors = new WeakMap<Request, AuthenticationError>();
 
 	/** Initialize by checking which refs require authentication and have manifests. */
 	async initialize(refs: ComposedRef[]): Promise<void> {
@@ -96,6 +104,11 @@ export class CompositionAuth {
 
 	get authUrls(): string[] {
 		return this.#authRequiredUrls;
+	}
+
+	/** Check if a request encountered an auth error during manifest fetching. */
+	hadAuthError(request: Request): boolean {
+		return this.#authErrors.has(request);
 	}
 
 	/** Check if a URL requires authentication based on discovered auth requirements. */
@@ -171,13 +184,20 @@ export class CompositionAuth {
 				}
 			}
 
-			const text = await this.#fetchManifest(manifestUrl, tokenForRequest);
+			try {
+				const text = await this.#fetchManifest(manifestUrl, tokenForRequest);
 
-			if (isRemote) {
-				this.#manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
+				if (isRemote) {
+					this.#manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
+				}
+
+				return text;
+			} catch (error) {
+				if (error instanceof AuthenticationError && request) {
+					this.#authErrors.set(request, error);
+				}
+				throw error;
 			}
-
-			return text;
 		};
 	}
 
@@ -192,7 +212,7 @@ export class CompositionAuth {
 		const response = await fetch(url, { headers });
 
 		if (response.status === 401) {
-			throw new Error(`Authentication failed for ${url}. Your token may be invalid or expired.`);
+			throw new AuthenticationError(url);
 		}
 
 		if (!response.ok) {
@@ -208,7 +228,7 @@ export class CompositionAuth {
 
 		// Invalid manifest — check /mcp to see if it's an auth issue
 		if (await this.#isMcpUnauthorized(new URL(url).origin)) {
-			throw new Error(`Authentication failed for ${url}. Your token may be invalid or expired.`);
+			throw new AuthenticationError(url);
 		}
 
 		throw new Error(

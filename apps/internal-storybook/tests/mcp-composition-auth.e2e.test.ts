@@ -106,35 +106,17 @@ describe('MCP Composition Auth E2E Tests', () => {
 			expect(getDocTool.inputSchema.properties).toHaveProperty('storybookId');
 		});
 
-		it('should list local documentation with a token', async () => {
+		it('should return 401 with WWW-Authenticate for list-all-documentation with invalid token', async () => {
 			const response = await mcpRequest(
 				'tools/call',
 				{ name: 'list-all-documentation', arguments: {} },
 				'dummy-token',
 			);
-			const data = await parseMCPResponse(response);
 
-			const text = data.result.content[0].text;
-
-			// Local source should always work
-			expect(text).toContain('Local');
-			expect(text).toContain('id: local');
-			expect(text).toContain('Button');
-		});
-
-		it('should show authentication error for remote source with invalid token', async () => {
-			const response = await mcpRequest(
-				'tools/call',
-				{ name: 'list-all-documentation', arguments: {} },
-				'dummy-token',
-			);
-			const data = await parseMCPResponse(response);
-
-			const text = data.result.content[0].text;
-
-			// Remote source should show an auth error (invalid token triggers /mcp 401 check)
-			expect(text).toContain('test-private-sb');
-			expect(text).toContain('Authentication failed');
+			// The remote source manifest fetch fails with 401,
+			// which propagates as an HTTP 401 to trigger re-authentication
+			expect(response.status).toBe(401);
+			expect(response.headers.get('www-authenticate')).toContain('resource_metadata=');
 		});
 
 		it('should fetch local component documentation with storybookId', async () => {
@@ -219,6 +201,22 @@ describe('MCP Composition Auth E2E Tests', () => {
 				  ],
 				}
 			`);
+		});
+
+		it('should return 401 with WWW-Authenticate when fetching remote source with invalid token', async () => {
+			const response = await mcpRequest(
+				'tools/call',
+				{
+					name: 'get-documentation',
+					arguments: { id: 'button', storybookId: 'test-private-sb' },
+				},
+				'dummy-token',
+			);
+
+			// The manifest fetch to the remote Storybook fails with 401,
+			// which propagates as an HTTP 401 to trigger re-authentication
+			expect(response.status).toBe(401);
+			expect(response.headers.get('www-authenticate')).toContain('resource_metadata=');
 		});
 
 		it('should require storybookId in multi-source auth mode', async () => {
