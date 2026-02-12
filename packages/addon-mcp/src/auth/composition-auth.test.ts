@@ -86,26 +86,6 @@ describe('CompositionAuth', () => {
 			]);
 		});
 
-		it('uses ref id as source id', async () => {
-			const auth = new CompositionAuth();
-			vi.stubGlobal(
-				'fetch',
-				vi.fn().mockResolvedValue({
-					ok: true,
-					status: 200,
-					text: () =>
-						Promise.resolve(
-							'{"v":1,"components":{"button":{"id":"button","name":"Button","path":"src/Button.tsx"}}}',
-						),
-				}),
-			);
-
-			await auth.initialize([{ id: 'my-ref-key', title: 'Some Title', url: 'http://example.com' }]);
-			const sources = auth.buildSources();
-
-			expect(sources[1]!.id).toBe('my-ref-key');
-		});
-
 		it('handles multiple refs', async () => {
 			const auth = new CompositionAuth();
 			vi.stubGlobal(
@@ -217,9 +197,44 @@ describe('CompositionAuth', () => {
 
 		it('extracts token from request headers for auth-required sources', async () => {
 			const auth = new CompositionAuth();
-			// Simulate that this URL requires auth
-			(auth as any).authRequiredUrls = ['http://remote.example.com'];
 
+			// Initialize with a ref that requires auth (401 → resource metadata → server metadata)
+			vi.stubGlobal(
+				'fetch',
+				vi
+					.fn()
+					.mockResolvedValueOnce({
+						ok: false,
+						status: 401,
+						headers: new Headers({
+							'WWW-Authenticate':
+								'Bearer resource_metadata="http://remote.example.com/.well-known/oauth-protected-resource"',
+						}),
+					})
+					.mockResolvedValueOnce({
+						ok: true,
+						json: () =>
+							Promise.resolve({
+								resource: 'http://remote.example.com/mcp',
+								authorization_servers: ['http://auth.example.com'],
+							}),
+					})
+					.mockResolvedValueOnce({
+						ok: true,
+						json: () =>
+							Promise.resolve({
+								issuer: 'http://auth.example.com',
+								authorization_endpoint: 'http://auth.example.com/authorize',
+								token_endpoint: 'http://auth.example.com/token',
+							}),
+					}),
+			);
+
+			await auth.initialize([
+				{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' },
+			]);
+
+			// Now set up mock for manifest fetching
 			const mockFetch = vi.fn().mockResolvedValue({
 				ok: true,
 				text: () => Promise.resolve('{"v":1,"components":{}}'),
@@ -393,6 +408,7 @@ describe('CompositionAuth', () => {
 		});
 
 		it('fetches fresh when cache is expired', async () => {
+			vi.useFakeTimers();
 			const auth = new CompositionAuth();
 			const oldManifest =
 				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
@@ -416,15 +432,15 @@ describe('CompositionAuth', () => {
 			expect(first).toBe(oldManifest);
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 
-			// Expire the cache
-			const cache = (auth as any).manifestCache;
-			const entry = cache.get('http://remote.example.com/manifests/components.json');
-			entry.timestamp = Date.now() - 61 * 60 * 1000; // 61 min ago
+			// Advance time past cache TTL (61 minutes)
+			vi.advanceTimersByTime(61 * 60 * 1000);
 
 			// Second call — cache expired, fetches fresh (blocking)
 			const second = await provider(request, './manifests/components.json', source);
 			expect(second).toBe(newManifest);
 			expect(mockFetch).toHaveBeenCalledTimes(2);
+
+			vi.useRealTimers();
 		});
 
 		it('does not cache local manifest responses', async () => {

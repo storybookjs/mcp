@@ -51,29 +51,29 @@ interface CacheEntry {
 }
 
 export class CompositionAuth {
-	private authRequirement: AuthRequirement | null = null;
-	private authRequiredUrls: string[] = [];
-	private refsWithManifests: ComposedRef[] = [];
-	private manifestCache = new Map<string, CacheEntry>();
-	private lastToken: string | null = null;
+	#authRequirement: AuthRequirement | null = null;
+	#authRequiredUrls: string[] = [];
+	#refsWithManifests: ComposedRef[] = [];
+	#manifestCache = new Map<string, CacheEntry>();
+	#lastToken: string | null = null;
 
 	/** Initialize by checking which refs require authentication and have manifests. */
 	async initialize(refs: ComposedRef[]): Promise<void> {
 		for (const ref of refs) {
 			try {
-				const result = await this.checkRef(ref.url);
+				const result = await this.#checkRef(ref.url);
 				if (result === 'no-manifest') continue;
 
-				this.refsWithManifests.push(ref);
+				this.#refsWithManifests.push(ref);
 
 				if (result === 'public') continue;
 
 				// Auth required
-				this.authRequiredUrls.push(ref.url);
-				if (!this.authRequirement) {
-					this.authRequirement = result;
+				this.#authRequiredUrls.push(ref.url);
+				if (!this.#authRequirement) {
+					this.#authRequirement = result;
 				} else {
-					const existingServer = this.authRequirement.resourceMetadata.authorization_servers[0];
+					const existingServer = this.#authRequirement.resourceMetadata.authorization_servers[0];
 					const newServer = result.resourceMetadata.authorization_servers[0];
 					if (existingServer !== newServer) {
 						console.warn(
@@ -90,25 +90,25 @@ export class CompositionAuth {
 	}
 
 	get requiresAuth(): boolean {
-		return this.authRequiredUrls.length > 0;
+		return this.#authRequiredUrls.length > 0;
 	}
 
 	get authUrls(): string[] {
-		return this.authRequiredUrls;
+		return this.#authRequiredUrls;
 	}
 
 	/** Check if a URL requires authentication based on discovered auth requirements. */
-	private isAuthRequiredUrl(url: string): boolean {
-		return this.authRequiredUrls.some((authUrl) => url.startsWith(authUrl));
+	#isAuthRequiredUrl(url: string): boolean {
+		return this.#authRequiredUrls.some((authUrl) => url.startsWith(authUrl));
 	}
 
 	/** Build .well-known/oauth-protected-resource response. */
 	buildWellKnown(origin: string): object | null {
-		if (!this.authRequirement) return null;
+		if (!this.#authRequirement) return null;
 		return {
 			resource: `${origin}/mcp`,
-			authorization_servers: this.authRequirement.resourceMetadata.authorization_servers,
-			scopes_supported: this.authRequirement.resourceMetadata.scopes_supported,
+			authorization_servers: this.#authRequirement.resourceMetadata.authorization_servers,
+			scopes_supported: this.#authRequirement.resourceMetadata.scopes_supported,
 		};
 	}
 
@@ -121,7 +121,7 @@ export class CompositionAuth {
 	buildSources(): Source[] {
 		return [
 			{ id: 'local', title: 'Local' },
-			...this.refsWithManifests.map((ref) => ({
+			...this.#refsWithManifests.map((ref) => ({
 				id: ref.id,
 				title: ref.title,
 				url: ref.url,
@@ -136,29 +136,29 @@ export class CompositionAuth {
 			const baseUrl = source?.url ?? localOrigin;
 			const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 			const isRemote = !!source?.url;
-			const needsAuth = isRemote && this.isAuthRequiredUrl(baseUrl);
+			const needsAuth = isRemote && this.#isAuthRequiredUrl(baseUrl);
 			const tokenForRequest = needsAuth ? token : null;
 
 			// New token = user re-authenticated, invalidate all cached manifests
-			if (token && token !== this.lastToken) {
-				this.manifestCache.clear();
-				this.lastToken = token;
+			if (token && token !== this.#lastToken) {
+				this.#manifestCache.clear();
+				this.#lastToken = token;
 			}
 
 			if (isRemote) {
-				const cached = this.manifestCache.get(manifestUrl);
+				const cached = this.#manifestCache.get(manifestUrl);
 				if (cached) {
 					const age = Date.now() - cached.timestamp;
 					if (age > MANIFEST_CACHE_TTL) {
 						// Expired — discard cache, fetch fresh below
-						this.manifestCache.delete(manifestUrl);
+						this.#manifestCache.delete(manifestUrl);
 					} else {
 						// Fresh — serve cached, revalidate in background
 						if (!cached.revalidating) {
 							cached.revalidating = true;
-							void this.fetchManifest(manifestUrl, tokenForRequest)
+							void this.#fetchManifest(manifestUrl, tokenForRequest)
 								.then((text) =>
-									this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
+									this.#manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
 								)
 								.catch(() => {
 									cached.revalidating = false;
@@ -169,10 +169,10 @@ export class CompositionAuth {
 				}
 			}
 
-			const text = await this.fetchManifest(manifestUrl, tokenForRequest);
+			const text = await this.#fetchManifest(manifestUrl, tokenForRequest);
 
 			if (isRemote) {
-				this.manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
+				this.#manifestCache.set(manifestUrl, { text, timestamp: Date.now() });
 			}
 
 			return text;
@@ -183,7 +183,7 @@ export class CompositionAuth {
 	 * Fetch a manifest with optional auth token.
 	 * If the response is 200 but not a valid manifest, checks /mcp for auth issues.
 	 */
-	private async fetchManifest(url: string, token: string | null): Promise<string> {
+	async #fetchManifest(url: string, token: string | null): Promise<string> {
 		const headers: HeadersInit = { Accept: 'application/json' };
 		if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -205,7 +205,7 @@ export class CompositionAuth {
 		}
 
 		// Invalid manifest — check /mcp to see if it's an auth issue
-		if (await this.isMcpUnauthorized(new URL(url).origin)) {
+		if (await this.#isMcpUnauthorized(new URL(url).origin)) {
 			throw new Error(`Authentication failed for ${url}. Your token may be invalid or expired.`);
 		}
 
@@ -219,13 +219,13 @@ export class CompositionAuth {
 	 * Returns 'public' if the ref has a valid manifest without auth,
 	 * 'no-manifest' if no manifest is available, or an AuthRequirement if auth is needed.
 	 */
-	private async checkRef(refUrl: string): Promise<'public' | 'no-manifest' | AuthRequirement> {
+	async #checkRef(refUrl: string): Promise<'public' | 'no-manifest' | AuthRequirement> {
 		const response = await fetch(`${refUrl}/manifests/components.json`, {
 			headers: { Accept: 'application/json' },
 		});
 
 		// 401 with WWW-Authenticate = auth needed
-		const authReq = await this.parseAuthFromResponse(response);
+		const authReq = await this.#parseAuthFromResponse(response);
 		if (authReq) return authReq;
 
 		// 200 with valid manifest = public, has manifest
@@ -237,7 +237,7 @@ export class CompositionAuth {
 		}
 
 		// Unexpected response — fall back to /mcp
-		const mcpAuth = await this.checkMcpAuth(refUrl);
+		const mcpAuth = await this.#checkMcpAuth(refUrl);
 		if (mcpAuth) return mcpAuth;
 
 		// No manifest and no auth — this ref doesn't have manifests
@@ -245,17 +245,17 @@ export class CompositionAuth {
 	}
 
 	/** Check /mcp endpoint for 401 auth requirement. */
-	private async checkMcpAuth(refUrl: string): Promise<AuthRequirement | null> {
+	async #checkMcpAuth(refUrl: string): Promise<AuthRequirement | null> {
 		const response = await fetch(`${refUrl}/mcp`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
 		});
-		return this.parseAuthFromResponse(response);
+		return this.#parseAuthFromResponse(response);
 	}
 
 	/** Quick check: does the remote /mcp return 401? */
-	private async isMcpUnauthorized(origin: string): Promise<boolean> {
+	async #isMcpUnauthorized(origin: string): Promise<boolean> {
 		try {
 			const response = await fetch(`${origin}/mcp`, {
 				method: 'POST',
@@ -269,7 +269,7 @@ export class CompositionAuth {
 	}
 
 	/** Extract auth requirement from a 401 response's WWW-Authenticate header. */
-	private async parseAuthFromResponse(response: Response): Promise<AuthRequirement | null> {
+	async #parseAuthFromResponse(response: Response): Promise<AuthRequirement | null> {
 		if (response.status !== 401) return null;
 		const wwwAuth = response.headers.get('WWW-Authenticate');
 		if (!wwwAuth) return null;
