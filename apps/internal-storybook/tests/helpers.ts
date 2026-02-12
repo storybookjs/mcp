@@ -13,7 +13,8 @@ export function createMCPRequestBody(method: string, params: any = {}, id: numbe
 
 export async function parseMCPResponse(response: Response) {
 	const text = await response.text();
-	const jsonText = text.replace(/^data: /, '').trim();
+	const dataLine = text.split('\n').find((line) => line.startsWith('data: '));
+	const jsonText = dataLine!.replace(/^data: /, '').trim();
 	return JSON.parse(jsonText);
 }
 

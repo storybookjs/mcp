@@ -191,7 +191,7 @@ describe('MCP Composition E2E Tests', () => {
 				{
 				  "content": [
 				    {
-				      "text": "storybookId is required. Available sources: local, storybook-ui. Use the list-all-documentation tool to see available sources.",
+				      "text": "Invalid arguments for tool get-documentation: [{"kind":"schema","type":"object","expected":"\\"storybookId\\"","received":"undefined","message":"Invalid key: Expected \\"storybookId\\" but received undefined","path":[{"type":"object","origin":"key","input":{"id":"example-button"},"key":"storybookId"}]}]",
 				      "type": "text",
 				    },
 				  ],
