@@ -11,6 +11,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EVAL_ROOT = path.resolve(__dirname, '..', '..');
 const WORKER_PATH = path.join(EVAL_ROOT, 'lib', 'eval', 'run-task-worker.ts');
 const LOG_DIR = path.join(EVAL_ROOT, 'eval-logs');
+// Delay between starting each parallel worker to avoid concurrent dependency installation conflicts
+const STAGGER_DELAY_MS = 3000;
 
 function getLogName(runId: string, variantId: string, iteration: number): string {
 	return `${runId}--${variantId}--${iteration}`;
@@ -74,9 +76,12 @@ export async function runEval(args: EvalArgs): Promise<{ allFailed: boolean }> {
 		render();
 	}
 
-	// Concurrency based on CPU cores (leave one core free if possible)
+	// Concurrency: use explicit --parallelism if provided, otherwise auto-detect from CPU cores
 	const cpuCount = Math.max(1, os.cpus().length);
-	const maxParallel = Math.max(1, Math.min(runRequests.length, cpuCount - 1 || 1));
+	const autoParallel = Math.max(1, Math.min(runRequests.length, cpuCount - 1 || 1));
+	const maxParallel = args.parallelism
+		? Math.max(1, Math.min(runRequests.length, args.parallelism))
+		: autoParallel;
 
 	const refreshInterval = runRequests.length > 1 ? setInterval(render, 1000) : undefined;
 
@@ -85,9 +90,10 @@ export async function runEval(args: EvalArgs): Promise<{ allFailed: boolean }> {
 
 	const worker = async (): Promise<void> => {
 		while (cursor < runRequests.length) {
+			const staggerIndex = cursor;
 			const req = runRequests[cursor]!;
 			cursor += 1;
-			await runSingle(args, req, progress, render, results, failures);
+			await runSingle(args, req, progress, render, results, failures, staggerIndex);
 		}
 	};
 
@@ -212,7 +218,13 @@ async function runSingle(
 	onUpdate: () => void,
 	results: RunResult[],
 	failures: FailedRun[],
+	staggerIndex: number,
 ): Promise<void> {
+	// Stagger iteration starts by 5 seconds to avoid concurrent dependency installation failures
+	if (staggerIndex > 0) {
+		await new Promise((resolve) => setTimeout(resolve, staggerIndex * STAGGER_DELAY_MS));
+	}
+
 	const current = progress.get(request.id)!;
 	current.status = 'running';
 	current.startedAt = Date.now();
