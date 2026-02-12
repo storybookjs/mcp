@@ -132,6 +132,9 @@ describe('MCP Endpoint E2E Tests', () => {
 				                "additionalProperties": {},
 				                "description": "Optional Storybook globals to set for the story preview. Globals are used for things like theme, locale, viewport, and other cross-cutting concerns.
 				Common globals include 'theme' (e.g., 'dark', 'light'), 'locale' (e.g., 'en', 'fr'), and 'backgrounds' (e.g., { value: '#000' }).",
+				                "propertyNames": {
+				                  "type": "string",
+				                },
 				                "type": "object",
 				              },
 				              "props": {
@@ -139,6 +142,9 @@ describe('MCP Endpoint E2E Tests', () => {
 				                "description": "Optional custom props to pass to the story for rendering. Use this when you don't want to render the default story,
 				but you want to customize some args or other props.
 				You can look up the component's documentation using the get-storybook-story-instructions tool to see what props are available.",
+				                "propertyNames": {
+				                  "type": "string",
+				                },
 				                "type": "object",
 				              },
 				            },
@@ -204,6 +210,9 @@ describe('MCP Endpoint E2E Tests', () => {
 				                        "additionalProperties": {},
 				                        "description": "Optional Storybook globals to set for the story preview. Globals are used for things like theme, locale, viewport, and other cross-cutting concerns.
 				Common globals include 'theme' (e.g., 'dark', 'light'), 'locale' (e.g., 'en', 'fr'), and 'backgrounds' (e.g., { value: '#000' }).",
+				                        "propertyNames": {
+				                          "type": "string",
+				                        },
 				                        "type": "object",
 				                      },
 				                      "props": {
@@ -211,6 +220,9 @@ describe('MCP Endpoint E2E Tests', () => {
 				                        "description": "Optional custom props to pass to the story for rendering. Use this when you don't want to render the default story,
 				but you want to customize some args or other props.
 				You can look up the component's documentation using the get-storybook-story-instructions tool to see what props are available.",
+				                        "propertyNames": {
+				                          "type": "string",
+				                        },
 				                        "type": "object",
 				                      },
 				                    },

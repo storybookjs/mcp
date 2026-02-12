@@ -66,7 +66,9 @@ eval/
 │   └── {number}-{name}/
 │       ├── prompt.md                # Main prompt
 │       ├── hooks.ts                 # Optional lifecycle hooks
-│       ├── components.json          # Optional component manifest
+│       ├── manifests/               # Optional manifest files directory
+│       │   ├── components.json      # Component manifest for @storybook/mcp
+│       │   └── docs.json            # Optional docs manifest for @storybook/mcp
 │       ├── mcp.config.json          # Optional MCP server config
 │       ├── *.md                     # Optional additional context
 │       ├── pre-grade/               # Optional files to copy before grading
@@ -164,7 +166,8 @@ node advanced-eval.ts --help
    ```
 
 3. **Optional: Add context files:**
-   - `components.json` - Component manifest for `@storybook/mcp`
+   - `manifests/components.json` - Component manifest for `@storybook/mcp` (in a `manifests/` subdirectory)
+   - `manifests/docs.json` - Optional docs manifest for `@storybook/mcp` (in a `manifests/` subdirectory)
    - `mcp.config.json` - Custom MCP server configuration
    - `extra-prompt-*.md` - Supplementary instructions
 
@@ -678,7 +681,7 @@ When using `--context storybook-dev`, the harness:
 
 When using `--context storybook-docs`, the harness:
 
-1. Reads the manifest files from the eval directory, components.json and optionally docs.json
+1. Reads the manifest files from the task's `manifests/` subdirectory (e.g. `components.json` and optionally `docs.json`)
 2. Creates `.mcp.json` in project with stdio server config:
    ```json
    {

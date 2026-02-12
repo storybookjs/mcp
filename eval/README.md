@@ -60,12 +60,13 @@ Different agents support different models:
 
 | Model                  | Claude Code CLI | Copilot CLI |
 | ---------------------- | :-------------: | :---------: |
+| `claude-opus-4.6`      |       ✅        |     ✅      |
+| `claude-opus-4.5`      |       ❌        |     ✅      |
 | `claude-sonnet-4.5`    |       ✅        |     ✅      |
-| `claude-opus-4.5`      |       ✅        |     ✅      |
 | `claude-haiku-4.5`     |       ✅        |     ✅      |
-| `gpt-5.1-codex`        |       ❌        |     ✅      |
-| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
 | `gpt-5.2`              |       ❌        |     ✅      |
+| `gpt-5.2-codex`        |       ❌        |     ✅      |
+| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
 | `gemini-3-pro-preview` |       ❌        |     ✅      |
 
 **Example usage:**
@@ -149,7 +150,9 @@ eval/
 ├── tasks/                          # Task definitions
 │   └── 100-flight-booking-plain/
 │       ├── prompt.md               # Main prompt for the agent
-│       ├── components.json         # Optional: component manifest
+│       ├── manifests/               # Optional: manifest files directory
+│       │   ├── components.json     # Component manifest for @storybook/mcp
+│       │   └── docs.json     			# Optional docs manifest for @storybook/mcp
 │       ├── mcp.config.json         # Optional: MCP server config
 │       ├── extra-prompt-*.md       # Optional: additional context
 │       ├── hooks.ts                # Optional: lifecycle hooks
@@ -196,7 +199,7 @@ eval/
    ```
 
 3. **Optional: Add context files:**
-   - `components.json` - Component manifest for Storybook MCP
+   - `manifests/components.json` - Component manifest for Storybook MCP (in a `manifests/` subdirectory)
    - `mcp.config.json` - Custom MCP server configuration
    - `extra-prompt-*.md` - Supplementary instructions
 

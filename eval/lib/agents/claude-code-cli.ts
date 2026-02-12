@@ -15,7 +15,7 @@ import type {
  * Mapping from our standard model names to Claude CLI --model flag values.
  */
 const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
-	'claude-opus-4.5': 'Opus',
+	'claude-opus-4.6': 'Opus',
 	'claude-sonnet-4.5': 'Sonnet',
 	'claude-haiku-4.5': 'Haiku',
 };
@@ -24,7 +24,7 @@ const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
  * Mapping from standard model names to ai-tokenizer model keys.
  */
 const TOKENIZER_MODEL_MAP: Record<ClaudeModel, keyof typeof models> = {
-	'claude-opus-4.5': 'anthropic/claude-opus-4.5',
+	'claude-opus-4.6': 'anthropic/claude-opus-4.5',
 	'claude-sonnet-4.5': 'anthropic/claude-sonnet-4.5',
 	'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
 };

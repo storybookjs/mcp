@@ -24,7 +24,12 @@ interface CoverageProps {
 
 const formatPct = (value: number | null | undefined) => {
 	if (value === null || value === undefined || Number.isNaN(value)) return '–';
-	return `${value.toFixed(1)}%`;
+
+	try {
+		return `${value.toFixed(1)}%`;
+	} catch {
+		return JSON.stringify(value);
+	}
 };
 
 const thStyle: React.CSSProperties = {
