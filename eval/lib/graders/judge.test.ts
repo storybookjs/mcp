@@ -3,35 +3,46 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
-import { resolveJudgePromptFile, parseJudgeScore, renderJudgePromptTemplate } from './judge.ts';
+import { resolveJudgePromptFile, parseJudgeResult, renderJudgePromptTemplate } from './judge.ts';
 
 describe('judge parsing', () => {
 	it('parses simple JSON', () => {
-		const score = parseJudgeScore('{"score":0.5}');
-		expect(score).toBe(0.5);
+		const parsed = parseJudgeResult('{"score":0.5,"reason":"Solid rubric match."}');
+		expect(parsed).toEqual({ score: 0.5, reason: 'Solid rubric match.' });
 	});
 
 	it('clamps score to [0, 1]', () => {
-		expect(parseJudgeScore('{"score":2}')).toBe(1);
-		expect(parseJudgeScore('{"score":-1}')).toBe(0);
+		expect(parseJudgeResult('{"score":2,"reason":"High confidence."}').score).toBe(1);
+		expect(parseJudgeResult('{"score":-1,"reason":"Low confidence."}').score).toBe(0);
+	});
+
+	it('parses score and reason', () => {
+		const parsed = parseJudgeResult('{"score":0.75,"reason":"Strong evidence provided."}');
+		expect(parsed).toEqual({ score: 0.75, reason: 'Strong evidence provided.' });
 	});
 
 	it('accepts fenced JSON', () => {
-		const raw = '```json\n{"score":0.75}\n```';
-		const score = parseJudgeScore(raw);
-		expect(score).toBe(0.75);
+		const raw = '```json\n{"score":0.75,"reason":"Looks good."}\n```';
+		const parsed = parseJudgeResult(raw);
+		expect(parsed.score).toBe(0.75);
 	});
 
 	it('throws if no JSON object', () => {
 		expect(() => {
-			parseJudgeScore('score: 0.2');
+			parseJudgeResult('score: 0.2');
 		}).toThrow(/JSON object/i);
 	});
 
 	it('throws if score missing', () => {
 		expect(() => {
-			parseJudgeScore('{"ok":true}');
+			parseJudgeResult('{"ok":true,"reason":"x"}');
 		}).toThrow(/score/i);
+	});
+
+	it('throws if reason missing', () => {
+		expect(() => {
+			parseJudgeResult('{"score":0.4}');
+		}).toThrow(/reason/i);
 	});
 });
 
@@ -59,7 +70,7 @@ describe('judge prompt resolution', () => {
 });
 
 describe('judge template placeholders', () => {
-	it('renders FINAL_ASSISTANT_MESSAGE placeholder', async () => {
+	it('renders TRANSCRIPT_LAST_ASSISTANT_MESSAGE placeholder', async () => {
 		const transcript = {
 			prompt: 'p',
 			promptTokenCount: 0,
@@ -68,7 +79,7 @@ describe('judge template placeholders', () => {
 		} as any;
 
 		const { renderedPrompt, usedPlaceholders } = await renderJudgePromptTemplate(
-			'Evaluate this: {{FINAL_ASSISTANT_MESSAGE}}',
+			'Evaluate this: {{TRANSCRIPT_LAST_ASSISTANT_MESSAGE}}',
 			{
 				projectPath: '/tmp',
 				resultsPath: '/tmp',

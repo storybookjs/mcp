@@ -93,6 +93,8 @@ export type GradingSummary = {
 	judge?: {
 		/** Normalized score from 0 (worst) to 1 (best). */
 		score: number;
+		/** Reasoning text from the judge for why this score was assigned. */
+		reason: string;
 		/** Model identifier used by the judge runner. */
 		model: SupportedModel;
 		/** Agent runner used for the judge (e.g. copilot-cli). */

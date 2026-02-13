@@ -10,6 +10,8 @@ import { gradeJudge } from './judge.ts';
 import { taskLog } from '@clack/prompts';
 import { x } from 'tinyexec';
 import { runHook } from '../run-hook.ts';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 	const log = taskLog({ title: 'Grading' });
@@ -136,6 +138,13 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 	};
 
 	const judge = await judgeTask();
+	if (judge) {
+		const templateJudgeMdxPath = path.resolve(
+			path.join('templates', 'grading', 'results', 'judge.mdx'),
+		);
+		const projectJudgeMdxPath = path.join(trialArgs.projectPath, 'results', 'judge.mdx');
+		await fs.copyFile(templateJudgeMdxPath, projectJudgeMdxPath);
+	}
 
 	const formatGroup = log.group('Formatting results');
 	await x('pnpm', ['exec', 'oxfmt', trialArgs.resultsPath]);

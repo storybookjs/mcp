@@ -26,7 +26,9 @@ export async function prepareGrading({ projectPath }: TrialArgs) {
 			!source.includes('dist') &&
 			// Only include coverage docs once coverage JSON exists; otherwise Storybook will
 			// error on the static imports inside `results/coverage.mdx`.
-			!source.endsWith(path.join('results', 'coverage.mdx')),
+			!source.endsWith(path.join('results', 'coverage.mdx')) &&
+			// Only include judge docs once judge JSON exists.
+			!source.endsWith(path.join('results', 'judge.mdx')),
 	});
 
 	const pkgJsonPath = path.join(projectPath, 'package.json');

@@ -10,6 +10,29 @@ const DEFAULT_JUDGE_PROMPT_FILE = 'judge.md';
 const MAX_EVIDENCE_CHARS = 12_000;
 const PLACEHOLDER_REGEX = /{{\s*([A-Z_]+)(?::([^}]+))?\s*}}/g;
 
+type JudgeEvaluation = {
+	score: number;
+	reason: string;
+};
+
+type JudgeArtifact = {
+	agent: string;
+	model: SupportedModel;
+	score: number;
+	reason: string;
+	raw?: string;
+	prompt?: {
+		judgeInstruction: string;
+		renderedTaskPrompt: string;
+		effectivePrompt: string;
+		fullJudgePrompt: string;
+	};
+	evidence?: {
+		finalAssistantText: string;
+		lastUserToolResults?: string;
+	};
+};
+
 async function fileExists(filePath: string): Promise<boolean> {
 	return await fs
 		.access(filePath)
@@ -50,7 +73,7 @@ function extractJsonObject(text: string): string | undefined {
 	return cleaned.slice(firstBrace, lastBrace + 1);
 }
 
-export function parseJudgeScore(rawOutput: string): number {
+export function parseJudgeResult(rawOutput: string): JudgeEvaluation {
 	const jsonText = extractJsonObject(rawOutput);
 	if (!jsonText) {
 		throw new Error('Judge did not return a JSON object');
@@ -65,7 +88,16 @@ export function parseJudgeScore(rawOutput: string): number {
 	if (typeof score !== 'number' || Number.isNaN(score)) {
 		throw new Error('Judge JSON must include a numeric "score"');
 	}
-	return Math.max(0, Math.min(1, score));
+
+	const reason = (parsed as any)?.reason;
+	if (typeof reason !== 'string' || reason.trim().length === 0) {
+		throw new Error('Judge JSON must include a non-empty string "reason"');
+	}
+
+	return {
+		score: Math.max(0, Math.min(1, score)),
+		reason: reason.trim(),
+	};
 }
 
 export async function resolveJudgePromptFile(taskPath: string): Promise<string | undefined> {
@@ -195,10 +227,18 @@ ${taskPrompt.trim()}
 RESPONSE FORMAT (required):
 - Reply with ONLY a single JSON object.
 - It MUST have a numeric field "score" between 0 and 1 (inclusive).
+- It MUST have a string field "reason" explaining why this score was assigned (short or long paragraph).
 - Do not include markdown, code fences, or any other text.
 
 Example:
-{"score":0.75}`;
+{"score":0.75,"reason":"The response followed the rubric and clearly handled the semantic vs visual a11y distinction."}`;
+}
+
+async function writeJudgeArtifact(resultsPath: string, artifact: JudgeArtifact): Promise<void> {
+	await fs.writeFile(
+		path.join(resultsPath, JUDGE_RESULT_FILENAME),
+		JSON.stringify(artifact, null, 2),
+	);
 }
 
 async function runJudgeWithCopilotCli({
@@ -244,11 +284,13 @@ async function runJudgeWithClaudeCodeCli({
 
 export async function gradeJudge(
 	trialArgs: TrialArgs,
-): Promise<{ score: number; model: SupportedModel; agent: string } | undefined> {
+): Promise<{ score: number; reason: string; model: SupportedModel; agent: string } | undefined> {
 	const { resultsPath, taskPath, projectPath, agent, model } = trialArgs;
 
 	const promptFilePath = await resolveJudgePromptFile(taskPath);
-	if (!promptFilePath) return undefined;
+	if (!promptFilePath) {
+		return undefined;
+	}
 
 	// Read transcript
 	const transcriptPath = path.join(resultsPath, 'transcript.json');
@@ -293,21 +335,26 @@ export async function gradeJudge(
 		throw new Error(`Unsupported judge agent: ${String(agent)}`);
 	}
 
-	const score = parseJudgeScore(rawOutput);
+	const { score, reason } = parseJudgeResult(rawOutput);
+	const lastUserToolResults = extractLastUserToolResults(transcript);
 
-	await fs.writeFile(
-		path.join(resultsPath, JUDGE_RESULT_FILENAME),
-		JSON.stringify(
-			{
-				agent,
-				model,
-				score,
-				raw: rawOutput,
-			},
-			null,
-			2,
-		),
-	);
+	await writeJudgeArtifact(resultsPath, {
+		agent,
+		model,
+		score,
+		reason,
+		raw: rawOutput,
+		prompt: {
+			judgeInstruction: taskPrompt,
+			renderedTaskPrompt: renderedPrompt,
+			effectivePrompt,
+			fullJudgePrompt: judgePrompt,
+		},
+		evidence: {
+			finalAssistantText,
+			lastUserToolResults,
+		},
+	});
 
-	return { score, model, agent };
+	return { score, reason, model, agent };
 }
