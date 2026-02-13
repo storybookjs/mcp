@@ -174,7 +174,11 @@ export class CompositionAuth {
 							cached.lastRevalidatedAt = Date.now();
 							void this.#fetchManifest(manifestUrl, tokenForRequest)
 								.then((text) =>
-									this.#manifestCache.set(manifestUrl, { text, timestamp: Date.now() }),
+									this.#manifestCache.set(manifestUrl, {
+										text,
+										timestamp: Date.now(),
+										lastRevalidatedAt: Date.now(),
+									}),
 								)
 								.catch(() => {});
 						}

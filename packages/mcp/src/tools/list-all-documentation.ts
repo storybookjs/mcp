@@ -25,7 +25,7 @@ export async function addListAllDocumentationTool(
 				const format = ctx?.format ?? 'markdown';
 
 				// Multi-source mode: when sources are configured
-				if (ctx?.sources && ctx.sources.length > 0) {
+				if (ctx?.sources?.some((s) => s.url)) {
 					const multiSourceManifests = await getMultiSourceManifests(
 						ctx.sources,
 						ctx.request,
