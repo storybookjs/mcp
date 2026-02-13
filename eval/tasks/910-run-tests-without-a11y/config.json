@@ -1,0 +1,7 @@
+{
+	"expectedMcpTools": {
+		"run-story-tests": {
+			"expectedCalls": [{ "a11y": false }]
+		}
+	}
+}
