@@ -42,6 +42,7 @@ export type EvalArgs = {
 	designSystem?: string;
 	selectedVariants?: string[];
 	inlinePrompt?: string;
+	parallelism?: number;
 };
 
 export type RunRequest = {

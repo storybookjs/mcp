@@ -28,6 +28,7 @@ export async function collectEvalArgs(): Promise<EvalArgs> {
 	const model = needsModel ? await chooseModel() : undefined;
 
 	const iterations = await askIterations();
+	const parallelism = await askParallelism();
 	const uploadId = await askUploadId();
 	const runId = randomUUID();
 
@@ -64,6 +65,7 @@ export async function collectEvalArgs(): Promise<EvalArgs> {
 		taskName,
 		config: normalizedConfig,
 		iterations,
+		parallelism,
 		uploadId,
 		runId,
 		designSystem,
@@ -199,6 +201,23 @@ async function askIterations(): Promise<number> {
 
 	ensureNotCancelled(iterations);
 	return parseInt(iterations, 10);
+}
+
+async function askParallelism(): Promise<number | undefined> {
+	const parallelism = await p.text({
+		message: 'Max parallel workers? (leave blank to auto-detect from CPU cores)',
+		placeholder: 'auto',
+	});
+
+	ensureNotCancelled(parallelism);
+	if (!parallelism || parallelism.trim() === '') {
+		return undefined;
+	}
+	const parsed = parseInt(parallelism, 10);
+	if (Number.isNaN(parsed) || parsed < 1) {
+		return undefined;
+	}
+	return parsed;
 }
 
 async function askUploadId(): Promise<string | false> {
