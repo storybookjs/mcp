@@ -76,7 +76,7 @@ export async function runEval(args: EvalArgs): Promise<{ allFailed: boolean }> {
 		render();
 	}
 
-	// Concurrency: use explicit --parallelism if provided, otherwise auto-detect from CPU cores
+	// Concurrency: use explicit parallelism setting if provided, otherwise auto-detect from CPU cores
 	const cpuCount = Math.max(1, os.cpus().length);
 	const autoParallel = Math.max(1, Math.min(runRequests.length, cpuCount - 1 || 1));
 	const maxParallel = args.parallelism
