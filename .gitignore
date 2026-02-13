@@ -5,6 +5,8 @@ build-storybook.log
 .DS_Store
 .env
 coverage/
+e2e-coverage/
+e2e-coverage-report/
 test-report.junit.xml
 # Turborepo
 .turbo
