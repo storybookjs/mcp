@@ -1,5 +1,13 @@
 # @storybook/mcp
 
+## 0.2.2
+
+### Patch Changes
+
+- [#123](https://github.com/storybookjs/mcp/pull/123) [`b7aeb40`](https://github.com/storybookjs/mcp/commit/b7aeb40c32d831618774c13e316596e9ff840aa7) Thanks [@valentinpalkovic](https://github.com/valentinpalkovic)! - Minimize token usage by only including the 3 first stories in component documentation.
+
+  ... if there are already prop types. If there are no prop types, include all stories. Additional stories can be fetched individually using a new `get-documentation-for-story` tool.
+
 ## 0.2.1
 
 ### Patch Changes
@@ -15,6 +23,7 @@
   # Breaking Changes
 
   This change introduces a number of minor breaking changes to `@storybook/mcp`:
+
   1. The lower level tool adder functions have been renamed:
   2. `addGetComponentDocumentationTool` -> `addGetDocumentationTool`
   3. `addListAllComponentsTool` -> `addListAllDocumentationTool`
