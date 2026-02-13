@@ -49,7 +49,7 @@ Example: id="button" returns Primary, Secondary, Large stories with code like <B
 				const format = ctx?.format ?? 'markdown';
 				const { id, storybookId } = input;
 				const sources = ctx?.sources;
-				const isMultiSource = sources?.some((s) => s.url);
+				const isMultiSource = sources && sources.some((s) => s.url);
 
 				// In multi-source mode, validate and resolve the source
 				let source;
