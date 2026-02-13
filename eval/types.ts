@@ -26,6 +26,15 @@ export const CLAUDE_MODELS = [
 	'claude-haiku-4.5',
 ] as const satisfies readonly SupportedModel[];
 
+/**
+ * Mapping from our standard model names to Claude CLI --model flag values.
+ */
+export const CLAUDE_MODEL_MAP: Record<(typeof CLAUDE_MODELS)[number], string> = {
+	'claude-opus-4.6': 'Opus',
+	'claude-sonnet-4.5': 'Sonnet',
+	'claude-haiku-4.5': 'Haiku',
+};
+
 export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
 
 /**
@@ -80,6 +89,15 @@ export type GradingSummary = {
 	a11y: {
 		violations: number;
 	};
+	/** Optional LLM-judge result (configurable per task). */
+	judge?: {
+		/** Normalized score from 0 (worst) to 1 (best). */
+		score: number;
+		/** Model identifier used by the judge runner. */
+		model: SupportedModel;
+		/** Agent runner used for the judge (e.g. copilot-cli). */
+		agent: string;
+	};
 	coverage?: {
 		branches: number | null;
 		functions: number | null;
@@ -114,6 +132,10 @@ export type QualityResult = {
  * (e.g., "mcp__list_components" matches expected "list_components").
  */
 export type McpToolExpectation = {
+	/** Minimum number of calls required for this tool */
+	minCalls?: number;
+	/** Maximum number of calls allowed for this tool */
+	maxCalls?: number;
 	/**
 	 * Expected calls to this tool (array of expected input patterns).
 	 * Matching is deep-partial: only the keys present in the expected input are validated.
@@ -154,6 +176,8 @@ export type McpToolMetrics = {
 	}>;
 	/** Validation results if expectations are configured */
 	validation?: {
+		minCallsMet?: boolean;
+		maxCallsMet?: boolean;
 		inputMatch?: boolean;
 		outputTokensWithinLimit?: boolean;
 	};
