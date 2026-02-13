@@ -98,7 +98,10 @@ export const mcpServerHandler = async ({
 }: McpServerHandlerParams) => {
 	// Initialize MCP server and transport on first request, with concurrency safety
 	if (!initialize) {
-		initialize = initializeMCPServer(options, sources?.some((s) => s.url));
+		initialize = initializeMCPServer(
+			options,
+			sources?.some((s) => s.url),
+		);
 	}
 	const server = await initialize;
 
