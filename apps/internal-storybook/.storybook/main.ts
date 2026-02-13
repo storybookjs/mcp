@@ -12,13 +12,16 @@ const config = defineMain({
 	],
 	addons: [
 		'@storybook/addon-docs',
+		'@storybook/addon-a11y',
+		'@storybook/addon-vitest',
 		'@storybook/addon-themes',
 		{
 			name: '@storybook/addon-mcp',
 			options: {
 				// toolsets: {
-				// 	dev: false,
-				// 	docs: false,
+				// 	dev: true,
+				// 	docs: true,
+				// 	test: true,
 				// },
 			},
 		},

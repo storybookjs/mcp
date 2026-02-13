@@ -200,6 +200,9 @@ function buildRerunCommand(args: CollectedArgs): string {
 
 	if (args.systemPrompts.length > 0) {
 		parts.push(`--system-prompts=${args.systemPrompts.join(',')}`);
+	} else {
+		// Preserve "no system prompts" on rerun and avoid interactive selection.
+		parts.push('--no-system-prompts');
 	}
 
 	if (args.uploadId) {
@@ -282,6 +285,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				'System prompt files to merge into Claude.md (comma-separated, e.g., system.base.md,system.strict.md)',
 			).env('SYSTEM_PROMPTS'),
 		)
+		.addOption(new Option('--no-system-prompts', 'Do not include any system prompts'))
 		.addOption(
 			new Option('-u, --upload-id <id>', 'Upload results to Google Sheet with this ID')
 				.env('UPLOAD_ID')
@@ -615,9 +619,17 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				return contexts;
 			},
 			systemPrompts: async () => {
-				// If system prompts were provided via CLI, use them
-				if (opts.systemPrompts) {
-					return opts.systemPrompts.split(',').map((s: string) => s.trim());
+				// If system prompts were explicitly disabled via CLI, return none.
+				if (opts.systemPrompts === false) {
+					return [];
+				}
+
+				// If system prompts were provided via CLI/env, use them.
+				if (typeof opts.systemPrompts === 'string') {
+					return opts.systemPrompts
+						.trim()
+						.split(',')
+						.map((s: string) => s.trim());
 				}
 
 				// Discover system.*.md files if not already discovered

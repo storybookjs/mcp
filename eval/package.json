@@ -8,6 +8,7 @@
 		"clean-trials": "node clean-trials.ts",
 		"advanced-eval": "node advanced-eval.ts",
 		"eval": "node eval.ts",
+		"storybook:trial": "node start-trial-storybook.ts",
 		"storybook": "storybook dev --port 6007 --no-open",
 		"typecheck": "tsc"
 	},
