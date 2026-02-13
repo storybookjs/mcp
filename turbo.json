@@ -40,7 +40,7 @@
 		},
 		"//#test:ci": {
 			"dependsOn": ["^build"],
-			"outputs": ["coverage/**", "test-report.junit.xml"]
+			"outputs": ["coverage/**", "e2e-coverage/**", "test-report.junit.xml"]
 		},
 		"typecheck": {},
 		"//#typecheck": {},
