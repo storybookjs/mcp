@@ -25,7 +25,7 @@
 		"storybook": "turbo watch storybook --filter=@storybook/mcp-internal-storybook",
 		"test": "vitest",
 		"test:ci": "NODE_V8_COVERAGE=./e2e-coverage vitest run --coverage --reporter=default --reporter=github-actions --reporter=junit --outputFile=test-report.junit.xml",
-		"test:ci:report-e2e-coverage": "c8 report --src ./packages --all -r lcov --temp-directory ./e2e-coverage -o ./e2e-coverage-report",
+		"test:ci:report-e2e-coverage": "c8 report --src ./packages --all --exclude-after-remap -n '**/src/**/*.{ts,tsx}' -r lcov --temp-directory ./e2e-coverage -o ./e2e-coverage-report",
 		"test:run": "vitest run",
 		"turbo": "turbo",
 		"turbo:test": "turbo run test",
