@@ -1,1 +1,1 @@
-Run story tests for the Button component stories using the Storybook MCP testing tool.
+Run tests for the Button component and fix any issues.
