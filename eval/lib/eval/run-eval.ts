@@ -12,7 +12,7 @@ const EVAL_ROOT = path.resolve(__dirname, '..', '..');
 const WORKER_PATH = path.join(EVAL_ROOT, 'lib', 'eval', 'run-task-worker.ts');
 const LOG_DIR = path.join(EVAL_ROOT, 'eval-logs');
 // Delay between starting each parallel worker to avoid concurrent dependency installation conflicts
-const STAGGER_DELAY_MS = 3000;
+const STAGGER_DELAY_MS = 5000;
 
 function getLogName(runId: string, variantId: string, iteration: number): string {
 	return `${runId}--${variantId}--${iteration}`;
@@ -87,13 +87,20 @@ export async function runEval(args: EvalArgs): Promise<{ allFailed: boolean }> {
 
 	const workerCount = maxParallel;
 	let cursor = 0;
+	let nextAllowedStartAt = 0;
+
+	const reserveStartSlot = (): number => {
+		const now = Date.now();
+		const scheduledStartAt = Math.max(now, nextAllowedStartAt);
+		nextAllowedStartAt = scheduledStartAt + STAGGER_DELAY_MS;
+		return scheduledStartAt;
+	};
 
 	const worker = async (): Promise<void> => {
 		while (cursor < runRequests.length) {
-			const staggerIndex = cursor;
 			const req = runRequests[cursor]!;
 			cursor += 1;
-			await runSingle(args, req, progress, render, results, failures, staggerIndex);
+			await runSingle(args, req, progress, render, results, failures, reserveStartSlot);
 		}
 	};
 
@@ -218,11 +225,12 @@ async function runSingle(
 	onUpdate: () => void,
 	results: RunResult[],
 	failures: FailedRun[],
-	staggerIndex: number,
+	reserveStartSlot: () => number,
 ): Promise<void> {
-	// Stagger iteration starts by 5 seconds to avoid concurrent dependency installation failures
-	if (staggerIndex > 0) {
-		await new Promise((resolve) => setTimeout(resolve, staggerIndex * STAGGER_DELAY_MS));
+	const scheduledStartAt = reserveStartSlot();
+	const waitMs = scheduledStartAt - Date.now();
+	if (waitMs > 0) {
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
 	}
 
 	const current = progress.get(request.id)!;
