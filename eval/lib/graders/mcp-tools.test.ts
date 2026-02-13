@@ -94,3 +94,71 @@ describe('mcp-tools grader expectedCalls matching', () => {
 		expect(runTool?.validation?.inputMatch).toBe(false);
 	});
 });
+
+describe('mcp-tools grader call count matching', () => {
+	it('passes when minCalls is satisfied', () => {
+		const messages = [
+			...createTranscriptWithMcpToolUse({
+				toolName: 'mcp__storybook-dev-mcp__run-story-tests',
+				input: { a11y: false },
+			}),
+			...createTranscriptWithMcpToolUse({
+				toolName: 'mcp__storybook-dev-mcp__run-story-tests',
+				input: { a11y: false },
+			}),
+		] as any;
+
+		const summary = extractMcpToolsSummary(messages, {
+			'run-story-tests': {
+				minCalls: 2,
+			},
+		});
+
+		expect(summary.allExpectationsPassed).toBe(true);
+		const runTool = summary.tools.find((t) => t.name.includes('run-story-tests'));
+		expect(runTool?.callCount).toBe(2);
+		expect(runTool?.validation?.minCallsMet).toBe(true);
+	});
+
+	it('fails when minCalls is not satisfied', () => {
+		const messages = createTranscriptWithMcpToolUse({
+			toolName: 'mcp__storybook-dev-mcp__run-story-tests',
+			input: { a11y: false },
+		});
+
+		const summary = extractMcpToolsSummary(messages, {
+			'run-story-tests': {
+				minCalls: 2,
+			},
+		});
+
+		expect(summary.allExpectationsPassed).toBe(false);
+		const runTool = summary.tools.find((t) => t.name.includes('run-story-tests'));
+		expect(runTool?.callCount).toBe(1);
+		expect(runTool?.validation?.minCallsMet).toBe(false);
+	});
+
+	it('fails when maxCalls is exceeded', () => {
+		const messages = [
+			...createTranscriptWithMcpToolUse({
+				toolName: 'mcp__storybook-dev-mcp__run-story-tests',
+				input: { a11y: false },
+			}),
+			...createTranscriptWithMcpToolUse({
+				toolName: 'mcp__storybook-dev-mcp__run-story-tests',
+				input: { a11y: false },
+			}),
+		] as any;
+
+		const summary = extractMcpToolsSummary(messages, {
+			'run-story-tests': {
+				maxCalls: 1,
+			},
+		});
+
+		expect(summary.allExpectationsPassed).toBe(false);
+		const runTool = summary.tools.find((t) => t.name.includes('run-story-tests'));
+		expect(runTool?.callCount).toBe(2);
+		expect(runTool?.validation?.maxCallsMet).toBe(false);
+	});
+});

@@ -17,6 +17,8 @@ export {
 	fromTestPassRate,
 } from './error-counts.ts';
 
+export { fromJudgeScore } from './judge.ts';
+
 /**
  * Combine multiple quality calculators with weights.
  * Returns a weighted average score and concatenates descriptions.

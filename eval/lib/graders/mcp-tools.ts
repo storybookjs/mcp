@@ -162,6 +162,13 @@ export function aggregateMcpToolMetrics(
 				if (shortName.includes(expectedName) || metrics.fullName.includes(expectedName)) {
 					metrics.validation = {};
 
+					if (expectation.minCalls !== undefined) {
+						metrics.validation.minCallsMet = metrics.callCount >= expectation.minCalls;
+					}
+					if (expectation.maxCalls !== undefined) {
+						metrics.validation.maxCallsMet = metrics.callCount <= expectation.maxCalls;
+					}
+
 					// Check expected calls if configured (all must be present)
 					if (expectation.expectedCalls !== undefined && expectation.expectedCalls.length > 0) {
 						// Check if each expected call pattern matches at least one invocation.
@@ -227,6 +234,8 @@ export function extractMcpToolsSummary(
 
 			if (matchingTool.validation) {
 				if (
+					matchingTool.validation.minCallsMet === false ||
+					matchingTool.validation.maxCallsMet === false ||
 					matchingTool.validation.inputMatch === false ||
 					matchingTool.validation.outputTokensWithinLimit === false
 				) {

@@ -6,6 +6,7 @@ import { checkTypes } from './typecheck.ts';
 import { build } from './build.ts';
 import { computeComponentUsageScore } from './component-usage.ts';
 import { gradeMcpTools } from './mcp-tools.ts';
+import { gradeJudge } from './judge.ts';
 import { taskLog } from '@clack/prompts';
 import { x } from 'tinyexec';
 import { runHook } from '../run-hook.ts';
@@ -117,6 +118,25 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 			mcpToolsTask(),
 		]);
 
+	const judgeTask = async () => {
+		const group = log.group('Judging response');
+		try {
+			const result = await gradeJudge(trialArgs);
+			if (!result) {
+				group.success('Skipped (no judge.md)');
+				return undefined;
+			}
+			group.success(`Score: ${(result.score * 100).toFixed(0)}%`);
+			return result;
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			group.error(`Judge failed: ${message}`);
+			return undefined;
+		}
+	};
+
+	const judge = await judgeTask();
+
 	const formatGroup = log.group('Formatting results');
 	await x('pnpm', ['exec', 'oxfmt', trialArgs.resultsPath]);
 	formatGroup.success('Results formatted');
@@ -127,6 +147,7 @@ export async function grade(trialArgs: TrialArgs): Promise<GradingSummary> {
 		lintErrors,
 		componentUsage,
 		mcpTools,
+		judge,
 		...testResults,
 	};
 
