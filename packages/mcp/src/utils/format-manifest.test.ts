@@ -15,20 +15,20 @@ describe('formatComponentManifest', () => {
 	};
 
 	it('should use markdown formatter by default', () => {
-		const result = formatComponentManifest(manifest);
-		expect(result).toContain('# TestComponent');
-	});
+		expect(formatComponentManifest(manifest)).toMatchInlineSnapshot(`
+			"# TestComponent
 
-	it('should use markdown formatter when format is "markdown"', () => {
-		const result = formatComponentManifest(manifest, 'markdown');
-		expect(result).toContain('# TestComponent');
+			ID: test-component"
+		`);
 	});
 
 	it('should use xml formatter when format is "xml"', () => {
-		const result = formatComponentManifest(manifest, 'xml');
-		expect(result).toContain('<component>');
-		expect(result).toContain('<name>TestComponent</name>');
-		expect(result).toContain('<id>test-component</id>');
+		expect(formatComponentManifest(manifest, 'xml')).toMatchInlineSnapshot(`
+			"<component>
+			<id>test-component</id>
+			<name>TestComponent</name>
+			</component>"
+		`);
 	});
 });
 
@@ -47,22 +47,22 @@ describe('formatManifestsToLists', () => {
 	};
 
 	it('should use markdown formatter by default', () => {
-		const result = formatManifestsToLists(manifests);
-		expect(result).toContain('# Components');
-		expect(result).toContain('- Button (button)');
-	});
+		expect(formatManifestsToLists(manifests)).toMatchInlineSnapshot(`
+			"# Components
 
-	it('should use markdown formatter when format is "markdown"', () => {
-		const result = formatManifestsToLists(manifests, 'markdown');
-		expect(result).toContain('# Components');
-		expect(result).toContain('- Button (button)');
+			- Button (button)"
+		`);
 	});
 
 	it('should use xml formatter when format is "xml"', () => {
-		const result = formatManifestsToLists(manifests, 'xml');
-		expect(result).toContain('<components>');
-		expect(result).toContain('<name>Button</name>');
-		expect(result).toContain('<id>button</id>');
+		expect(formatManifestsToLists(manifests, 'xml')).toMatchInlineSnapshot(`
+			"<components>
+			<component>
+			<id>button</id>
+			<name>Button</name>
+			</component>
+			</components>"
+		`);
 	});
 });
 
@@ -101,18 +101,29 @@ describe('formatMultiSourceManifestsToLists', () => {
 	];
 
 	it('should format multi-source manifests as markdown', () => {
-		const result = formatMultiSourceManifestsToLists(sources, 'markdown');
-		expect(result).toContain('# Local');
-		expect(result).toContain('Button (button)');
-		expect(result).toContain('## Docs');
-		expect(result).toContain('Getting Started Guide');
-		expect(result).toContain('# Remote');
-		expect(result).toContain('Badge (badge)');
+		expect(formatMultiSourceManifestsToLists(sources, 'markdown')).toMatchInlineSnapshot(`
+			"# Local
+			id: local
+
+			## Components
+
+			- Button (button): A button
+
+			## Docs
+
+			- Getting Started Guide (getting-started): Welcome to the docs
+
+			# Remote
+			id: remote
+
+			## Components
+
+			- Badge (badge): A badge"
+		`);
 	});
 
 	it('should format multi-source manifests as xml', () => {
-		const result = formatMultiSourceManifestsToLists(sources, 'xml');
-		expect(result).toMatchInlineSnapshot(`
+		expect(formatMultiSourceManifestsToLists(sources, 'xml')).toMatchInlineSnapshot(`
 			"<sources>
 			<source id="local" title="Local">
 			<components>
@@ -157,8 +168,13 @@ describe('formatMultiSourceManifestsToLists', () => {
 				error: 'Failed to fetch: 401 Unauthorized',
 			},
 		];
-		const result = formatMultiSourceManifestsToLists(withError, 'xml');
-		expect(result).toContain('<error>Failed to fetch: 401 Unauthorized</error>');
+		expect(formatMultiSourceManifestsToLists(withError, 'xml')).toMatchInlineSnapshot(`
+			"<sources>
+			<source id="broken" title="Broken">
+			<error>Failed to fetch: 401 Unauthorized</error>
+			</source>
+			</sources>"
+		`);
 	});
 });
 
@@ -178,13 +194,19 @@ describe('formatStoryDocumentation', () => {
 	};
 
 	it('should format story as xml', () => {
-		const result = formatStoryDocumentation(manifest, 'Primary', 'xml');
-		expect(result).toContain('<story_documentation>');
-		expect(result).toContain('<component_name>Button</component_name>');
-		expect(result).toContain('<story_name>Primary</story_name>');
-		expect(result).toContain('<story_description>');
-		expect(result).toContain('The primary variant');
-		expect(result).toContain('import { Button } from "@my-lib/ui";');
-		expect(result).toContain('<Button variant="primary" />');
+		expect(formatStoryDocumentation(manifest, 'Primary', 'xml')).toMatchInlineSnapshot(`
+			"<story_documentation>
+			<component_name>Button</component_name>
+			<story_name>Primary</story_name>
+			<story_description>
+			The primary variant
+			</story_description>
+			<story_code>
+			import { Button } from "@my-lib/ui";
+
+			const Primary = () => <Button variant="primary" />;
+			</story_code>
+			</story_documentation>"
+		`);
 	});
 });
