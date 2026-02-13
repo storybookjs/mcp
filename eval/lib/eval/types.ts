@@ -7,6 +7,7 @@ export type AgentName = keyof typeof agents;
 export type Variant = {
 	id: string;
 	label: string;
+	taskName?: string;
 	context: Context;
 	agent: AgentName;
 	model: SupportedModel;
@@ -25,6 +26,7 @@ export type VariantInput = Omit<Variant, 'agent' | 'model'> & {
 export type VariantConfig = {
 	name: string;
 	description?: string;
+	internal?: boolean;
 	variants: Variant[];
 };
 
@@ -34,7 +36,7 @@ export type VariantConfigInput = Omit<VariantConfig, 'variants'> & {
 };
 
 export type EvalArgs = {
-	taskName: string;
+	taskName?: string;
 	config: VariantConfig;
 	iterations: number;
 	uploadId: string | false;
@@ -46,6 +48,7 @@ export type EvalArgs = {
 
 export type RunRequest = {
 	id: string;
+	taskName: string;
 	variantId: string;
 	variantLabel: string;
 	iteration: number;

@@ -16,11 +16,26 @@ type LoadedConfig = {
 	config: VariantConfigInput;
 };
 
+type EvalCliArgs = {
+	includeInternal: boolean;
+};
+
 export async function collectEvalArgs(): Promise<EvalArgs> {
+	const cliArgs = parseEvalCliArgs(process.argv.slice(2));
 	const configs = await loadVariantConfigs();
-	const designSystem = await chooseDesignSystem();
-	const taskName = await chooseTaskName(designSystem);
-	const config = await chooseConfig(configs);
+	const config = await chooseConfig(configs, cliArgs.includeInternal);
+
+	const hasVariantTaskNames = config.variants.some((variant) => Boolean(variant.taskName));
+	const allVariantsHaveTaskNames = config.variants.every((variant) => Boolean(variant.taskName));
+
+	if (hasVariantTaskNames && !allVariantsHaveTaskNames) {
+		throw new Error(
+			`Config "${config.name}" mixes variants with and without taskName. Either all variants must set taskName or none should.`,
+		);
+	}
+
+	const designSystem = allVariantsHaveTaskNames ? undefined : await chooseDesignSystem();
+	const taskName = allVariantsHaveTaskNames ? undefined : await chooseTaskName(designSystem!);
 	const selectedVariants = await chooseVariants(config.variants);
 
 	// Only prompt for model if at least one variant is missing it
@@ -69,6 +84,25 @@ export async function collectEvalArgs(): Promise<EvalArgs> {
 		designSystem,
 		selectedVariants,
 	};
+}
+
+function parseEvalCliArgs(args: string[]): EvalCliArgs {
+	let includeInternal = false;
+
+	for (let index = 0; index < args.length; index += 1) {
+		const arg = args[index]!;
+		if (arg === '--internal') {
+			includeInternal = true;
+			continue;
+		}
+
+		if (arg === '--no-internal') {
+			includeInternal = false;
+			continue;
+		}
+	}
+
+	return { includeInternal };
 }
 
 function ensureNotCancelled<T>(value: T): asserts value is Exclude<T, symbol> {
@@ -157,14 +191,27 @@ async function chooseTaskName(designSystem: string): Promise<string> {
 	return String(taskName);
 }
 
-async function chooseConfig(configs: LoadedConfig[]): Promise<VariantConfigInput> {
-	if (configs.length === 1) {
-		return configs[0]!.config;
+async function chooseConfig(
+	configs: LoadedConfig[],
+	includeInternal: boolean,
+): Promise<VariantConfigInput> {
+	const selectableConfigs = includeInternal
+		? configs
+		: configs.filter((loaded) => !loaded.config.internal);
+
+	if (selectableConfigs.length === 0) {
+		throw new Error(
+			'No variant config files available for selection. Re-run with --internal to include internal configs.',
+		);
+	}
+
+	if (selectableConfigs.length === 1) {
+		return selectableConfigs[0]!.config;
 	}
 
 	const selected = await p.select({
 		message: 'Select an eval configuration',
-		options: configs.map((c) => ({
+		options: selectableConfigs.map((c) => ({
 			value: c.filename,
 			label: c.config.name,
 			hint: c.config.description,
@@ -172,7 +219,7 @@ async function chooseConfig(configs: LoadedConfig[]): Promise<VariantConfigInput
 	});
 
 	ensureNotCancelled(selected);
-	const found = configs.find((c) => c.filename === selected);
+	const found = selectableConfigs.find((c) => c.filename === selected);
 	if (!found) {
 		throw new Error(`Variant config not found: ${selected}`);
 	}
