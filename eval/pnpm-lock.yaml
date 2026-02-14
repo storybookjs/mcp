@@ -7,14 +7,14 @@ settings:
 catalogs:
   default:
     '@storybook/addon-a11y':
-      specifier: 10.3.0-alpha.4
-      version: 10.3.0-alpha.4
+      specifier: 10.3.0-alpha.5
+      version: 10.3.0-alpha.5
     '@storybook/react-vite':
-      specifier: 10.3.0-alpha.4
-      version: 10.3.0-alpha.4
+      specifier: 10.3.0-alpha.5
+      version: 10.3.0-alpha.5
     storybook:
-      specifier: 10.3.0-alpha.4
-      version: 10.3.0-alpha.4
+      specifier: 10.3.0-alpha.5
+      version: 10.3.0-alpha.5
     valibot:
       specifier: 1.2.0
       version: 1.2.0
@@ -46,13 +46,13 @@ importers:
         version: 1.1.11(@types/react@18.3.28)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@storybook/addon-a11y':
         specifier: 'catalog:'
-        version: 10.3.0-alpha.4(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.3.0-alpha.5(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@storybook/mcp':
         specifier: workspace:*
         version: link:../packages/mcp
       '@storybook/react-vite':
         specifier: 'catalog:'
-        version: 10.3.0-alpha.4(esbuild@0.27.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.57.1)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)(vite@7.3.1(@types/node@24.10.12))
+        version: 10.3.0-alpha.5(esbuild@0.27.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.57.1)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)(vite@7.3.1(@types/node@24.10.12))
       '@tsconfig/node-ts':
         specifier: ^23.6.1
         version: 23.6.3
@@ -124,10 +124,10 @@ importers:
         version: 5.83.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       storybook:
         specifier: 'catalog:'
-        version: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       storybook-addon-test-codegen:
         specifier: ^3.0.0
-        version: 3.0.1(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 3.0.1(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       tinyexec:
         specifier: ^1.0.1
         version: 1.0.2
@@ -515,56 +515,66 @@ packages:
     resolution: {integrity: sha512-9B+taZ8DlyyqzZQnoeIvDVR/2F4EbMepXMc/NdVbkzsJbzkUjhXv/70GQJ7tdLA4YJgNP25zukcxpX2/SueNrA==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@img/sharp-libvips-linux-arm@1.0.5':
     resolution: {integrity: sha512-gvcC4ACAOPRNATg/ov8/MnbxFDJqf/pDePbBnuBDcjsI8PssmjoKMAz4LtLaVi+OnSb5FK/yIOamqDwGmXW32g==}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@img/sharp-libvips-linux-x64@1.0.4':
     resolution: {integrity: sha512-MmWmQ3iPFZr0Iev+BAgVMb3ZyC4KeFc3jFxnNbEPas60e1cIfevbtuyf9nDGIzOaW9PdnDciJm+wFFaTlj5xYw==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@img/sharp-libvips-linuxmusl-arm64@1.0.4':
     resolution: {integrity: sha512-9Ti+BbTYDcsbp4wfYib8Ctm1ilkugkA/uscUn6UXK1ldpC1JjiXbLfFZtRlBhjPZ5o1NCLiDbg8fhUPKStHoTA==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@img/sharp-libvips-linuxmusl-x64@1.0.4':
     resolution: {integrity: sha512-viYN1KX9m+/hGkJtvYYp+CCLgnJXwiQB39damAO7WMdKWlIhmYTfHjwSbQeUK/20vY154mwezd9HflVFM1wVSw==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@img/sharp-linux-arm64@0.33.5':
     resolution: {integrity: sha512-JMVv+AMRyGOHtO1RFBiJy/MBsgz0x4AWrT6QoEVVTyh1E39TrCUpTRI7mx9VksGX4awWASxqCYLCV4wBZHAYxA==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@img/sharp-linux-arm@0.33.5':
     resolution: {integrity: sha512-JTS1eldqZbJxjvKaAkxhZmBqPRGmxgu+qFKSInv8moZ2AmT5Yib3EQ1c6gp493HvrvV8QgdOXdyaIBrhvFhBMQ==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@img/sharp-linux-x64@0.33.5':
     resolution: {integrity: sha512-opC+Ok5pRNAzuvq1AG0ar+1owsu842/Ab+4qvU879ippJBHvyY5n2mxF1izXqkPYlGuP/M556uh53jRLJmzTWA==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@img/sharp-linuxmusl-arm64@0.33.5':
     resolution: {integrity: sha512-XrHMZwGQGvJg2V/oRSUfSAfjfPxO+4DkiRh6p2AFjLQztWUuY/o8Mq0eMQVIY7HJ1CDQUJlxGGZRw1a5bqmd1g==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@img/sharp-linuxmusl-x64@0.33.5':
     resolution: {integrity: sha512-WT+d/cgqKkkKySYmqoZ8y3pxx7lx9vVejxW/W4DOFMYVSkErR+w7mf2u8m/y4+xHe7yY9DAXQMWQhpnMuFfScw==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@img/sharp-win32-x64@0.33.5':
     resolution: {integrity: sha512-MpY/o8/8kj+EcnxwvrP4aTJSWw/aZ7JIGR4aBeZkZw5B7/Jn+tY9/VNwtcoGmdT7GfggGIU4kygOMSbYnOrAbg==}
@@ -626,21 +636,25 @@ packages:
     resolution: {integrity: sha512-aql/LLYriX/5Ar7o5Qivnp/qMTUPNiOCr7cFLvmvzYZa3XL0H8XtbKUfIVm+9ILR0urXQzcml+L8pLe1p8sgEg==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@oxfmt/linux-arm64-musl@0.27.0':
     resolution: {integrity: sha512-6u/kNb7hubthg4u/pn3MK/GJLwPgjDvDDnjjr7TC0/OK/xztef8ToXmycxIQ9OeDNIJJf7Z0Ss/rHnKvQOWzRw==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@oxfmt/linux-x64-gnu@0.27.0':
     resolution: {integrity: sha512-EhvDfFHO1yrK/Cu75eU1U828lBsW2cV0JITOrka5AjR3PlmnQQ03Mr9ROkWkbPmzAMklXI4Q16eO+4n+7FhS1w==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@oxfmt/linux-x64-musl@0.27.0':
     resolution: {integrity: sha512-1pgjuwMT5sCekuteYZ7LkDsto7DJouaccwjozHqdWohSj2zJpFeSP2rMaC+6JJ1KD5r9HG9sWRuHZGEaoX9uOw==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@oxfmt/win32-arm64@0.27.0':
     resolution: {integrity: sha512-mmuEhXZEhAYAeyjVTWwGKIA3RSb2b/He9wrXkDJPhmqp8qISUzkVg1dQmLEt4hD+wI5rzR+6vchPt521tzuRDA==}
@@ -1391,66 +1405,79 @@ packages:
     resolution: {integrity: sha512-F8sWbhZ7tyuEfsmOxwc2giKDQzN3+kuBLPwwZGyVkLlKGdV1nvnNwYD0fKQ8+XS6hp9nY7B+ZeK01EBUE7aHaw==}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-arm-musleabihf@4.57.1':
     resolution: {integrity: sha512-rGfNUfn0GIeXtBP1wL5MnzSj98+PZe/AXaGBCRmT0ts80lU5CATYGxXukeTX39XBKsxzFpEeK+Mrp9faXOlmrw==}
     cpu: [arm]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-arm64-gnu@4.57.1':
     resolution: {integrity: sha512-MMtej3YHWeg/0klK2Qodf3yrNzz6CGjo2UntLvk2RSPlhzgLvYEB3frRvbEF2wRKh1Z2fDIg9KRPe1fawv7C+g==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-arm64-musl@4.57.1':
     resolution: {integrity: sha512-1a/qhaaOXhqXGpMFMET9VqwZakkljWHLmZOX48R0I/YLbhdxr1m4gtG1Hq7++VhVUmf+L3sTAf9op4JlhQ5u1Q==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-loong64-gnu@4.57.1':
     resolution: {integrity: sha512-QWO6RQTZ/cqYtJMtxhkRkidoNGXc7ERPbZN7dVW5SdURuLeVU7lwKMpo18XdcmpWYd0qsP1bwKPf7DNSUinhvA==}
     cpu: [loong64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-loong64-musl@4.57.1':
     resolution: {integrity: sha512-xpObYIf+8gprgWaPP32xiN5RVTi/s5FCR+XMXSKmhfoJjrpRAjCuuqQXyxUa/eJTdAE6eJ+KDKaoEqjZQxh3Gw==}
     cpu: [loong64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-ppc64-gnu@4.57.1':
     resolution: {integrity: sha512-4BrCgrpZo4hvzMDKRqEaW1zeecScDCR+2nZ86ATLhAoJ5FQ+lbHVD3ttKe74/c7tNT9c6F2viwB3ufwp01Oh2w==}
     cpu: [ppc64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-ppc64-musl@4.57.1':
     resolution: {integrity: sha512-NOlUuzesGauESAyEYFSe3QTUguL+lvrN1HtwEEsU2rOwdUDeTMJdO5dUYl/2hKf9jWydJrO9OL/XSSf65R5+Xw==}
     cpu: [ppc64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-riscv64-gnu@4.57.1':
     resolution: {integrity: sha512-ptA88htVp0AwUUqhVghwDIKlvJMD/fmL/wrQj99PRHFRAG6Z5nbWoWG4o81Nt9FT+IuqUQi+L31ZKAFeJ5Is+A==}
     cpu: [riscv64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-riscv64-musl@4.57.1':
     resolution: {integrity: sha512-S51t7aMMTNdmAMPpBg7OOsTdn4tySRQvklmL3RpDRyknk87+Sp3xaumlatU+ppQ+5raY7sSTcC2beGgvhENfuw==}
     cpu: [riscv64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-s390x-gnu@4.57.1':
     resolution: {integrity: sha512-Bl00OFnVFkL82FHbEqy3k5CUCKH6OEJL54KCyx2oqsmZnFTR8IoNqBF+mjQVcRCT5sB6yOvK8A37LNm/kPJiZg==}
     cpu: [s390x]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-x64-gnu@4.57.1':
     resolution: {integrity: sha512-ABca4ceT4N+Tv/GtotnWAeXZUZuM/9AQyCyKYyKnpk4yoA7QIAuBt6Hkgpw8kActYlew2mvckXkvx0FfoInnLg==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-x64-musl@4.57.1':
     resolution: {integrity: sha512-HFps0JeGtuOR2convgRRkHCekD7j+gdAuXM+/i6kGzQtFhlCtQkpwtNzkNj6QhCDp7DRJ7+qC/1Vg2jt5iSOFw==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.57.1':
     resolution: {integrity: sha512-H+hXEv9gdVQuDTgnqD+SQffoWoc0Of59AStSzTEj/feWTBAnSfSD3+Dql1ZruJQxmykT/JVY0dE8Ka7z0DH1hw==}
@@ -1491,23 +1518,23 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
-  '@storybook/addon-a11y@10.3.0-alpha.4':
-    resolution: {integrity: sha512-aw3eGPRUhkLD6e1rdPOTf5vWomlNFMlO5msqPLJqW8MI+bJgHwqCyT9POsSNO6WDFqVN02D5hrVrjB89C+ttoA==}
+  '@storybook/addon-a11y@10.3.0-alpha.5':
+    resolution: {integrity: sha512-Zvk2MsXGZDlw3wwV+OUmzfEavwNVXd7Y7KSJY2LULgyNhXxmpuxX4CJmj83vqXDMyREZl7uox44eMK192wUMpw==}
     peerDependencies:
-      storybook: ^10.3.0-alpha.4
+      storybook: ^10.3.0-alpha.5
 
-  '@storybook/builder-vite@10.3.0-alpha.4':
-    resolution: {integrity: sha512-vSWSM5pFBX2MCoDZZEpSI5yTaZCk15YgqvuoZM2fPtvqcgxIm+rx0I7uD+6dBXhNs1SnT6u3M8tRtX60hEzWkQ==}
+  '@storybook/builder-vite@10.3.0-alpha.5':
+    resolution: {integrity: sha512-zMvLigsDlhQM5Lhlb1IJy8I5n6oNYTjaILQymK/ufFFrRblFd6jzJYcu6fmZ9JQZmE3dX4pGtZ9QU2psN99JeA==}
     peerDependencies:
-      storybook: ^10.3.0-alpha.4
+      storybook: ^10.3.0-alpha.5
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  '@storybook/csf-plugin@10.3.0-alpha.4':
-    resolution: {integrity: sha512-a+O+uz3vjoGtc2ZjKj4M1tBPM4WLDk2R9mxs1L/DdGjwdR+lnqZb4m+J1xCSoouVq/kOMlm68EpdGZdiX9lH5Q==}
+  '@storybook/csf-plugin@10.3.0-alpha.5':
+    resolution: {integrity: sha512-jRYrm23HN9Cwhhv0bPYafhEazZmGCKsF7Pj1b9n/TCxtlBf/7sypPwt5dYFAxZzedmtno5x00Ne3+EtTUv0zNA==}
     peerDependencies:
       esbuild: '*'
       rollup: '*'
-      storybook: ^10.3.0-alpha.4
+      storybook: ^10.3.0-alpha.5
       vite: '*'
       webpack: '*'
     peerDependenciesMeta:
@@ -1529,27 +1556,27 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@storybook/react-dom-shim@10.3.0-alpha.4':
-    resolution: {integrity: sha512-PFi2Aofpu0z0VVQEiGU4PGosP6WKUba3+pXFtKQ4GbjoyUY9eiiEaycAOKV9cnumgwOVrEgDHzKv0DnSZZ3i5Q==}
+  '@storybook/react-dom-shim@10.3.0-alpha.5':
+    resolution: {integrity: sha512-SaivAiL765uUNmv1BzuNYEHEC3L17VD0t0vzpRqz6Z3sycEN9fcCgTR8rr+q4oV1Pj6CfuPcupDzemhw2fj6ZA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^10.3.0-alpha.4
+      storybook: ^10.3.0-alpha.5
 
-  '@storybook/react-vite@10.3.0-alpha.4':
-    resolution: {integrity: sha512-grec2ZNe8qVLm2bjc3+t1flUEoqR/IFsybD3p3eNzkheL42mFubVyz9ZNoLxIaVN572jsXPkWLfVyaO1lAe12w==}
+  '@storybook/react-vite@10.3.0-alpha.5':
+    resolution: {integrity: sha512-LzX6z2mi1DGYkC+w/TB8KYlbzTk7usMfIkAoJZo04nWuAtrggPWkcKmdS95Yii1GoFHKIZoZWNt3ruqQzAO2eg==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^10.3.0-alpha.4
+      storybook: ^10.3.0-alpha.5
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  '@storybook/react@10.3.0-alpha.4':
-    resolution: {integrity: sha512-9t97HUMqC/TOP8ye2TR9dTNyetM+mrLyQLLtU4FlIL85zNGmM9K0eNPYOpaii0G1VLD90/1gDTI9br7ISDjVNA==}
+  '@storybook/react@10.3.0-alpha.5':
+    resolution: {integrity: sha512-Q4Jky+L7vYrRq9ksYzKVAbiZMu13qXKrsvyaspCiyFoJ9kpk4doGdKbGT7sjLy3S1vD4GNuEZwr80WG05DlTPQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^10.3.0-alpha.4
+      storybook: ^10.3.0-alpha.5
       typescript: '>= 4.9.x'
     peerDependenciesMeta:
       typescript:
@@ -1578,24 +1605,28 @@ packages:
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@swc/core-linux-arm64-musl@1.15.11':
     resolution: {integrity: sha512-PYftgsTaGnfDK4m6/dty9ryK1FbLk+LosDJ/RJR2nkXGc8rd+WenXIlvHjWULiBVnS1RsjHHOXmTS4nDhe0v0w==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@swc/core-linux-x64-gnu@1.15.11':
     resolution: {integrity: sha512-DKtnJKIHiZdARyTKiX7zdRjiDS1KihkQWatQiCHMv+zc2sfwb4Glrodx2VLOX4rsa92NLR0Sw8WLcPEMFY1szQ==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@swc/core-linux-x64-musl@1.15.11':
     resolution: {integrity: sha512-mUjjntHj4+8WBaiDe5UwRNHuEzLjIWBTSGTw0JT9+C9/Yyuh4KQqlcEQ3ro6GkHmBGXBFpGIj/o5VMyRWfVfWw==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@swc/core-win32-arm64-msvc@1.15.11':
     resolution: {integrity: sha512-ZkNNG5zL49YpaFzfl6fskNOSxtcZ5uOYmWBkY4wVAvgbSAQzLRVBp+xArGWh2oXlY/WgL99zQSGTv7RI5E6nzA==}
@@ -2860,8 +2891,8 @@ packages:
     peerDependencies:
       storybook: ^0.0.0-0 || ^10.0.0 || ^10.0.0-0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0
 
-  storybook@10.3.0-alpha.4:
-    resolution: {integrity: sha512-kka3Dsub53zCZyxPaWdcfYQw4bS2TMeaMshAVRBGKmuG7XnQTJn5gliokw6YAY6T97hHzLUMifne2rkkL80Vag==}
+  storybook@10.3.0-alpha.5:
+    resolution: {integrity: sha512-cKUnE2H5G0UwXMSVaPPegrBwfEc5uPcVT9HqDaKRypZ6rDaedvDOsOe1AN/g3WwNghhVGL/dmKyqqmtAyMhzNg==}
     hasBin: true
     peerDependencies:
       prettier: ^2 || ^3
@@ -4304,16 +4335,16 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  '@storybook/addon-a11y@10.3.0-alpha.4(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-a11y@10.3.0-alpha.5(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       axe-core: 4.11.1
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  '@storybook/builder-vite@10.3.0-alpha.4(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))':
+  '@storybook/builder-vite@10.3.0-alpha.5(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))':
     dependencies:
-      '@storybook/csf-plugin': 10.3.0-alpha.4(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@storybook/csf-plugin': 10.3.0-alpha.5(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       ts-dedent: 2.2.0
       vite: 7.3.1(@types/node@24.10.12)
     transitivePeerDependencies:
@@ -4321,9 +4352,9 @@ snapshots:
       - rollup
       - webpack
 
-  '@storybook/csf-plugin@10.3.0-alpha.4(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))':
+  '@storybook/csf-plugin@10.3.0-alpha.5(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))':
     dependencies:
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       unplugin: 2.3.11
     optionalDependencies:
       esbuild: 0.27.3
@@ -4337,25 +4368,25 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  '@storybook/react-dom-shim@10.3.0-alpha.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/react-dom-shim@10.3.0-alpha.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  '@storybook/react-vite@10.3.0-alpha.4(esbuild@0.27.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.57.1)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)(vite@7.3.1(@types/node@24.10.12))':
+  '@storybook/react-vite@10.3.0-alpha.5(esbuild@0.27.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.57.1)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)(vite@7.3.1(@types/node@24.10.12))':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.6.3(typescript@5.9.3)(vite@7.3.1(@types/node@24.10.12))
       '@rollup/pluginutils': 5.3.0(rollup@4.57.1)
-      '@storybook/builder-vite': 10.3.0-alpha.4(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))
-      '@storybook/react': 10.3.0-alpha.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
+      '@storybook/builder-vite': 10.3.0-alpha.5(esbuild@0.27.3)(rollup@4.57.1)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.10.12))
+      '@storybook/react': 10.3.0-alpha.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
       empathic: 2.0.0
       magic-string: 0.30.21
       react: 19.2.4
       react-docgen: 8.0.2
       react-dom: 19.2.4(react@19.2.4)
       resolve: 1.22.11
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tsconfig-paths: 4.2.0
       vite: 7.3.1(@types/node@24.10.12)
     transitivePeerDependencies:
@@ -4365,14 +4396,14 @@ snapshots:
       - typescript
       - webpack
 
-  '@storybook/react@10.3.0-alpha.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)':
+  '@storybook/react@10.3.0-alpha.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/react-dom-shim': 10.3.0-alpha.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+      '@storybook/react-dom-shim': 10.3.0-alpha.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       react: 19.2.4
       react-docgen: 8.0.2
       react-dom: 19.2.4(react@19.2.4)
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -5724,11 +5755,11 @@ snapshots:
 
   space-separated-tokens@2.0.2: {}
 
-  storybook-addon-test-codegen@3.0.1(storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)):
+  storybook-addon-test-codegen@3.0.1(storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)):
     dependencies:
-      storybook: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  storybook@10.3.0-alpha.5(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
