@@ -96,12 +96,12 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 ## Commands
 
 ```sh
-turbo run build                     # Build all packages (dependency order)
-turbo run typecheck                 # TypeScript check
-turbo run test                      # All tests in watch mode (unit + e2e, builds deps first)
-turbo run test:run                  # All tests once
-turbo run dev                       # Dev mode for all packages
-turbo watch storybook               # Start internal Storybook with rebuild on change
+pnpm exec turbo run build           # Build all packages (dependency order)
+pnpm exec turbo run typecheck       # TypeScript check
+pnpm exec turbo run test            # All tests in watch mode (unit + e2e, builds deps first)
+pnpm exec turbo run test:run        # All tests once
+pnpm exec turbo run dev             # Dev mode for all packages
+pnpm exec turbo watch storybook     # Start internal Storybook with rebuild on change
 pnpm check                          # Full CI: build, format, lint, publint, typecheck, test:run
 pnpm lint                           # oxlint
 pnpm format                         # oxfmt
@@ -119,8 +119,8 @@ pnpm inspect                        # Launch MCP inspector using .mcp.inspect.js
 ## Testing
 
 - Use `toMatchInlineSnapshot()` for assertions where possible. Inline snapshots show the full response shape and catch regressions better than individual field checks.
-- E2E tests (`apps/internal-storybook/tests/`) start real Storybook servers and take 30+ seconds. Run `turbo run build` first so the addon dist is up to date.
-- Unit tests and e2e tests are separate vitest projects. `turbo run test` runs all of them, including e2e.
+- E2E tests (`apps/internal-storybook/tests/`) start real Storybook servers and take 30+ seconds. Run `pnpm exec turbo run build` first so the addon dist is up to date.
+- Unit tests and e2e tests are separate vitest projects. `pnpm exec turbo run test` runs all of them, including e2e.
 - Prefer TDD when adding new tools.
 - **When to update E2E tests**: adding/modifying MCP tools, changing protocol implementation, modifying tool responses/schemas, adding toolsets.
 
