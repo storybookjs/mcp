@@ -9,11 +9,28 @@ runs:
       shell: bash
       run: >
         echo "$(
-          node -e "
-            const fs = require('fs');
-            const lockfile = fs.readFileSync('./pnpm-lock.yaml', 'utf8');
-            const pattern = (name) => new RegExp(name + ':\\\s+specifier: [\\\s\\\w\\\.^]+version: (\\\d+\\\.\\\d+\\\.\\\d+)');
-            const playwrightVersion = lockfile.match(pattern('playwright'))[1];
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            import path from 'node:path';
+
+            const workspaceRoot = process.env.GITHUB_WORKSPACE || process.cwd();
+            const workspaceFilePath = path.join(workspaceRoot, 'pnpm-workspace.yaml');
+            const workspaceConfig = fs.readFileSync(workspaceFilePath, 'utf8');
+
+            const playwrightVersion = workspaceConfig.match(
+              /(?:^|\\n)catalog:\\n(?: {2}[^\\n]*\\n)*? {2}playwright:\\s*([^#\\s]+)\\s*(?:#.*)?(?:\\n|$)/,
+            )?.[1];
+
+            if (playwrightVersion === undefined) {
+              console.error('Failed to resolve playwright from top-level catalog in pnpm-workspace.yaml');
+              process.exit(1);
+            }
+
+            if (/^[~^]/.test(playwrightVersion)) {
+              console.error('Playwright catalog entry must be pinned to a specific version:', playwrightVersion);
+              process.exit(1);
+            }
+
             console.log('PLAYWRIGHT_VERSION=' + playwrightVersion);
           "
         )" >> $GITHUB_OUTPUT

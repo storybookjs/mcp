@@ -12,6 +12,9 @@ catalogs:
     '@storybook/react-vite':
       specifier: 0.0.0-pr-33206-sha-06900f2a
       version: 0.0.0-pr-33206-sha-06900f2a
+    playwright:
+      specifier: 1.56.1
+      version: 1.56.1
     storybook:
       specifier: 0.0.0-pr-33206-sha-06900f2a
       version: 0.0.0-pr-33206-sha-06900f2a
@@ -102,8 +105,8 @@ importers:
         specifier: ^0.27.0
         version: 0.27.0
       playwright:
-        specifier: ^1.56.1
-        version: 1.58.2
+        specifier: 'catalog:'
+        version: 1.56.1
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react@18.3.28)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2496,13 +2499,13 @@ packages:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
 
-  playwright-core@1.58.2:
-    resolution: {integrity: sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg==}
+  playwright-core@1.56.1:
+    resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.58.2:
-    resolution: {integrity: sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A==}
+  playwright@1.56.1:
+    resolution: {integrity: sha512-aFi5B0WovBHTEvpM3DzXTUaeN6eN0qWnTkKx4NQaH4Wvcmc153PdaY2UBdSYKaGYw+UyWXSVyxDUg5DoPEttjw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -5285,11 +5288,11 @@ snapshots:
 
   picomatch@4.0.3: {}
 
-  playwright-core@1.58.2: {}
+  playwright-core@1.56.1: {}
 
-  playwright@1.58.2:
+  playwright@1.56.1:
     dependencies:
-      playwright-core: 1.58.2
+      playwright-core: 1.56.1
     optionalDependencies:
       fsevents: 2.3.2
 
