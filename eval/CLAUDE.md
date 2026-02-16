@@ -1,1 +1,1 @@
-@.github/instructions/eval.instructions.md
+@../.github/instructions/eval.instructions.md

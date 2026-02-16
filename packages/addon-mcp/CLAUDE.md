@@ -1,1 +1,1 @@
-@.github/instructions/addon-mcp.instructions.md
+@../../.github/instructions/addon-mcp.instructions.md

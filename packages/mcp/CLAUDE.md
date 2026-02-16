@@ -1,1 +1,1 @@
-@.github/instructions/mcp.instructions.md
+@../../.github/instructions/mcp.instructions.md
