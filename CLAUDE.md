@@ -51,8 +51,28 @@ pnpm lint                           # oxlint
 pnpm format                         # oxfmt
 ```
 
+## Code Style
+
+- **ESM-only** — all packages have `"type": "module"`. Always include `.ts` extensions in relative imports.
+- **Naming** — constants: `SCREAMING_SNAKE_CASE`, functions: `camelCase`, types: `PascalCase`.
+- **JSON imports** — `import pkg from '../package.json' with { type: 'json' };`
+- **Formatting** — run `pnpm format` (oxfmt) before committing. CI enforces this.
+
 ## Testing
 
 - Use `toMatchInlineSnapshot()` for assertions where possible. Inline snapshots show the full response shape and catch regressions better than individual field checks.
 - E2E tests (`apps/internal-storybook/tests/`) start real Storybook servers and take 30+ seconds. Run `turbo run build` first so the addon dist is up to date.
 - Unit tests and e2e tests are separate vitest projects. `turbo run test` runs all of them, including e2e.
+
+## Changesets
+
+User-facing changes to `@storybook/mcp` or `@storybook/addon-mcp` require a changeset in `.changeset/`. Use `patch` for fixes, `minor` for features, `major` for breaking changes.
+
+## Package-Specific Instructions
+
+For detailed per-package guidance (architecture, adding tools, testing patterns, etc.), see:
+
+- **`@storybook/addon-mcp`** — `.github/instructions/addon-mcp.instructions.md`
+- **`@storybook/mcp`** — `.github/instructions/mcp.instructions.md`
+- **Eval harness** — `.github/instructions/eval.instructions.md`
+- **General** — `.github/copilot-instructions.md`
