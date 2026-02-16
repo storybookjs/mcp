@@ -252,14 +252,6 @@ The `apps/internal-storybook` provides a real Storybook instance:
 - Addon MCP endpoint: `http://localhost:6006/mcp`
 - Test with `.mcp.json` config pointing to localhost:6006
 
-## Package-Specific Instructions
-
-For detailed per-package guidance, see:
-
-- **`@storybook/addon-mcp`** — `.github/instructions/addon-mcp.instructions.md`
-- **`@storybook/mcp`** — `.github/instructions/mcp.instructions.md`
-- **Eval harness** — `.github/instructions/eval.instructions.md`
-
 ## Documentation Resources
 
 When working with MCP server/tools:
