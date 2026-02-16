@@ -43,5 +43,5 @@ describe('Storybook Dependencies', () => {
 				`Storybook dependencies are outdated. Update the catalog in pnpm-workspace.yaml:\n\n  sed -i '' 's/${currentVersion}/${latestVersion}/g' pnpm-workspace.yaml && pnpm install\n\nOutdated packages:\n${outdatedList}`,
 			);
 		}
-	}, 60_000);
+	});
 });
