@@ -98,8 +98,8 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
 ```sh
 turbo run build                     # Build all packages (dependency order)
 turbo run typecheck                 # TypeScript check
-turbo run test                      # Unit tests in watch mode (builds deps first)
-turbo run test:run                  # Unit tests once
+turbo run test                      # All tests in watch mode (unit + e2e, builds deps first)
+turbo run test:run                  # All tests once
 turbo run dev                       # Dev mode for all packages
 turbo watch storybook               # Start internal Storybook with rebuild on change
 pnpm check                          # Full CI: build, format, lint, publint, typecheck, test:run
