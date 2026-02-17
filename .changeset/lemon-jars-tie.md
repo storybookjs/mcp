@@ -1,5 +1,5 @@
 ---
-"@storybook/mcp": patch
+'@storybook/mcp': patch
 ---
 
 Fixed type bundling issue
