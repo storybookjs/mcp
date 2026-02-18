@@ -20,4 +20,5 @@ export default (pkgName: string) =>
 				debug: true,
 			}),
 		],
+		sourcemap: true,
 	}) as any;
