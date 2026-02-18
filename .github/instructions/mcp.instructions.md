@@ -29,7 +29,7 @@ src/
     list-all-documentation.ts              # List all documentation tool
     get-documentation.ts      # Get component documentation tool
   utils/
-    format-manifest.ts                  # Format component manifest to XML
+    format-manifest.ts                  # Format component manifest to markdown
     parse-react-docgen.ts              # Parse react-docgen output
     get-manifest.ts                    # Fetch and validate manifest
     dedent.ts                          # Template string dedentation
@@ -107,18 +107,15 @@ Component manifests can include a `reactDocgen` property containing prop informa
    - Extracts prop names
    - Serializes TypeScript types into readable strings (handles unions, intersections, functions, objects, etc.)
    - Includes optional fields: `description`, `type`, `defaultValue`, `required`
-3. **Formatting**: The `formatComponentManifest()` function in `src/utils/format-manifest.ts` generates an XML representation of the component including a `<props>` section when `reactDocgen` is present
+3. **Formatting**: The `formatComponentManifest()` function in `src/utils/format-manifest.ts` generates a markdown representation of the component including a `## Props` section when `reactDocgen` is present
 4. **Output**: Each prop is formatted as:
-   ```xml
-   <prop>
-     <prop_name>propName</prop_name>
-     <prop_type>string | number</prop_type>
-     <prop_required>false</prop_required>
-     <prop_default>"default"</prop_default>
-     <prop_description>
+   ```typescript
+   export type Props = {
+     /**
        Prop description text
-     </prop_description>
-   </prop>
+     */
+     propName?: string | number = "default";
+   }
    ```
 
 **Type serialization examples:**

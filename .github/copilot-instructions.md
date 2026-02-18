@@ -36,7 +36,6 @@ The addon supports configuring which toolsets are enabled:
         dev: true,
         docs: true,
       },
-      experimentalFormat: 'markdown'  // Output format: 'markdown' (default) or 'xml'
     }
   }
   ```
@@ -74,11 +73,8 @@ The `@storybook/mcp` package (in `packages/mcp`) is framework-agnostic:
   - `onSessionInitialize`: Called when an MCP session is initialized
   - `onListAllDocumentation`: Called when the list-all-documentation tool is invoked
   - `onGetDocumentation`: Called when the get-documentation tool is invoked
-- **Output Format**: The `format` property in context controls output format:
-  - `'markdown'` (default): Token-efficient markdown with adaptive formatting
-  - `'xml'`: Legacy XML format
-  - Format is configurable via addon options or directly in `StorybookContext`
-  - Formatters are implemented in `packages/mcp/src/utils/manifest-formatter/` with separate files for XML and markdown
+- **Output Format**: All output is formatted as markdown for token efficiency and readability
+  - Formatters are implemented in `packages/mcp/src/utils/format-manifest.ts`
 
 ## Development Environment
 
