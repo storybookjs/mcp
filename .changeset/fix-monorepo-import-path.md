@@ -14,4 +14,4 @@ my-monorepo/
 
 The tool builds `./../../packages/design-system/Button.stories.tsx` but `index.json` stores `../../packages/design-system/Button.stories.tsx` (no `./`). The strict `===` fails silently.
 
-Paths are now normalized by stripping the leading `./` before comparison.
+Path normalization now uses `normalizeStoryPath` from `storybook/internal/common` to stay consistent with how Storybook core canonicalizes `importPath`.
