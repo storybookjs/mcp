@@ -94,7 +94,6 @@ export const mcpServerHandler = async ({
 	const addonContext: AddonContext = {
 		options,
 		toolsets: getToolsets(webRequest, addonOptions),
-		format: addonOptions.experimentalFormat,
 		origin: origin!,
 		disableTelemetry: disableTelemetry!,
 		request: webRequest,

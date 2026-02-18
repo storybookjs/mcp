@@ -62,12 +62,11 @@ export async function addGetStoryDocumentationTool(
 					};
 				}
 
-				const format = server.ctx.custom?.format ?? 'markdown';
 				return {
 					content: [
 						{
 							type: 'text' as const,
-							text: formatStoryDocumentation(component, input.storyName, format),
+							text: formatStoryDocumentation(component, input.storyName),
 						},
 					],
 				};

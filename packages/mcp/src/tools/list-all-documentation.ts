@@ -23,8 +23,7 @@ export async function addListAllDocumentationTool(
 					server.ctx.custom?.manifestProvider,
 				);
 
-				const format = server.ctx.custom?.format ?? 'markdown';
-				const lists = formatManifestsToLists(manifests, format);
+				const lists = formatManifestsToLists(manifests);
 
 				await server.ctx.custom?.onListAllDocumentation?.({
 					context: server.ctx.custom,

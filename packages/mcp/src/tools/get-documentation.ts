@@ -58,10 +58,9 @@ Example: id="button" returns Primary, Secondary, Large stories with code like <B
 
 				const documentation = component ?? docsEntry!;
 
-				const format = server.ctx.custom?.format ?? 'markdown';
 				const text = component
-					? formatComponentManifest(documentation as ComponentManifest, format)
-					: formatDocsManifest(documentation as Doc, format);
+					? formatComponentManifest(documentation as ComponentManifest)
+					: formatDocsManifest(documentation as Doc);
 
 				await server.ctx.custom?.onGetDocumentation?.({
 					context: server.ctx.custom,
