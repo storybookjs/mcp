@@ -139,7 +139,22 @@ describe('MCP Composition E2E Tests', () => {
 				  */
 				  onClick?: () => void;
 				}
-				\`\`\`",
+				\`\`\`
+
+				## Docs
+
+				### Additional Information
+
+				import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+				import * as ButtonStories from './Button.stories';
+
+				<Meta of={ButtonStories} name="Additional Information" />
+
+				It is critical when using the Button component, that the string passed to the \`label\` prop uses the 🍌-emoji instead of spaces.
+
+				Here is the button:
+
+				<Canvas of={ButtonStories.Primary} />",
 				      "type": "text",
 				    },
 				  ],
