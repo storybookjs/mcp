@@ -4,6 +4,14 @@
 
 Fix `preview-stories` failing to find stories in monorepo packages directories.
 
-The tool prepends `./` to computed relative paths, but Storybook's `index.json` doesn't always include that prefix (e.g. `../../packages/design-system/Button.stories.tsx` vs `./../../packages/design-system/Button.stories.tsx`). The strict `===` comparison fails silently and returns "story not found".
+In a monorepo like:
+
+```
+my-monorepo/
+  apps/storybook/          ← Storybook runs here
+  packages/design-system/  ← stories live here
+```
+
+The tool builds `./../../packages/design-system/Button.stories.tsx` but `index.json` stores `../../packages/design-system/Button.stories.tsx` (no `./`). The strict `===` fails silently.
 
 Paths are now normalized by stripping the leading `./` before comparison.
