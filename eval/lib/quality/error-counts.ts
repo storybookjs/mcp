@@ -48,3 +48,24 @@ export const fromA11yViolations: CalculateQualityFn = ({ grading }) => {
 		description: 'A11y Violations',
 	};
 };
+
+/**
+ * Quality calculator based on the percentage of tests passed.
+ *
+ * Formula: passed / (passed + failed)
+ * - 100% pass rate => 1.0
+ * - 50% pass rate => 0.5
+ * - 0% pass rate => 0.0
+ * - 0 total tests => 0.0
+ */
+export const fromTestPassRate: CalculateQualityFn = ({ grading }) => {
+	const passed = grading.test.passed;
+	const failed = grading.test.failed;
+	const total = passed + failed;
+	const score = total > 0 ? passed / total : 0;
+
+	return {
+		score,
+		description: 'Test Pass Rate',
+	};
+};

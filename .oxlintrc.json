@@ -1,5 +1,6 @@
 {
 	"rules": {
-		"typescript/switch-exhaustiveness-check": "error"
+		"typescript/switch-exhaustiveness-check": "error",
+		"import/no-cycle": "error"
 	}
 }

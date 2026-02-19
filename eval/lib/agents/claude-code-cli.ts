@@ -2,7 +2,7 @@ import { x } from 'tinyexec';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Agent, ClaudeModel } from '../../types.ts';
-import { CLAUDE_MODELS } from '../../types.ts';
+import { CLAUDE_MODELS, CLAUDE_MODEL_MAP } from '../../types.ts';
 import { spinner, log as clackLog } from '@clack/prompts';
 import Tokenizer, { models, type Model } from 'ai-tokenizer';
 import { runHook } from '../run-hook.ts';
@@ -10,15 +10,6 @@ import type {
 	TranscriptMessage,
 	ToolUseContent as TranscriptToolUseContent,
 } from '../../templates/result-docs/transcript.types.ts';
-
-/**
- * Mapping from our standard model names to Claude CLI --model flag values.
- */
-const CLAUDE_MODEL_MAP: Record<ClaudeModel, string> = {
-	'claude-opus-4.6': 'Opus',
-	'claude-sonnet-4.5': 'Sonnet',
-	'claude-haiku-4.5': 'Haiku',
-};
 
 /**
  * Mapping from standard model names to ai-tokenizer model keys.

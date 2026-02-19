@@ -8,6 +8,7 @@
 		"clean-trials": "node clean-trials.ts",
 		"advanced-eval": "node advanced-eval.ts",
 		"eval": "node eval.ts",
+		"storybook:trial": "node start-trial-storybook.ts",
 		"storybook": "storybook dev --port 6007 --no-open",
 		"typecheck": "tsc"
 	},
@@ -38,7 +39,7 @@
 		"istanbul-lib-coverage": "^3.2.0",
 		"nypm": "^0.6.2",
 		"oxfmt": "^0.27.0",
-		"playwright": "^1.56.1",
+		"playwright": "catalog:",
 		"radix-ui": "^1.4.3",
 		"react": "^19.1.1",
 		"react-dom": "^19.1.1",

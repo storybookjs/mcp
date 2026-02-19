@@ -1,0 +1,60 @@
+name: Setup Playwright
+description: Setup and cache Playwright browser binaries
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve package versions
+      id: resolve-package-versions
+      shell: bash
+      run: >
+        echo "$(
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            import path from 'node:path';
+
+            const workspaceRoot = process.env.GITHUB_WORKSPACE || process.cwd();
+            const workspaceFilePath = path.join(workspaceRoot, 'pnpm-workspace.yaml');
+            const workspaceConfig = fs.readFileSync(workspaceFilePath, 'utf8');
+
+            const playwrightVersion = workspaceConfig.match(
+              /(?:^|\\n)catalog:\\n(?: {2}[^\\n]*\\n)*? {2}playwright:\\s*([^#\\s]+)\\s*(?:#.*)?(?:\\n|$)/,
+            )?.[1];
+
+            if (playwrightVersion === undefined) {
+              console.error('Failed to resolve playwright from top-level catalog in pnpm-workspace.yaml');
+              process.exit(1);
+            }
+
+            if (/^[~^]/.test(playwrightVersion)) {
+              console.error('Playwright catalog entry must be pinned to a specific version:', playwrightVersion);
+              process.exit(1);
+            }
+
+            console.log('PLAYWRIGHT_VERSION=' + playwrightVersion);
+          "
+        )" >> $GITHUB_OUTPUT
+
+    - name: Print versions
+      shell: bash
+      run: echo "${{ toJson(steps.resolve-package-versions.outputs) }}"
+
+    - name: Check resolved package versions
+      shell: bash
+      if: |
+        contains(fromJSON('[null, "", "undefined"]'), steps.resolve-package-versions.outputs.PLAYWRIGHT_VERSION)
+      run: echo "Failed to resolve package versions. See log above." && exit 1
+
+    - name: Cache Playwright v${{ steps.resolve-package-versions.outputs.PLAYWRIGHT_VERSION }}
+      uses: actions/cache@v5
+      id: playwright-cache
+      with:
+        path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+        key: ${{ runner.os }}-playwright-${{ steps.resolve-package-versions.outputs.PLAYWRIGHT_VERSION }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
+
+    - name: Install Playwright Dependencies
+      shell: bash
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: pnpm exec playwright install --with-deps --only-shell

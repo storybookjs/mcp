@@ -317,6 +317,12 @@ function logSummary(
 		}
 	}
 
+	if (gradingSummary.judge) {
+		const judge = gradingSummary.judge;
+		const pct = (judge.score * 100).toFixed(0);
+		p.log.message(`🧑‍⚖️ Judge: ℹ️ ${pct}% (${judge.agent}, ${judge.model})`);
+	}
+
 	if (gradingSummary.quality !== undefined) {
 		const pct = (gradingSummary.quality.score * 100).toFixed(0);
 		const badge =

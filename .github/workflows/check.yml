@@ -9,6 +9,7 @@ on:
 
 env:
   TURBO_ENV_MODE: loose
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
 
 jobs:
   build:
@@ -54,6 +55,9 @@ jobs:
 
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
 
       - name: Run tests with coverage
         run: pnpm turbo run test:ci

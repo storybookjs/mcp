@@ -61,10 +61,13 @@ export async function runEval(args: EvalArgs): Promise<{ allFailed: boolean }> {
 	const render = () =>
 		renderProgressUI({
 			evalName: args.config.name,
-			taskName: args.taskName,
+			taskName: args.taskName ?? 'multiple tasks (per variant)',
 			uploadId: args.uploadId,
 			runId: args.runId,
 			runs: Array.from(progress.values()).sort((a, b) => {
+				if (a.request.taskName !== b.request.taskName) {
+					return a.request.taskName.localeCompare(b.request.taskName);
+				}
 				if (a.request.variantId !== b.request.variantId) {
 					return a.request.variantId.localeCompare(b.request.variantId);
 				}
@@ -123,12 +126,21 @@ function buildRunRequests(args: EvalArgs): RunRequest[] {
 	const variants = args.selectedVariants
 		? args.config.variants.filter((v) => args.selectedVariants?.includes(v.id))
 		: args.config.variants;
+	const defaultTaskName = args.taskName;
 
 	const requests: RunRequest[] = [];
 	for (const [index, variant] of variants.entries()) {
+		const variantTaskName = variant.taskName ?? defaultTaskName;
+		if (!variantTaskName) {
+			throw new Error(
+				`No task name provided for variant "${variant.id}". Provide a task via interactive selection or set variant.taskName in the config.`,
+			);
+		}
+
 		for (let iteration = 1; iteration <= args.iterations; iteration += 1) {
 			requests.push({
 				id: `${variant.id}-${iteration}`,
+				taskName: variantTaskName,
 				variantId: variant.id,
 				variantLabel: variant.label,
 				iteration,
@@ -160,7 +172,7 @@ function createWorkerPayload(args: EvalArgs, request: RunRequest): RunTaskParams
 	}
 
 	return {
-		taskName: args.taskName,
+		taskName: request.taskName,
 		context: ctx,
 		agent: request.agent,
 		model: request.model,
@@ -288,7 +300,9 @@ function printFailureSummary(failures: FailedRun[], runId: string): void {
 	for (const failure of failures) {
 		const { request, error } = failure;
 		const logPath = getLogPath(runId, request.variantId, request.iteration);
-		process.stdout.write(`[${request.variantLabel} #${request.iteration}] ${error}\n`);
+		process.stdout.write(
+			`[${request.taskName}] [${request.variantLabel} #${request.iteration}] ${error}\n`,
+		);
 		process.stdout.write(`  See: ${logPath}\n\n`);
 	}
 }

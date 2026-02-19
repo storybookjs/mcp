@@ -15,6 +15,43 @@ import type {
 	TaskConfig,
 } from '../../types.ts';
 
+function deepPartialEqual(expected: unknown, actual: unknown): boolean {
+	if (Object.is(expected, actual)) {
+		return true;
+	}
+
+	if (expected === null || actual === null) {
+		return expected === actual;
+	}
+
+	if (typeof expected !== 'object' || typeof actual !== 'object') {
+		return expected === actual;
+	}
+
+	if (Array.isArray(expected)) {
+		if (!Array.isArray(actual)) return false;
+		if (expected.length !== actual.length) return false;
+		for (let i = 0; i < expected.length; i++) {
+			if (!deepPartialEqual(expected[i], actual[i])) return false;
+		}
+		return true;
+	}
+
+	if (Array.isArray(actual)) {
+		return false;
+	}
+
+	const expectedRecord = expected as Record<string, unknown>;
+	const actualRecord = actual as Record<string, unknown>;
+
+	for (const [key, expectedValue] of Object.entries(expectedRecord)) {
+		if (!(key in actualRecord)) return false;
+		if (!deepPartialEqual(expectedValue, actualRecord[key])) return false;
+	}
+
+	return true;
+}
+
 /**
  * Extract the short tool name from a full MCP tool name.
  * E.g., "mcp__storybook__list_components" -> "list_components"
@@ -125,12 +162,20 @@ export function aggregateMcpToolMetrics(
 				if (shortName.includes(expectedName) || metrics.fullName.includes(expectedName)) {
 					metrics.validation = {};
 
+					if (expectation.minCalls !== undefined) {
+						metrics.validation.minCallsMet = metrics.callCount >= expectation.minCalls;
+					}
+					if (expectation.maxCalls !== undefined) {
+						metrics.validation.maxCallsMet = metrics.callCount <= expectation.maxCalls;
+					}
+
 					// Check expected calls if configured (all must be present)
 					if (expectation.expectedCalls !== undefined && expectation.expectedCalls.length > 0) {
-						// Check if each expected call has a matching invocation
-						const actualInputs = metrics.invocations.map((inv) => JSON.stringify(inv.input));
+						// Check if each expected call pattern matches at least one invocation.
+						// This uses deep partial matching so callers can validate specific inputs (e.g. { a11y: false })
+						// without having to specify full, path-dependent arguments.
 						metrics.validation.inputMatch = expectation.expectedCalls.every((expectedInput) =>
-							actualInputs.includes(JSON.stringify(expectedInput)),
+							metrics.invocations.some((inv) => deepPartialEqual(expectedInput, inv.input)),
 						);
 					}
 
@@ -189,6 +234,8 @@ export function extractMcpToolsSummary(
 
 			if (matchingTool.validation) {
 				if (
+					matchingTool.validation.minCallsMet === false ||
+					matchingTool.validation.maxCallsMet === false ||
 					matchingTool.validation.inputMatch === false ||
 					matchingTool.validation.outputTokensWithinLimit === false
 				) {
