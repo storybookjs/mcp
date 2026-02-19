@@ -14,6 +14,8 @@ Tests whether the agent can run story tests, encounter failures, diagnose the ro
 
 Asks the agent to run story tests for the Button component. Deliberately minimal — doesn't mention that tests will fail or that fixes are needed.
 
+Optional prompt variant: `prompt.vitest-cli.md` instructs the agent to use the Vitest CLI instead of Storybook MCP testing tools.
+
 ## Quality Signal
 
 | Metric                                             | Weight |

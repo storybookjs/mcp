@@ -12,7 +12,7 @@ const base = {
 const config = {
 	name: 'testing-toolset-internal',
 	description:
-		'Internal matrix for testing-toolset eval tasks (908-912) with prompt-variant combinations.',
+		'Internal matrix for testing-toolset eval tasks (908-913) with prompt-variant combinations.',
 	internal: true,
 	variants: [
 		{
@@ -62,6 +62,16 @@ const config = {
 		},
 		{
 			...base,
+			id: '911-vitest-cli',
+			label: '911 Fix Failing Tests (Vitest CLI)',
+			taskName: '911-fix-failing-tests',
+			context: [
+				{ type: 'storybook-mcp-dev' },
+				{ type: 'extra-prompts', prompts: ['prompt.vitest-cli.md'] },
+			],
+		},
+		{
+			...base,
 			id: '912-default',
 			label: '912 Fix A11y Violations',
 			taskName: '912-fix-a11y-violations',
@@ -75,6 +85,12 @@ const config = {
 				{ type: 'storybook-mcp-dev' },
 				{ type: 'extra-prompts', prompts: ['prompt.explicit.md'] },
 			],
+		},
+		{
+			...base,
+			id: '913-default',
+			label: '913 Run All Tests (Final Verification)',
+			taskName: '913-run-all-tests-final-verification',
 		},
 	],
 } satisfies VariantConfigInput;

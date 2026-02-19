@@ -15,12 +15,14 @@ Asks the agent to create a new component with specific props, write Storybook st
 
 ## Quality Signal
 
-| Metric                                        | Weight |
-| --------------------------------------------- | ------ |
-| MCP tools coverage (`run-story-tests` called) | 40 %   |
-| Test pass rate                                | 40 %   |
-| A11y violations (fewer = better)              | 20 %   |
+| Metric                                                             | Weight |
+| ------------------------------------------------------------------ | ------ |
+| MCP tools coverage (`run-story-tests` called with `stories` input) | 40 %   |
+| Test pass rate                                                     | 40 %   |
+| A11y violations (fewer = better)                                   | 20 %   |
 
 ## Expected MCP Tools
 
 - `run-story-tests` (at least 1 call)
+
+For MCP quality credit, at least one `run-story-tests` invocation must include a `stories` input.
