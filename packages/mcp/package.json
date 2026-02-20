@@ -35,13 +35,13 @@
 	"dependencies": {
 		"@tmcp/adapter-valibot": "catalog:",
 		"@tmcp/transport-http": "catalog:",
-		"react-docgen-typescript": "^2.4.0",
 		"tmcp": "catalog:",
 		"valibot": "catalog:"
 	},
 	"devDependencies": {
 		"@tmcp/transport-stdio": "catalog:",
 		"react-docgen": "^8.0.2",
+		"react-docgen-typescript": "^2.4.0",
 		"srvx": "^0.8.16",
 		"tinyexec": "^1.0.2"
 	}

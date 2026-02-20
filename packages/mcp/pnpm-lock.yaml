@@ -32,9 +32,6 @@ importers:
       '@tmcp/transport-http':
         specifier: 'catalog:'
         version: 0.8.4(tmcp@1.19.2(typescript@5.9.3))
-      react-docgen-typescript:
-        specifier: ^2.4.0
-        version: 2.4.0(typescript@5.9.3)
       tmcp:
         specifier: 'catalog:'
         version: 1.19.2(typescript@5.9.3)
@@ -48,6 +45,9 @@ importers:
       react-docgen:
         specifier: ^8.0.2
         version: 8.0.2
+      react-docgen-typescript:
+        specifier: ^2.4.0
+        version: 2.4.0(typescript@5.9.3)
       srvx:
         specifier: ^0.8.16
         version: 0.8.16
