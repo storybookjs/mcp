@@ -13,8 +13,8 @@ catalogs:
       specifier: ^0.8.0
       version: 0.8.4
     storybook:
-      specifier: 10.3.0-alpha.4
-      version: 10.3.0-alpha.4
+      specifier: 10.3.0-alpha.7
+      version: 10.3.0-alpha.7
     tmcp:
       specifier: ^1.16.0
       version: 1.19.2
@@ -47,7 +47,7 @@ importers:
     devDependencies:
       storybook:
         specifier: 'catalog:'
-        version: 10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 10.3.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
 packages:
 
@@ -463,8 +463,8 @@ packages:
   sqids@0.3.0:
     resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
 
-  storybook@10.3.0-alpha.4:
-    resolution: {integrity: sha512-kka3Dsub53zCZyxPaWdcfYQw4bS2TMeaMshAVRBGKmuG7XnQTJn5gliokw6YAY6T97hHzLUMifne2rkkL80Vag==}
+  storybook@10.3.0-alpha.7:
+    resolution: {integrity: sha512-BQi0xvmEUCS1POyoayfGsoLYfuQsKq5UqJGoXCdAtIZIwQSnvnhHWanSJOI42mBB9ld2YqSqUr8ZiVOvQXADvw==}
     hasBin: true
     peerDependencies:
       prettier: ^2 || ^3
@@ -857,7 +857,7 @@ snapshots:
 
   sqids@0.3.0: {}
 
-  storybook@10.3.0-alpha.4(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  storybook@10.3.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
