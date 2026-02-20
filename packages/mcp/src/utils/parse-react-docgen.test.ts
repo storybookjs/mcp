@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { parseReactDocgen, parseReactDocgenTypescript } from './parse-react-docgen';
+import { parseReactDocgen, parseReactDocgenTypescript } from './parse-react-docgen.ts';
 
 describe('parseReactDocgen', () => {
 	test('prefers raw over computed for unions (and copies default/required)', () => {
