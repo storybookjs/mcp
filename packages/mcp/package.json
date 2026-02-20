@@ -35,6 +35,7 @@
 	"dependencies": {
 		"@tmcp/adapter-valibot": "catalog:",
 		"@tmcp/transport-http": "catalog:",
+		"react-docgen-typescript": "^2.4.0",
 		"tmcp": "catalog:",
 		"valibot": "catalog:"
 	},
