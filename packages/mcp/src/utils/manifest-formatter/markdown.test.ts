@@ -527,6 +527,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 					filePath: 'src/components/Button.tsx',
 					description: '',
 					exportName: 'Button',
+					methods: [],
 					props: {
 						variant: {
 							name: 'variant',
@@ -599,6 +600,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 					filePath: 'src/components/Button.tsx',
 					description: '',
 					exportName: 'Button',
+					methods: [],
 					props: {
 						label: {
 							name: 'label',
@@ -643,6 +645,7 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 					filePath: 'src/components/Button.tsx',
 					description: '',
 					exportName: 'Button',
+					methods: [],
 					props: {
 						variant: {
 							name: 'variant',

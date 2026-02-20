@@ -310,7 +310,7 @@ describe('parseReactDocgenTypescript', () => {
 			displayName: 'Button',
 			filePath: 'src/Button.tsx',
 			description: 'A button component',
-			exportName: 'Button',
+			methods: [],
 			props: {
 				label: {
 					name: 'label',
@@ -353,7 +353,7 @@ describe('parseReactDocgenTypescript', () => {
 			displayName: 'Button',
 			filePath: 'src/Button.tsx',
 			description: '',
-			exportName: 'Button',
+			methods: [],
 			props: {
 				variant: {
 					name: 'variant',
@@ -361,11 +361,7 @@ describe('parseReactDocgenTypescript', () => {
 					type: {
 						name: 'enum',
 						raw: '"primary" | "secondary" | "danger"',
-						value: [
-							{ value: '"primary"' },
-							{ value: '"secondary"' },
-							{ value: '"danger"' },
-						],
+						value: [{ value: '"primary"' }, { value: '"secondary"' }, { value: '"danger"' }],
 					},
 					defaultValue: { value: 'primary' },
 					required: false,
@@ -391,7 +387,7 @@ describe('parseReactDocgenTypescript', () => {
 			displayName: 'Callback',
 			filePath: 'src/Callback.tsx',
 			description: '',
-			exportName: 'Callback',
+			methods: [],
 			props: {
 				onClick: {
 					name: 'onClick',
@@ -421,7 +417,7 @@ describe('parseReactDocgenTypescript', () => {
 			displayName: 'Box',
 			filePath: 'src/Box.tsx',
 			description: '',
-			exportName: 'Box',
+			methods: [],
 			props: {
 				children: {
 					name: 'children',
@@ -440,7 +436,7 @@ describe('parseReactDocgenTypescript', () => {
 			displayName: 'Empty',
 			filePath: 'src/Empty.tsx',
 			description: '',
-			exportName: 'Empty',
+			methods: [],
 			props: {},
 		});
 		expect(result).toMatchInlineSnapshot(`

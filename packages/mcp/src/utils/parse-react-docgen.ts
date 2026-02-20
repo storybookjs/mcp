@@ -93,9 +93,7 @@ export const parseReactDocgen = (reactDocgen: Documentation): ParsedDocgen => {
  * RDT uses flat type strings (prop.type.name / prop.type.raw) instead of react-docgen's
  * nested tsType structure, so no serialization is needed.
  */
-export const parseReactDocgenTypescript = (
-	reactDocgenTypescript: ComponentDoc,
-): ParsedDocgen => {
+export const parseReactDocgenTypescript = (reactDocgenTypescript: ComponentDoc): ParsedDocgen => {
 	const props = reactDocgenTypescript.props ?? {};
 	return {
 		props: Object.fromEntries(
