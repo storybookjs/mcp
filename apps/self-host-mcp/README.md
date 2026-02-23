@@ -8,7 +8,8 @@ From the repository root:
 
 ```bash
 pnpm install
-pnpm --filter @storybook/mcp-self-host-node dev
+cd apps/self-host-mcp
+pnpm dev
 ```
 
 MCP endpoint: `http://localhost:13316/mcp`
@@ -16,12 +17,18 @@ MCP endpoint: `http://localhost:13316/mcp`
 ## Options
 
 ```bash
-pnpm --filter @storybook/mcp-self-host-node dev -- --port 13316 --manifestsDir ./manifests --format markdown
+cd apps/self-host-mcp
+pnpm start --port 13316 --manifestsPath ./manifests
 ```
 
 - `--port`: HTTP port to serve
-- `--manifestsDir`: local directory or remote base URL containing `components.json` and optionally `docs.json`
-- `--format`: `markdown` (default) or `xml`
+- `--manifestsPath`: local directory or remote base URL containing `components.json` and optionally `docs.json`
+
+## Use your own components
+
+To try this server with your own component library, first build your Storybook so it generates manifests, then copy the content of the `manifests` directory from the build-output (usually `./storybook-static/manifests`) into this example's `manifests/` directory.
+
+In practice, you want `components.json` (and `docs.json` if available) in `apps/self-host-mcp/manifests/` before running `pnpm start`.
 
 ## What this demonstrates
 
