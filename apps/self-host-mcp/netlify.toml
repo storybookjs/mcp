@@ -1,8 +1,12 @@
 [build]
-  command = "pnpm install --frozen-lockfile"
-  publish = "."
+command = "pnpm install --frozen-lockfile"
+publish = "."
+base = "apps/self-host-mcp"
 
 [[redirects]]
-  from = "/mcp"
-  to = "/.netlify/functions/mcp"
-  status = 200
+from = "/mcp"
+to = "/.netlify/functions/mcp"
+status = 200
+
+[functions]
+included_files = ["manifests"]
