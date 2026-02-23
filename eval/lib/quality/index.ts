@@ -10,7 +10,14 @@ import type { CalculateQualityFn, QualityArgs, QualityResult } from '../../types
 
 export { fromComponentUsage } from './component-usage.ts';
 export { fromMcpToolsCoverage } from './mcp-tools-coverage.ts';
-export { fromTypeCheckErrors, fromLintErrors, fromA11yViolations } from './error-counts.ts';
+export {
+	fromTypeCheckErrors,
+	fromLintErrors,
+	fromA11yViolations,
+	fromTestPassRate,
+} from './error-counts.ts';
+
+export { fromJudgeScore } from './judge.ts';
 
 /**
  * Combine multiple quality calculators with weights.

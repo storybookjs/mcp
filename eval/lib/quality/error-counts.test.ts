@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { TrialArgs, ExecutionSummary, GradingSummary } from '../../types.ts';
-import { fromTypeCheckErrors, fromLintErrors, fromA11yViolations } from './error-counts.ts';
+import {
+	fromTypeCheckErrors,
+	fromLintErrors,
+	fromA11yViolations,
+	fromTestPassRate,
+} from './error-counts.ts';
 
 function createGrading(overrides: Partial<GradingSummary> = {}): GradingSummary {
 	return {
@@ -34,6 +39,14 @@ function calculateA11y(violations: number) {
 		trialArgs: {} as TrialArgs,
 		execution: {} as ExecutionSummary,
 		grading: createGrading({ a11y: { violations } }),
+	})!;
+}
+
+function calculateTestPassRate(passed: number, failed: number) {
+	return fromTestPassRate({
+		trialArgs: {} as TrialArgs,
+		execution: {} as ExecutionSummary,
+		grading: createGrading({ test: { passed, failed } }),
 	})!;
 }
 
@@ -108,6 +121,30 @@ describe('fromA11yViolations', () => {
 		it('returns 0.0 for more than 5 violations', () => {
 			expect(calculateA11y(7).score).toBe(0.0);
 			expect(calculateA11y(50).score).toBe(0.0);
+		});
+	});
+});
+
+describe('fromTestPassRate', () => {
+	describe('score calculation', () => {
+		it('returns 0.0 when no tests were run', () => {
+			expect(calculateTestPassRate(0, 0).score).toBe(0.0);
+		});
+
+		it('returns 1.0 when all tests pass', () => {
+			expect(calculateTestPassRate(5, 0).score).toBe(1.0);
+		});
+
+		it('returns 0.75 for 75% pass rate', () => {
+			expect(calculateTestPassRate(3, 1).score).toBe(0.75);
+		});
+
+		it('returns 0.5 for 50% pass rate', () => {
+			expect(calculateTestPassRate(2, 2).score).toBe(0.5);
+		});
+
+		it('returns 0.0 when all tests fail', () => {
+			expect(calculateTestPassRate(0, 4).score).toBe(0.0);
 		});
 	});
 });
