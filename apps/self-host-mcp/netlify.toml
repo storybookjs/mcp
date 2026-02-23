@@ -9,4 +9,4 @@ to = "/.netlify/functions/mcp"
 status = 200
 
 [functions]
-included_files = ["manifests"]
+included_files = ["manifests/**"]
