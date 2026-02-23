@@ -1,0 +1,7 @@
+{
+	"expectedMcpTools": {
+		"run-story-tests": {
+			"minCalls": 2
+		}
+	}
+}
