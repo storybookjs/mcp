@@ -6,16 +6,16 @@ packages:
   - '!eval/tasks/*/trials/*/project'
 
 catalog:
-  '@storybook/addon-a11y': 0.0.0-pr-33206-sha-06900f2a
-  '@storybook/addon-docs': 0.0.0-pr-33206-sha-06900f2a
-  '@storybook/addon-vitest': 0.0.0-pr-33206-sha-06900f2a
-  '@storybook/react-vite': 0.0.0-pr-33206-sha-06900f2a
-  '@storybook/addon-themes': 0.0.0-pr-33206-sha-06900f2a
+  '@storybook/addon-a11y': 10.3.0-alpha.8
+  '@storybook/addon-docs': 10.3.0-alpha.8
+  '@storybook/addon-vitest': 10.3.0-alpha.8
+  '@storybook/react-vite': 10.3.0-alpha.8
+  '@storybook/addon-themes': 10.3.0-alpha.8
   '@tmcp/adapter-valibot': ^0.1.4
   '@tmcp/transport-http': ^0.8.0
   '@tmcp/transport-stdio': ^0.4.1
-  eslint-plugin-storybook: 0.0.0-pr-33206-sha-06900f2a
-  storybook: 0.0.0-pr-33206-sha-06900f2a
+  eslint-plugin-storybook: 10.3.0-alpha.8
+  storybook: 10.3.0-alpha.8
   tmcp: ^1.16.0
   tsdown: ^0.15.12
   typescript: ^5.9.3
@@ -28,10 +28,10 @@ catalog:
 catalogs:
   trials:
     '@eslint/js': 9.39.1
-    '@storybook/addon-a11y': 0.0.0-pr-33206-sha-06900f2a
-    '@storybook/addon-docs': 0.0.0-pr-33206-sha-06900f2a
-    '@storybook/addon-vitest': 0.0.0-pr-33206-sha-06900f2a
-    '@storybook/react-vite': 0.0.0-pr-33206-sha-06900f2a
+    '@storybook/addon-a11y': 10.3.0-alpha.8
+    '@storybook/addon-docs': 10.3.0-alpha.8
+    '@storybook/addon-vitest': 10.3.0-alpha.8
+    '@storybook/react-vite': 10.3.0-alpha.8
     '@types/node': 24.10.1
     '@types/react': 19.2.6
     '@types/react-dom': 19.2.3
@@ -40,11 +40,11 @@ catalogs:
     eslint: 9.39.1
     eslint-plugin-react-hooks: 7.0.1
     eslint-plugin-react-refresh: 0.4.24
-    eslint-plugin-storybook: 0.0.0-pr-33206-sha-06900f2a
+    eslint-plugin-storybook: 10.3.0-alpha.8
     globals: 16.5.0
     react: 19.2.0
     react-dom: 19.2.0
-    storybook: 0.0.0-pr-33206-sha-06900f2a
+    storybook: 10.3.0-alpha.8
     typescript: 5.9.3
     typescript-eslint: 8.47.0
     vite: 7.2.2
