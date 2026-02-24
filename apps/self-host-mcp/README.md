@@ -1,6 +1,8 @@
 # Self-hosting example (`@storybook/mcp`)
 
-This app shows the smallest practical way to run `@storybook/mcp` as an HTTP endpoint in Node.js and Netlify Functions.
+This app shows the smallest practical way to run `@storybook/mcp` as an HTTP endpoint in Node.js or Netlify Functions.
+
+It is available to experiment with at https://storybook-mcp-self-host-example.netlify.app/mcp
 
 ## Run
 
@@ -35,10 +37,8 @@ In practice, you want `components.json` (and `docs.json` if available) in `apps/
 This example also includes a Netlify function at `netlify/functions/mcp.ts` and routing in `netlify.toml`.
 
 1. Build your Storybook and copy generated manifests into `apps/self-host-mcp/manifests/` (or set `MANIFESTS_PATH` to a remote URL).
-2. Deploy `apps/self-host-mcp` as a Netlify site.
+2. Deploy `apps/self-host-mcp` as a Netlify project.
 3. Your MCP endpoint is available at `/mcp` (rewritten to `/.netlify/functions/mcp`).
-
-If using a remote manifest source, set `MANIFESTS_PATH` in Netlify environment variables (for example, an S3 or CDN base URL).
 
 ## What this demonstrates
 
