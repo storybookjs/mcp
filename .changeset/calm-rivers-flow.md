@@ -2,4 +2,4 @@
 '@storybook/addon-mcp': patch
 ---
 
-Update compatibility with `@storybook/mcp` export rename.
+Fix: expose the `get-documentation-for-story` tool in the MCP Addon.
