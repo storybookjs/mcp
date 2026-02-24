@@ -1,0 +1,26 @@
+{
+	"v": 1,
+	"components": {
+		"button": {
+			"id": "button",
+			"name": "Button",
+			"path": "./src/components/Button.tsx",
+			"import": "./src/components/Button.tsx",
+			"summary": "A basic action trigger used throughout the interface.",
+			"stories": [
+				{
+					"id": "button--primary",
+					"name": "Primary",
+					"summary": "Primary button style for main actions.",
+					"snippet": "<Button variant=\"primary\">Save</Button>"
+				},
+				{
+					"id": "button--secondary",
+					"name": "Secondary",
+					"summary": "Secondary button style for supporting actions.",
+					"snippet": "<Button variant=\"secondary\">Cancel</Button>"
+				}
+			]
+		}
+	}
+}
