@@ -1,5 +1,6 @@
 ---
+'@storybook/addon-mcp': patch
 '@storybook/mcp': patch
 ---
 
-Improve `@storybook/mcp` README
+Simplify package READMEs for docs-site-first documentation
