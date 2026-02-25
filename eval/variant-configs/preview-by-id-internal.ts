@@ -24,7 +24,7 @@ const config = {
 		{
 			...base,
 			id: '915-default',
-			label: '915 Preview Story By ID (v2)',
+			label: '915 Preview Story By ID (No context)',
 			taskName: '915-preview-story-by-id',
 		},
 		{

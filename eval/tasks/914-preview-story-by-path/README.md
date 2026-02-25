@@ -1,19 +1,19 @@
-# 914 – Write Story Then Preview
+# 914 – Preview Story By Path
 
 ## Purpose
 
-Tests whether the agent chooses the **path-based preview input** when story file context is already available, and avoids unnecessary docs lookups.
+Tests whether the agent chooses the **path-based preview input** after reading story-file context directly from disk.
 
 ## Setup
 
 - Pre-seeded Button component and existing stories.
-- Agent must add exactly one specific story variant in the existing story file:
-  - `SecondaryDisabled` with args `{ label: 'Secondary (Disabled)', disabled: true }`
-- Prompt asks the agent to show a preview at the end.
+- Prompt first asks the agent to read `stories/Button.stories.tsx` and report its imports.
+- Prompt then asks the agent to preview existing `Primary` and `Secondary` stories.
+- No file edits are expected.
 
 ## Prompt
 
-Asks for one specific new story (`SecondaryDisabled`) with exact args and a final preview.
+Asks the agent to inspect story file imports first, then preview `Primary` and `Secondary`.
 
 ## Quality Signal
 
