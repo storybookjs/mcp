@@ -9,5 +9,8 @@ const config: StorybookConfig = {
 		'@storybook/addon-mcp',
 	],
 	framework: '@storybook/react-vite',
+	features: {
+		experimentalComponentsManifest: true,
+	},
 };
 export default config;
