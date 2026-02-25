@@ -7,11 +7,11 @@ settings:
 catalogs:
   default:
     '@storybook/addon-a11y':
-      specifier: 10.3.0-alpha.8
-      version: 10.3.0-alpha.8
+      specifier: 10.3.0-alpha.10
+      version: 10.3.0-alpha.10
     '@storybook/addon-vitest':
-      specifier: 10.3.0-alpha.8
-      version: 10.3.0-alpha.8
+      specifier: 10.3.0-alpha.10
+      version: 10.3.0-alpha.10
     '@tmcp/adapter-valibot':
       specifier: ^0.1.4
       version: 0.1.5
@@ -19,8 +19,8 @@ catalogs:
       specifier: ^0.8.0
       version: 0.8.4
     storybook:
-      specifier: 10.3.0-alpha.8
-      version: 10.3.0-alpha.8
+      specifier: 10.3.0-alpha.10
+      version: 10.3.0-alpha.10
     tmcp:
       specifier: ^1.16.0
       version: 1.19.2
@@ -53,13 +53,13 @@ importers:
     devDependencies:
       '@storybook/addon-a11y':
         specifier: 'catalog:'
-        version: 10.3.0-alpha.8(storybook@10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.3.0-alpha.10(storybook@10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@storybook/addon-vitest':
         specifier: 'catalog:'
-        version: 10.3.0-alpha.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.3.0-alpha.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       storybook:
         specifier: 'catalog:'
-        version: 10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
 packages:
 
@@ -237,18 +237,18 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@storybook/addon-a11y@10.3.0-alpha.8':
-    resolution: {integrity: sha512-jdiWgwqnqaf/sjbbQSQhaGHmPBsi28AI6SNibsIUSkzLakWU0YEN1LK4Uo57pV6lYprB0dYx0fxGsdcrSlUEyw==}
+  '@storybook/addon-a11y@10.3.0-alpha.10':
+    resolution: {integrity: sha512-HU2KxTyiRNXnuLw4PAqQSt6288uRhQWd/Xy9ihL/0phAxYjUjP+B/jPT6NI0Rv8llOB9iievhOlP1arU6SdHsw==}
     peerDependencies:
-      storybook: ^10.3.0-alpha.8
+      storybook: ^10.3.0-alpha.10
 
-  '@storybook/addon-vitest@10.3.0-alpha.8':
-    resolution: {integrity: sha512-d6J3GN90Zl63DWFZenCaEYCYqRpxtjtXwx0nWIjOxe1qaMrumgR8bkGoNWDsgqOncnpfJKsjlqt4n4oG0r8rMg==}
+  '@storybook/addon-vitest@10.3.0-alpha.10':
+    resolution: {integrity: sha512-9q7Y8USdUeZ7ZPuPXgqoVF+qmIf6cbwtdtrO30fANiRJdguqIW8IuS6tqmrD/DHmNqZ81rdfNsjiW5MTjvfJLw==}
     peerDependencies:
       '@vitest/browser': ^3.0.0 || ^4.0.0
       '@vitest/browser-playwright': ^4.0.0
       '@vitest/runner': ^3.0.0 || ^4.0.0
-      storybook: ^10.3.0-alpha.8
+      storybook: ^10.3.0-alpha.10
       vitest: ^3.0.0 || ^4.0.0
     peerDependenciesMeta:
       '@vitest/browser':
@@ -502,8 +502,8 @@ packages:
   sqids@0.3.0:
     resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
 
-  storybook@10.3.0-alpha.8:
-    resolution: {integrity: sha512-ZhLzkSJA+NVr0HML2+KuygA9duRsxDcgeyYSPbTi3WtEzjQ39zbtHx9kLn5xx7UFPdh0YhF8drubRFcDIYUASA==}
+  storybook@10.3.0-alpha.10:
+    resolution: {integrity: sha512-Nob0gULASH9PvkDSVnCi0qL1VW3NPFDbw0WDl0ETpTC4DPWVMr5s0Aljd9SO6WZ+RE2JYcUm6I7pTZoPoawVUQ==}
     hasBin: true
     peerDependencies:
       prettier: ^2 || ^3
@@ -658,17 +658,17 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/addon-a11y@10.3.0-alpha.8(storybook@10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-a11y@10.3.0-alpha.10(storybook@10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       axe-core: 4.11.1
-      storybook: 10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  '@storybook/addon-vitest@10.3.0-alpha.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-vitest@10.3.0-alpha.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      storybook: 10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -913,7 +913,7 @@ snapshots:
 
   sqids@0.3.0: {}
 
-  storybook@10.3.0-alpha.8(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  storybook@10.3.0-alpha.10(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
