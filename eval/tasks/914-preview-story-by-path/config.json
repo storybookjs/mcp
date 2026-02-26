@@ -1,0 +1,7 @@
+{
+	"expectedMcpTools": {
+		"preview-stories": {
+			"minCalls": 1
+		}
+	}
+}

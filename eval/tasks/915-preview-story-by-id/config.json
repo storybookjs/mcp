@@ -1,0 +1,15 @@
+{
+	"expectedMcpTools": {
+		"list-all-documentation": {
+			"minCalls": 1,
+			"expectedCalls": [
+				{
+					"withStoryIds": true
+				}
+			]
+		},
+		"preview-stories": {
+			"minCalls": 1
+		}
+	}
+}
