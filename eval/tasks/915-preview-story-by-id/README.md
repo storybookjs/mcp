@@ -16,11 +16,10 @@ Asks the agent to preview two existing stories: Button Primary and Secondary.
 
 ## Quality Signal
 
-| Metric                                                           | Weight |
-| ---------------------------------------------------------------- | ------ |
-| MCP tools coverage (`list-all-documentation`, `preview-stories`) | 40 %   |
-| Discovery strategy (`withStoryIds: true`)                        | 30 %   |
-| Preview input strategy (`storyId` preferred)                     | 30 %   |
+| Metric                                       | Weight |
+| -------------------------------------------- | ------ |
+| Preview input strategy (`storyId` preferred) | 50 %   |
+| Final response includes both preview URLs    | 40 %   |
 
 ## Expected MCP Tools
 
@@ -28,3 +27,7 @@ Asks the agent to preview two existing stories: Button Primary and Secondary.
 - `preview-stories`
 
 For strategy quality credit, at least one preview invocation should pass story references via `storyId`, not only `absoluteStoryPath` + `exportName`.
+
+For final-response quality credit, the final assistant response should include preview URLs for both `example-button--primary` and `example-button--secondary`.
+
+`list-all-documentation` with `withStoryIds: true` remains part of MCP tool expectation/coverage, but it is not part of the custom hook quality formula for this task.

@@ -17,11 +17,11 @@ Asks the agent to inspect story file imports first, then preview `Primary` and `
 
 ## Quality Signal
 
-| Metric                                               | Weight |
-| ---------------------------------------------------- | ------ |
-| MCP tools coverage (`preview-stories` called)        | 10 %   |
-| Preview input strategy (path + exportName preferred) | 60 %   |
-| Avoid unnecessary docs fetches for button            | 30 %   |
+| Metric                                                 | Weight |
+| ------------------------------------------------------ | ------ |
+| Preview input strategy (path + exportName preferred)   | 50 %   |
+| Avoid `get-documentation` calls for Button identifiers | 10 %   |
+| Final response includes both preview URLs              | 40 %   |
 
 ## Expected MCP Tools
 
@@ -29,4 +29,6 @@ Asks the agent to inspect story file imports first, then preview `Primary` and `
 
 For strategy quality credit, at least one preview invocation should pass `stories` using `absoluteStoryPath` + `exportName` and should not rely exclusively on `storyId`.
 
-For docs-avoidance quality credit, the agent should not call `get-documentation` with `id: "button"` in this task.
+For docs-avoidance quality credit, the agent should not call `get-documentation` with any Button-like ID (for example, `button` or `example-button`).
+
+For final-response quality credit, the final assistant response should include preview URLs for both `example-button--primary` and `example-button--secondary`.
