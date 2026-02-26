@@ -16,10 +16,10 @@ Asks the agent to preview two existing stories: Button Primary and Secondary.
 
 ## Quality Signal
 
-| Metric                                                                                                                      | Weight |
-| --------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Metric                                                                                                                          | Weight |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | MCP tools coverage, including docs-first discovery via `list-all-documentation` with `withStoryIds: true` and `preview-stories` | 70 %   |
-| Preview input strategy (`storyId` preferred over `absoluteStoryPath` + `exportName`)                                       | 30 %   |
+| Preview input strategy (`storyId` preferred over `absoluteStoryPath` + `exportName`)                                            | 30 %   |
 
 ## Expected MCP Tools
 
