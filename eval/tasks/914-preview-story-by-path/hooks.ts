@@ -1,8 +1,55 @@
+import { readFileSync } from 'node:fs';
+import * as path from 'node:path';
 import type { CalculateQualityFn, Hooks, QualityResult } from '../../types.ts';
-import { combine, fromMcpToolsCoverage } from '../../lib/quality/index.ts';
+import { combine } from '../../lib/quality/index.ts';
 
 const PREVIEW_DESCRIPTION = 'Preview Input Strategy (Path-Based)';
 const DOCS_DESCRIPTION = 'Avoid Get Documentation For Button';
+const FINAL_URLS_DESCRIPTION = 'Final Response Includes Preview URLs';
+
+const EXPECTED_PREVIEW_URL_PATTERNS = [
+	/https?:\/\/[^\s)]+\?path=\/story\/example-button--primary(?:&[^\s)]*)?/i,
+	/https?:\/\/[^\s)]+\?path=\/story\/example-button--secondary(?:&[^\s)]*)?/i,
+];
+
+function extractFinalAssistantText(resultsPath: string): string | undefined {
+	try {
+		const transcriptPath = path.join(resultsPath, 'transcript.json');
+		const transcript = JSON.parse(readFileSync(transcriptPath, 'utf-8')) as {
+			messages?: Array<{
+				type?: string;
+				message?: {
+					content?: Array<{ type?: string; text?: string }>;
+				};
+			}>;
+		};
+
+		if (!Array.isArray(transcript.messages)) {
+			return undefined;
+		}
+
+		for (const message of transcript.messages.toReversed()) {
+			if (message.type !== 'assistant') {
+				continue;
+			}
+
+			const text =
+				message.message?.content
+					?.filter((content) => content.type === 'text' && typeof content.text === 'string')
+					.map((content) => content.text)
+					.join('')
+					.trim() ?? '';
+
+			if (text) {
+				return text;
+			}
+		}
+	} catch {
+		return undefined;
+	}
+
+	return undefined;
+}
 
 const fromPreviewPathBasedInput: CalculateQualityFn = ({ grading }): QualityResult | undefined => {
 	const previewTool = grading.mcpTools?.tools.find(
@@ -54,7 +101,7 @@ const fromNoGetDocumentationForButton: CalculateQualityFn = ({
 
 	const calledForButton = getDocumentationTool.invocations.some(({ input }) => {
 		const id = (input as { id?: unknown } | undefined)?.id;
-		return id === 'button';
+		return typeof id === 'string' && id.includes('button');
 	});
 
 	return {
@@ -63,11 +110,33 @@ const fromNoGetDocumentationForButton: CalculateQualityFn = ({
 	};
 };
 
+const fromFinalResponseIncludesPreviewUrls: CalculateQualityFn = ({
+	trialArgs,
+}): QualityResult | undefined => {
+	const finalAssistantText = extractFinalAssistantText(trialArgs.resultsPath);
+
+	if (!finalAssistantText) {
+		return {
+			score: 0,
+			description: FINAL_URLS_DESCRIPTION,
+		};
+	}
+
+	const matchedCount = EXPECTED_PREVIEW_URL_PATTERNS.filter((pattern) =>
+		pattern.test(finalAssistantText),
+	).length;
+
+	return {
+		score: matchedCount / EXPECTED_PREVIEW_URL_PATTERNS.length,
+		description: FINAL_URLS_DESCRIPTION,
+	};
+};
+
 const hooks: Hooks = {
 	calculateQuality: combine(
-		[fromMcpToolsCoverage, 0.1],
-		[fromPreviewPathBasedInput, 0.6],
-		[fromNoGetDocumentationForButton, 0.3],
+		[fromPreviewPathBasedInput, 0.5],
+		[fromNoGetDocumentationForButton, 0.1],
+		[fromFinalResponseIncludesPreviewUrls, 0.4],
 	),
 };
 
