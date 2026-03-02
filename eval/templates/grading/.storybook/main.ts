@@ -10,7 +10,7 @@ const config: StorybookConfig = {
 	],
 	framework: '@storybook/react-vite',
 	features: {
-		experimentalComponentsManifest: true,
+		componentsManifest: true,
 	},
 };
 export default config;
