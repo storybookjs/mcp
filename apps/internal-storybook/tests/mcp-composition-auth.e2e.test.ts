@@ -12,7 +12,8 @@ import {
 const PORT = 6008;
 const MCP_ENDPOINT = `http://localhost:${PORT}/mcp`;
 const WELL_KNOWN_ENDPOINT = `http://localhost:${PORT}/.well-known/oauth-protected-resource`;
-const STARTUP_TIMEOUT = 30_000;
+const STARTUP_TIMEOUT = 60_000;
+const SHUTDOWN_TIMEOUT = 30_000;
 
 let storybookProcess: ReturnType<typeof x> | null = null;
 
@@ -41,7 +42,7 @@ describe('MCP Composition Auth E2E Tests', () => {
 	afterAll(async () => {
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-	});
+	}, SHUTDOWN_TIMEOUT);
 
 	describe('OAuth Discovery', () => {
 		it('should expose .well-known/oauth-protected-resource for private refs', async () => {

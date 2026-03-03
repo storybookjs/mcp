@@ -11,7 +11,8 @@ import {
 
 const PORT = 6006;
 const MCP_ENDPOINT = `http://localhost:${PORT}/mcp`;
-const STARTUP_TIMEOUT = 30_000;
+const STARTUP_TIMEOUT = 60_000;
+const SHUTDOWN_TIMEOUT = 30_000;
 
 let storybookProcess: ReturnType<typeof x> | null = null;
 
@@ -44,7 +45,7 @@ describe('MCP Endpoint E2E Tests', () => {
 	afterAll(async () => {
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-	});
+	}, SHUTDOWN_TIMEOUT);
 
 	describe('Session Initialization', () => {
 		it('should successfully initialize an MCP session', async () => {

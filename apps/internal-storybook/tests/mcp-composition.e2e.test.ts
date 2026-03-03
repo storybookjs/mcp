@@ -11,7 +11,8 @@ import {
 
 const PORT = 6007;
 const MCP_ENDPOINT = `http://localhost:${PORT}/mcp`;
-const STARTUP_TIMEOUT = 30_000;
+const STARTUP_TIMEOUT = 60_000;
+const SHUTDOWN_TIMEOUT = 30_000;
 
 let storybookProcess: ReturnType<typeof x> | null = null;
 
@@ -39,7 +40,7 @@ describe('MCP Composition E2E Tests', () => {
 	afterAll(async () => {
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-	});
+	}, SHUTDOWN_TIMEOUT);
 
 	describe('Multi-Source Documentation', () => {
 		it('should list documentation from both local and remote sources', async () => {

@@ -80,8 +80,27 @@ export async function stopStorybook(storybookProcess: ReturnType<typeof x> | nul
 	if (!storybookProcess || !storybookProcess.process) {
 		return;
 	}
-	const kill = Promise.withResolvers<void>();
-	storybookProcess.process.on('exit', kill.resolve);
+	const processToStop = storybookProcess.process;
+	if (processToStop.exitCode !== null || !processToStop.pid) {
+		return;
+	}
+
+	const waitForExit = Promise.withResolvers<void>();
+	processToStop.once('exit', () => waitForExit.resolve());
+
 	storybookProcess.kill('SIGTERM');
-	await kill.promise;
+	const timeout = setTimeout(async () => {
+		try {
+			if (process.platform === 'win32') {
+				await x('taskkill', ['/pid', String(processToStop.pid), '/t', '/f']);
+			} else {
+				processToStop.kill('SIGKILL');
+			}
+		} catch {
+			// Process may already be gone.
+		}
+	}, 5_000);
+
+	await waitForExit.promise;
+	clearTimeout(timeout);
 }
