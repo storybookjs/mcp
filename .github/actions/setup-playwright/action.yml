@@ -16,8 +16,9 @@ runs:
             const workspaceRoot = process.env.GITHUB_WORKSPACE || process.cwd();
             const workspaceFilePath = path.join(workspaceRoot, 'pnpm-workspace.yaml');
             const workspaceConfig = fs.readFileSync(workspaceFilePath, 'utf8');
+            const normalizedWorkspaceConfig = workspaceConfig.replace(/\\r\\n/g, '\\n');
 
-            const playwrightVersion = workspaceConfig.match(
+            const playwrightVersion = normalizedWorkspaceConfig.match(
               /(?:^|\\n)catalog:\\n(?: {2}[^\\n]*\\n)*? {2}playwright:\\s*([^#\\s]+)\\s*(?:#.*)?(?:\\n|$)/,
             )?.[1];
 
