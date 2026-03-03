@@ -1,0 +1,15 @@
+{
+  "expectedImports": {
+    "@janeapp/burrito-design-system": [
+      "Button",
+      "Card",
+      "Checkbox",
+      "Fieldset",
+      "FormField",
+      "Heading",
+      "PrimaryButton",
+      "Radio",
+      "TextInput"
+    ]
+  }
+}
