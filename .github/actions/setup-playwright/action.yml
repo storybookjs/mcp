@@ -57,4 +57,9 @@ runs:
     - name: Install Playwright Dependencies
       shell: bash
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: pnpm exec playwright install --with-deps --only-shell
+      run: |
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          pnpm exec playwright install --with-deps --only-shell
+        else
+          pnpm exec playwright install --only-shell
+        fi
