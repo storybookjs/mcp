@@ -30,3 +30,4 @@ The conditions field is required — display a validation error "At least one co
 - The form values object passed to onSubmit MUST have the shape: { surveyId: string, fullName: string, skinType: string | null, conditions: string[] }
 - The <IntakeSurvey /> component MUST accept an optional onCancel() prop called when the Cancel button is clicked
 - There MUST be no lint errors in the generated code — resolve any lint errors before completing the task
+- There SHOULD be no test errors in the generated code — attempt to resolve any Vitest/Playwright errors before completing the task
