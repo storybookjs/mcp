@@ -278,6 +278,10 @@ describe('mcpServerHandler', () => {
 			},
 		});
 		expect(parsedResponse.result.serverInfo.version).toBeDefined();
+		expect(parsedResponse.result.instructions).toBeDefined();
+		expect(parsedResponse.result.instructions).toContain('get-storybook-story-instructions');
+		// list-all-documentation is only included when the docs toolset manifest is available
+		expect(parsedResponse.result.instructions).not.toContain('list-all-documentation');
 	});
 
 	it('should respect disableTelemetry setting', async () => {
