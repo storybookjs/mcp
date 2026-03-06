@@ -18,6 +18,7 @@ import type { AddonContext, AddonOptionsOutput } from './types.ts';
 import { logger } from 'storybook/internal/node-logger';
 import { getManifestStatus } from './tools/is-manifest-available.ts';
 import { addRunStoryTestsTool } from './tools/run-story-tests.ts';
+import { addScreenshotStoryTool } from './tools/screenshot-story.ts';
 import { estimateTokens } from './utils/estimate-tokens.ts';
 import { isAddonA11yEnabled } from './utils/is-addon-a11y-enabled.ts';
 import type { CompositionAuth } from './auth/index.ts';
@@ -57,6 +58,7 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	// Register dev addon tools
 	await addPreviewStoriesTool(server);
 	await addGetUIBuildingInstructionsTool(server);
+	await addScreenshotStoryTool(server);
 
 	// Register test addon tools
 	a11yEnabled = await isAddonA11yEnabled(options);
