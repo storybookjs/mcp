@@ -16,8 +16,9 @@ runs:
             const workspaceRoot = process.env.GITHUB_WORKSPACE || process.cwd();
             const workspaceFilePath = path.join(workspaceRoot, 'pnpm-workspace.yaml');
             const workspaceConfig = fs.readFileSync(workspaceFilePath, 'utf8');
+            const normalizedWorkspaceConfig = workspaceConfig.replace(/\\r\\n/g, '\\n');
 
-            const playwrightVersion = workspaceConfig.match(
+            const playwrightVersion = normalizedWorkspaceConfig.match(
               /(?:^|\\n)catalog:\\n(?: {2}[^\\n]*\\n)*? {2}playwright:\\s*([^#\\s]+)\\s*(?:#.*)?(?:\\n|$)/,
             )?.[1];
 
@@ -57,4 +58,9 @@ runs:
     - name: Install Playwright Dependencies
       shell: bash
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: pnpm exec playwright install --with-deps --only-shell
+      run: |
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          pnpm exec playwright install --with-deps --only-shell
+        else
+          pnpm exec playwright install --only-shell
+        fi
