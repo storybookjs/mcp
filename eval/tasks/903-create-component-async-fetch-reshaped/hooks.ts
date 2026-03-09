@@ -25,7 +25,7 @@ export default config;
 			cwd: trialArgs.projectPath,
 		});
 
-		await fs.unlink(path.join(trialArgs.projectPath, '.storybook', 'preview.ts'));
+		await fs.unlink(path.join(trialArgs.projectPath, '.storybook', 'preview.tsx'));
 
 		log.success(
 			'Reshaped package installed, PostCSS config added, MSW packages installed and MSW for Storybook configured',
