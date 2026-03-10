@@ -253,7 +253,7 @@ export { addMyTool, MY_TOOL_NAME } from './tools/my-tool.ts';
 - `addon-mcp` depends on `@storybook/mcp` (workspace dependency)
 - `AddonContext` extends `StorybookContext` to ensure type compatibility
 - Component manifest tools are conditionally registered based on feature flags:
-  - Checks `features.experimentalComponentsManifest` flag
+  - Checks `features.componentsManifest` flag (or `features.experimentalComponentsManifest` for backwards compatibility)
   - Checks for `experimental_manifests` preset
   - Only registers `addListAllDocumentationTool` and `addGetDocumentationTool` when enabled
 - Context includes `request` (HTTP Request object) which tools use to determine manifest location
