@@ -16,6 +16,7 @@ import type {
  */
 const TOKENIZER_MODEL_MAP: Record<ClaudeModel, keyof typeof models> = {
 	'claude-opus-4.6': 'anthropic/claude-opus-4.5',
+	// tokenizer doesn't support 4.6 models yet
 	'claude-sonnet-4.6': 'anthropic/claude-sonnet-4.5',
 	'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
 };
