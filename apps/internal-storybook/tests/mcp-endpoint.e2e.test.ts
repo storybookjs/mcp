@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { x } from 'tinyexec';
 import {
-	STORYBOOK_DIR,
 	createMCPRequestBody,
 	parseMCPResponse,
 	waitForMcpEndpoint,
 	killPort,
+	startStorybook,
 	stopStorybook,
 	attachStorybookDebugLogging,
 } from './helpers';
@@ -36,11 +36,7 @@ describe('MCP Endpoint E2E Tests', () => {
 		console.log('[mcp-endpoint] Starting setup');
 		await killPort(PORT);
 		console.log('[mcp-endpoint] Port cleanup completed');
-		storybookProcess = x('pnpm', ['storybook'], {
-			nodeOptions: {
-				cwd: STORYBOOK_DIR,
-			},
-		});
+		storybookProcess = startStorybook('.storybook', PORT);
 		attachStorybookDebugLogging(storybookProcess, 'mcp-endpoint');
 
 		await waitForMcpEndpoint(MCP_ENDPOINT, {
