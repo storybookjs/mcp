@@ -7,7 +7,6 @@ import {
 	killPort,
 	startStorybook,
 	stopStorybook,
-	attachStorybookDebugLogging,
 } from './helpers';
 
 const PORT = 6008;
@@ -35,25 +34,18 @@ async function mcpRequest(method: string, params: any = {}, token?: string) {
 
 describe('MCP Composition Auth E2E Tests', () => {
 	beforeAll(async () => {
-		console.log('[mcp-composition-auth] Starting setup');
 		await killPort(PORT);
-		console.log('[mcp-composition-auth] Port cleanup completed');
 		storybookProcess = startStorybook('.storybook-composition-auth', PORT);
-		attachStorybookDebugLogging(storybookProcess, 'mcp-composition-auth');
 		await waitForMcpEndpoint(MCP_ENDPOINT, {
 			maxAttempts: 80,
 			acceptStatuses: [401],
-			debugLabel: 'mcp-composition-auth',
 			storybookProcess,
 		});
-		console.log('[mcp-composition-auth] MCP endpoint is ready');
 	}, STARTUP_TIMEOUT);
 
 	afterAll(async () => {
-		console.log('[mcp-composition-auth] Starting teardown');
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-		console.log('[mcp-composition-auth] Teardown completed');
 	}, SHUTDOWN_TIMEOUT);
 
 	describe('OAuth Discovery', () => {

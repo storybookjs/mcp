@@ -7,7 +7,6 @@ import {
 	killPort,
 	startStorybook,
 	stopStorybook,
-	attachStorybookDebugLogging,
 } from './helpers';
 
 const PORT = 6007;
@@ -33,24 +32,17 @@ async function mcpRequest(method: string, params: any = {}) {
 
 describe('MCP Composition E2E Tests', () => {
 	beforeAll(async () => {
-		console.log('[mcp-composition] Starting setup');
 		await killPort(PORT);
-		console.log('[mcp-composition] Port cleanup completed');
 		storybookProcess = startStorybook('.storybook-composition', PORT);
-		attachStorybookDebugLogging(storybookProcess, 'mcp-composition');
 		await waitForMcpEndpoint(MCP_ENDPOINT, {
 			maxAttempts: 80,
-			debugLabel: 'mcp-composition',
 			storybookProcess,
 		});
-		console.log('[mcp-composition] MCP endpoint is ready');
 	}, STARTUP_TIMEOUT);
 
 	afterAll(async () => {
-		console.log('[mcp-composition] Starting teardown');
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-		console.log('[mcp-composition] Teardown completed');
 	}, SHUTDOWN_TIMEOUT);
 
 	describe('Multi-Source Documentation', () => {

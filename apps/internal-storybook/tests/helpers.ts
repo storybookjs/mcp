@@ -26,17 +26,10 @@ export async function waitForMcpEndpoint(
 		maxAttempts?: number;
 		interval?: number;
 		acceptStatuses?: number[];
-		debugLabel?: string;
 		storybookProcess?: StorybookProcess | null;
 	} = {},
 ): Promise<void> {
-	const {
-		maxAttempts = 120,
-		interval = 500,
-		acceptStatuses = [],
-		debugLabel = 'mcp',
-		storybookProcess,
-	} = options;
+	const { maxAttempts = 120, interval = 500, acceptStatuses = [], storybookProcess } = options;
 	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	let attempts = 0;
 	let lastStatus: number | null = null;
@@ -51,7 +44,7 @@ export async function waitForMcpEndpoint(
 				clearInterval(intervalId);
 				reject(
 					new Error(
-						`[${debugLabel}] Storybook exited before MCP became ready (pid=${storybookPid}, exitCode=${storybookExitCode})`,
+						`Storybook exited before MCP became ready (pid=${storybookPid}, exitCode=${storybookExitCode})`,
 					),
 				);
 				return;
@@ -63,27 +56,20 @@ export async function waitForMcpEndpoint(
 				body: JSON.stringify(createMCPRequestBody('tools/list')),
 			});
 			lastStatus = response.status;
-			console.log(
-				`[${debugLabel}] MCP probe #${attempts}/${maxAttempts}: status=${response.status}`,
-			);
 			if (response.ok || acceptStatuses.includes(response.status)) {
 				clearInterval(intervalId);
-				console.log(
-					`[${debugLabel}] MCP endpoint ready after ${attempts} probes (status=${response.status})`,
-				);
 				resolve();
 				return;
 			}
 		} catch (error) {
 			lastErrorMessage = error instanceof Error ? error.message : String(error);
-			console.log(`[${debugLabel}] MCP probe #${attempts}/${maxAttempts}: ${lastErrorMessage}`);
 		}
 
 		if (attempts >= maxAttempts) {
 			clearInterval(intervalId);
 			reject(
 				new Error(
-					`[${debugLabel}] MCP endpoint failed to start in time (attempts=${attempts}, lastStatus=${lastStatus ?? 'none'}, lastError=${lastErrorMessage ?? 'none'})`,
+					`MCP endpoint failed to start in time (attempts=${attempts}, lastStatus=${lastStatus ?? 'none'}, lastError=${lastErrorMessage ?? 'none'})`,
 				),
 			);
 		}
@@ -113,40 +99,6 @@ export function startStorybook(configDir: string, port: number): ReturnType<type
 		nodeOptions: {
 			cwd: STORYBOOK_DIR,
 		},
-	});
-}
-
-export function attachStorybookDebugLogging(
-	storybookProcess: StorybookProcess | null,
-	label: string,
-): void {
-	if (!storybookProcess?.process) {
-		console.log(`[${label}] Storybook process missing`);
-		return;
-	}
-	const proc = storybookProcess.process;
-	console.log(`[${label}] Storybook started (pid=${proc.pid ?? 'unknown'})`);
-	proc.stdout?.setEncoding('utf8');
-	proc.stderr?.setEncoding('utf8');
-	proc.stdout?.on('data', (chunk: string) => {
-		for (const line of chunk.split('\n')) {
-			if (line.trim()) {
-				console.log(`[${label}] stdout: ${line}`);
-			}
-		}
-	});
-	proc.stderr?.on('data', (chunk: string) => {
-		for (const line of chunk.split('\n')) {
-			if (line.trim()) {
-				console.log(`[${label}] stderr: ${line}`);
-			}
-		}
-	});
-	proc.on('exit', (code, signal) => {
-		console.log(`[${label}] Storybook exited (code=${code}, signal=${signal ?? 'none'})`);
-	});
-	proc.on('error', (error) => {
-		console.log(`[${label}] Storybook process error: ${error.message}`);
 	});
 }
 

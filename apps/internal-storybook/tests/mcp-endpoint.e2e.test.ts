@@ -7,7 +7,6 @@ import {
 	killPort,
 	startStorybook,
 	stopStorybook,
-	attachStorybookDebugLogging,
 } from './helpers';
 
 const PORT = 6006;
@@ -33,25 +32,18 @@ async function mcpRequest(method: string, params: any = {}, id: number = 1) {
 
 describe('MCP Endpoint E2E Tests', () => {
 	beforeAll(async () => {
-		console.log('[mcp-endpoint] Starting setup');
 		await killPort(PORT);
-		console.log('[mcp-endpoint] Port cleanup completed');
 		storybookProcess = startStorybook('.storybook', PORT);
-		attachStorybookDebugLogging(storybookProcess, 'mcp-endpoint');
 
 		await waitForMcpEndpoint(MCP_ENDPOINT, {
 			maxAttempts: 80,
-			debugLabel: 'mcp-endpoint',
 			storybookProcess,
 		});
-		console.log('[mcp-endpoint] MCP endpoint is ready');
 	}, STARTUP_TIMEOUT);
 
 	afterAll(async () => {
-		console.log('[mcp-endpoint] Starting teardown');
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-		console.log('[mcp-endpoint] Teardown completed');
 	}, SHUTDOWN_TIMEOUT);
 
 	describe('Session Initialization', () => {
