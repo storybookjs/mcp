@@ -1,0 +1,10 @@
+{
+	"expectedMcpTools": {
+		"get-storybook-story-instructions": {
+			"minCalls": 1
+		},
+		"run-story-tests": {
+			"minCalls": 1
+		}
+	}
+}
