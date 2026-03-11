@@ -1,6 +1,8 @@
+import { fileURLToPath } from 'node:url';
 import { x } from 'tinyexec';
 
-export const STORYBOOK_DIR = new URL('..', import.meta.url).pathname;
+export const STORYBOOK_DIR = fileURLToPath(new URL('..', import.meta.url));
+type StorybookProcess = ReturnType<typeof x>;
 
 export function createMCPRequestBody(method: string, params: any = {}, id: number = 1) {
 	return {
@@ -20,32 +22,56 @@ export async function parseMCPResponse(response: Response) {
 
 export async function waitForMcpEndpoint(
 	endpoint: string,
-	options: { maxAttempts?: number; interval?: number; acceptStatuses?: number[] } = {},
+	options: {
+		maxAttempts?: number;
+		interval?: number;
+		acceptStatuses?: number[];
+		storybookProcess?: StorybookProcess | null;
+	} = {},
 ): Promise<void> {
-	const { maxAttempts = 120, interval = 500, acceptStatuses = [] } = options;
+	const { maxAttempts = 120, interval = 500, acceptStatuses = [], storybookProcess } = options;
 	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	let attempts = 0;
+	let lastStatus: number | null = null;
+	let lastErrorMessage: string | null = null;
 
 	const intervalId = setInterval(async () => {
 		attempts++;
 		try {
+			const storybookPid = storybookProcess?.process?.pid;
+			const storybookExitCode = storybookProcess?.process?.exitCode;
+			if (storybookPid && storybookExitCode !== null) {
+				clearInterval(intervalId);
+				reject(
+					new Error(
+						`Storybook exited before MCP became ready (pid=${storybookPid}, exitCode=${storybookExitCode})`,
+					),
+				);
+				return;
+			}
+
 			const response = await fetch(endpoint, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(createMCPRequestBody('tools/list')),
 			});
+			lastStatus = response.status;
 			if (response.ok || acceptStatuses.includes(response.status)) {
 				clearInterval(intervalId);
 				resolve();
 				return;
 			}
-		} catch {
-			// Server not ready yet
+		} catch (error) {
+			lastErrorMessage = error instanceof Error ? error.message : String(error);
 		}
 
 		if (attempts >= maxAttempts) {
 			clearInterval(intervalId);
-			reject(new Error('MCP endpoint failed to start within the timeout period'));
+			reject(
+				new Error(
+					`MCP endpoint failed to start in time (attempts=${attempts}, lastStatus=${lastStatus ?? 'none'}, lastError=${lastErrorMessage ?? 'none'})`,
+				),
+			);
 		}
 	}, interval);
 
@@ -80,8 +106,27 @@ export async function stopStorybook(storybookProcess: ReturnType<typeof x> | nul
 	if (!storybookProcess || !storybookProcess.process) {
 		return;
 	}
-	const kill = Promise.withResolvers<void>();
-	storybookProcess.process.on('exit', kill.resolve);
+	const processToStop = storybookProcess.process;
+	if (processToStop.exitCode !== null || !processToStop.pid) {
+		return;
+	}
+
+	const waitForExit = Promise.withResolvers<void>();
+	processToStop.once('exit', () => waitForExit.resolve());
+
 	storybookProcess.kill('SIGTERM');
-	await kill.promise;
+	const timeout = setTimeout(async () => {
+		try {
+			if (process.platform === 'win32') {
+				await x('taskkill', ['/pid', String(processToStop.pid), '/t', '/f']);
+			} else {
+				processToStop.kill('SIGKILL');
+			}
+		} catch {
+			// Process may already be gone.
+		}
+	}, 5_000);
+
+	await waitForExit.promise;
+	clearTimeout(timeout);
 }

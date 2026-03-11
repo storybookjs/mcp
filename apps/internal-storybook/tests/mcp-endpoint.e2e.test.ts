@@ -1,17 +1,18 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { x } from 'tinyexec';
 import {
-	STORYBOOK_DIR,
 	createMCPRequestBody,
 	parseMCPResponse,
 	waitForMcpEndpoint,
 	killPort,
+	startStorybook,
 	stopStorybook,
 } from './helpers';
 
 const PORT = 6006;
 const MCP_ENDPOINT = `http://localhost:${PORT}/mcp`;
-const STARTUP_TIMEOUT = 30_000;
+const STARTUP_TIMEOUT = 45_000;
+const SHUTDOWN_TIMEOUT = 30_000;
 
 let storybookProcess: ReturnType<typeof x> | null = null;
 
@@ -32,19 +33,18 @@ async function mcpRequest(method: string, params: any = {}, id: number = 1) {
 describe('MCP Endpoint E2E Tests', () => {
 	beforeAll(async () => {
 		await killPort(PORT);
-		storybookProcess = x('pnpm', ['storybook'], {
-			nodeOptions: {
-				cwd: STORYBOOK_DIR,
-			},
-		});
+		storybookProcess = startStorybook('.storybook', PORT);
 
-		await waitForMcpEndpoint(MCP_ENDPOINT);
+		await waitForMcpEndpoint(MCP_ENDPOINT, {
+			maxAttempts: 80,
+			storybookProcess,
+		});
 	}, STARTUP_TIMEOUT);
 
 	afterAll(async () => {
 		await stopStorybook(storybookProcess);
 		storybookProcess = null;
-	});
+	}, SHUTDOWN_TIMEOUT);
 
 	describe('Session Initialization', () => {
 		it('should successfully initialize an MCP session', async () => {
