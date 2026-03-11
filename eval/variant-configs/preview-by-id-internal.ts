@@ -2,7 +2,7 @@ import type { VariantConfigInput, VariantInput } from '../lib/eval/types.ts';
 
 const base = {
 	agent: 'claude-code',
-	model: 'claude-sonnet-4.5',
+	model: 'claude-sonnet-4.6',
 	verbose: false,
 	storybook: false,
 	systemPrompts: [],

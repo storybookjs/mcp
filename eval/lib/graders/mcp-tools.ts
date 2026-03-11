@@ -283,8 +283,9 @@ export async function gradeMcpTools(trialArgs: TrialArgs): Promise<McpToolsSumma
 			taskConfig.expectedMcpTools,
 		);
 
-		// Only return if there were any MCP tool calls
-		if (mcpToolsSummary.totalCalls > 0) {
+		// Return if there were any MCP tool calls, or if expectations were configured
+		// (so a run that ignores MCP entirely scores 0 rather than undefined)
+		if (mcpToolsSummary.totalCalls > 0 || mcpToolsSummary.expectedToolCount) {
 			return mcpToolsSummary;
 		}
 
