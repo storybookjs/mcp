@@ -13,3 +13,5 @@ test-report.junit.xml
 trials/
 orchestration-logs/
 CLAUDE.local.md
+
+apps/self-host-mcp/pnpm-lock.yaml

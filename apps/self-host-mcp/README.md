@@ -47,4 +47,4 @@ This example also includes a Netlify function at `netlify/functions/mcp.ts` and 
 - Provide a custom `manifestProvider` for local or remote manifest sources
 - Use the same handler implementation for both Node and Netlify Functions
 
-For full guidance and Netlify Functions adaptation notes, see [packages/mcp/docs/self-hosting.md](../../packages/mcp/docs/self-hosting.md).
+For full guidance and Netlify Functions adaptation notes, see [packages/mcp/README.md](../../packages/mcp/README.md).
