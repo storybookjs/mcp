@@ -6,11 +6,14 @@ import { defineConfig } from 'vitest/config';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 
+const isWindows = process.platform === 'win32';
+const defaultTimeout = isWindows ? 30_000 : 15_000;
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
 	test: {
-		testTimeout: 15_000,
-		hookTimeout: 15_000,
+		testTimeout: defaultTimeout,
+		hookTimeout: defaultTimeout,
 		projects: [
 			// E2E tests project (for MCP endpoint testing)
 			{
