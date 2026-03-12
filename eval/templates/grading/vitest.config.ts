@@ -19,7 +19,7 @@ export default defineConfig({
 	},
 	test: {
 		coverage: {
-			exclude: ['preview.ts', '**/*.{css,scss,sass}', ...defaultExclude],
+			exclude: ['preview.tsx', '**/*.{css,scss,sass}', ...defaultExclude],
 			reportOnFailure: true,
 		},
 		projects: [

@@ -33,7 +33,7 @@ node eval.ts
 node advanced-eval.ts
 
 # With all options specified (advanced-eval)
-node advanced-eval.ts --agent claude-code --model claude-sonnet-4.5 --context components.json --upload-id batch-1 100-flight-booking-plain
+node advanced-eval.ts --agent claude-code --model claude-sonnet-4.6 --context components.json --upload-id batch-1 100-flight-booking-plain
 ```
 
 ## CLI Options (Advanced Eval)
@@ -62,7 +62,7 @@ Different agents support different models:
 | ---------------------- | :-------------: | :---------: |
 | `claude-opus-4.6`      |       ✅        |     ✅      |
 | `claude-opus-4.5`      |       ❌        |     ✅      |
-| `claude-sonnet-4.5`    |       ✅        |     ✅      |
+| `claude-sonnet-4.6`    |       ✅        |     ✅      |
 | `claude-haiku-4.5`     |       ✅        |     ✅      |
 | `gpt-5.2`              |       ❌        |     ✅      |
 | `gpt-5.2-codex`        |       ❌        |     ✅      |
@@ -82,7 +82,7 @@ node advanced-eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-pla
 > [!IMPORTANT]
 > **GitHub Copilot CLI Model Configuration**
 >
-> To use models other than `claude-sonnet-4.5` with the Copilot CLI, you must first enable them in your GitHub account settings:
+> To use models other than `claude-sonnet-4.6` with the Copilot CLI, you must first enable them in your GitHub account settings:
 >
 > 1. Go to [GitHub Copilot Features Settings](https://github.com/settings/copilot/features)
 > 2. Enable the models you want to use (e.g., GPT-5.1 Codex Max, GPT-5.2, Claude Opus 4.5)
@@ -121,7 +121,7 @@ Variant configs live under `eval/variant-configs/` and define a base setup plus 
 // eval/variant-configs/storybook-mcp-comparison.ts
 const base = {
 	agent: 'claude-code',
-	model: 'claude-sonnet-4.5',
+	model: 'claude-sonnet-4.6',
 };
 
 export default {
