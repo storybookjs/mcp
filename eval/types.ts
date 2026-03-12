@@ -7,7 +7,7 @@ import * as v from 'valibot';
 export const SUPPORTED_MODELS = [
 	'claude-opus-4.6',
 	'claude-opus-4.5',
-	'claude-sonnet-4.5',
+	'claude-sonnet-4.6',
 	'claude-haiku-4.5',
 	'gpt-5.2-codex',
 	'gpt-5.2',
@@ -22,7 +22,7 @@ export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
  */
 export const CLAUDE_MODELS = [
 	'claude-opus-4.6',
-	'claude-sonnet-4.5',
+	'claude-sonnet-4.6',
 	'claude-haiku-4.5',
 ] as const satisfies readonly SupportedModel[];
 
@@ -31,7 +31,7 @@ export const CLAUDE_MODELS = [
  */
 export const CLAUDE_MODEL_MAP: Record<(typeof CLAUDE_MODELS)[number], string> = {
 	'claude-opus-4.6': 'Opus',
-	'claude-sonnet-4.5': 'Sonnet',
+	'claude-sonnet-4.6': 'Sonnet',
 	'claude-haiku-4.5': 'Haiku',
 };
 
@@ -43,7 +43,7 @@ export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
 export const COPILOT_MODELS = [
 	'claude-opus-4.6',
 	'claude-opus-4.5',
-	'claude-sonnet-4.5',
+	'claude-sonnet-4.6',
 	'claude-haiku-4.5',
 	'gpt-5.2-codex',
 	'gpt-5.2',
