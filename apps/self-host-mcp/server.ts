@@ -40,8 +40,7 @@ if (import.meta.main) {
 	});
 
 	const port = Number(args.values.port);
-	const manifestsPath = args.values.manifestsPath;
-	const storybookMcpHandler = await createMcpHandler(manifestsPath);
+	const storybookMcpHandler = await createMcpHandler(args.values.manifestsPath);
 
 	serve({
 		port,
