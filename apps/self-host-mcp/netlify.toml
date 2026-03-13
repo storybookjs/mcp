@@ -10,3 +10,4 @@ status = 200
 
 [functions]
 included_files = ["manifests/**"]
+node_bundler = "esbuild"
