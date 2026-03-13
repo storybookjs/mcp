@@ -1,0 +1,13 @@
+{
+	"v": 1,
+	"docs": {
+		"getting-started": {
+			"id": "getting-started",
+			"name": "Getting Started",
+			"title": "Docs/Getting Started",
+			"path": "./docs/getting-started.mdx",
+			"summary": "Introduces the design system and component usage conventions.",
+			"content": "Use Button for interactive actions. Prefer primary for primary actions and secondary for alternate actions."
+		}
+	}
+}
