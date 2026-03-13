@@ -1,6 +1,6 @@
 [build]
 base = "apps/self-host-mcp"
-command = "pnpm install --frozen-lockfile"
+command = "pnpm install --frozen-lockfile && pnpm -w run build"
 publish = "."
 
 [[redirects]]
