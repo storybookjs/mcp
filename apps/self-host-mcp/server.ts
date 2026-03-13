@@ -39,11 +39,10 @@ if (import.meta.main) {
 		},
 	});
 
-	const port = Number(args.values.port);
 	const storybookMcpHandler = await createMcpHandler(args.values.manifestsPath);
 
 	serve({
-		port,
+		port: Number(args.values.port),
 		async fetch(request: Request) {
 			if (new URL(request.url).pathname !== '/mcp') {
 				return new Response('Not found', { status: 404 });
