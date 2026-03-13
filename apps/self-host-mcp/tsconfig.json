@@ -1,6 +1,8 @@
 {
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
+		// Prevent inherited workspace aliases from resolving @storybook/mcp to source during Netlify function bundling.
+		"paths": {},
 		"outDir": "./dist"
 	},
 	"include": ["**/*.ts"],

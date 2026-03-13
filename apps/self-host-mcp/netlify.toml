@@ -1,6 +1,6 @@
 [build]
 base = "apps/self-host-mcp"
-command = "pnpm install --frozen-lockfile && pnpm -w run build"
+command = "pnpm install --frozen-lockfile"
 publish = "."
 
 [[redirects]]
@@ -10,4 +10,3 @@ status = 200
 
 [functions]
 included_files = ["manifests/**"]
-external_node_modules = ["@storybook/mcp"]
