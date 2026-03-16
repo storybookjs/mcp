@@ -1,4 +1,3 @@
-import type { Documentation } from 'react-docgen';
 import type { ComponentDoc } from 'react-docgen-typescript';
 import * as v from 'valibot';
 
