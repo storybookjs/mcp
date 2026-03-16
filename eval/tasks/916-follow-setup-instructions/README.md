@@ -21,10 +21,10 @@ Asks the agent to build a small page with `LaunchButton` in `src/main.tsx` and n
 
 ## Quality Signal
 
-| Metric                                                  | Weight |
-| ------------------------------------------------------- | ------ |
-| MCP tools coverage (`get-setup-instructions`)           | 50 %   |
-| Test pass rate (setup instructions were actually used)  | 50 %   |
+| Metric                                                 | Weight |
+| ------------------------------------------------------ | ------ |
+| MCP tools coverage (`get-setup-instructions`)          | 50 %   |
+| Test pass rate (setup instructions were actually used) | 50 %   |
 
 ## Expected MCP Tools
 

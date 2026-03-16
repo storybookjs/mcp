@@ -19,7 +19,9 @@ function findSetupInstructionsDocs(docsManifest?: DocsManifestMap): Doc[] {
 async function hasSetupInstructions(ctx?: StorybookContext): Promise<boolean> {
 	if (ctx?.sources?.some((source) => source.url)) {
 		const manifests = await getMultiSourceManifests(ctx.sources, ctx.request, ctx.manifestProvider);
-		return manifests.some((manifest) => findSetupInstructionsDocs(manifest.docsManifest).length > 0);
+		return manifests.some(
+			(manifest) => findSetupInstructionsDocs(manifest.docsManifest).length > 0,
+		);
 	}
 
 	const manifests = await getManifests(ctx?.request, ctx?.manifestProvider);
