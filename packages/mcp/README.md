@@ -350,7 +350,7 @@ Type:
 ) => Promise<void>;
 ```
 
-Registers setup guidance lookup for the docs entry tagged `setup-instructions`.
+Registers setup guidance lookup for all docs entries tagged `setup-instructions`.
 
 Use this when an agent needs installation steps, providers/wrappers, theming/bootstrap configuration, CSS/font/token initialization, or other project wiring before consuming component APIs. When `options.multiSource` is `true`, the tool schema requires `storybookId` input.
 

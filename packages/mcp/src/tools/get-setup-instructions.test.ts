@@ -97,6 +97,71 @@ describe('getSetupInstructionsTool', () => {
 		`);
 	});
 
+	it('should return all tagged setup instructions docs entries as separate text contents', async () => {
+		getManifestsSpy.mockResolvedValue({
+			componentManifest: smallManifestFixture,
+			docsManifest: {
+				v: 1,
+				docs: {
+					'entry-setup': {
+						id: 'entry-setup',
+						name: 'Entry Setup',
+						title: 'Entry Setup',
+						path: 'docs/entry-setup.mdx',
+						tags: ['setup-instructions'],
+						content: '# Entry Setup\n\nImport the shared CSS before rendering components.',
+					},
+					'provider-setup': {
+						id: 'provider-setup',
+						name: 'Provider Setup',
+						title: 'Provider Setup',
+						path: 'docs/provider-setup.mdx',
+						tags: ['setup-instructions'],
+						content: '# Provider Setup\n\nWrap the app in `AcmeProvider`.',
+					},
+				},
+			},
+		});
+
+		const request = {
+			jsonrpc: '2.0' as const,
+			id: 11,
+			method: 'tools/call',
+			params: {
+				name: GET_SETUP_INSTRUCTIONS_TOOL_NAME,
+				arguments: {},
+			},
+		};
+
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
+
+		expect(response.result).toMatchInlineSnapshot(`
+			{
+			  "content": [
+			    {
+			      "text": "# Entry Setup
+
+			# Entry Setup
+
+			Import the shared CSS before rendering components.",
+			      "type": "text",
+			    },
+			    {
+			      "text": "# Provider Setup
+
+			# Provider Setup
+
+			Wrap the app in \`AcmeProvider\`.",
+			      "type": "text",
+			    },
+			  ],
+			}
+		`);
+	});
+
 	it('should return an error when no tagged setup instructions docs entry exists', async () => {
 		getManifestsSpy.mockResolvedValue({
 			componentManifest: smallManifestFixture,

@@ -10,20 +10,20 @@ import { LIST_TOOL_NAME } from './list-all-documentation.ts';
 export const GET_SETUP_INSTRUCTIONS_TOOL_NAME = 'get-setup-instructions';
 export const SETUP_INSTRUCTIONS_TAG = 'setup-instructions';
 
-function findSetupInstructionsDoc(docsManifest?: DocsManifestMap): Doc | undefined {
+function findSetupInstructionsDocs(docsManifest?: DocsManifestMap): Doc[] {
 	return Object.values(docsManifest?.docs ?? {})
 		.sort((left, right) => left.id.localeCompare(right.id))
-		.find((doc) => doc.tags?.includes(SETUP_INSTRUCTIONS_TAG));
+		.filter((doc) => doc.tags?.includes(SETUP_INSTRUCTIONS_TAG));
 }
 
 async function hasSetupInstructions(ctx?: StorybookContext): Promise<boolean> {
 	if (ctx?.sources?.some((source) => source.url)) {
 		const manifests = await getMultiSourceManifests(ctx.sources, ctx.request, ctx.manifestProvider);
-		return manifests.some((manifest) => !!findSetupInstructionsDoc(manifest.docsManifest));
+		return manifests.some((manifest) => findSetupInstructionsDocs(manifest.docsManifest).length > 0);
 	}
 
 	const manifests = await getManifests(ctx?.request, ctx?.manifestProvider);
-	return !!findSetupInstructionsDoc(manifests.docsManifest);
+	return findSetupInstructionsDocs(manifests.docsManifest).length > 0;
 }
 
 export async function addGetSetupInstructionsTool(
@@ -69,9 +69,9 @@ export async function addGetSetupInstructionsTool(
 			}
 
 			const manifests = await getManifests(ctx?.request, ctx?.manifestProvider, source);
-			const setupInstructions = findSetupInstructionsDoc(manifests.docsManifest);
+			const setupInstructions = findSetupInstructionsDocs(manifests.docsManifest);
 
-			if (!setupInstructions) {
+			if (setupInstructions.length === 0) {
 				const suffix = storybookId ? ` in source "${storybookId}"` : '';
 				return {
 					content: [
@@ -85,12 +85,10 @@ export async function addGetSetupInstructionsTool(
 			}
 
 			return {
-				content: [
-					{
-						type: 'text' as const,
-						text: formatDocsManifest(setupInstructions),
-					},
-				],
+				content: setupInstructions.map((setupInstruction) => ({
+					type: 'text' as const,
+					text: formatDocsManifest(setupInstruction),
+				})),
 			};
 		} catch (error) {
 			return errorToMCPContent(error);
@@ -102,7 +100,7 @@ export async function addGetSetupInstructionsTool(
 		title: 'Get Setup Instructions',
 		description: `Get project-level setup instructions for this component library or design system.
 
-Call this when you need installation steps, required providers or wrappers, theming/bootstrap setup, CSS/font/token initialization, framework integration, app-root wiring, or other environment preparation required before using the components. This returns the docs entry tagged "${SETUP_INSTRUCTIONS_TAG}". Use ${GET_TOOL_NAME} for component APIs, props, examples, and story-driven usage details.`,
+Call this when you need installation steps, required providers or wrappers, theming/bootstrap setup, CSS/font/token initialization, framework integration, app-root wiring, or other environment preparation required before using the components. This returns every docs entry tagged "${SETUP_INSTRUCTIONS_TAG}" as separate text contents. Use ${GET_TOOL_NAME} for component APIs, props, examples, and story-driven usage details.`,
 		enabled: async () => {
 			if (enabled && (await enabled()) === false) {
 				return false;
