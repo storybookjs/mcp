@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 
 export type AcmeProviderProps = {
 	children?: ReactNode;
-	theme: 'midnight';
-	density: 'comfortable';
+	theme?: 'midnight';
+	density?: 'comfortable';
 };
 
 export declare function AcmeProvider(props: AcmeProviderProps): ReactNode;
