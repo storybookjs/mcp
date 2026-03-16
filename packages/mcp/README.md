@@ -81,6 +81,7 @@ A fetch-compatible request handler for your `/mcp` endpoint.
 
 - Registers these MCP tools:
   - [`list-all-documentation`](https://storybook.js.org/docs/next/ai/mcp/overview/#list-all-documentation)
+  - [`get-setup-instructions`](https://storybook.js.org/docs/next/ai/mcp/overview/#get-setup-instructions)
   - [`get-documentation`](https://storybook.js.org/docs/next/ai/mcp/overview/#get-documentation)
   - [`get-documentation-for-story`](https://storybook.js.org/docs/next/ai/mcp/overview/#get-documentation-for-story)
 - Uses HTTP transport from [`@tmcp/transport-http`](https://github.com/paoloricciuti/tmcp/).
@@ -286,6 +287,7 @@ import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import {
 	addGetStoryDocumentationTool,
 	addGetDocumentationTool,
+	addGetSetupInstructionsTool,
 	addListAllDocumentationTool,
 	type StorybookContext,
 } from '@storybook/mcp';
@@ -302,6 +304,7 @@ const server = new McpServer(
 ).withContext<StorybookContext>();
 
 await addListAllDocumentationTool(server);
+await addGetSetupInstructionsTool(server);
 await addGetDocumentationTool(server);
 await addGetStoryDocumentationTool(server);
 ```
@@ -334,6 +337,22 @@ Type:
 Registers [documentation lookup](https://storybook.js.org/docs/next/ai/mcp/overview/#get-documentation) by component/docs `id`.
 
 When `options.multiSource` is `true`, the tool schema requires `storybookId` input.
+
+#### `addGetSetupInstructionsTool`
+
+Type:
+
+```ts
+(
+	server: McpServer<any, StorybookContext>,
+	enabled?: () => boolean | Promise<boolean>,
+	options?: { multiSource?: boolean },
+) => Promise<void>;
+```
+
+Registers setup guidance lookup for the docs entry tagged `setup-instructions`.
+
+Use this when an agent needs installation steps, providers/wrappers, theming/bootstrap configuration, CSS/font/token initialization, or other project wiring before consuming component APIs. When `options.multiSource` is `true`, the tool schema requires `storybookId` input.
 
 #### `addGetStoryDocumentationTool`
 
