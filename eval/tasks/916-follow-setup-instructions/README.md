@@ -17,7 +17,7 @@ Tests whether the agent discovers and applies **project-level setup guidance** v
 
 ## Prompt
 
-Asks the agent to build a small page with `LaunchButton` in `src/main.tsx` and not guess any library setup.
+Asks the agent to build a small page in `src/components/MissionControl.tsx`, update `src/main.tsx` to render it, and rely on existing static stories for Storybook inspection instead of writing stories itself.
 
 ## Quality Signal
 

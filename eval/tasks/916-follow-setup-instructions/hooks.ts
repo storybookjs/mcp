@@ -11,6 +11,12 @@ const hooks: Hooks = {
 			{ recursive: true },
 		);
 	},
+	preGrade: async (trialArgs) => {
+		await fs.copyFile(
+			path.join(trialArgs.taskPath, 'seed', 'setup-instructions-followed.ts'),
+			path.join(trialArgs.projectPath, 'src', 'setup-instructions-followed.test.ts'),
+		);
+	},
 	calculateQuality: combine([fromMcpToolsCoverage, 0.5], [fromTestPassRate, 0.5]),
 };
 
