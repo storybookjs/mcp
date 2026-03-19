@@ -44,3 +44,43 @@ jobs:
           commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # See: https://modelcontextprotocol.io/registry/github-actions
+      - name: Install mcp-publisher
+        if: steps.changesets.outputs.published == 'true' && contains(steps.changesets.outputs.publishedPackages, '@storybook/addon-mcp')
+        working-directory: packages/addon-mcp
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        if: steps.changesets.outputs.published == 'true' && contains(steps.changesets.outputs.publishedPackages, '@storybook/addon-mcp')
+        working-directory: packages/addon-mcp
+        run: ./mcp-publisher login github-oidc
+
+      - name: Sync addon MCP registry version with jq
+        if: steps.changesets.outputs.published == 'true' && contains(steps.changesets.outputs.publishedPackages, '@storybook/addon-mcp')
+        working-directory: packages/addon-mcp
+        run: |
+          # Pull the published addon version directly from Changesets output.
+          # The output is a JSON array like:
+          # [{"name":"@storybook/addon-mcp","version":"0.4.1"}, ...]
+          ADDON_MCP_VERSION="$(jq -r '.[] | select(.name == "@storybook/addon-mcp") | .version' <<< '${{ steps.changesets.outputs.publishedPackages }}')"
+
+          # Fail fast if the package was expected to publish but no version was found.
+          test -n "$ADDON_MCP_VERSION"
+
+          # Update only the server.json fields that need to match the published package version:
+          # 1. the top-level MCP server version
+          # 2. the local npm package entry version used for installation metadata
+          jq --tab --arg version "$ADDON_MCP_VERSION" '
+            .version = $version |
+            .packages[0].version = $version
+          ' server.json > server.json.tmp
+
+          # Replace the original file only after jq succeeds, to avoid partial writes.
+          mv server.json.tmp server.json
+
+      - name: Publish addon MCP to MCP Registry
+        if: steps.changesets.outputs.published == 'true' && contains(steps.changesets.outputs.publishedPackages, '@storybook/addon-mcp')
+        working-directory: packages/addon-mcp
+        run: ./mcp-publisher publish
