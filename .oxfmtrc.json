@@ -3,5 +3,5 @@
 	"useTabs": true,
 	"singleQuote": true,
 	"trailingComma": "all",
-	"ignorePatterns": ["**/CHANGELOG.md"]
+	"ignorePatterns": ["**/CHANGELOG.md", ".changeset/*.md"]
 }
