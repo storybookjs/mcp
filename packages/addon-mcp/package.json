@@ -1,6 +1,6 @@
 {
 	"name": "@storybook/addon-mcp",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "Help agents automatically write and test stories for your UI components",
 	"keywords": [
 		"ai",
@@ -10,6 +10,7 @@
 	"license": "MIT",
 	"author": "Storybook Core Team",
 	"repository": {
+		"type": "git",
 		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/addon-mcp"
 	},
@@ -58,6 +59,7 @@
 			"optional": true
 		}
 	},
+	"mcpName": "io.github.storybookjs/addon-mcp",
 	"storybook": {
 		"displayName": "Addon MCP",
 		"supportedFrameworks": [
