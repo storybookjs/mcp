@@ -11,12 +11,12 @@ catalog:
   '@storybook/addon-vitest': 10.3.0-alpha.16
   '@storybook/react-vite': 10.3.0-alpha.16
   '@storybook/addon-themes': 10.3.0-alpha.16
-  '@tmcp/adapter-valibot': ^0.1.4
-  '@tmcp/transport-http': ^0.8.0
-  '@tmcp/transport-stdio': ^0.4.1
+  '@tmcp/adapter-valibot': ^0.1.5
+  '@tmcp/transport-http': ^0.8.5
+  '@tmcp/transport-stdio': ^0.4.2
   eslint-plugin-storybook: 10.3.0-alpha.16
   storybook: 10.3.0-alpha.16
-  tmcp: ^1.16.0
+  tmcp: ^1.19.3
   tsdown: ^0.15.12
   typescript: ^5.9.3
   valibot: 1.2.0
