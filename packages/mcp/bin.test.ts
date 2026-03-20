@@ -148,6 +148,9 @@ describe('bin.ts stdio MCP server', () => {
 						name: 'list-all-documentation',
 					}),
 					expect.objectContaining({
+						name: 'get-setup-instructions',
+					}),
+					expect.objectContaining({
 						name: 'get-documentation',
 					}),
 				]),
