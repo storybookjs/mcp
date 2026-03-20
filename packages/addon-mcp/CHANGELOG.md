@@ -1,5 +1,14 @@
 # @storybook/addon-mcp
 
+## 0.4.3
+
+### Patch Changes
+
+- [#204](https://github.com/storybookjs/mcp/pull/204) [`b2a327d`](https://github.com/storybookjs/mcp/commit/b2a327dde8d0529ee3a2b80e033ce35991ad538e) Thanks [@JReinhold](https://github.com/JReinhold)! - upgrade tmcp dependencies
+
+- Updated dependencies [[`b2a327d`](https://github.com/storybookjs/mcp/commit/b2a327dde8d0529ee3a2b80e033ce35991ad538e)]:
+  - @storybook/mcp@0.6.2
+
 ## 0.4.2
 
 ### Patch Changes
