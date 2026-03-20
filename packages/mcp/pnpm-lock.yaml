@@ -7,17 +7,17 @@ settings:
 catalogs:
   default:
     '@tmcp/adapter-valibot':
-      specifier: ^0.1.4
+      specifier: ^0.1.5
       version: 0.1.5
     '@tmcp/transport-http':
-      specifier: ^0.8.0
-      version: 0.8.4
+      specifier: ^0.8.5
+      version: 0.8.5
     '@tmcp/transport-stdio':
-      specifier: ^0.4.1
-      version: 0.4.1
+      specifier: ^0.4.2
+      version: 0.4.2
     tmcp:
-      specifier: ^1.16.0
-      version: 1.19.2
+      specifier: ^1.19.3
+      version: 1.19.3
     valibot:
       specifier: 1.2.0
       version: 1.2.0
@@ -28,20 +28,20 @@ importers:
     dependencies:
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
-        version: 0.1.5(tmcp@1.19.2(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))
+        version: 0.1.5(tmcp@1.19.3(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))
       '@tmcp/transport-http':
         specifier: 'catalog:'
-        version: 0.8.4(tmcp@1.19.2(typescript@5.9.3))
+        version: 0.8.5(tmcp@1.19.3(typescript@5.9.3))
       tmcp:
         specifier: 'catalog:'
-        version: 1.19.2(typescript@5.9.3)
+        version: 1.19.3(typescript@5.9.3)
       valibot:
         specifier: 'catalog:'
         version: 1.2.0(typescript@5.9.3)
     devDependencies:
       '@tmcp/transport-stdio':
         specifier: 'catalog:'
-        version: 0.4.1(tmcp@1.19.2(typescript@5.9.3))
+        version: 0.4.2(tmcp@1.19.3(typescript@5.9.3))
       react-docgen:
         specifier: ^8.0.2
         version: 8.0.2
@@ -154,8 +154,8 @@ packages:
     peerDependencies:
       tmcp: ^1.16.3
 
-  '@tmcp/transport-http@0.8.4':
-    resolution: {integrity: sha512-n/4oIYjHyX5i6LFC3+qlxtc/IIv1xoqLhPVbdA5VYDyUWU6QRBU3+ffMXQuAPs0Q6Z+ZCzcO30V90yRMAxuriQ==}
+  '@tmcp/transport-http@0.8.5':
+    resolution: {integrity: sha512-qQLqiCTtbxtTSswqOn/782df7O57RxI/yLUtCDQ++kHEhbmDUc8glmmtGJ3mrb7yPSPoM5VF2Pc2Q5cA6quzLA==}
     peerDependencies:
       '@tmcp/auth': ^0.3.3 || ^0.4.0
       tmcp: ^1.18.0
@@ -163,8 +163,8 @@ packages:
       '@tmcp/auth':
         optional: true
 
-  '@tmcp/transport-stdio@0.4.1':
-    resolution: {integrity: sha512-464x8HNrvjLLtKZsrFWUL13GnBFFtrNoWxnE0rHbcmQSYRqtS8WseWtQCYstj2Vcg9kRlIUVFGDIljGNP4/N4A==}
+  '@tmcp/transport-stdio@0.4.2':
+    resolution: {integrity: sha512-OLVLJzUXAKsCvenkjPf5ygli9ZcbEv3Lcei/ry+DB4T1NzvDc1oU3m41zYtHhAmbES1h6om3T9f/zonBSDFMRQ==}
     peerDependencies:
       tmcp: ^1.16.3
 
@@ -317,8 +317,8 @@ packages:
     resolution: {integrity: sha512-W/KYk+NFhkmsYpuHq5JykngiOCnxeVL8v8dFnqxSD8qEEdRfXk1SDM6JzNqcERbcGYj9tMrDQBYV9cjgnunFIg==}
     engines: {node: '>=18'}
 
-  tmcp@1.19.2:
-    resolution: {integrity: sha512-/AEG/jlzflGKqCKm7GNdhz50VtFlN+3vcnKd+iQJXcHdIPrpCRMolEj57SfgcXcfE2ouX7J6Q05gPKsS2NZhKg==}
+  tmcp@1.19.3:
+    resolution: {integrity: sha512-plz/TLKNFrdfQN32LjCTN6ULy6pynfGPgHcU7KGCI5dBrxQ9Mub99SmcYuzxEkLjJooQuOD3gosSwZEl1htOtw==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -468,26 +468,26 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tmcp/adapter-valibot@0.1.5(tmcp@1.19.2(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))':
+  '@tmcp/adapter-valibot@0.1.5(tmcp@1.19.3(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@valibot/to-json-schema': 1.5.0(valibot@1.2.0(typescript@5.9.3))
-      tmcp: 1.19.2(typescript@5.9.3)
+      tmcp: 1.19.3(typescript@5.9.3)
       valibot: 1.2.0(typescript@5.9.3)
 
-  '@tmcp/session-manager@0.2.1(tmcp@1.19.2(typescript@5.9.3))':
+  '@tmcp/session-manager@0.2.1(tmcp@1.19.3(typescript@5.9.3))':
     dependencies:
-      tmcp: 1.19.2(typescript@5.9.3)
+      tmcp: 1.19.3(typescript@5.9.3)
 
-  '@tmcp/transport-http@0.8.4(tmcp@1.19.2(typescript@5.9.3))':
+  '@tmcp/transport-http@0.8.5(tmcp@1.19.3(typescript@5.9.3))':
     dependencies:
-      '@tmcp/session-manager': 0.2.1(tmcp@1.19.2(typescript@5.9.3))
+      '@tmcp/session-manager': 0.2.1(tmcp@1.19.3(typescript@5.9.3))
       esm-env: 1.2.2
-      tmcp: 1.19.2(typescript@5.9.3)
+      tmcp: 1.19.3(typescript@5.9.3)
 
-  '@tmcp/transport-stdio@0.4.1(tmcp@1.19.2(typescript@5.9.3))':
+  '@tmcp/transport-stdio@0.4.2(tmcp@1.19.3(typescript@5.9.3))':
     dependencies:
-      tmcp: 1.19.2(typescript@5.9.3)
+      tmcp: 1.19.3(typescript@5.9.3)
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -617,7 +617,7 @@ snapshots:
 
   tinyexec@1.0.2: {}
 
-  tmcp@1.19.2(typescript@5.9.3):
+  tmcp@1.19.3(typescript@5.9.3):
     dependencies:
       '@standard-schema/spec': 1.1.0
       json-rpc-2.0: 1.7.1
