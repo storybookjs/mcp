@@ -274,3 +274,8 @@ MIT - See [LICENSE](./LICENSE) for details
 ---
 
 **Note**: This project is experimental and under active development. APIs and architecture may change as we explore the best ways to integrate AI agents with Storybook.
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/storybookjs-addon-mcp).
+
