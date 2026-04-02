@@ -7,11 +7,11 @@ settings:
 catalogs:
   default:
     '@storybook/addon-a11y':
-      specifier: 10.4.0-alpha.2
-      version: 10.4.0-alpha.2
+      specifier: 10.4.0-alpha.7
+      version: 10.4.0-alpha.7
     '@storybook/addon-vitest':
-      specifier: 10.4.0-alpha.2
-      version: 10.4.0-alpha.2
+      specifier: 10.4.0-alpha.7
+      version: 10.4.0-alpha.7
     '@tmcp/adapter-valibot':
       specifier: ^0.1.5
       version: 0.1.5
@@ -19,8 +19,8 @@ catalogs:
       specifier: ^0.8.5
       version: 0.8.5
     storybook:
-      specifier: 10.4.0-alpha.2
-      version: 10.4.0-alpha.2
+      specifier: 10.4.0-alpha.7
+      version: 10.4.0-alpha.7
     tmcp:
       specifier: ^1.19.3
       version: 1.19.3
@@ -53,13 +53,13 @@ importers:
     devDependencies:
       '@storybook/addon-a11y':
         specifier: 'catalog:'
-        version: 10.4.0-alpha.2(storybook@10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.4.0-alpha.7(storybook@10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@storybook/addon-vitest':
         specifier: 'catalog:'
-        version: 10.4.0-alpha.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.4.0-alpha.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       storybook:
         specifier: 'catalog:'
-        version: 10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
 packages:
 
@@ -237,18 +237,18 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@storybook/addon-a11y@10.4.0-alpha.2':
-    resolution: {integrity: sha512-65HwMLF2Mskz6bFVzF1nX55eOfzZP5h+pTLGsUYfOWOLM3z2nCFk4KOHII4qmM7InRmcw6mllNHYVlqn1cksXw==}
+  '@storybook/addon-a11y@10.4.0-alpha.7':
+    resolution: {integrity: sha512-6FcbCMWO6ZZm4a6q/ErUqfZBjSXWYKPHXamRJbFnulzhNCo7jrMCqa1/HE888zokxmrSA392B2ch/SY+EYNZkw==}
     peerDependencies:
-      storybook: ^10.4.0-alpha.2
+      storybook: ^10.4.0-alpha.7
 
-  '@storybook/addon-vitest@10.4.0-alpha.2':
-    resolution: {integrity: sha512-ldK8rDuyH473zFT0IB81eEv82WHLfQ9hIlUtigxOnkTHxgjzJoW0IT545lNp/dbBxmLLlNsXEbRB7uVMN4x6Yg==}
+  '@storybook/addon-vitest@10.4.0-alpha.7':
+    resolution: {integrity: sha512-WOC9CtBBRE1Bim5WYnwiGgg0ioaS2uBdZyV3FzLkJho4xPY89zViBzGx/71F1UZmyFQKyurr6NHbgbvppccRMA==}
     peerDependencies:
       '@vitest/browser': ^3.0.0 || ^4.0.0
       '@vitest/browser-playwright': ^4.0.0
       '@vitest/runner': ^3.0.0 || ^4.0.0
-      storybook: ^10.4.0-alpha.2
+      storybook: ^10.4.0-alpha.7
       vitest: ^3.0.0 || ^4.0.0
     peerDependenciesMeta:
       '@vitest/browser':
@@ -328,6 +328,9 @@ packages:
 
   '@vitest/utils@3.2.4':
     resolution: {integrity: sha512-fB2V0JFrQSMsCo9HiSq3Ezpdv4iYaXRG1Sx8edX3MwxfyNn83mKiGzOcH+Fkxt4MHxr3y42fQi1oeAInqgX2QA==}
+
+  '@webcontainer/env@1.1.1':
+    resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -502,8 +505,8 @@ packages:
   sqids@0.3.0:
     resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
 
-  storybook@10.4.0-alpha.2:
-    resolution: {integrity: sha512-GOSwH9UWRLGN4zi8cvOq3f2w8iHIF/+ZdgxlEjsWIio8cRLGIWPK5/HVpcQiNuqdaLn+ZyKMDEQX3OSSI0RrEw==}
+  storybook@10.4.0-alpha.7:
+    resolution: {integrity: sha512-yHgvNE8e1JtqCkj3X3Halc+EHthS9XgBzjwRcf+YAbOuyLO7NaeoFg+AZHEYZapk4SNcNmuTYz+X5j8+Jmk3Mw==}
     hasBin: true
     peerDependencies:
       prettier: ^2 || ^3
@@ -658,17 +661,17 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/addon-a11y@10.4.0-alpha.2(storybook@10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-a11y@10.4.0-alpha.7(storybook@10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       axe-core: 4.11.1
-      storybook: 10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  '@storybook/addon-vitest@10.4.0-alpha.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-vitest@10.4.0-alpha.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      storybook: 10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -755,6 +758,8 @@ snapshots:
       '@vitest/pretty-format': 3.2.4
       loupe: 3.2.1
       tinyrainbow: 2.0.0
+
+  '@webcontainer/env@1.1.1': {}
 
   ansi-regex@5.0.1: {}
 
@@ -913,7 +918,7 @@ snapshots:
 
   sqids@0.3.0: {}
 
-  storybook@10.4.0-alpha.2(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  storybook@10.4.0-alpha.7(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -921,6 +926,7 @@ snapshots:
       '@testing-library/user-event': 14.6.1(@testing-library/dom@10.4.1)
       '@vitest/expect': 3.2.4
       '@vitest/spy': 3.2.4
+      '@webcontainer/env': 1.1.1
       esbuild: 0.27.3
       open: 10.2.0
       recast: 0.23.11
