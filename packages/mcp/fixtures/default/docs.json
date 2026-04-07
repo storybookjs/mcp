@@ -6,6 +6,7 @@
 			"name": "Getting Started",
 			"title": "Getting Started Guide",
 			"path": "docs/getting-started.mdx",
+			"tags": ["setup-instructions"],
 			"content": "# Getting Started\n\nWelcome to the component library. This guide will help you get up and running.\n\n## Installation\n\n```bash\nnpm install my-component-library\n```\n\n## Usage\n\nImport components and use them in your application."
 		},
 		"theming": {

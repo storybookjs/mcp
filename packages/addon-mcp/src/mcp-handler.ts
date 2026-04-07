@@ -8,6 +8,7 @@ import {
 	addListAllDocumentationTool,
 	addGetDocumentationTool,
 	addGetStoryDocumentationTool,
+	addGetSetupInstructionsTool,
 	type Source,
 } from '@storybook/mcp';
 import type { Options } from 'storybook/internal/types';
@@ -83,6 +84,7 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 		logger.info('Experimental components manifest feature detected - registering component tools');
 		const contextAwareEnabled = () => server.ctx.custom?.toolsets?.docs ?? true;
 		await addListAllDocumentationTool(server, contextAwareEnabled);
+		await addGetSetupInstructionsTool(server, contextAwareEnabled, { multiSource });
 		await addGetDocumentationTool(server, contextAwareEnabled, { multiSource });
 		await addGetStoryDocumentationTool(server, contextAwareEnabled, { multiSource });
 	}

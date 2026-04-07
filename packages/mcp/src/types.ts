@@ -1,4 +1,3 @@
-import type { Documentation } from 'react-docgen';
 import type { ComponentDoc } from 'react-docgen-typescript';
 import * as v from 'valibot';
 
@@ -112,6 +111,7 @@ const Doc = v.object({
 	path: v.string(),
 	content: v.string(),
 	summary: v.optional(v.string()),
+	tags: v.optional(v.array(v.string())),
 	error: v.optional(Error),
 });
 export type Doc = v.InferOutput<typeof Doc>;

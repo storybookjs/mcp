@@ -1,0 +1,28 @@
+{
+	"v": 1,
+	"docs": {
+		"entry-setup": {
+			"id": "entry-setup",
+			"name": "Entry Setup",
+			"title": "Entry Setup",
+			"path": "docs/entry-setup.mdx",
+			"tags": ["setup-instructions"],
+			"content": "# Entry Setup\n\nThe `@acme/ui` eval package is already available in this project.\n\n## Styles\n\nImport `@acme/ui/styles.css` exactly once from the app entry file before rendering any Acme UI components."
+		},
+		"provider-setup": {
+			"id": "provider-setup",
+			"name": "Provider Setup",
+			"title": "Provider Setup",
+			"path": "docs/provider-setup.mdx",
+			"tags": ["setup-instructions"],
+			"content": "# Provider Setup\n\n## Root provider\n\nWrap the rendered app in `<AcmeProvider theme=\"midnight\" density=\"comfortable\">`.\n\n## Root container\n\nPlace your UI inside an element with `data-acme-app=\"true\"`."
+		},
+		"release-notes": {
+			"id": "release-notes",
+			"name": "Release Notes",
+			"title": "Release Notes",
+			"path": "docs/release-notes.mdx",
+			"content": "# Release Notes\n\nThis docs entry is intentionally not tagged as setup instructions."
+		}
+	}
+}
