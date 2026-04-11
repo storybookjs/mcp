@@ -375,6 +375,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				or omit stories to run all tests for full-project verification.
 				Use this continuously to monitor test results as you work on your UI components and stories.
 				Results will include passing/failing status, and accessibility violation reports.
+							 Pass screenshot: true to attach final rendered story screenshots as MCP image content.
 				For visual/design accessibility violations (for example color contrast), ask the user before changing styles.",
 				    "inputSchema": {
 				      "$schema": "http://json-schema.org/draft-07/schema#",
@@ -382,6 +383,11 @@ describe('MCP Endpoint E2E Tests', () => {
 				        "a11y": {
 				          "default": true,
 				          "description": "Whether to run accessibility tests. Defaults to true. Disable if you only need component test results.",
+				          "type": "boolean",
+				        },
+				        "screenshot": {
+				          "default": false,
+				          "description": "Whether to capture a final screenshot of each tested story and return it as MCP image content. Defaults to false.",
 				          "type": "boolean",
 				        },
 				        "stories": {
@@ -779,6 +785,35 @@ describe('MCP Endpoint E2E Tests', () => {
 			expect(text).toContain('example-button--secondary');
 			expect(text).toContain('## Accessibility Violations');
 			expect(text).toContain('example-button--primary - color-contrast');
+		});
+
+		it('should attach screenshots when screenshot capture is enabled', async () => {
+			const cwd = process.cwd();
+			const storyPath = cwd.endsWith('/apps/internal-storybook')
+				? `${cwd}/stories/components/Button.stories.ts`
+				: `${cwd}/apps/internal-storybook/stories/components/Button.stories.ts`;
+
+			const response = await mcpRequest('tools/call', {
+				name: 'run-story-tests',
+				arguments: {
+					stories: [
+						{
+							exportName: 'Primary',
+							absoluteStoryPath: storyPath,
+						},
+					],
+					a11y: false,
+					screenshot: true,
+				},
+			});
+
+			expect(response.result.content[0].text).toContain('## Passing Stories');
+			expect(response.result.content[0].text).toContain('## Screenshots');
+			expect(response.result.content[1]).toMatchObject({
+				type: 'image',
+				mimeType: 'image/png',
+			});
+			expect((response.result.content[1] as { data: string }).data.length).toBeGreaterThan(0);
 		});
 
 		it('should return error for non-existent story', async () => {

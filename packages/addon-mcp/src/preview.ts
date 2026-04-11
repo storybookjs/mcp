@@ -1,3 +1,52 @@
+import { MCP_APP_PARAM, MCP_APP_SIZE_CHANGED_EVENT, SCREENSHOT_REPORT_TYPE } from './constants';
+
+const PNG_MIME_TYPE = 'image/png';
+
+export async function afterEach({
+	canvasElement,
+	globals,
+	reporting,
+}: {
+	canvasElement: Element;
+	globals: unknown;
+	reporting: {
+		addReport: (report: {
+			type: string;
+			status: 'failed' | 'passed' | 'warning';
+			result: unknown;
+		}) => Promise<void> | void;
+	};
+}) {
+	if (!(globals as any)?.sbConfig?.screenshot) {
+		return;
+	}
+
+	try {
+		const { page } = await import('vitest/browser');
+		const base64 = await page.screenshot({
+			save: false,
+			element: canvasElement,
+		});
+
+		await reporting.addReport({
+			type: SCREENSHOT_REPORT_TYPE,
+			status: 'passed',
+			result: {
+				data: base64,
+				mimeType: PNG_MIME_TYPE,
+			},
+		});
+	} catch (error) {
+		await reporting.addReport({
+			type: SCREENSHOT_REPORT_TYPE,
+			status: 'failed',
+			result: {
+				message: error instanceof Error ? error.message : String(error),
+			},
+		});
+	}
+}
+
 /**
  * Storybook MCP App Script
  *
@@ -8,7 +57,6 @@
  * which is set by the MCP Apps preview.html wrapper.
  */
 
-import { MCP_APP_PARAM, MCP_APP_SIZE_CHANGED_EVENT } from './constants';
 // Only run if we're in the special MCP App iframe context
 const isMcpApp = new URLSearchParams(window.location.search).has(MCP_APP_PARAM);
 

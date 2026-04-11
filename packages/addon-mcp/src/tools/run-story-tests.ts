@@ -14,6 +14,7 @@ import type {
 import type Channel from 'storybook/internal/channels';
 import type { StoryId } from 'storybook/internal/csf';
 import type { A11yReport } from '@storybook/addon-a11y';
+import { SCREENSHOT_REPORT_TYPE } from '../constants.ts';
 import { RUN_STORY_TESTS_TOOL_NAME } from './tool-names.ts';
 
 /**
@@ -54,6 +55,15 @@ Use { absoluteStoryPath + exportName } only when you're currently working in a s
 			),
 		),
 		true,
+	),
+	screenshot: v.optional(
+		v.pipe(
+			v.boolean(),
+			v.description(
+				'Whether to capture a final screenshot of each tested story and return it as MCP image content. Defaults to false.',
+			),
+		),
+		false,
 	),
 });
 
@@ -104,6 +114,7 @@ Use this continuously to monitor test results as you work on your UI components 
 Results will include passing/failing status` +
 		(a11yEnabled
 			? `, and accessibility violation reports.
+			${' '}Pass screenshot: true to attach final rendered story screenshots as MCP image content.
 For visual/design accessibility violations (for example color contrast), ask the user before changing styles.`
 			: '.');
 
@@ -125,6 +136,7 @@ For visual/design accessibility violations (for example color contrast), ask the
 			try {
 				done = await testRunQueue.wait();
 				const runA11y = input.a11y ?? true;
+				const runScreenshot = input.screenshot ?? false;
 
 				const { origin, options, disableTelemetry } = server.ctx.custom ?? {};
 
@@ -198,7 +210,10 @@ ${errorMessages}`,
 					addonVitestConstants!.TRIGGER_TEST_RUN_REQUEST,
 					addonVitestConstants!.TRIGGER_TEST_RUN_RESPONSE,
 					storyIds,
-					{ a11y: runA11y },
+					{
+						a11y: runA11y,
+						screenshot: runScreenshot,
+					},
 				);
 
 				const testResults = responsePayload.result;
@@ -206,9 +221,10 @@ ${errorMessages}`,
 					throw new Error('Test run response missing result data');
 				}
 
-				const { text, summary } = formatRunStoryTestResults({
+				const { content, summary } = formatRunStoryTestResults({
 					testResults,
 					runA11y,
+					runScreenshot,
 					origin,
 				});
 
@@ -225,12 +241,7 @@ ${errorMessages}`,
 				}
 
 				return {
-					content: [
-						{
-							type: 'text',
-							text,
-						},
-					],
+					content,
 				};
 			} catch (error) {
 				return errorToMCPContent(error);
@@ -352,6 +363,42 @@ interface RunStoryTestsSummary {
 	unhandledErrorCount: number;
 }
 
+interface TextResponseContent {
+	type: 'text';
+	text: string;
+}
+
+interface ImageResponseContent {
+	type: 'image';
+	data: string;
+	mimeType: string;
+}
+
+type ToolResponseContent = TextResponseContent | ImageResponseContent;
+
+interface StoryReport {
+	type: string;
+	status: 'failed' | 'passed' | 'warning';
+	result: unknown;
+}
+
+interface ScreenshotReportResult {
+	data?: string;
+	mimeType?: string;
+	message?: string;
+}
+
+interface ScreenshotArtifact {
+	storyId: string;
+	data: string;
+	mimeType: string;
+}
+
+interface ScreenshotArtifactFailure {
+	storyId: string;
+	message: string;
+}
+
 interface A11yViolationNode {
 	impact?: string;
 	failureSummary?: string;
@@ -371,14 +418,17 @@ type TestRunResult = NonNullable<TriggerTestRunResponsePayload['result']>;
 function formatRunStoryTestResults({
 	testResults,
 	runA11y,
+	runScreenshot,
 	origin,
 }: {
 	testResults: TestRunResult;
 	runA11y: boolean;
+	runScreenshot: boolean;
 	origin: string;
-}): { text: string; summary: RunStoryTestsSummary } {
+}): { content: ToolResponseContent[]; summary: RunStoryTestsSummary } {
 	const sections: string[] = [];
 	const componentTestStatuses = testResults.componentTestStatuses;
+	const reportsByStory = getStoryReports(testResults);
 
 	const passingStories = componentTestStatuses.filter(
 		(status) => status.value === 'status-value:success',
@@ -395,7 +445,7 @@ function formatRunStoryTestResults({
 		sections.push(formatFailingStoriesSection(failingStories));
 	}
 
-	const a11yReports = testResults.a11yReports as Record<StoryId, A11yReport[]>;
+	const a11yReports = getA11yReports(testResults, reportsByStory);
 	const a11yViolationCount = runA11y ? countA11yViolations(a11yReports) : 0;
 	if (runA11y && a11yReports && Object.keys(a11yReports).length > 0) {
 		const a11ySection = formatA11yReportsSection({ a11yReports, origin });
@@ -404,12 +454,38 @@ function formatRunStoryTestResults({
 		}
 	}
 
+	const screenshots = runScreenshot ? getScreenshotArtifacts(reportsByStory) : undefined;
+	if (screenshots?.images.length) {
+		sections.push(formatScreenshotArtifactsSection(screenshots.images));
+	}
+	if (screenshots?.failures.length) {
+		sections.push(formatScreenshotFailuresSection(screenshots.failures));
+	}
+
 	if (testResults.unhandledErrors.length > 0) {
 		sections.push(formatUnhandledErrorsSection(testResults.unhandledErrors));
 	}
 
+	const text = sections.join('\n\n');
+	const content: ToolResponseContent[] = [
+		{
+			type: 'text',
+			text,
+		},
+	];
+
+	if (screenshots?.images.length) {
+		content.push(
+			...screenshots.images.map((screenshot) => ({
+				type: 'image' as const,
+				data: screenshot.data,
+				mimeType: screenshot.mimeType,
+			})),
+		);
+	}
+
 	return {
-		text: sections.join('\n\n'),
+		content,
 		summary: {
 			passingStoryCount: passingStories.length,
 			failingStoryCount: failingStories.length,
@@ -417,6 +493,103 @@ function formatRunStoryTestResults({
 			unhandledErrorCount: testResults.unhandledErrors.length,
 		},
 	};
+}
+
+function getStoryReports(testResults: TestRunResult): Record<StoryId, StoryReport[]> {
+	const reports = (testResults as TestRunResult & { reports?: Record<StoryId, StoryReport[]> })
+		.reports;
+	if (!reports || typeof reports !== 'object') {
+		return {};
+	}
+
+	return reports;
+}
+
+function getA11yReports(
+	testResults: TestRunResult,
+	reportsByStory: Record<StoryId, StoryReport[]>,
+): Record<StoryId, A11yReport[]> {
+	const legacyA11yReports = (
+		testResults as TestRunResult & {
+			a11yReports?: Record<StoryId, A11yReport[]>;
+		}
+	).a11yReports;
+	if (legacyA11yReports && Object.keys(legacyA11yReports).length > 0) {
+		return legacyA11yReports;
+	}
+
+	const a11yReports: Record<StoryId, A11yReport[]> = {};
+
+	for (const [storyId, reports] of Object.entries(reportsByStory) as Array<
+		[StoryId, StoryReport[]]
+	>) {
+		const storyA11yReports = reports
+			.filter((report) => report.type === 'a11y')
+			.map((report) => report.result)
+			.filter((report): report is A11yReport => typeof report === 'object' && report !== null);
+
+		if (storyA11yReports.length > 0) {
+			a11yReports[storyId] = storyA11yReports;
+		}
+	}
+
+	return a11yReports;
+}
+
+function getScreenshotArtifacts(reportsByStory: Record<StoryId, StoryReport[]>): {
+	images: ScreenshotArtifact[];
+	failures: ScreenshotArtifactFailure[];
+} {
+	const images: ScreenshotArtifact[] = [];
+	const failures: ScreenshotArtifactFailure[] = [];
+
+	for (const [storyId, reports] of Object.entries(reportsByStory)) {
+		for (const report of reports) {
+			if (report.type !== SCREENSHOT_REPORT_TYPE) {
+				continue;
+			}
+
+			const result = report.result as ScreenshotReportResult | undefined;
+			if (
+				report.status === 'passed' &&
+				typeof result?.data === 'string' &&
+				typeof result.mimeType === 'string'
+			) {
+				images.push({
+					storyId,
+					data: result.data,
+					mimeType: result.mimeType,
+				});
+				continue;
+			}
+
+			failures.push({
+				storyId,
+				message: getScreenshotFailureMessage(report.status, result),
+			});
+		}
+	}
+
+	return { images, failures };
+}
+
+function getScreenshotFailureMessage(
+	status: StoryReport['status'],
+	result: ScreenshotReportResult | undefined,
+): string {
+	if (typeof result?.message === 'string' && result.message.length > 0) {
+		return result.message;
+	}
+
+	if (status === 'warning') {
+		return 'Screenshot capture returned a warning.';
+	}
+
+	if (status === 'failed') {
+		return 'Screenshot capture failed.';
+	}
+
+	return 'Screenshot capture returned an invalid payload.';
 }
 
 function formatPassingStoriesSection(passingStories: Array<{ storyId: string }>): string {
@@ -504,6 +677,24 @@ ${nodes}`);
 	return `## Accessibility Violations
 
 ${a11yViolationSections.join('\n\n')}`;
+}
+
+function formatScreenshotArtifactsSection(images: ScreenshotArtifact[]): string {
+	return `## Screenshots
+
+- ${images.map((image) => image.storyId).join('\n- ')}`;
+}
+
+function formatScreenshotFailuresSection(failures: ScreenshotArtifactFailure[]): string {
+	const formattedFailures = failures.map(
+		(failure) => `### ${failure.storyId}
+
+${failure.message}`,
+	);
+
+	return `## Screenshot Capture Errors
+
+${formattedFailures.join('\n\n')}`;
 }
 
 function formatUnhandledErrorsSection(
