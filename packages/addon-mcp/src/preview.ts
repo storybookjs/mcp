@@ -1,4 +1,9 @@
-import { MCP_APP_PARAM, MCP_APP_SIZE_CHANGED_EVENT, SCREENSHOT_REPORT_TYPE } from './constants';
+import {
+	HTML_REPORT_TYPE,
+	MCP_APP_PARAM,
+	MCP_APP_SIZE_CHANGED_EVENT,
+	SCREENSHOT_REPORT_TYPE,
+} from './constants';
 
 const PNG_MIME_TYPE = 'image/png';
 
@@ -17,34 +22,67 @@ export async function afterEach({
 		}) => Promise<void> | void;
 	};
 }) {
-	if (!(globals as any)?.sbConfig?.screenshot) {
+	const runConfig = getRunConfig(globals);
+	if (!runConfig.screenshot && !runConfig.html) {
 		return;
 	}
 
-	try {
-		const { page } = await import('vitest/browser');
-		const base64 = await page.screenshot({
-			save: false,
-			element: canvasElement,
-		});
-
-		await reporting.addReport({
-			type: SCREENSHOT_REPORT_TYPE,
-			status: 'passed',
-			result: {
-				data: base64,
-				mimeType: PNG_MIME_TYPE,
-			},
-		});
-	} catch (error) {
-		await reporting.addReport({
-			type: SCREENSHOT_REPORT_TYPE,
-			status: 'failed',
-			result: {
-				message: error instanceof Error ? error.message : String(error),
-			},
-		});
+	if (runConfig.html) {
+		try {
+			await reporting.addReport({
+				type: HTML_REPORT_TYPE,
+				status: 'passed',
+				result: {
+					html: canvasElement.innerHTML,
+				},
+			});
+		} catch (error) {
+			await reporting.addReport({
+				type: HTML_REPORT_TYPE,
+				status: 'failed',
+				result: {
+					message: error instanceof Error ? error.message : String(error),
+				},
+			});
+		}
 	}
+
+	if (runConfig.screenshot) {
+		try {
+			const { page } = await import('vitest/browser');
+			const base64 = await page.screenshot({
+				save: false,
+				element: canvasElement,
+			});
+
+			await reporting.addReport({
+				type: SCREENSHOT_REPORT_TYPE,
+				status: 'passed',
+				result: {
+					data: base64,
+					mimeType: PNG_MIME_TYPE,
+				},
+			});
+		} catch (error) {
+			await reporting.addReport({
+				type: SCREENSHOT_REPORT_TYPE,
+				status: 'failed',
+				result: {
+					message: error instanceof Error ? error.message : String(error),
+				},
+			});
+		}
+	}
+}
+
+function getRunConfig(globals: unknown): { screenshot: boolean; html: boolean } {
+	const sbConfig = (globals as { sbConfig?: { screenshot?: boolean; html?: boolean } } | undefined)
+		?.sbConfig;
+
+	return {
+		screenshot: sbConfig?.screenshot === true,
+		html: sbConfig?.html === true,
+	};
 }
 
 /**

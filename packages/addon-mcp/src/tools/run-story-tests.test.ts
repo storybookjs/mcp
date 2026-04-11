@@ -6,7 +6,7 @@ import type { AddonContext } from '../types.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import * as fetchStoryIndex from '../utils/fetch-story-index.ts';
 import type { TriggerTestRunResponsePayload } from '@storybook/addon-vitest/constants';
-import { SCREENSHOT_REPORT_TYPE } from '../constants.ts';
+import { HTML_REPORT_TYPE, SCREENSHOT_REPORT_TYPE } from '../constants.ts';
 import { RUN_STORY_TESTS_TOOL_NAME } from './tool-names.ts';
 
 vi.mock('storybook/internal/csf', () => ({
@@ -41,7 +41,11 @@ describe('runStoryTestsTool', () => {
 		emit: Mock;
 	};
 
-	type ChannelResponse = Omit<TriggerTestRunResponsePayload, 'requestId'>;
+	type ChannelResponse = {
+		status: TriggerTestRunResponsePayload['status'];
+		result?: Record<string, unknown>;
+		error?: TriggerTestRunResponsePayload['error'];
+	};
 
 	const createTestContext = (): AddonContext => {
 		mockChannel = {
@@ -92,7 +96,7 @@ describe('runStoryTestsTool', () => {
 	const callTool = async (
 		stories: Array<{ exportName: string; relativePath: string }> | undefined,
 		context: AddonContext,
-		options?: { a11y?: boolean; screenshot?: boolean },
+		options?: { a11y?: boolean; screenshot?: boolean; html?: boolean },
 	) => {
 		const storyArguments = stories
 			? {
@@ -113,6 +117,7 @@ describe('runStoryTestsTool', () => {
 					...storyArguments,
 					...(options?.a11y !== undefined && { a11y: options.a11y }),
 					...(options?.screenshot !== undefined && { screenshot: options.screenshot }),
+					...(options?.html !== undefined && { html: options.html }),
 				},
 			},
 		};
@@ -229,7 +234,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: true, screenshot: false },
+				config: { a11y: true, screenshot: false, html: false },
 			}),
 		);
 	});
@@ -280,7 +285,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: undefined,
-				config: { a11y: true, screenshot: false },
+				config: { a11y: true, screenshot: false, html: false },
 			}),
 		);
 	});
@@ -387,9 +392,130 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: false },
+				config: { a11y: false, screenshot: false, html: false },
 			}),
 		);
+	});
+
+	it('should pass html: true in config and include HTML DOM in the text response', async () => {
+		const testContext = createTestContext();
+
+		setupChannelResponse({
+			status: 'completed',
+			result: {
+				triggeredBy: 'external:addon-mcp',
+				config: { coverage: false, a11y: false, screenshot: false, html: true },
+				storyIds: ['button--primary'],
+				totalTestCount: 1,
+				startedAt: Date.now(),
+				finishedAt: Date.now(),
+				coverageSummary: undefined,
+				componentTestCount: { success: 1, error: 0 },
+				a11yCount: { success: 0, warning: 0, error: 0 },
+				componentTestStatuses: [
+					{
+						storyId: 'button--primary',
+						typeId: 'storybook/component-test',
+						value: 'status-value:success',
+						title: 'Component Test',
+						description: '',
+					},
+				],
+				a11yStatuses: [],
+				reports: {
+					'button--primary': [
+						{
+							type: HTML_REPORT_TYPE,
+							status: 'passed',
+							result: {
+								html: '<button class="storybook-button">Button</button>',
+							},
+						},
+					],
+				},
+				unhandledErrors: [],
+			},
+		});
+
+		const response = await callTool(
+			[{ exportName: 'Primary', relativePath: 'src/Button.stories.tsx' }],
+			testContext,
+			{ a11y: false, html: true },
+		);
+
+		expect(response.result).toMatchObject({
+			content: [
+				{
+					type: 'text',
+					text: expect.stringContaining('## HTML DOM'),
+				},
+			],
+		});
+		expect(response.result?.content[0].text).toContain('<button class="storybook-button">');
+		expect(mockChannel.emit).toHaveBeenCalledWith(
+			'storybook/test/trigger-test-run-request',
+			expect.objectContaining({
+				actor: 'addon-mcp',
+				storyIds: ['button--primary'],
+				config: { a11y: false, screenshot: false, html: true },
+			}),
+		);
+	});
+
+	it('should include HTML capture errors without failing the tool response', async () => {
+		const testContext = createTestContext();
+
+		setupChannelResponse({
+			status: 'completed',
+			result: {
+				triggeredBy: 'external:addon-mcp',
+				config: { coverage: false, a11y: false, screenshot: false, html: true },
+				storyIds: ['button--primary'],
+				totalTestCount: 1,
+				startedAt: Date.now(),
+				finishedAt: Date.now(),
+				coverageSummary: undefined,
+				componentTestCount: { success: 1, error: 0 },
+				a11yCount: { success: 0, warning: 0, error: 0 },
+				componentTestStatuses: [
+					{
+						storyId: 'button--primary',
+						typeId: 'storybook/component-test',
+						value: 'status-value:success',
+						title: 'Component Test',
+						description: '',
+					},
+				],
+				a11yStatuses: [],
+				reports: {
+					'button--primary': [
+						{
+							type: HTML_REPORT_TYPE,
+							status: 'failed',
+							result: {
+								message: 'HTML capture failed.',
+							},
+						},
+					],
+				},
+				unhandledErrors: [],
+			},
+		});
+
+		const response = await callTool(
+			[{ exportName: 'Primary', relativePath: 'src/Button.stories.tsx' }],
+			testContext,
+			{ a11y: false, html: true },
+		);
+
+		expect(response.result).toMatchObject({
+			content: [
+				{
+					type: 'text',
+					text: expect.stringContaining('## HTML Capture Errors'),
+				},
+			],
+		});
 	});
 
 	it('should pass screenshot: true in config and return MCP image content', async () => {
@@ -457,7 +583,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: true },
+				config: { a11y: false, screenshot: true, html: false },
 			}),
 		);
 	});
