@@ -8,22 +8,22 @@ packages:
 catalog:
   '@storybook/addon-a11y': 0.0.0-pr-34518-sha-7e3dc40d
   '@storybook/addon-docs': 0.0.0-pr-34518-sha-7e3dc40d
+  '@storybook/addon-themes': 0.0.0-pr-34518-sha-7e3dc40d
   '@storybook/addon-vitest': 0.0.0-pr-34518-sha-7e3dc40d
   '@storybook/react-vite': 0.0.0-pr-34518-sha-7e3dc40d
-  '@storybook/addon-themes': 0.0.0-pr-34518-sha-7e3dc40d
   '@tmcp/adapter-valibot': ^0.1.5
   '@tmcp/transport-http': ^0.8.5
   '@tmcp/transport-stdio': ^0.4.2
+  '@vitest/browser-playwright': 4.1.4
   eslint-plugin-storybook: 0.0.0-pr-34518-sha-7e3dc40d
+  playwright: 1.59.1
   storybook: 0.0.0-pr-34518-sha-7e3dc40d
   tmcp: ^1.19.3
   tsdown: ^0.15.12
   typescript: ^5.9.3
   valibot: 1.2.0
   vite: 7.2.2
-  vitest: 4.0.6
-  '@vitest/browser-playwright': 4.0.6
-  playwright: 1.56.1
+  vitest: 4.1.4
 
 catalogs:
   trials:
@@ -36,7 +36,7 @@ catalogs:
     '@types/react': 19.2.6
     '@types/react-dom': 19.2.3
     '@vitejs/plugin-react-swc': 4.2.2
-    '@vitest/browser-playwright': 4.0.6
+    '@vitest/browser-playwright': 4.1.4
     eslint: 9.39.1
     eslint-plugin-react-hooks: 7.0.1
     eslint-plugin-react-refresh: 0.4.24
@@ -48,7 +48,7 @@ catalogs:
     typescript: 5.9.3
     typescript-eslint: 8.47.0
     vite: 7.2.2
-    vitest: 4.0.6
+    vitest: 4.1.4
 
 onlyBuiltDependencies:
   - '@swc/core'

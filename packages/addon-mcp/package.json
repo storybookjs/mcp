@@ -49,6 +49,7 @@
 	"devDependencies": {
 		"@storybook/addon-a11y": "catalog:",
 		"@storybook/addon-vitest": "catalog:",
+		"@vitest/browser-playwright": "catalog:",
 		"storybook": "catalog:",
 		"vitest": "catalog:"
 	},
