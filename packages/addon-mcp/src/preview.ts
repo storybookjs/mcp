@@ -1,4 +1,6 @@
 import {
+	ARIA_SNAPSHOT_COMMAND_NAME,
+	ARIA_SNAPSHOT_REPORT_TYPE,
 	HTML_REPORT_TYPE,
 	MCP_APP_PARAM,
 	MCP_APP_SIZE_CHANGED_EVENT,
@@ -6,6 +8,12 @@ import {
 } from './constants';
 
 const PNG_MIME_TYPE = 'image/png';
+
+declare module 'vitest/browser' {
+  interface BrowserCommands {
+    [ARIA_SNAPSHOT_COMMAND_NAME]: () => Promise<string>;
+  }
+}
 
 export async function afterEach({
 	canvasElement,
@@ -23,7 +31,7 @@ export async function afterEach({
 	};
 }) {
 	const runConfig = getRunConfig(globals);
-	if (!runConfig.screenshot && !runConfig.html) {
+	if (!runConfig.screenshot && !runConfig.html && !runConfig.ariaSnapshot) {
 		return;
 	}
 
@@ -49,7 +57,7 @@ export async function afterEach({
 
 	if (runConfig.screenshot) {
 		try {
-			const { page } = await import('vitest/browser');
+			const { page } = (await import('vitest/browser'));
 			const base64 = await page.screenshot({
 				save: false,
 				element: canvasElement,
@@ -73,15 +81,60 @@ export async function afterEach({
 			});
 		}
 	}
+
+	if (runConfig.ariaSnapshot) {
+		try {
+			const ariaSnapshot = await captureAriaSnapshot();
+
+			await reporting.addReport({
+				type: ARIA_SNAPSHOT_REPORT_TYPE,
+				status: 'passed',
+				result: {
+					ariaSnapshot,
+				},
+			});
+		} catch (error) {
+			await reporting.addReport({
+				type: ARIA_SNAPSHOT_REPORT_TYPE,
+				status: 'failed',
+				result: {
+					message: error instanceof Error ? error.message : String(error),
+				},
+			});
+		}
+	}
 }
 
-function getRunConfig(globals: unknown): { screenshot: boolean; html: boolean } {
-	const sbConfig = (globals as { sbConfig?: { screenshot?: boolean; html?: boolean } } | undefined)
-		?.sbConfig;
+async function captureAriaSnapshot(): Promise<string> {
+	const { commands } = (await import('vitest/browser'));
+	const ariaSnapshotCommand = commands[ARIA_SNAPSHOT_COMMAND_NAME];
+
+	if (typeof ariaSnapshotCommand !== 'function') {
+		throw new Error(
+			'ARIA snapshots require Playwright support. The @storybook/addon-mcp preset should register the required Vitest browser command automatically through viteFinal.',
+		);
+	}
+
+	return ariaSnapshotCommand();
+}
+
+function getRunConfig(globals: unknown): {
+	screenshot: boolean;
+	html: boolean;
+	ariaSnapshot: boolean;
+} {
+	const sbConfig = (
+		globals as
+			| {
+					sbConfig?: { screenshot?: boolean; html?: boolean; ariaSnapshot?: boolean };
+			  }
+			| undefined
+	)?.sbConfig;
 
 	return {
 		screenshot: sbConfig?.screenshot === true,
 		html: sbConfig?.html === true,
+		ariaSnapshot: sbConfig?.ariaSnapshot === true,
 	};
 }
 

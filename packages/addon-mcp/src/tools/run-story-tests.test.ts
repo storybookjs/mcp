@@ -6,7 +6,11 @@ import type { AddonContext } from '../types.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import * as fetchStoryIndex from '../utils/fetch-story-index.ts';
 import type { TriggerTestRunResponsePayload } from '@storybook/addon-vitest/constants';
-import { HTML_REPORT_TYPE, SCREENSHOT_REPORT_TYPE } from '../constants.ts';
+import {
+	ARIA_SNAPSHOT_REPORT_TYPE,
+	HTML_REPORT_TYPE,
+	SCREENSHOT_REPORT_TYPE,
+} from '../constants.ts';
 import { RUN_STORY_TESTS_TOOL_NAME } from './tool-names.ts';
 
 vi.mock('storybook/internal/csf', () => ({
@@ -96,7 +100,7 @@ describe('runStoryTestsTool', () => {
 	const callTool = async (
 		stories: Array<{ exportName: string; relativePath: string }> | undefined,
 		context: AddonContext,
-		options?: { a11y?: boolean; screenshot?: boolean; html?: boolean },
+		options?: { a11y?: boolean; screenshot?: boolean; html?: boolean; ariaSnapshot?: boolean },
 	) => {
 		const storyArguments = stories
 			? {
@@ -118,6 +122,9 @@ describe('runStoryTestsTool', () => {
 					...(options?.a11y !== undefined && { a11y: options.a11y }),
 					...(options?.screenshot !== undefined && { screenshot: options.screenshot }),
 					...(options?.html !== undefined && { html: options.html }),
+					...(options?.ariaSnapshot !== undefined && {
+						ariaSnapshot: options.ariaSnapshot,
+					}),
 				},
 			},
 		};
@@ -234,7 +241,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: true, screenshot: false, html: false },
+				config: { a11y: true, screenshot: false, html: false, ariaSnapshot: false },
 			}),
 		);
 	});
@@ -285,7 +292,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: undefined,
-				config: { a11y: true, screenshot: false, html: false },
+				config: { a11y: true, screenshot: false, html: false, ariaSnapshot: false },
 			}),
 		);
 	});
@@ -392,7 +399,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: false, html: false },
+				config: { a11y: false, screenshot: false, html: false, ariaSnapshot: false },
 			}),
 		);
 	});
@@ -457,7 +464,7 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: false, html: true },
+				config: { a11y: false, screenshot: false, html: true, ariaSnapshot: false },
 			}),
 		);
 	});
@@ -583,9 +590,143 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: true, html: false },
+				config: { a11y: false, screenshot: true, html: false, ariaSnapshot: false },
 			}),
 		);
+	});
+
+	it('should pass ariaSnapshot: true in config and include ARIA snapshots in the text response', async () => {
+		const testContext = createTestContext();
+
+		setupChannelResponse({
+			status: 'completed',
+			result: {
+				triggeredBy: 'external:addon-mcp',
+				config: {
+					coverage: false,
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: true,
+				},
+				storyIds: ['button--primary'],
+				totalTestCount: 1,
+				startedAt: Date.now(),
+				finishedAt: Date.now(),
+				coverageSummary: undefined,
+				componentTestCount: { success: 1, error: 0 },
+				a11yCount: { success: 0, warning: 0, error: 0 },
+				componentTestStatuses: [
+					{
+						storyId: 'button--primary',
+						typeId: 'storybook/component-test',
+						value: 'status-value:success',
+						title: 'Component Test',
+						description: '',
+					},
+				],
+				a11yStatuses: [],
+				reports: {
+					'button--primary': [
+						{
+							type: ARIA_SNAPSHOT_REPORT_TYPE,
+							status: 'passed',
+							result: {
+								ariaSnapshot: '- button "Primary" [ref=e1]\n  - text: Primary',
+							},
+						},
+					],
+				},
+				unhandledErrors: [],
+			},
+		});
+
+		const response = await callTool(
+			[{ exportName: 'Primary', relativePath: 'src/Button.stories.tsx' }],
+			testContext,
+			{ a11y: false, ariaSnapshot: true },
+		);
+
+		expect(response.result).toMatchObject({
+			content: [
+				{
+					type: 'text',
+					text: expect.stringContaining('## ARIA Snapshots'),
+				},
+			],
+		});
+		expect(response.result?.content[0].text).toContain('```yaml');
+		expect(response.result?.content[0].text).toContain('button "Primary"');
+		expect(mockChannel.emit).toHaveBeenCalledWith(
+			'storybook/test/trigger-test-run-request',
+			expect.objectContaining({
+				actor: 'addon-mcp',
+				storyIds: ['button--primary'],
+				config: { a11y: false, screenshot: false, html: false, ariaSnapshot: true },
+			}),
+		);
+	});
+
+	it('should include ARIA snapshot capture errors without failing the tool response', async () => {
+		const testContext = createTestContext();
+
+		setupChannelResponse({
+			status: 'completed',
+			result: {
+				triggeredBy: 'external:addon-mcp',
+				config: {
+					coverage: false,
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: true,
+				},
+				storyIds: ['button--primary'],
+				totalTestCount: 1,
+				startedAt: Date.now(),
+				finishedAt: Date.now(),
+				coverageSummary: undefined,
+				componentTestCount: { success: 1, error: 0 },
+				a11yCount: { success: 0, warning: 0, error: 0 },
+				componentTestStatuses: [
+					{
+						storyId: 'button--primary',
+						typeId: 'storybook/component-test',
+						value: 'status-value:success',
+						title: 'Component Test',
+						description: '',
+					},
+				],
+				a11yStatuses: [],
+				reports: {
+					'button--primary': [
+						{
+							type: ARIA_SNAPSHOT_REPORT_TYPE,
+							status: 'failed',
+							result: {
+								message: 'ARIA snapshot capture failed.',
+							},
+						},
+					],
+				},
+				unhandledErrors: [],
+			},
+		});
+
+		const response = await callTool(
+			[{ exportName: 'Primary', relativePath: 'src/Button.stories.tsx' }],
+			testContext,
+			{ a11y: false, ariaSnapshot: true },
+		);
+
+		expect(response.result).toMatchObject({
+			content: [
+				{
+					type: 'text',
+					text: expect.stringContaining('## ARIA Snapshot Capture Errors'),
+				},
+			],
+		});
 	});
 
 	it('should include screenshot capture errors without failing the tool response', async () => {

@@ -14,7 +14,11 @@ import type {
 import type Channel from 'storybook/internal/channels';
 import type { StoryId } from 'storybook/internal/csf';
 import type { A11yReport } from '@storybook/addon-a11y';
-import { HTML_REPORT_TYPE, SCREENSHOT_REPORT_TYPE } from '../constants.ts';
+import {
+	ARIA_SNAPSHOT_REPORT_TYPE,
+	HTML_REPORT_TYPE,
+	SCREENSHOT_REPORT_TYPE,
+} from '../constants.ts';
 import { RUN_STORY_TESTS_TOOL_NAME } from './tool-names.ts';
 
 /**
@@ -74,6 +78,15 @@ Use { absoluteStoryPath + exportName } only when you're currently working in a s
 		),
 		false,
 	),
+	ariaSnapshot: v.optional(
+		v.pipe(
+			v.boolean(),
+			v.description(
+				'Whether to capture the final rendered accessibility tree for each tested story as a Playwright AI-mode ARIA snapshot and include it in the text response. Defaults to false.',
+			),
+		),
+		false,
+	),
 });
 
 /**
@@ -123,7 +136,8 @@ Use this continuously to monitor test results as you work on your UI components 
 Results will include passing/failing status` +
 		(a11yEnabled ? ', and accessibility violation reports.' : '.') +
 		` Pass screenshot: true to attach final rendered story screenshots as MCP image content.
-Pass html: true to attach final rendered story HTML DOM snapshots in the text response.` +
+Pass html: true to attach final rendered story HTML DOM snapshots in the text response.
+Pass ariaSnapshot: true to attach final rendered story accessibility trees as Playwright AI-mode ARIA snapshots in the text response.` +
 		(a11yEnabled
 			? `
 For visual/design accessibility violations (for example color contrast), ask the user before changing styles.`
@@ -149,6 +163,7 @@ For visual/design accessibility violations (for example color contrast), ask the
 				const runA11y = input.a11y ?? true;
 				const runScreenshot = input.screenshot ?? false;
 				const runHtml = input.html ?? false;
+				const runAriaSnapshot = input.ariaSnapshot ?? false;
 
 				const { origin, options, disableTelemetry } = server.ctx.custom ?? {};
 
@@ -226,6 +241,7 @@ ${errorMessages}`,
 						a11y: runA11y,
 						screenshot: runScreenshot,
 						html: runHtml,
+						ariaSnapshot: runAriaSnapshot,
 					},
 				);
 
@@ -239,6 +255,7 @@ ${errorMessages}`,
 					runA11y,
 					runScreenshot,
 					runHtml,
+					runAriaSnapshot,
 					origin,
 				});
 
@@ -428,6 +445,21 @@ interface HtmlArtifactFailure {
 	message: string;
 }
 
+interface AriaSnapshotReportResult {
+	ariaSnapshot?: string;
+	message?: string;
+}
+
+interface AriaSnapshotArtifact {
+	storyId: string;
+	ariaSnapshot: string;
+}
+
+interface AriaSnapshotArtifactFailure {
+	storyId: string;
+	message: string;
+}
+
 interface A11yViolationNode {
 	impact?: string;
 	failureSummary?: string;
@@ -449,12 +481,14 @@ function formatRunStoryTestResults({
 	runA11y,
 	runScreenshot,
 	runHtml,
+	runAriaSnapshot,
 	origin,
 }: {
 	testResults: TestRunResult;
 	runA11y: boolean;
 	runScreenshot: boolean;
 	runHtml: boolean;
+	runAriaSnapshot: boolean;
 	origin: string;
 }): { content: ToolResponseContent[]; summary: RunStoryTestsSummary } {
 	const sections: string[] = [];
@@ -499,6 +533,14 @@ function formatRunStoryTestResults({
 	}
 	if (htmlArtifacts?.failures.length) {
 		sections.push(formatHtmlFailuresSection(htmlArtifacts.failures));
+	}
+
+	const ariaSnapshots = runAriaSnapshot ? getAriaSnapshotArtifacts(reportsByStory) : undefined;
+	if (ariaSnapshots?.snapshots.length) {
+		sections.push(formatAriaSnapshotArtifactsSection(ariaSnapshots.snapshots));
+	}
+	if (ariaSnapshots?.failures.length) {
+		sections.push(formatAriaSnapshotFailuresSection(ariaSnapshots.failures));
 	}
 
 	if (testResults.unhandledErrors.length > 0) {
@@ -644,6 +686,38 @@ function getHtmlArtifacts(reportsByStory: Record<StoryId, StoryReport[]>): {
 	return { html, failures };
 }
 
+function getAriaSnapshotArtifacts(reportsByStory: Record<StoryId, StoryReport[]>): {
+	snapshots: AriaSnapshotArtifact[];
+	failures: AriaSnapshotArtifactFailure[];
+} {
+	const snapshots: AriaSnapshotArtifact[] = [];
+	const failures: AriaSnapshotArtifactFailure[] = [];
+
+	for (const [storyId, reports] of Object.entries(reportsByStory)) {
+		for (const report of reports) {
+			if (report.type !== ARIA_SNAPSHOT_REPORT_TYPE) {
+				continue;
+			}
+
+			const result = report.result as AriaSnapshotReportResult | undefined;
+			if (report.status === 'passed' && typeof result?.ariaSnapshot === 'string') {
+				snapshots.push({
+					storyId,
+					ariaSnapshot: result.ariaSnapshot,
+				});
+				continue;
+			}
+
+			failures.push({
+				storyId,
+				message: getAriaSnapshotFailureMessage(report.status, result),
+			});
+		}
+	}
+
+	return { snapshots, failures };
+}
+
 function getScreenshotFailureMessage(
 	status: StoryReport['status'],
 	result: ScreenshotReportResult | undefined,
@@ -680,6 +754,25 @@ function getHtmlFailureMessage(
 	}
 
 	return 'HTML capture returned an invalid payload.';
+}
+
+function getAriaSnapshotFailureMessage(
+	status: StoryReport['status'],
+	result: AriaSnapshotReportResult | undefined,
+): string {
+	if (typeof result?.message === 'string' && result.message.length > 0) {
+		return result.message;
+	}
+
+	if (status === 'warning') {
+		return 'ARIA snapshot capture returned a warning.';
+	}
+
+	if (status === 'failed') {
+		return 'ARIA snapshot capture failed.';
+	}
+
+	return 'ARIA snapshot capture returned an invalid payload.';
 }
 
 function formatPassingStoriesSection(passingStories: Array<{ storyId: string }>): string {
@@ -809,6 +902,28 @@ ${failure.message}`,
 	);
 
 	return `## HTML Capture Errors
+
+${formattedFailures.join('\n\n')}`;
+}
+
+function formatAriaSnapshotArtifactsSection(snapshots: AriaSnapshotArtifact[]): string {
+	const formattedSnapshots = snapshots.map((snapshot) =>
+		[`### ${snapshot.storyId}`, '', '```yaml', snapshot.ariaSnapshot, '```'].join('\n'),
+	);
+
+	return `## ARIA Snapshots
+
+${formattedSnapshots.join('\n\n')}`;
+}
+
+function formatAriaSnapshotFailuresSection(failures: AriaSnapshotArtifactFailure[]): string {
+	const formattedFailures = failures.map(
+		(failure) => `### ${failure.storyId}
+
+${failure.message}`,
+	);
+
+	return `## ARIA Snapshot Capture Errors
 
 ${formattedFailures.join('\n\n')}`;
 }

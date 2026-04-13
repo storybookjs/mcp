@@ -120,11 +120,18 @@ describe('MCP Endpoint E2E Tests', () => {
 			expect(runStoryTestsTool.description).toContain(
 				'Pass html: true to attach final rendered story HTML DOM snapshots in the text response.',
 			);
+			expect(runStoryTestsTool.description).toContain(
+				'Pass ariaSnapshot: true to attach final rendered story accessibility trees as Playwright AI-mode ARIA snapshots in the text response.',
+			);
 			expect(runStoryTestsTool.inputSchema.properties.screenshot).toMatchObject({
 				default: false,
 				type: 'boolean',
 			});
 			expect(runStoryTestsTool.inputSchema.properties.html).toMatchObject({
+				default: false,
+				type: 'boolean',
+			});
+			expect(runStoryTestsTool.inputSchema.properties.ariaSnapshot).toMatchObject({
 				default: false,
 				type: 'boolean',
 			});
@@ -422,6 +429,34 @@ describe('MCP Endpoint E2E Tests', () => {
 			expect(text).toContain('example-button--primary');
 			expect(text).toContain('<button');
 			expect(text).toContain('storybook-button--primary');
+		});
+
+		it('should include ARIA snapshots when ARIA snapshot capture is enabled', async () => {
+			const cwd = process.cwd();
+			const storyPath = cwd.endsWith('/apps/internal-storybook')
+				? `${cwd}/stories/components/Button.stories.ts`
+				: `${cwd}/apps/internal-storybook/stories/components/Button.stories.ts`;
+
+			const response = await mcpRequest('tools/call', {
+				name: 'run-story-tests',
+				arguments: {
+					stories: [
+						{
+							exportName: 'Primary',
+							absoluteStoryPath: storyPath,
+						},
+					],
+					a11y: false,
+					ariaSnapshot: true,
+				},
+			});
+
+			const text = response.result.content[0].text;
+			expect(text).toContain('## Passing Stories');
+			expect(text).toContain('## ARIA Snapshots');
+			expect(text).toContain('example-button--primary');
+			expect(text).toContain('```yaml');
+			expect(text).toMatch(/button.*Primary|generic.*Primary|link.*Primary/i);
 		});
 
 		it('should return error for non-existent story', async () => {

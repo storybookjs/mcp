@@ -9,6 +9,7 @@ import htmlTemplate from './template.html';
 import { CompositionAuth, extractBearerToken, type ComposedRef } from './auth/index.ts';
 import { logger } from 'storybook/internal/node-logger';
 import type { Source } from '@storybook/mcp';
+import { ARIA_SNAPSHOT_COMMAND_NAME } from './constants.ts';
 
 export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> = async (
 	app,
@@ -164,6 +165,56 @@ export const features: PresetPropertyFn<'features'> = async (existingFeatures) =
 	return {
 		...existingFeatures,
 		componentsManifest: true,
+	};
+};
+
+type PlaywrightFrameLike = {
+	locator: (selector: string) => {
+		ariaSnapshot: (options: { mode: 'ai' }) => Promise<string>;
+	};
+};
+
+type PlaywrightBrowserCommandContext = {
+	provider?: {
+		name?: string;
+	};
+	frame?: () => Promise<PlaywrightFrameLike>;
+};
+
+const captureAriaSnapshotCommand = async (context: PlaywrightBrowserCommandContext) => {
+	if (context.provider?.name !== 'playwright') {
+		throw new Error('ARIA snapshots require the Vitest Playwright browser provider.');
+	}
+
+	const frame = await context.frame?.();
+	if (!frame) {
+		throw new Error('ARIA snapshots require a Playwright frame context.');
+	}
+
+	return frame.locator('body').ariaSnapshot({ mode: 'ai' });
+};
+
+function vitestBrowserCommandsPlugin() {
+	return {
+		name: 'storybook-addon-mcp-vitest-commands',
+		config() {
+			return {
+				test: {
+					browser: {
+						commands: {
+							[ARIA_SNAPSHOT_COMMAND_NAME]: captureAriaSnapshotCommand,
+						},
+					},
+				},
+			};
+		},
+	};
+}
+
+export const viteFinal = async (config: Record<string, any>) => {
+	return {
+		...config,
+		plugins: [...config.plugins, vitestBrowserCommandsPlugin()],
 	};
 };
 
