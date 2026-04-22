@@ -35,7 +35,8 @@
 		"build": "tsdown",
 		"inspect": "mcp-inspector --config ../../.mcp.inspect.json --server storybook-addon-mcp",
 		"publint": "publint",
-		"test": "cd ../.. && pnpm vitest --project=@storybook/addon-mcp",
+		"test": "cd ../.. && pnpm vitest run --config packages/addon-mcp/vitest.config.ts --project=@storybook/addon-mcp",
+		"test:browser": "vitest run --config vitest.config.ts --project=@storybook/addon-mcp-browser",
 		"typecheck": "tsc"
 	},
 	"dependencies": {

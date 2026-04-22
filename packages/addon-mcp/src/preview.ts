@@ -1,18 +1,27 @@
 import {
 	ARIA_SNAPSHOT_COMMAND_NAME,
 	ARIA_SNAPSHOT_REPORT_TYPE,
+	COMPUTED_STYLES_REPORT_TYPE,
 	HTML_REPORT_TYPE,
 	MCP_APP_PARAM,
 	MCP_APP_SIZE_CHANGED_EVENT,
 	SCREENSHOT_REPORT_TYPE,
 } from './constants';
+import {
+	extractComputedStyles,
+	setupComputedStylesBaseline,
+} from './utils/extract-computed-styles.ts';
 
 const PNG_MIME_TYPE = 'image/png';
 
 declare module 'vitest/browser' {
-  interface BrowserCommands {
-    [ARIA_SNAPSHOT_COMMAND_NAME]: () => Promise<string>;
-  }
+	interface BrowserCommands {
+		[ARIA_SNAPSHOT_COMMAND_NAME]: () => Promise<string>;
+	}
+}
+
+export async function beforeAll() {
+	return setupComputedStylesBaseline(document);
 }
 
 export async function afterEach({
@@ -31,7 +40,12 @@ export async function afterEach({
 	};
 }) {
 	const runConfig = getRunConfig(globals);
-	if (!runConfig.screenshot && !runConfig.html && !runConfig.ariaSnapshot) {
+	if (
+		!runConfig.screenshot &&
+		!runConfig.html &&
+		!runConfig.ariaSnapshot &&
+		!runConfig.computedStyles
+	) {
 		return;
 	}
 
@@ -55,9 +69,29 @@ export async function afterEach({
 		}
 	}
 
+	if (runConfig.computedStyles) {
+		try {
+			await reporting.addReport({
+				type: COMPUTED_STYLES_REPORT_TYPE,
+				status: 'passed',
+				result: {
+					elements: extractComputedStyles(canvasElement),
+				},
+			});
+		} catch (error) {
+			await reporting.addReport({
+				type: COMPUTED_STYLES_REPORT_TYPE,
+				status: 'failed',
+				result: {
+					message: error instanceof Error ? error.message : String(error),
+				},
+			});
+		}
+	}
+
 	if (runConfig.screenshot) {
 		try {
-			const { page } = (await import('vitest/browser'));
+			const { page } = await import('vitest/browser');
 			const base64 = await page.screenshot({
 				save: false,
 				element: canvasElement,
@@ -106,7 +140,7 @@ export async function afterEach({
 }
 
 async function captureAriaSnapshot(): Promise<string> {
-	const { commands } = (await import('vitest/browser'));
+	const { commands } = await import('vitest/browser');
 	const ariaSnapshotCommand = commands[ARIA_SNAPSHOT_COMMAND_NAME];
 
 	if (typeof ariaSnapshotCommand !== 'function') {
@@ -122,11 +156,17 @@ function getRunConfig(globals: unknown): {
 	screenshot: boolean;
 	html: boolean;
 	ariaSnapshot: boolean;
+	computedStyles: boolean;
 } {
 	const sbConfig = (
 		globals as
 			| {
-					sbConfig?: { screenshot?: boolean; html?: boolean; ariaSnapshot?: boolean };
+					sbConfig?: {
+						screenshot?: boolean;
+						html?: boolean;
+						ariaSnapshot?: boolean;
+						computedStyles?: boolean;
+					};
 			  }
 			| undefined
 	)?.sbConfig;
@@ -135,6 +175,7 @@ function getRunConfig(globals: unknown): {
 		screenshot: sbConfig?.screenshot === true,
 		html: sbConfig?.html === true,
 		ariaSnapshot: sbConfig?.ariaSnapshot === true,
+		computedStyles: sbConfig?.computedStyles === true,
 	};
 }
 

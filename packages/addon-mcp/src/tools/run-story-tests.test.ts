@@ -8,6 +8,7 @@ import * as fetchStoryIndex from '../utils/fetch-story-index.ts';
 import type { TriggerTestRunResponsePayload } from '@storybook/addon-vitest/constants';
 import {
 	ARIA_SNAPSHOT_REPORT_TYPE,
+	COMPUTED_STYLES_REPORT_TYPE,
 	HTML_REPORT_TYPE,
 	SCREENSHOT_REPORT_TYPE,
 } from '../constants.ts';
@@ -100,7 +101,13 @@ describe('runStoryTestsTool', () => {
 	const callTool = async (
 		stories: Array<{ exportName: string; relativePath: string }> | undefined,
 		context: AddonContext,
-		options?: { a11y?: boolean; screenshot?: boolean; html?: boolean; ariaSnapshot?: boolean },
+		options?: {
+			a11y?: boolean;
+			screenshot?: boolean;
+			html?: boolean;
+			ariaSnapshot?: boolean;
+			computedStyles?: boolean;
+		},
 	) => {
 		const storyArguments = stories
 			? {
@@ -124,6 +131,9 @@ describe('runStoryTestsTool', () => {
 					...(options?.html !== undefined && { html: options.html }),
 					...(options?.ariaSnapshot !== undefined && {
 						ariaSnapshot: options.ariaSnapshot,
+					}),
+					...(options?.computedStyles !== undefined && {
+						computedStyles: options.computedStyles,
 					}),
 				},
 			},
@@ -241,7 +251,13 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: true, screenshot: false, html: false, ariaSnapshot: false },
+				config: {
+					a11y: true,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: false,
+				},
 			}),
 		);
 	});
@@ -292,7 +308,13 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: undefined,
-				config: { a11y: true, screenshot: false, html: false, ariaSnapshot: false },
+				config: {
+					a11y: true,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: false,
+				},
 			}),
 		);
 	});
@@ -399,7 +421,13 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: false, html: false, ariaSnapshot: false },
+				config: {
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: false,
+				},
 			}),
 		);
 	});
@@ -464,7 +492,13 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: false, html: true, ariaSnapshot: false },
+				config: {
+					a11y: false,
+					screenshot: false,
+					html: true,
+					ariaSnapshot: false,
+					computedStyles: false,
+				},
 			}),
 		);
 	});
@@ -590,7 +624,13 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: true, html: false, ariaSnapshot: false },
+				config: {
+					a11y: false,
+					screenshot: true,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: false,
+				},
 			}),
 		);
 	});
@@ -662,9 +702,169 @@ describe('runStoryTestsTool', () => {
 			expect.objectContaining({
 				actor: 'addon-mcp',
 				storyIds: ['button--primary'],
-				config: { a11y: false, screenshot: false, html: false, ariaSnapshot: true },
+				config: {
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: true,
+					computedStyles: false,
+				},
 			}),
 		);
+	});
+
+	it('should pass computedStyles: true in config and include computed styles in the text response', async () => {
+		const testContext = createTestContext();
+
+		setupChannelResponse({
+			status: 'completed',
+			result: {
+				triggeredBy: 'external:addon-mcp',
+				config: {
+					coverage: false,
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: true,
+				},
+				storyIds: ['button--primary'],
+				totalTestCount: 1,
+				startedAt: Date.now(),
+				finishedAt: Date.now(),
+				coverageSummary: undefined,
+				componentTestCount: { success: 1, error: 0 },
+				a11yCount: { success: 0, warning: 0, error: 0 },
+				componentTestStatuses: [
+					{
+						storyId: 'button--primary',
+						typeId: 'storybook/component-test',
+						value: 'status-value:success',
+						title: 'Component Test',
+						description: '',
+					},
+				],
+				a11yStatuses: [],
+				reports: {
+					'button--primary': [
+						{
+							type: COMPUTED_STYLES_REPORT_TYPE,
+							status: 'passed',
+							result: {
+								elements: [
+									{
+										selector: 'div#story-root > button[data-variant="primary"]',
+										tagName: 'button',
+										styles: {
+											'background-color': 'rgb(0, 128, 0)',
+											display: 'flex',
+										},
+									},
+								],
+							},
+						},
+					],
+				},
+				unhandledErrors: [],
+			},
+		});
+
+		const response = await callTool(
+			[{ exportName: 'Primary', relativePath: 'src/Button.stories.tsx' }],
+			testContext,
+			{ a11y: false, computedStyles: true },
+		);
+
+		expect(response.result).toMatchObject({
+			content: [
+				{
+					type: 'text',
+					text: expect.stringContaining('## Computed Styles'),
+				},
+			],
+		});
+		expect(response.result?.content[0].text).toContain(
+			'div#story-root > button[data-variant="primary"]',
+		);
+		expect(response.result?.content[0].text).toContain('background-color: rgb(0, 128, 0);');
+		expect(response.result?.content[0].text).toContain('```css');
+		expect(mockChannel.emit).toHaveBeenCalledWith(
+			'storybook/test/trigger-test-run-request',
+			expect.objectContaining({
+				actor: 'addon-mcp',
+				storyIds: ['button--primary'],
+				config: {
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: true,
+				},
+			}),
+		);
+	});
+
+	it('should include computed style capture errors without failing the tool response', async () => {
+		const testContext = createTestContext();
+
+		setupChannelResponse({
+			status: 'completed',
+			result: {
+				triggeredBy: 'external:addon-mcp',
+				config: {
+					coverage: false,
+					a11y: false,
+					screenshot: false,
+					html: false,
+					ariaSnapshot: false,
+					computedStyles: true,
+				},
+				storyIds: ['button--primary'],
+				totalTestCount: 1,
+				startedAt: Date.now(),
+				finishedAt: Date.now(),
+				coverageSummary: undefined,
+				componentTestCount: { success: 1, error: 0 },
+				a11yCount: { success: 0, warning: 0, error: 0 },
+				componentTestStatuses: [
+					{
+						storyId: 'button--primary',
+						typeId: 'storybook/component-test',
+						value: 'status-value:success',
+						title: 'Component Test',
+						description: '',
+					},
+				],
+				a11yStatuses: [],
+				reports: {
+					'button--primary': [
+						{
+							type: COMPUTED_STYLES_REPORT_TYPE,
+							status: 'failed',
+							result: {
+								message: 'Computed styles capture failed.',
+							},
+						},
+					],
+				},
+				unhandledErrors: [],
+			},
+		});
+
+		const response = await callTool(
+			[{ exportName: 'Primary', relativePath: 'src/Button.stories.tsx' }],
+			testContext,
+			{ a11y: false, computedStyles: true },
+		);
+
+		expect(response.result).toMatchObject({
+			content: [
+				{
+					type: 'text',
+					text: expect.stringContaining('## Computed Styles Capture Errors'),
+				},
+			],
+		});
 	});
 
 	it('should include ARIA snapshot capture errors without failing the tool response', async () => {

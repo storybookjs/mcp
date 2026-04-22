@@ -459,6 +459,34 @@ describe('MCP Endpoint E2E Tests', () => {
 			expect(text).toMatch(/button.*Primary|generic.*Primary|link.*Primary/i);
 		});
 
+		it('should include computed styles when computed style capture is enabled', async () => {
+			const cwd = process.cwd();
+			const storyPath = cwd.endsWith('/apps/internal-storybook')
+				? `${cwd}/stories/components/Button.stories.ts`
+				: `${cwd}/apps/internal-storybook/stories/components/Button.stories.ts`;
+
+			const response = await mcpRequest('tools/call', {
+				name: 'run-story-tests',
+				arguments: {
+					stories: [
+						{
+							exportName: 'Primary',
+							absoluteStoryPath: storyPath,
+						},
+					],
+					a11y: false,
+					computedStyles: true,
+				},
+			});
+
+			const text = response.result.content[0].text;
+			expect(text).toContain('## Passing Stories');
+			expect(text).toContain('## Computed Styles');
+			expect(text).toContain('example-button--primary');
+			expect(text).toContain('```css');
+			expect(text).toMatch(/background-color:|color:|padding:|display:/i);
+		});
+
 		it('should return error for non-existent story', async () => {
 			const response = await mcpRequest('tools/call', {
 				name: 'run-story-tests',

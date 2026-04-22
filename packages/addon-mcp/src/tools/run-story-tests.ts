@@ -16,9 +16,11 @@ import type { StoryId } from 'storybook/internal/csf';
 import type { A11yReport } from '@storybook/addon-a11y';
 import {
 	ARIA_SNAPSHOT_REPORT_TYPE,
+	COMPUTED_STYLES_REPORT_TYPE,
 	HTML_REPORT_TYPE,
 	SCREENSHOT_REPORT_TYPE,
 } from '../constants.ts';
+import type { ElementComputedStyles } from '../utils/extract-computed-styles.ts';
 import { RUN_STORY_TESTS_TOOL_NAME } from './tool-names.ts';
 
 /**
@@ -87,6 +89,15 @@ Use { absoluteStoryPath + exportName } only when you're currently working in a s
 		),
 		false,
 	),
+	computedStyles: v.optional(
+		v.pipe(
+			v.boolean(),
+			v.description(
+				'Whether to capture per-element computed CSS styles for each tested story and include the non-default baseline differences in the text response. Defaults to false.',
+			),
+		),
+		false,
+	),
 });
 
 /**
@@ -137,7 +148,8 @@ Results will include passing/failing status` +
 		(a11yEnabled ? ', and accessibility violation reports.' : '.') +
 		` Pass screenshot: true to attach final rendered story screenshots as MCP image content.
 Pass html: true to attach final rendered story HTML DOM snapshots in the text response.
-Pass ariaSnapshot: true to attach final rendered story accessibility trees as Playwright AI-mode ARIA snapshots in the text response.` +
+Pass ariaSnapshot: true to attach final rendered story accessibility trees as Playwright AI-mode ARIA snapshots in the text response.
+Pass computedStyles: true to attach per-element computed CSS style differences in the text response.` +
 		(a11yEnabled
 			? `
 For visual/design accessibility violations (for example color contrast), ask the user before changing styles.`
@@ -164,6 +176,7 @@ For visual/design accessibility violations (for example color contrast), ask the
 				const runScreenshot = input.screenshot ?? false;
 				const runHtml = input.html ?? false;
 				const runAriaSnapshot = input.ariaSnapshot ?? false;
+				const runComputedStyles = input.computedStyles ?? false;
 
 				const { origin, options, disableTelemetry } = server.ctx.custom ?? {};
 
@@ -242,6 +255,7 @@ ${errorMessages}`,
 						screenshot: runScreenshot,
 						html: runHtml,
 						ariaSnapshot: runAriaSnapshot,
+						computedStyles: runComputedStyles,
 					},
 				);
 
@@ -256,6 +270,7 @@ ${errorMessages}`,
 					runScreenshot,
 					runHtml,
 					runAriaSnapshot,
+					runComputedStyles,
 					origin,
 				});
 
@@ -460,6 +475,21 @@ interface AriaSnapshotArtifactFailure {
 	message: string;
 }
 
+interface ComputedStylesReportResult {
+	elements?: ElementComputedStyles[];
+	message?: string;
+}
+
+interface ComputedStylesArtifact {
+	storyId: string;
+	elements: ElementComputedStyles[];
+}
+
+interface ComputedStylesArtifactFailure {
+	storyId: string;
+	message: string;
+}
+
 interface A11yViolationNode {
 	impact?: string;
 	failureSummary?: string;
@@ -482,6 +512,7 @@ function formatRunStoryTestResults({
 	runScreenshot,
 	runHtml,
 	runAriaSnapshot,
+	runComputedStyles,
 	origin,
 }: {
 	testResults: TestRunResult;
@@ -489,6 +520,7 @@ function formatRunStoryTestResults({
 	runScreenshot: boolean;
 	runHtml: boolean;
 	runAriaSnapshot: boolean;
+	runComputedStyles: boolean;
 	origin: string;
 }): { content: ToolResponseContent[]; summary: RunStoryTestsSummary } {
 	const sections: string[] = [];
@@ -541,6 +573,14 @@ function formatRunStoryTestResults({
 	}
 	if (ariaSnapshots?.failures.length) {
 		sections.push(formatAriaSnapshotFailuresSection(ariaSnapshots.failures));
+	}
+
+	const computedStyles = runComputedStyles ? getComputedStylesArtifacts(reportsByStory) : undefined;
+	if (computedStyles?.artifacts.length) {
+		sections.push(formatComputedStylesArtifactsSection(computedStyles.artifacts));
+	}
+	if (computedStyles?.failures.length) {
+		sections.push(formatComputedStylesFailuresSection(computedStyles.failures));
 	}
 
 	if (testResults.unhandledErrors.length > 0) {
@@ -718,6 +758,38 @@ function getAriaSnapshotArtifacts(reportsByStory: Record<StoryId, StoryReport[]>
 	return { snapshots, failures };
 }
 
+function getComputedStylesArtifacts(reportsByStory: Record<StoryId, StoryReport[]>): {
+	artifacts: ComputedStylesArtifact[];
+	failures: ComputedStylesArtifactFailure[];
+} {
+	const artifacts: ComputedStylesArtifact[] = [];
+	const failures: ComputedStylesArtifactFailure[] = [];
+
+	for (const [storyId, reports] of Object.entries(reportsByStory)) {
+		for (const report of reports) {
+			if (report.type !== COMPUTED_STYLES_REPORT_TYPE) {
+				continue;
+			}
+
+			const result = report.result as ComputedStylesReportResult | undefined;
+			if (report.status === 'passed' && Array.isArray(result?.elements)) {
+				artifacts.push({
+					storyId,
+					elements: result.elements,
+				});
+				continue;
+			}
+
+			failures.push({
+				storyId,
+				message: getComputedStylesFailureMessage(report.status, result),
+			});
+		}
+	}
+
+	return { artifacts, failures };
+}
+
 function getScreenshotFailureMessage(
 	status: StoryReport['status'],
 	result: ScreenshotReportResult | undefined,
@@ -773,6 +845,25 @@ function getAriaSnapshotFailureMessage(
 	}
 
 	return 'ARIA snapshot capture returned an invalid payload.';
+}
+
+function getComputedStylesFailureMessage(
+	status: StoryReport['status'],
+	result: ComputedStylesReportResult | undefined,
+): string {
+	if (typeof result?.message === 'string' && result.message.length > 0) {
+		return result.message;
+	}
+
+	if (status === 'warning') {
+		return 'Computed styles capture returned a warning.';
+	}
+
+	if (status === 'failed') {
+		return 'Computed styles capture failed.';
+	}
+
+	return 'Computed styles capture returned an invalid payload.';
 }
 
 function formatPassingStoriesSection(passingStories: Array<{ storyId: string }>): string {
@@ -924,6 +1015,43 @@ ${failure.message}`,
 	);
 
 	return `## ARIA Snapshot Capture Errors
+
+${formattedFailures.join('\n\n')}`;
+}
+
+function formatComputedStylesArtifactsSection(artifacts: ComputedStylesArtifact[]): string {
+	const formattedArtifacts = artifacts.map((artifact) => {
+		const elements = artifact.elements.map((element) => {
+			const declarations = Object.entries(element.styles).map(
+				([propertyName, value]) => `${propertyName}: ${value};`,
+			);
+			const body = declarations.length
+				? ['```css', ...declarations, '```'].join('\n')
+				: '_No non-default computed styles._';
+
+			return `#### ${element.selector}
+
+${body}`;
+		});
+
+		return `### ${artifact.storyId}
+
+${elements.join('\n\n')}`;
+	});
+
+	return `## Computed Styles
+
+${formattedArtifacts.join('\n\n')}`;
+}
+
+function formatComputedStylesFailuresSection(failures: ComputedStylesArtifactFailure[]): string {
+	const formattedFailures = failures.map(
+		(failure) => `### ${failure.storyId}
+
+${failure.message}`,
+	);
+
+	return `## Computed Styles Capture Errors
 
 ${formattedFailures.join('\n\n')}`;
 }
