@@ -11,15 +11,17 @@
 	"scripts": {
 		"build": "turbo run build",
 		"build-storybook": "turbo run build-storybook",
+		"bump:catalog": "pnpm dlx taze next --include \"@storybook/*,storybook,eslint-plugin-storybook,pnpm\" --include-locked -w && pnpm install",
 		"changeset": "changeset",
 		"check": "turbo run build build-storybook format lint publint typecheck test:run --continue",
 		"check:watch": "turbo watch build build-storybook format lint publint typecheck test --continue --experimental-write-cache",
 		"dev": "turbo run dev",
-		"format": "oxfmt .",
-		"format:check": "oxfmt --check .",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check",
 		"inspect": "pnpm run --filter @storybook/addon-mcp inspect",
 		"lint": "oxlint --type-aware",
 		"lint:ci": "oxlint --format github --type-aware",
+		"prepare": "husky",
 		"publint": "turbo run publint",
 		"release": "turbo run build && pnpm changeset publish",
 		"storybook": "turbo watch storybook --filter=@storybook/mcp-internal-storybook",
@@ -41,6 +43,8 @@
 		"@storybook/mcp": "workspace:*",
 		"@types/node": "20.19.0",
 		"@vitest/coverage-v8": "4.0.6",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.1.0",
 		"oxfmt": "^0.27.0",
 		"oxlint": "^1.43.0",
 		"oxlint-tsgolint": "^0.11.4",
@@ -52,6 +56,13 @@
 		"vite": "catalog:",
 		"vite-tsconfig-paths": "^5.1.4",
 		"vitest": "4.0.6"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx,mjs,cjs}": [
+			"pnpm format",
+			"pnpm lint"
+		],
+		"*.{json,jsonc,md,mdx,yaml,yml,html,css}": "pnpm format"
 	},
 	"packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }
