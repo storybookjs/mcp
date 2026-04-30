@@ -348,7 +348,7 @@ describe('parseReactDocgenTypescript', () => {
 		`);
 	});
 
-	test('prefers type.raw over type.name for enums', () => {
+	test('expands enum members for inline string-literal unions', () => {
 		const result = parseReactDocgenTypescript({
 			displayName: 'Button',
 			filePath: 'src/Button.tsx',
@@ -380,6 +380,57 @@ describe('parseReactDocgenTypescript', () => {
 			  },
 			}
 		`);
+	});
+
+	test('expands enum members when type.raw is a named alias (not the inline union)', () => {
+		// With `shouldExtractLiteralValuesFromEnum: true`, RDT records `type.raw` as the
+		// alias name (e.g. "ButtonVariant") and puts the resolved literals in `type.value`.
+		// Without expanding `type.value`, the alias name leaks through and downstream
+		// consumers lose the actual member list.
+		const result = parseReactDocgenTypescript({
+			displayName: 'Button',
+			filePath: 'src/Button.tsx',
+			description: '',
+			methods: [],
+			props: {
+				variant: {
+					name: 'variant',
+					description: 'The variant',
+					type: {
+						name: 'enum',
+						raw: 'ButtonVariant',
+						value: [
+							{ value: '"primary"' },
+							{ value: '"neutral"' },
+							{ value: '"danger"' },
+							{ value: '"custom"' },
+						],
+					},
+					defaultValue: { value: 'primary' },
+					required: false,
+				},
+			},
+		});
+		expect(result.props.variant!.type).toBe('"primary" | "neutral" | "danger" | "custom"');
+	});
+
+	test('falls back to type.raw when enum has no value array', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Button',
+			filePath: 'src/Button.tsx',
+			description: '',
+			methods: [],
+			props: {
+				variant: {
+					name: 'variant',
+					description: '',
+					type: { name: 'enum', raw: 'ButtonVariant' },
+					defaultValue: null,
+					required: false,
+				},
+			},
+		});
+		expect(result.props.variant!.type).toBe('ButtonVariant');
 	});
 
 	test('falls back to type.name when type.raw is not present', () => {
