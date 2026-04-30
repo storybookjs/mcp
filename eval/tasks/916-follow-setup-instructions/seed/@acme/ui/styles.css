@@ -1,0 +1,19 @@
+:root {
+	color-scheme: dark;
+	font-family: Inter, system-ui, sans-serif;
+}
+
+[data-acme-provider='true'] {
+	min-height: 100vh;
+	padding: 2rem;
+	background: #111827;
+	color: #f9fafb;
+}
+
+[data-acme-launch-button] {
+	padding: 0.75rem 1rem;
+	border: 0;
+	border-radius: 999px;
+	background: #8b5cf6;
+	color: white;
+}
