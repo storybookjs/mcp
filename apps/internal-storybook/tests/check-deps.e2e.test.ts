@@ -36,11 +36,8 @@ describe('Storybook Dependencies', () => {
 				.map(({ pkg, current, latest }) => `  - ${pkg}: ${current} → ${latest}`)
 				.join('\n');
 
-			const currentVersion = outdated[0]!.current.replace(/\./g, '\\.');
-			const latestVersion = outdated[0]!.latest;
-
 			throw new Error(
-				`Storybook dependencies are outdated. Update the catalog in pnpm-workspace.yaml:\n\n  sed -i '' 's/${currentVersion}/${latestVersion}/g' pnpm-workspace.yaml && pnpm install\n\nOutdated packages:\n${outdatedList}`,
+				`Storybook dependencies are outdated. Run \`pnpm bump:catalog\` to fix.\n\nOutdated packages:\n${outdatedList}`,
 			);
 		}
 	});
