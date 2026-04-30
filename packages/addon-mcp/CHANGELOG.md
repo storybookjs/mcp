@@ -1,5 +1,12 @@
 # @storybook/addon-mcp
 
+## 0.7.0
+
+### Minor Changes
+
+- [#219](https://github.com/storybookjs/mcp/pull/219) [`6684af6`](https://github.com/storybookjs/mcp/commit/6684af67bf7c2a2b72051fa63c3f5e584eecbf76) Thanks [@ghengeveld](https://github.com/ghengeveld)! - Introduced the `get-changed-stories` tool to retrieve metadata for stories marked as new, modified, or affected.
+  Updated `dev-instructions.md` and `storybook-story-instructions.md` to reflect the new workflow for calling `get-changed-stories` before `preview-stories`.
+
 ## 0.6.0
 
 ### Minor Changes
