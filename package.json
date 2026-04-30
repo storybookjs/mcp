@@ -11,7 +11,7 @@
 	"scripts": {
 		"build": "turbo run build",
 		"build-storybook": "turbo run build-storybook",
-		"bump:catalog": "pnpm dlx taze next --include \"@storybook/*,storybook,eslint-plugin-storybook,pnpm\" --include-locked -w && pnpm install",
+		"bump:catalog": "pnpm exec taze next --include \"@storybook/*,storybook,eslint-plugin-storybook,pnpm\" --include-locked -w && pnpm install",
 		"changeset": "changeset",
 		"check": "turbo run build build-storybook format lint publint typecheck test:run --continue",
 		"check:watch": "turbo watch build build-storybook format lint publint typecheck test --continue --experimental-write-cache",
@@ -50,6 +50,7 @@
 		"oxlint-tsgolint": "^0.11.4",
 		"pkg-pr-new": "^0.0.57",
 		"publint": "^0.3.15",
+		"taze": "^19.11.0",
 		"tsdown": "^0.20.3",
 		"turbo": "^2.6.1",
 		"typescript": "~5.9.3",
