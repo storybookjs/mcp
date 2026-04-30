@@ -109,7 +109,9 @@ const serializeRdtType = (
 	const value = (type as { value?: unknown }).value;
 	if (type.name === 'enum' && Array.isArray(value)) {
 		const members = value
-			.map((v) => (v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : undefined))
+			.map((v) =>
+				v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : undefined,
+			)
 			.filter((v): v is string => typeof v === 'string');
 		if (members.length > 0) return members.join(' | ');
 	}
