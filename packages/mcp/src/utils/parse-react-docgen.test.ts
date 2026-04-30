@@ -424,7 +424,7 @@ describe('parseReactDocgenTypescript', () => {
 				variant: {
 					name: 'variant',
 					description: '',
-					type: { name: 'enum', raw: 'ButtonVariant' } as never,
+					type: { name: 'enum', raw: 'ButtonVariant' },
 					defaultValue: null,
 					required: false,
 				},
