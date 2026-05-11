@@ -12,6 +12,7 @@ import {
 	parseReactDocgenTypescript,
 	type ParsedDocgen,
 } from '../parse-react-docgen.ts';
+import { parseCemDeclaration, type ParsedCem } from '../parse-custom-elements-manifest.ts';
 import { dedent } from '../dedent.ts';
 import { extractDocsSummary, MAX_SUMMARY_LENGTH } from './extract-docs-summary.ts';
 
@@ -75,7 +76,7 @@ function extractSummary(
 function getParsedDocgen(
 	componentManifest: Pick<
 		ComponentManifest | SubcomponentManifest,
-		'reactDocgen' | 'reactDocgenTypescript' | 'reactComponentMeta'
+		'reactDocgen' | 'reactDocgenTypescript' | 'reactComponentMeta' | 'customElementsManifest'
 	>,
 ): ParsedDocgen | undefined {
 	if (componentManifest.reactDocgen) {
@@ -86,6 +87,9 @@ function getParsedDocgen(
 	}
 	if (componentManifest.reactComponentMeta) {
 		return parseReactComponentMeta(componentManifest.reactComponentMeta);
+	}
+	if (componentManifest.customElementsManifest) {
+		return parseCemDeclaration(componentManifest.customElementsManifest);
 	}
 	return undefined;
 }
@@ -161,6 +165,74 @@ function formatPropsSection(
 	parts.push('}');
 	parts.push('```');
 	parts.push('');
+
+	return parts;
+}
+
+function formatCemSections(parsedDocgen: ParsedDocgen | undefined): string[] {
+	if (!parsedDocgen || !('attributes' in parsedDocgen)) return [];
+	const cem = parsedDocgen as ParsedCem;
+	const parts: string[] = [];
+
+	const attrEntries = Object.entries(cem.attributes);
+	if (attrEntries.length > 0) {
+		parts.push('## Attributes');
+		parts.push('');
+		parts.push('```');
+		for (const [name, attr] of attrEntries) {
+			const type = attr.type ?? 'string';
+			const fieldNote = attr.fieldName && attr.fieldName !== name ? ` (property: ${attr.fieldName})` : '';
+			if (attr.description) parts.push(`  // ${attr.description}`);
+			let line = `  ${name}: ${type}`;
+			if (attr.defaultValue !== undefined) line += ` = ${attr.defaultValue}`;
+			line += `;${fieldNote}`;
+			parts.push(line);
+		}
+		parts.push('```');
+		parts.push('');
+	}
+
+	const eventEntries = Object.entries(cem.events);
+	if (eventEntries.length > 0) {
+		parts.push('## Events');
+		parts.push('');
+		for (const [name, ev] of eventEntries) {
+			const type = ev.type ? ` \`${ev.type}\`` : '';
+			parts.push(`- **${name}**${type}${ev.description ? ': ' + ev.description : ''}`);
+		}
+		parts.push('');
+	}
+
+	const slotEntries = Object.entries(cem.slots);
+	if (slotEntries.length > 0) {
+		parts.push('## Slots');
+		parts.push('');
+		for (const [name, slot] of slotEntries) {
+			parts.push(`- **${name}**${slot.description ? ': ' + slot.description : ''}`);
+		}
+		parts.push('');
+	}
+
+	const cssPropEntries = Object.entries(cem.cssProperties);
+	if (cssPropEntries.length > 0) {
+		parts.push('## CSS Custom Properties');
+		parts.push('');
+		for (const [name, cp] of cssPropEntries) {
+			const defaultVal = cp.defaultValue !== undefined ? ` (default: ${cp.defaultValue})` : '';
+			parts.push(`- **${name}**${defaultVal}${cp.description ? ': ' + cp.description : ''}`);
+		}
+		parts.push('');
+	}
+
+	const cssPartEntries = Object.entries(cem.cssParts);
+	if (cssPartEntries.length > 0) {
+		parts.push('## CSS Parts');
+		parts.push('');
+		for (const [name, part] of cssPartEntries) {
+			parts.push(`- **${name}**${part.description ? ': ' + part.description : ''}`);
+		}
+		parts.push('');
+	}
 
 	return parts;
 }
@@ -282,6 +354,7 @@ export function formatComponentManifest(componentManifest: ComponentManifest): s
 	}
 
 	parts.push(...formatPropsSection(parsedDocgen));
+	parts.push(...formatCemSections(parsedDocgen));
 
 	// Attached docs section
 	if (componentManifest.docs && Object.keys(componentManifest.docs).length > 0) {
