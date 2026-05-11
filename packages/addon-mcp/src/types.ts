@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import type { Options } from 'storybook/internal/types';
-import { GET_TOOL_NAME, LIST_TOOL_NAME, type StorybookContext } from '@storybook/mcp';
+import { GET_TOOL_NAME, LIST_TOOL_NAME, type StorybookContext, type Source } from '@storybook/mcp';
 import { GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME } from './tools/tool-names.ts';
 
 export const AddonOptions = v.object({
@@ -16,6 +16,18 @@ export const AddonOptions = v.object({
 			docs: true,
 			test: true,
 		},
+	),
+	manifestProvider: v.optional(
+		v.pipe(
+			v.custom<(request: Request | undefined, path: string, source?: Source) => Promise<string>>(
+				(val) => typeof val === 'function',
+				'manifestProvider must be a function',
+			),
+			v.description(
+				'Custom manifest provider function for web component / composite Storybook setups. ' +
+					'When provided, overrides the default composition-auth-based provider and enables the docs toolset.',
+			),
+		),
 	),
 });
 

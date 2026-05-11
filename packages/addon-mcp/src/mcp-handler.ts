@@ -31,7 +31,7 @@ let initialize: Promise<McpServer<any, AddonContext>> | undefined;
 let disableTelemetry: boolean | undefined;
 let a11yEnabled: boolean | undefined;
 
-const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
+const initializeMCPServer = async (options: Options, multiSource?: boolean, hasCustomManifestProvider = false) => {
 	const core = await options.presets.apply('core', {});
 	const features = await options.presets.apply('features', {});
 	const changeDetectionEnabled = features?.changeDetection ?? false;
@@ -86,8 +86,9 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	// Register test addon tools
 	await addRunStoryTestsTool(server, { a11yEnabled });
 
-	// Only register the additional tools if the component manifest feature is enabled
-	if (manifestStatus.available) {
+	// Register docs tools when the component manifest feature is enabled OR a custom
+	// manifest provider is supplied (e.g., web component composite storybook setups)
+	if (manifestStatus.available || hasCustomManifestProvider) {
 		logger.info('Experimental components manifest feature detected - registering component tools');
 		const contextAwareEnabled = () => server.ctx.custom?.toolsets?.docs ?? true;
 		await addListAllDocumentationTool(server, contextAwareEnabled);
@@ -137,6 +138,7 @@ export const mcpServerHandler = async ({
 		initialize = initializeMCPServer(
 			options,
 			sources?.some((s) => s.url),
+			!!manifestProvider,
 		);
 	}
 	const server = await initialize;
