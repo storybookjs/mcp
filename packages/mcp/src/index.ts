@@ -28,6 +28,16 @@ export {
 // Export types for reuse
 export type { StorybookContext, Source, SourceManifests } from './types.ts';
 
+// Export CEM parser for web component support
+export {
+	parseCustomElementsManifest,
+	parseCemDeclaration,
+	findDeclarationForTag,
+	type ParsedCem,
+	type CustomElementsManifest,
+	type CemClassDeclaration,
+} from './utils/parse-custom-elements-manifest.ts';
+
 // copied from tmcp internals as it's not exposed
 type InitializeRequestParams = {
 	protocolVersion: string;

@@ -129,6 +129,8 @@ const BaseComponentProperties = v.object({
 	reactDocgen: v.optional(v.any()),
 	reactDocgenTypescript: v.optional(v.any()),
 	reactComponentMeta: v.optional(v.any()),
+	/** Raw CEM v2 class declaration; populated for web component projects that run the CEM analyzer. */
+	customElementsManifest: v.optional(v.any()),
 });
 
 export const SubcomponentManifest = v.object({
