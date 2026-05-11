@@ -253,8 +253,8 @@ export const experimental_manifests = async (
 
 /**
  * Derives a custom element tag name from a Storybook story title segment.
- * Handles both space-separated ("Jha Button" → "jha-button") and
- * CamelCase ("JhaButton" → "jha-button") naming conventions.
+ * Handles both space-separated ("My Button" → "my-button") and
+ * CamelCase ("MyButton" → "my-button") naming conventions.
  * Returns undefined for non-hyphenated names (not a custom element).
  */
 function deriveTagName(title: string): string | undefined {
