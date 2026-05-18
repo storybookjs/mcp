@@ -1,0 +1,45 @@
+{
+	"name": "@storybook/mcp-proxy",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Storybook MCP Proxy for ADE",
+	"keywords": [
+		"mcp",
+		"proxy",
+		"storybook",
+    "ADE"
+	],
+	"homepage": "https://github.com/storybookjs/mcp/blob/main/packages/mcp-proxy/README.md",
+	"license": "MIT",
+	"author": "Storybook Core Team",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/storybookjs/mcp.git",
+		"directory": "packages/mcp-proxy"
+	},
+	"type": "module",
+	"files": [
+		"dist"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"bin": {
+		"storybook-mcp-proxy": "./dist/bin.js"
+	},
+	"scripts": {
+		"prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
+		"build": "tsdown",
+		"publint": "publint",
+		"test": "cd ../.. && pnpm vitest --project=@storybook/mcp-proxy --passWithNoTests",
+		"typecheck": "tsc"
+	},
+	"dependencies": {
+		"@tmcp/transport-stdio": "catalog:",
+		"tmcp": "catalog:"
+	}
+}

@@ -1,0 +1,81 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+catalogs:
+  default:
+    '@tmcp/transport-stdio':
+      specifier: ^0.4.3
+      version: 0.4.3
+    tmcp:
+      specifier: ^1.19.4
+      version: 1.19.4
+
+importers:
+
+  .:
+    dependencies:
+      '@tmcp/transport-stdio':
+        specifier: 'catalog:'
+        version: 0.4.3(tmcp@1.19.4)
+      tmcp:
+        specifier: 'catalog:'
+        version: 1.19.4
+
+packages:
+
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@tmcp/transport-stdio@0.4.3':
+    resolution: {integrity: sha512-chdmSwk7PSXjkaQId2OAY8ZMFrTFWwckfCyXJuw6b6WFK9IMK95EoU2VDFioybcmawuQox0MNPM5R2DVxlptoA==}
+    peerDependencies:
+      tmcp: ^1.16.3
+
+  json-rpc-2.0@1.7.1:
+    resolution: {integrity: sha512-JqZjhjAanbpkXIzFE7u8mE/iFblawwlXtONaCvRqI+pyABVz7B4M1EUNpyVW+dZjqgQ2L5HFmZCmOCgUKm00hg==}
+
+  sqids@0.3.0:
+    resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
+
+  tmcp@1.19.4:
+    resolution: {integrity: sha512-fMoUJ3Gef9iA0yKZNeW2SQCCKTluCwghUyOz/qxPS8XxrQk6Jlw4lgql3S+s6L//FteLeSJ7erKxMWl727mZoQ==}
+
+  uri-template-matcher@1.1.2:
+    resolution: {integrity: sha512-uZc1h12jdO3m/R77SfTEOuo6VbMhgWznaawKpBjRGSJb7i91x5PgI37NQJtG+Cerxkk0yr1pylBY2qG1kQ+aEQ==}
+
+  valibot@1.4.0:
+    resolution: {integrity: sha512-iC/x7fVcSyOwlm/VSt7RlHnzNGLGvR9GnxdifUeWoCJo0q4ZZvrVkIHC6faTlkxG47I2Y4UrFquPuVHCrOnrLg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+snapshots:
+
+  '@standard-schema/spec@1.1.0': {}
+
+  '@tmcp/transport-stdio@0.4.3(tmcp@1.19.4)':
+    dependencies:
+      tmcp: 1.19.4
+
+  json-rpc-2.0@1.7.1: {}
+
+  sqids@0.3.0: {}
+
+  tmcp@1.19.4:
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      json-rpc-2.0: 1.7.1
+      sqids: 0.3.0
+      uri-template-matcher: 1.1.2
+      valibot: 1.4.0
+    transitivePeerDependencies:
+      - typescript
+
+  uri-template-matcher@1.1.2: {}
+
+  valibot@1.4.0: {}
