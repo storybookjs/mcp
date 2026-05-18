@@ -14,6 +14,8 @@
 		"changeset": "changeset",
 		"check": "turbo run build build-storybook format lint publint typecheck test:run --continue",
 		"check:watch": "turbo watch build build-storybook format lint publint typecheck test --continue --experimental-write-cache",
+		"codex-plugin:marketplace:add": "pnpm --filter @storybook/codex-plugin codex:marketplace:add",
+		"codex-plugin:marketplace:remove": "pnpm --filter @storybook/codex-plugin codex:marketplace:remove",
 		"dev": "turbo run dev",
 		"format": "oxfmt .",
 		"format:check": "oxfmt --check .",
