@@ -15,9 +15,7 @@
 		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/mcp-proxy"
 	},
-	"bin": {
-		"storybook-mcp-proxy": "./dist/bin.js"
-	},
+	"bin": "./dist/bin.js",
 	"files": [
 		"dist",
 		"README.md"
