@@ -5,15 +5,15 @@ import serverInstructions from './instructions.md';
 import { registerProxiedTools } from './tools/index.ts';
 import { readRegistry, DEFAULT_REGISTRY_DIR } from './registry.ts';
 import { proxyToolCall as defaultProxyToolCall } from './proxy-client.ts';
-import type { ProxyDeps } from './types.ts';
+import type { ProxyDeps } from './types/index.ts';
 
 export type {
 	ProxyDeps,
-	StorybookInstanceRecord,
+	StorybookInstanceRecordV1,
 	ProxyToolCallParams,
 	ProxyToolCallResult,
-	McpStatus,
-} from './types.ts';
+	McpStatusV1,
+} from './types/index.ts';
 
 export type CreateProxyServerOptions = {
 	registryDir?: string;

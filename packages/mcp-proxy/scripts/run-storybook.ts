@@ -7,7 +7,7 @@ import { existsSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { DEFAULT_REGISTRY_DIR } from '../src/registry.ts';
-import type { McpStatus, StorybookInstanceRecord } from '../src/types.ts';
+import type { McpStatusV1, StorybookInstanceRecordV1 } from '../src/types/index.ts';
 
 const DEFAULT_PORT = 6006;
 const DEFAULT_HOST = 'localhost';
@@ -199,12 +199,12 @@ function hasAddonMcp(projectPath: string): boolean {
 	}
 }
 
-async function writeRecord(recordPath: string, record: StorybookInstanceRecord): Promise<void> {
+async function writeRecord(recordPath: string, record: StorybookInstanceRecordV1): Promise<void> {
 	await fs.mkdir(path.dirname(recordPath), { recursive: true });
 	await fs.writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf-8');
 }
 
-function getInitialMcpStatus(projectPath: string): McpStatus {
+function getInitialMcpStatusV1(projectPath: string): McpStatusV1 {
 	return hasAddonMcp(projectPath) ? 'starting' : 'not-installed';
 }
 
@@ -215,11 +215,11 @@ function createRecord(args: {
 	port: number;
 	host: string;
 	storybookVersion: string;
-	mcpStatus: McpStatus;
-}): StorybookInstanceRecord {
+	mcpStatus: McpStatusV1;
+}): StorybookInstanceRecordV1 {
 	const now = new Date().toISOString();
 	const url = `http://${args.host}:${args.port}`;
-	const record: StorybookInstanceRecord = {
+	const record: StorybookInstanceRecordV1 = {
 		schemaVersion: 1,
 		instanceId: args.instanceId,
 		pid: args.childPid,
@@ -282,7 +282,7 @@ async function main(): Promise<void> {
 	});
 
 	let recordPath: string | undefined;
-	let record: StorybookInstanceRecord | undefined;
+	let record: StorybookInstanceRecordV1 | undefined;
 	let recordReady = false;
 	let cleaningUp = false;
 
@@ -322,7 +322,7 @@ async function main(): Promise<void> {
 			port: args.port,
 			host: args.host,
 			storybookVersion,
-			mcpStatus: getInitialMcpStatus(args.projectPath),
+			mcpStatus: getInitialMcpStatusV1(args.projectPath),
 		});
 		try {
 			await writeRecord(recordPath, record);

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMcpProxyServer } from '../index.ts';
 import { META_INTERCEPT_REASON } from '../intercepts.ts';
-import type { ProxyDeps, ProxyToolCallResult, StorybookInstanceRecord } from '../types.ts';
+import type { ProxyDeps, ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
 
-const record: StorybookInstanceRecord = {
+const record: StorybookInstanceRecordV1 = {
 	schemaVersion: 1,
 	instanceId: 'inst-1',
 	pid: 1,
@@ -115,7 +115,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=starting to the mcp-starting intercept', async () => {
-		const starting: StorybookInstanceRecord = {
+		const starting: StorybookInstanceRecordV1 = {
 			...record,
 			mcp: { status: 'starting' },
 		};
@@ -126,7 +126,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=not-installed to the addon-missing intercept', async () => {
-		const noAddon: StorybookInstanceRecord = {
+		const noAddon: StorybookInstanceRecordV1 = {
 			...record,
 			mcp: { status: 'not-installed' },
 		};
@@ -137,7 +137,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=error to the mcp-error intercept', async () => {
-		const errored: StorybookInstanceRecord = {
+		const errored: StorybookInstanceRecordV1 = {
 			...record,
 			mcp: { status: 'error', endpoint: 'http://localhost:6006/mcp' },
 		};

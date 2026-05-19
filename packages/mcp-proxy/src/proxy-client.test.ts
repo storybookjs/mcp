@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { proxyToolCall } from './proxy-client.ts';
-import type { StorybookInstanceRecord } from './types.ts';
+import type { StorybookInstanceRecordV1 } from './types/index.ts';
 
-const record: StorybookInstanceRecord = {
+const record: StorybookInstanceRecordV1 = {
 	schemaVersion: 1,
 	instanceId: 'i-1',
 	pid: 1,
@@ -95,7 +95,7 @@ describe('proxyToolCall', () => {
 	});
 
 	it('throws when the record has no mcp.endpoint', async () => {
-		const noEndpoint: StorybookInstanceRecord = {
+		const noEndpoint: StorybookInstanceRecordV1 = {
 			...record,
 			mcp: { status: 'ready' },
 		};

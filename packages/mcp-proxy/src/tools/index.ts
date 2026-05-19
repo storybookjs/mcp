@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import type { McpServer } from 'tmcp';
-import type { ProxyDeps } from '../types.ts';
+import type { ProxyDeps } from '../types/index.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 import { StoryInputArray, StorybookIdField } from './shared.ts';
 

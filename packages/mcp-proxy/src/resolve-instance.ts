@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
-import type { InterceptReason, StorybookInstanceRecord } from './types.ts';
+import type { InterceptReason, StorybookInstanceRecordV1 } from './types/index.ts';
 
 export type ResolveResult =
-	| { kind: 'instance'; record: StorybookInstanceRecord }
-	| { kind: 'intercept'; reason: InterceptReason; records?: StorybookInstanceRecord[] };
+	| { kind: 'instance'; record: StorybookInstanceRecordV1 }
+	| { kind: 'intercept'; reason: InterceptReason; records?: StorybookInstanceRecordV1[] };
 
 /**
  * Pick the Storybook instance whose cwd exactly matches `targetCwd` after
@@ -20,7 +20,7 @@ export type ResolveResult =
  * Two or more matches at the same cwd → multiple-matches intercept (degenerate).
  */
 export function resolveInstance(
-	records: StorybookInstanceRecord[],
+	records: StorybookInstanceRecordV1[],
 	targetCwd: string,
 ): ResolveResult {
 	const normalisedTarget = resolve(targetCwd);

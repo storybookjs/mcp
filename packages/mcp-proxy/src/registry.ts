@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import * as v from 'valibot';
-import { StorybookInstanceRecordSchema, type StorybookInstanceRecord } from './types.ts';
+import { StorybookInstanceRecordV1Schema, type StorybookInstanceRecordV1 } from './types/index.ts';
 
 export const DEFAULT_REGISTRY_DIR = join(homedir(), '.storybook', 'instances');
 
@@ -18,13 +18,13 @@ const SOFT_REGISTRY_ERRORS = new Set(['ENOENT', 'EACCES', 'EPERM', 'ENOTDIR']);
  * Read all Storybook instance records from `registryDir`.
  *
  * Each file is expected to be a single JSON object matching
- * {@link StorybookInstanceRecord}. Records whose PID is no longer alive are
+ * {@link StorybookInstanceRecordV1}. Records whose PID is no longer alive are
  * filtered out (stale removal per milestone 2). Malformed files are skipped
  * silently — the proxy should degrade to "no instance" rather than fail loudly.
  */
 export async function readRegistry(
 	registryDir: string = DEFAULT_REGISTRY_DIR,
-): Promise<StorybookInstanceRecord[]> {
+): Promise<StorybookInstanceRecordV1[]> {
 	let entries: string[];
 	try {
 		entries = await fs.readdir(registryDir);
@@ -41,7 +41,7 @@ export async function readRegistry(
 			.map(async (name) => {
 				try {
 					const raw = await fs.readFile(join(registryDir, name), 'utf-8');
-					const parsed = v.safeParse(StorybookInstanceRecordSchema, JSON.parse(raw));
+					const parsed = v.safeParse(StorybookInstanceRecordV1Schema, JSON.parse(raw));
 					if (!parsed.success) return null;
 					if (!isProcessAlive(parsed.output.pid)) {
 						clearRegistry(join(registryDir, name)).catch(() => {
@@ -56,7 +56,7 @@ export async function readRegistry(
 			}),
 	);
 
-	return records.filter((r): r is StorybookInstanceRecord => r !== null);
+	return records.filter((r): r is StorybookInstanceRecordV1 => r !== null);
 }
 
 /**

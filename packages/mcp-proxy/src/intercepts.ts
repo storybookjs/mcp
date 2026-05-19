@@ -1,4 +1,4 @@
-import type { InterceptReason, StorybookInstanceRecord } from './types.ts';
+import type { InterceptReason, StorybookInstanceRecordV1 } from './types/index.ts';
 
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /
@@ -9,7 +9,7 @@ export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
 const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.`;
 
-const buildNoInstanceWithCandidates = (records: StorybookInstanceRecord[]) =>
+const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
 	`No Storybook is running at this cwd. Either start \`storybook dev\` from the project's cwd, or retry with one of the running cwds below.
 
 Running Storybooks:
@@ -28,7 +28,7 @@ const MCP_STARTING = `Storybook is running but its MCP server is still starting 
 
 const MCP_ERROR = `Storybook is running but its MCP server reported an error. Inspect the Storybook terminal output, fix the underlying issue, then retry the tool call.`;
 
-const buildMultipleMatches = (records: StorybookInstanceRecord[]) =>
+const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 	`Multiple Storybook processes are registered at the same cwd. Stop all but one and retry.
 
 Conflicting instances:
@@ -36,7 +36,7 @@ ${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')
 
 export function getInterceptMarkdown(
 	reason: InterceptReason,
-	records?: StorybookInstanceRecord[],
+	records?: StorybookInstanceRecordV1[],
 ): string {
 	switch (reason) {
 		case 'no-instance':
@@ -54,7 +54,7 @@ export function getInterceptMarkdown(
 	}
 }
 
-export function intercept(reason: InterceptReason, records?: StorybookInstanceRecord[]) {
+export function intercept(reason: InterceptReason, records?: StorybookInstanceRecordV1[]) {
 	return {
 		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, records) }],
 		isError: true,

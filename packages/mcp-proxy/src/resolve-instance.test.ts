@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { resolveInstance } from './resolve-instance.ts';
-import type { McpStatus, StorybookInstanceRecord } from './types.ts';
+import type { McpStatusV1, StorybookInstanceRecordV1 } from './types/index.ts';
 
 let nextInstance = 0;
 
 function record(
 	cwd: string,
-	status: McpStatus = 'ready',
-	overrides: Partial<StorybookInstanceRecord> = {},
-): StorybookInstanceRecord {
+	status: McpStatusV1 = 'ready',
+	overrides: Partial<StorybookInstanceRecordV1> = {},
+): StorybookInstanceRecordV1 {
 	nextInstance += 1;
 	return {
 		schemaVersion: 1,

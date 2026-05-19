@@ -1,4 +1,8 @@
-import type { ProxyToolCallParams, ProxyToolCallResult, StorybookInstanceRecord } from './types.ts';
+import type {
+	ProxyToolCallParams,
+	ProxyToolCallResult,
+	StorybookInstanceRecordV1,
+} from './types/index.ts';
 
 /**
  * Forward an MCP `tools/call` JSON-RPC request to a local Storybook MCP server.
@@ -10,7 +14,7 @@ import type { ProxyToolCallParams, ProxyToolCallResult, StorybookInstanceRecord 
  * don't need session bookkeeping.
  */
 export async function proxyToolCall(
-	record: StorybookInstanceRecord,
+	record: StorybookInstanceRecordV1,
 	params: ProxyToolCallParams,
 	fetchImpl: typeof fetch = fetch,
 ): Promise<ProxyToolCallResult> {

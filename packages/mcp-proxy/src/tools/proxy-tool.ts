@@ -2,7 +2,7 @@ import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
 import { resolveInstance } from '../resolve-instance.ts';
 import { intercept } from '../intercepts.ts';
-import type { ProxyDeps, ProxyToolCallResult } from '../types.ts';
+import type { ProxyDeps, ProxyToolCallResult } from '../types/index.ts';
 
 const CwdField = {
 	cwd: v.pipe(
