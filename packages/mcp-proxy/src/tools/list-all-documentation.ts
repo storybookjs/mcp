@@ -21,10 +21,7 @@ const ListAllDocumentationInput = v.object({
 	),
 });
 
-export function addListAllDocumentationTool(
-	server: McpServer<any, ProxyContext>,
-	deps: ProxyDeps,
-) {
+export function addListAllDocumentationTool(server: McpServer<any, ProxyContext>, deps: ProxyDeps) {
 	registerProxyTool(server, deps, {
 		name: 'list-all-documentation',
 		title: 'List All Documentation',
