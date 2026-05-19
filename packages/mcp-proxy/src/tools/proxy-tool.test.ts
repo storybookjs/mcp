@@ -68,6 +68,27 @@ async function callTool(
 }
 
 describe('registerProxyTool / list-all-documentation', () => {
+	it('exposes all 7 proxied tools, each with cwd appended to the schema', async () => {
+		const server = await buildServer();
+		const response = await listTools(server);
+		const names = response.result.tools.map((t) => t.name).sort();
+		expect(names).toEqual(
+			[
+				'get-changed-stories',
+				'get-documentation',
+				'get-documentation-for-story',
+				'get-storybook-story-instructions',
+				'list-all-documentation',
+				'preview-stories',
+				'run-story-tests',
+			].sort(),
+		);
+		for (const tool of response.result.tools) {
+			const props = Object.keys(tool.inputSchema.properties ?? {});
+			expect(props, `tool ${tool.name} should expose cwd`).toContain('cwd');
+		}
+	});
+
 	it('exposes list-all-documentation with cwd appended to the schema', async () => {
 		const server = await buildServer();
 		const response = await listTools(server);
