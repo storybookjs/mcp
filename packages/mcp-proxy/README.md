@@ -14,10 +14,10 @@ After the package is released to npm, plugin MCP configs should run:
 npx -y @storybook/mcp-proxy@latest
 ```
 
-During PR review, use the preview package URL published by the `Publish preview` workflow. That workflow runs `pnpm pkg-pr-new publish --pnpm --no-template './packages/*'`, so this package is published to pkg.pr.new for each PR commit without publishing to npm.
+During PR review, use the preview package URL published by the `Publish preview` workflow. That workflow runs `pnpm pkg-pr-new publish --pnpm --no-template './packages/*'`, so this package is published to pkg.pr.new for each PR without publishing to npm.
 
 ```sh
-npx -y --package https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@<commit> storybook-mcp-proxy
+npx -y --package https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@<preview-id> storybook-mcp-proxy
 ```
 
 Use the exact URL from the pkg.pr.new PR comment or check output. The preview package is not published to npm.
