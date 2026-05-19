@@ -48,7 +48,7 @@ export async function readRegistry(
 							/* ignore cleanup errors */
 						});
 						return null;
-					};
+					}
 					return parsed.output;
 				} catch {
 					return null;

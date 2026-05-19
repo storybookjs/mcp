@@ -36,7 +36,9 @@
 		"build": "tsdown",
 		"publint": "publint",
 		"test": "cd ../.. && pnpm vitest --project=@storybook/mcp-proxy --passWithNoTests",
-		"typecheck": "tsc"
+		"typecheck": "tsc",
+		"run-storybook": "node scripts/run-storybook.ts",
+		"inspect": "npx -y @modelcontextprotocol/inspector@latest --server storybook-mcp-proxy"
 	},
 	"dependencies": {
 		"@tmcp/adapter-valibot": "catalog:",
