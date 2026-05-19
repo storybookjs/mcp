@@ -2,13 +2,7 @@ import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import pkgJson from '../package.json' with { type: 'json' };
 import serverInstructions from './instructions.md';
-import { addListAllDocumentationTool } from './tools/list-all-documentation.ts';
-import { addGetDocumentationTool } from './tools/get-documentation.ts';
-import { addGetDocumentationForStoryTool } from './tools/get-documentation-for-story.ts';
-import { addPreviewStoriesTool } from './tools/preview-stories.ts';
-import { addGetChangedStoriesTool } from './tools/get-changed-stories.ts';
-import { addGetStorybookStoryInstructionsTool } from './tools/get-storybook-story-instructions.ts';
-import { addRunStoryTestsTool } from './tools/run-story-tests.ts';
+import { registerProxiedTools } from './tools/index.ts';
 import { readRegistry, DEFAULT_REGISTRY_DIR } from './registry.ts';
 import { proxyToolCall as defaultProxyToolCall } from './proxy-client.ts';
 import type { ProxyDeps } from './types.ts';
@@ -48,13 +42,7 @@ export async function createMcpProxyServer(options: CreateProxyServerOptions = {
 		},
 	);
 
-	addListAllDocumentationTool(server, deps);
-	addGetDocumentationTool(server, deps);
-	addGetDocumentationForStoryTool(server, deps);
-	addPreviewStoriesTool(server, deps);
-	addGetChangedStoriesTool(server, deps);
-	addGetStorybookStoryInstructionsTool(server, deps);
-	addRunStoryTestsTool(server, deps);
+	registerProxiedTools(server, deps);
 
 	return server;
 }
