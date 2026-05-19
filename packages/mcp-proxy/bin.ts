@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Stdio entry point for `@storybook/mcp-proxy`.
  *
