@@ -17,10 +17,14 @@ npx -y @storybook/mcp-proxy@latest
 During development, the Claude and Codex plugins point at the latest pkg.pr.new preview for PR #227:
 
 ```sh
-npx -y --package https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@227
+npx -y https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@227
 ```
 
 The `@227` ref tracks the newest preview build published by the `Publish preview` workflow for that pull request.
+
+> **TODO:** After this PR merges to `main`, switch plugin `.mcp.json` files to  
+> `https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@main`  
+> **TODO:** After `@storybook/mcp-proxy` is published to npm, switch to `@storybook/mcp-proxy@latest`.
 
 ## Local Testing
 

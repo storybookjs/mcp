@@ -9,8 +9,8 @@ This monorepo contains five main packages:
 - **[@storybook/mcp](./packages/mcp)** - Standalone MCP library for serving Storybook component knowledge (can be used independently)
 - **[@storybook/addon-mcp](./packages/addon-mcp)** - Storybook addon that runs an MCP server within your Storybook dev server, and includes the functionality of **[@storybook/mcp](./packages/mcp)** from your local Storybook
 - **[@storybook/mcp-proxy](./packages/mcp-proxy)** - Stable MCP proxy package for Storybook agent integrations
-- **[@storybook/claude-code-plugin](./packages/claude-plugin)** - Claude plugin that bundles Storybook setup, init, upgrade, and launch skills
-- **[@storybook/codex-plugin](./packages/codex-plugin)** - Codex plugin that bundles Storybook setup, init, and upgrade skills
+- **[@storybook/claude-code-plugin](./packages/claude-plugin)** - Claude Code plugin with Storybook setup skills and MCP configuration that starts `@storybook/mcp-proxy`
+- **[@storybook/codex-plugin](./packages/codex-plugin)** - Codex plugin with Storybook setup skills and MCP configuration that starts `@storybook/mcp-proxy`
 
 Each package has its own README with user-facing documentation. This document is for **contributors** looking to develop, test, or contribute to these packages.
 
