@@ -43,7 +43,12 @@ export async function readRegistry(
 					const raw = await fs.readFile(join(registryDir, name), 'utf-8');
 					const parsed = v.safeParse(StorybookInstanceRecordSchema, JSON.parse(raw));
 					if (!parsed.success) return null;
-					if (!isProcessAlive(parsed.output.pid)) return null;
+					if (!isProcessAlive(parsed.output.pid)) {
+						clearRegistry(join(registryDir, name)).catch(() => {
+							/* ignore cleanup errors */
+						});
+						return null;
+					};
 					return parsed.output;
 				} catch {
 					return null;
@@ -65,4 +70,8 @@ function isProcessAlive(pid: number): boolean {
 	} catch (error) {
 		return (error as NodeJS.ErrnoException).code === 'EPERM';
 	}
+}
+
+function clearRegistry(path: string) {
+	return fs.rm(path, { recursive: true, force: true });
 }
