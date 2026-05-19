@@ -22,8 +22,8 @@ catalogs:
       specifier: 10.4.0-alpha.12
       version: 10.4.0-alpha.12
     tmcp:
-      specifier: ^1.19.3
-      version: 1.19.3
+      specifier: ^1.19.4
+      version: 1.19.4
     valibot:
       specifier: 1.2.0
       version: 1.2.0
@@ -37,16 +37,16 @@ importers:
         version: link:../mcp
       '@tmcp/adapter-valibot':
         specifier: 'catalog:'
-        version: 0.1.5(tmcp@1.19.3)(valibot@1.2.0)
+        version: 0.1.5(tmcp@1.19.4)(valibot@1.2.0)
       '@tmcp/transport-http':
         specifier: 'catalog:'
-        version: 0.8.5(tmcp@1.19.3)
+        version: 0.8.5(tmcp@1.19.4)
       picoquery:
         specifier: ^2.5.0
         version: 2.5.0
       tmcp:
         specifier: 'catalog:'
-        version: 1.19.3
+        version: 1.19.4
       valibot:
         specifier: 'catalog:'
         version: 1.2.0
@@ -535,8 +535,8 @@ packages:
     resolution: {integrity: sha512-azl+t0z7pw/z958Gy9svOTuzqIk6xq+NSheJzn5MMWtWTFywIacg2wUlzKFGtt3cthx0r2SxMK0yzJOR0IES7Q==}
     engines: {node: '>=14.0.0'}
 
-  tmcp@1.19.3:
-    resolution: {integrity: sha512-plz/TLKNFrdfQN32LjCTN6ULy6pynfGPgHcU7KGCI5dBrxQ9Mub99SmcYuzxEkLjJooQuOD3gosSwZEl1htOtw==}
+  tmcp@1.19.4:
+    resolution: {integrity: sha512-fMoUJ3Gef9iA0yKZNeW2SQCCKTluCwghUyOz/qxPS8XxrQk6Jlw4lgql3S+s6L//FteLeSJ7erKxMWl727mZoQ==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -713,22 +713,22 @@ snapshots:
     dependencies:
       '@testing-library/dom': 10.4.1
 
-  '@tmcp/adapter-valibot@0.1.5(tmcp@1.19.3)(valibot@1.2.0)':
+  '@tmcp/adapter-valibot@0.1.5(tmcp@1.19.4)(valibot@1.2.0)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@valibot/to-json-schema': 1.5.0(valibot@1.2.0)
-      tmcp: 1.19.3
+      tmcp: 1.19.4
       valibot: 1.2.0
 
-  '@tmcp/session-manager@0.2.1(tmcp@1.19.3)':
+  '@tmcp/session-manager@0.2.1(tmcp@1.19.4)':
     dependencies:
-      tmcp: 1.19.3
+      tmcp: 1.19.4
 
-  '@tmcp/transport-http@0.8.5(tmcp@1.19.3)':
+  '@tmcp/transport-http@0.8.5(tmcp@1.19.4)':
     dependencies:
-      '@tmcp/session-manager': 0.2.1(tmcp@1.19.3)
+      '@tmcp/session-manager': 0.2.1(tmcp@1.19.4)
       esm-env: 1.2.2
-      tmcp: 1.19.3
+      tmcp: 1.19.4
 
   '@types/aria-query@5.0.4': {}
 
@@ -956,7 +956,7 @@ snapshots:
 
   tinyspy@4.0.4: {}
 
-  tmcp@1.19.3:
+  tmcp@1.19.4:
     dependencies:
       '@standard-schema/spec': 1.1.0
       json-rpc-2.0: 1.7.1
