@@ -19,6 +19,8 @@
 		"claude-plugin:marketplace:add": "claude plugin marketplace add \"$PWD\" --scope user",
 		"claude-plugin:update": "claude plugin update storybook@storybook",
 		"claude-plugin:validate": "claude plugin validate . && claude plugin validate packages/claude-plugin",
+		"codex-plugin:marketplace:add": "pnpm --filter @storybook/codex-plugin codex:marketplace:add",
+		"codex-plugin:marketplace:remove": "pnpm --filter @storybook/codex-plugin codex:marketplace:remove",
 		"dev": "turbo run dev",
 		"format": "oxfmt .",
 		"format:check": "oxfmt --check .",
