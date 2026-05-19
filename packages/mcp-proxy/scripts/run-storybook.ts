@@ -302,6 +302,7 @@ async function main(): Promise<void> {
 	};
 
 	child.once('error', (error) => {
+		// oxlint-disable-next-line typescript/no-floating-promises - fire and forget.
 		cleanupRecord().finally(() => {
 			console.error(`Failed to start Storybook: ${error.message}`);
 			process.exitCode = 1;
@@ -366,6 +367,7 @@ async function main(): Promise<void> {
 
 	const shutdown = (signal: NodeJS.Signals) => {
 		child.kill(signal);
+		// oxlint-disable-next-line typescript/no-floating-promises - fire and forget.
 		cleanupRecord().finally(() => {
 			setTimeout(() => process.exit(1), 5_000).unref();
 		});
@@ -377,6 +379,7 @@ async function main(): Promise<void> {
 	process.once('exit', cleanupRecordSync);
 
 	child.on('exit', (code, signal) => {
+		// oxlint-disable-next-line typescript/no-floating-promises - fire and forget.
 		cleanupRecord().finally(() => {
 			if (signal) process.exitCode = 1;
 			else process.exitCode = code ?? 1;
