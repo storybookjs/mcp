@@ -1,2 +1,1 @@
 # Storybook MCP Proxy
-

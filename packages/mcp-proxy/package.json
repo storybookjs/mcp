@@ -4,10 +4,10 @@
 	"private": true,
 	"description": "Storybook MCP Proxy for ADE",
 	"keywords": [
+		"ADE",
 		"mcp",
 		"proxy",
-		"storybook",
-    "ADE"
+		"storybook"
 	],
 	"homepage": "https://github.com/storybookjs/mcp/blob/main/packages/mcp-proxy/README.md",
 	"license": "MIT",
@@ -17,19 +17,19 @@
 		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/mcp-proxy"
 	},
-	"type": "module",
+	"bin": {
+		"storybook-mcp-proxy": "./dist/bin.js"
+	},
 	"files": [
 		"dist"
 	],
+	"type": "module",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
 		},
 		"./package.json": "./package.json"
-	},
-	"bin": {
-		"storybook-mcp-proxy": "./dist/bin.js"
 	},
 	"scripts": {
 		"prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
