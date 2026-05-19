@@ -1,6 +1,6 @@
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
-import type { ProxyContext, ProxyDeps } from '../types.ts';
+import type { ProxyDeps } from '../types.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 import { StorybookIdField } from './shared.ts';
 
@@ -9,7 +9,7 @@ const Input = v.object({
 	...StorybookIdField,
 });
 
-export function addGetDocumentationTool(server: McpServer<any, ProxyContext>, deps: ProxyDeps) {
+export function addGetDocumentationTool(server: McpServer<any>, deps: ProxyDeps) {
 	registerProxyTool(server, deps, {
 		name: 'get-documentation',
 		title: 'Get Documentation',

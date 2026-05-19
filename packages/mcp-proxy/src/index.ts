@@ -11,14 +11,14 @@ import { addGetStorybookStoryInstructionsTool } from './tools/get-storybook-stor
 import { addRunStoryTestsTool } from './tools/run-story-tests.ts';
 import { readRegistry, DEFAULT_REGISTRY_DIR } from './registry.ts';
 import { proxyToolCall as defaultProxyToolCall } from './proxy-client.ts';
-import type { ProxyContext, ProxyDeps } from './types.ts';
+import type { ProxyDeps } from './types.ts';
 
 export type {
-	ProxyContext,
 	ProxyDeps,
 	StorybookInstanceRecord,
 	ProxyToolCallParams,
 	ProxyToolCallResult,
+	McpStatus,
 } from './types.ts';
 
 export type CreateProxyServerOptions = {
@@ -31,7 +31,6 @@ export async function createMcpProxyServer(options: CreateProxyServerOptions = {
 	const deps: ProxyDeps = {
 		readRegistry: options.deps?.readRegistry ?? (() => readRegistry(registryDir)),
 		proxyToolCall: options.deps?.proxyToolCall ?? defaultProxyToolCall,
-		cwd: options.deps?.cwd ?? (() => process.cwd()),
 	};
 
 	const server = new McpServer(
@@ -47,7 +46,7 @@ export async function createMcpProxyServer(options: CreateProxyServerOptions = {
 				tools: { listChanged: true },
 			},
 		},
-	).withContext<ProxyContext>();
+	);
 
 	addListAllDocumentationTool(server, deps);
 	addGetDocumentationTool(server, deps);

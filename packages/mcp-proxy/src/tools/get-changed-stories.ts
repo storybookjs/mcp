@@ -1,8 +1,8 @@
 import type { McpServer } from 'tmcp';
-import type { ProxyContext, ProxyDeps } from '../types.ts';
+import type { ProxyDeps } from '../types.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 
-export function addGetChangedStoriesTool(server: McpServer<any, ProxyContext>, deps: ProxyDeps) {
+export function addGetChangedStoriesTool(server: McpServer<any>, deps: ProxyDeps) {
 	registerProxyTool(server, deps, {
 		name: 'get-changed-stories',
 		title: 'Get changed stories metadata',

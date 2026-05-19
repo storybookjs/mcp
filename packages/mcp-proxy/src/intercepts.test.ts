@@ -4,37 +4,54 @@ import { getInterceptMarkdown, intercept, META_INTERCEPT_REASON } from './interc
 describe('intercepts', () => {
 	it.each([
 		['no-instance', 'Storybook is not running'],
-		['no-launch-config', 'No Storybook launch configuration'],
 		['addon-missing', '@storybook/addon-mcp'],
-		['storybook-outdated', 'upgrade'],
 		['mcp-starting', 'starting up'],
+		['mcp-error', 'reported an error'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
 
-	it('storybook-outdated points at @latest', () => {
-		expect(getInterceptMarkdown('storybook-outdated')).toContain('npx storybook@latest upgrade');
-	});
-
-	it('lists candidate cwds for multiple-matches', () => {
-		const md = getInterceptMarkdown('multiple-matches', [
+	it('no-instance lists running candidates when any are provided', () => {
+		const md = getInterceptMarkdown('no-instance', [
 			{
+				schemaVersion: 1,
+				instanceId: 'a',
 				pid: 1,
 				cwd: '/a',
 				url: 'http://localhost:6006',
-				mcp: { ready: true, path: '/mcp' },
-			},
-			{
-				pid: 2,
-				cwd: '/b',
-				url: 'http://localhost:6007',
-				mcp: { ready: true, path: '/mcp' },
+				port: 6006,
+				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
 			},
 		]);
+		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
-		expect(md).toContain('/b');
 		expect(md).toContain('http://localhost:6006');
-		expect(md).toContain('`cwd`');
+	});
+
+	it('multiple-matches lists conflicting pids', () => {
+		const md = getInterceptMarkdown('multiple-matches', [
+			{
+				schemaVersion: 1,
+				instanceId: 'a',
+				pid: 111,
+				cwd: '/same',
+				url: 'http://localhost:6006',
+				port: 6006,
+				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+			},
+			{
+				schemaVersion: 1,
+				instanceId: 'b',
+				pid: 222,
+				cwd: '/same',
+				url: 'http://localhost:6007',
+				port: 6007,
+				mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
+			},
+		]);
+		expect(md).toContain('111');
+		expect(md).toContain('222');
+		expect(md).toContain('/same');
 	});
 
 	it('intercept() returns a tool result with isError and namespaced reason metadata', () => {

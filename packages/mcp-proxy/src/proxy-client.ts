@@ -3,24 +3,21 @@ import type { ProxyToolCallParams, ProxyToolCallResult, StorybookInstanceRecord 
 /**
  * Forward an MCP `tools/call` JSON-RPC request to a local Storybook MCP server.
  *
- * The downstream server is `@storybook/addon-mcp` over HTTP at
- * `${record.url}${record.mcp.path}`. tmcp's HttpTransport responds either with
- * `application/json` or `text/event-stream` (MCP Streamable HTTP) depending on
- * the Accept header. We send both and decode either, since a single tools/call
- * response always fits in one SSE message anyway — we don't need a true streaming
- * reader on this side.
- *
+ * The downstream is `@storybook/addon-mcp` over HTTP at `record.mcp.endpoint`.
+ * tmcp's HttpTransport hardcodes `text/event-stream` for any request with an
+ * id, so we accept both content-types and parse the SSE envelope when needed.
  * The proxy is stdio-fronted and stateless; every call is independent and we
- * don't need session bookkeeping. The JSON-RPC `id` is fresh per call so logs
- * stay disambiguatable, but we never inspect it on the way back — the response
- * body is read off the awaited fetch directly.
+ * don't need session bookkeeping.
  */
 export async function proxyToolCall(
 	record: StorybookInstanceRecord,
 	params: ProxyToolCallParams,
 	fetchImpl: typeof fetch = fetch,
 ): Promise<ProxyToolCallResult> {
-	const endpoint = new URL(record.mcp.path, record.url).toString();
+	const endpoint = record.mcp.endpoint;
+	if (!endpoint) {
+		throw new Error(`Storybook MCP record for ${record.cwd} is missing mcp.endpoint`);
+	}
 
 	const response = await fetchImpl(endpoint, {
 		method: 'POST',
@@ -84,7 +81,6 @@ function parseSseEnvelope(body: string, endpoint: string): unknown {
 	for (const rawLine of body.split('\n')) {
 		const line = rawLine.replace(/\r$/, '');
 		if (line.startsWith('data:')) {
-			// SSE allows an optional space after the colon; strip at most one.
 			const value = line.slice(5);
 			dataLines.push(value.startsWith(' ') ? value.slice(1) : value);
 			continue;

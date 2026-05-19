@@ -1,6 +1,6 @@
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
-import type { ProxyContext, ProxyDeps } from '../types.ts';
+import type { ProxyDeps } from '../types.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 
 /**
@@ -21,7 +21,7 @@ const ListAllDocumentationInput = v.object({
 	),
 });
 
-export function addListAllDocumentationTool(server: McpServer<any, ProxyContext>, deps: ProxyDeps) {
+export function addListAllDocumentationTool(server: McpServer<any>, deps: ProxyDeps) {
 	registerProxyTool(server, deps, {
 		name: 'list-all-documentation',
 		title: 'List All Documentation',

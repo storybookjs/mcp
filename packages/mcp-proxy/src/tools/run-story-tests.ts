@@ -1,6 +1,6 @@
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
-import type { ProxyContext, ProxyDeps } from '../types.ts';
+import type { ProxyDeps } from '../types.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 import { StoryInputArray } from './shared.ts';
 
@@ -24,7 +24,7 @@ const Input = v.object({
 	),
 });
 
-export function addRunStoryTestsTool(server: McpServer<any, ProxyContext>, deps: ProxyDeps) {
+export function addRunStoryTestsTool(server: McpServer<any>, deps: ProxyDeps) {
 	registerProxyTool(server, deps, {
 		name: 'run-story-tests',
 		title: 'Storybook Tests',

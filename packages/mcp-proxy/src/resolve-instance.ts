@@ -1,62 +1,46 @@
-import { resolve, sep } from 'node:path';
-import type { StorybookInstanceRecord, InterceptReason } from './types.ts';
+import { resolve } from 'node:path';
+import type { InterceptReason, StorybookInstanceRecord } from './types.ts';
 
 export type ResolveResult =
-	| { kind: 'instance'; record: StorybookInstanceRecord; fallback?: boolean }
+	| { kind: 'instance'; record: StorybookInstanceRecord }
 	| { kind: 'intercept'; reason: InterceptReason; records?: StorybookInstanceRecord[] };
 
 /**
- * Pick the Storybook instance that owns `targetPath`.
+ * Pick the Storybook instance whose cwd exactly matches `targetCwd` after
+ * normalisation. Per milestone 2 of storybookjs/storybook#34826: matching is
+ * exact-normalized, with no longest-prefix or fallback behaviour.
  *
- * Strategy: among records whose `cwd` is a prefix of `targetPath`, pick the one
- * with the longest `cwd` (innermost project). Ties or zero matches escalate to
- * an intercept.
+ * If a single record matches, dispatch based on `mcp.status`:
+ *   - ready          → proxy
+ *   - starting       → mcp-starting intercept
+ *   - not-installed  → addon-missing intercept
+ *   - error          → mcp-error intercept
  *
- * When `targetPath` matches no record, fall back to the only running instance
- * if exactly one exists; this covers the common single-project case where the
- * agent didn't pass a path and the proxy's cwd doesn't sit under any project
- * root (e.g. the ADE launched the proxy from `$HOME`). The result is flagged
- * `fallback: true` so callers can warn — silently returning a sibling project's
- * data would be a worse failure mode in monorepos.
+ * Zero matches → no-instance intercept (callers may surface running cwds).
+ * Two or more matches at the same cwd → multiple-matches intercept (degenerate).
  */
 export function resolveInstance(
 	records: StorybookInstanceRecord[],
-	targetPath: string,
+	targetCwd: string,
 ): ResolveResult {
-	if (records.length === 0) {
-		return { kind: 'intercept', reason: 'no-instance' };
-	}
-
-	const normalised = ensureTrailingSep(resolve(targetPath));
-	const matches = records.filter((r) => normalised.startsWith(ensureTrailingSep(resolve(r.cwd))));
+	const normalisedTarget = resolve(targetCwd);
+	const matches = records.filter((r) => resolve(r.cwd) === normalisedTarget);
 
 	if (matches.length === 0) {
-		if (records.length === 1) {
-			return readyOrIntercept(records[0]!, { fallback: true });
-		}
-		return { kind: 'intercept', reason: 'multiple-matches', records };
+		return { kind: 'intercept', reason: 'no-instance', records };
 	}
-
 	if (matches.length > 1) {
-		matches.sort((a, b) => b.cwd.length - a.cwd.length);
-		if (matches[0]!.cwd.length === matches[1]!.cwd.length) {
-			return { kind: 'intercept', reason: 'multiple-matches', records: matches };
-		}
+		return { kind: 'intercept', reason: 'multiple-matches', records: matches };
 	}
-
-	return readyOrIntercept(matches[0]!);
-}
-
-function readyOrIntercept(
-	record: StorybookInstanceRecord,
-	options: { fallback?: boolean } = {},
-): ResolveResult {
-	if (!record.mcp.ready) {
-		return { kind: 'intercept', reason: 'mcp-starting' };
+	const record = matches[0]!;
+	switch (record.mcp.status) {
+		case 'ready':
+			return { kind: 'instance', record };
+		case 'starting':
+			return { kind: 'intercept', reason: 'mcp-starting' };
+		case 'not-installed':
+			return { kind: 'intercept', reason: 'addon-missing' };
+		case 'error':
+			return { kind: 'intercept', reason: 'mcp-error' };
 	}
-	return { kind: 'instance', record, ...(options.fallback ? { fallback: true } : {}) };
-}
-
-function ensureTrailingSep(p: string): string {
-	return p.endsWith(sep) ? p : p + sep;
 }

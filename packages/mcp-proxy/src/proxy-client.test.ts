@@ -3,26 +3,29 @@ import { proxyToolCall } from './proxy-client.ts';
 import type { StorybookInstanceRecord } from './types.ts';
 
 const record: StorybookInstanceRecord = {
+	schemaVersion: 1,
+	instanceId: 'i-1',
 	pid: 1,
 	cwd: '/tmp',
 	url: 'http://localhost:6006',
-	mcp: { ready: true, path: '/mcp' },
+	port: 6006,
+	mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
 };
 
-const jsonResponse = (body: unknown, init: ResponseInit = { status: 200 }) =>
+const jsonResponse = (body: unknown, status = 200) =>
 	new Response(JSON.stringify(body), {
-		...init,
-		headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
+		status,
+		headers: { 'Content-Type': 'application/json' },
 	});
 
-const sseResponse = (body: string, init: ResponseInit = { status: 200 }) =>
+const sseResponse = (body: string, status = 200) =>
 	new Response(body, {
-		...init,
-		headers: { 'Content-Type': 'text/event-stream', ...(init.headers ?? {}) },
+		status,
+		headers: { 'Content-Type': 'text/event-stream' },
 	});
 
 describe('proxyToolCall', () => {
-	it('POSTs a JSON-RPC tools/call request and returns the result (application/json)', async () => {
+	it('POSTs a JSON-RPC tools/call request to the endpoint (application/json)', async () => {
 		const fetchImpl = vi.fn(async () =>
 			jsonResponse({
 				jsonrpc: '2.0',
@@ -73,7 +76,10 @@ describe('proxyToolCall', () => {
 			id: 1,
 			result: { content: [{ type: 'text', text: 'line\nwith newline' }] },
 		};
-		const dataLines = JSON.stringify(envelope).split('\n').map((l) => `data: ${l}`).join('\n');
+		const dataLines = JSON.stringify(envelope)
+			.split('\n')
+			.map((l) => `data: ${l}`)
+			.join('\n');
 		const sseBody = `event: message\n${dataLines}\n\n`;
 		const fetchImpl = (async () => sseResponse(sseBody)) as typeof fetch;
 
@@ -86,6 +92,17 @@ describe('proxyToolCall', () => {
 		await expect(
 			proxyToolCall(record, { name: 'list-all-documentation' }, fetchImpl),
 		).rejects.toThrow(/SSE response with no data event/);
+	});
+
+	it('throws when the record has no mcp.endpoint', async () => {
+		const noEndpoint: StorybookInstanceRecord = {
+			...record,
+			mcp: { status: 'ready' },
+		};
+		const fetchImpl = vi.fn() as unknown as typeof fetch;
+		await expect(
+			proxyToolCall(noEndpoint, { name: 'list-all-documentation' }, fetchImpl),
+		).rejects.toThrow(/missing mcp\.endpoint/);
 	});
 
 	it('throws when the response is not ok', async () => {

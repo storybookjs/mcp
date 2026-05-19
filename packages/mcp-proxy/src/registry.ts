@@ -1,9 +1,10 @@
 import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import type { StorybookInstanceRecord } from './types.ts';
+import * as v from 'valibot';
+import { StorybookInstanceRecordSchema, type StorybookInstanceRecord } from './types.ts';
 
-export const DEFAULT_REGISTRY_DIR = join(homedir(), '.storybook');
+export const DEFAULT_REGISTRY_DIR = join(homedir(), '.storybook', 'instances');
 
 /**
  * Errno codes for which we degrade to "no instance" rather than throwing.
@@ -18,13 +19,8 @@ const SOFT_REGISTRY_ERRORS = new Set(['ENOENT', 'EACCES', 'EPERM', 'ENOTDIR']);
  *
  * Each file is expected to be a single JSON object matching
  * {@link StorybookInstanceRecord}. Records whose PID is no longer alive are
- * filtered out. Malformed files are skipped silently — the proxy should
- * degrade to "no instance" rather than fail loudly.
- *
- * NOTE: Storybook-core does not write these files yet. Until that lands, this
- * function returns an empty list in the common case, which causes the proxy to
- * surface the "no instance" intercept on every call. That is intentional v0
- * behaviour.
+ * filtered out (stale removal per milestone 2). Malformed files are skipped
+ * silently — the proxy should degrade to "no instance" rather than fail loudly.
  */
 export async function readRegistry(
 	registryDir: string = DEFAULT_REGISTRY_DIR,
@@ -45,14 +41,10 @@ export async function readRegistry(
 			.map(async (name) => {
 				try {
 					const raw = await fs.readFile(join(registryDir, name), 'utf-8');
-					const parsed = JSON.parse(raw) as StorybookInstanceRecord;
-					if (!isRecord(parsed)) {
-						return null;
-					}
-					if (!isProcessAlive(parsed.pid)) {
-						return null;
-					}
-					return parsed;
+					const parsed = v.safeParse(StorybookInstanceRecordSchema, JSON.parse(raw));
+					if (!parsed.success) return null;
+					if (!isProcessAlive(parsed.output.pid)) return null;
+					return parsed.output;
 				} catch {
 					return null;
 				}
@@ -60,19 +52,6 @@ export async function readRegistry(
 	);
 
 	return records.filter((r): r is StorybookInstanceRecord => r !== null);
-}
-
-function isRecord(value: unknown): value is StorybookInstanceRecord {
-	if (!value || typeof value !== 'object') return false;
-	const r = value as Partial<StorybookInstanceRecord>;
-	return (
-		typeof r.pid === 'number' &&
-		typeof r.cwd === 'string' &&
-		typeof r.url === 'string' &&
-		!!r.mcp &&
-		typeof r.mcp.ready === 'boolean' &&
-		typeof r.mcp.path === 'string'
-	);
 }
 
 /**

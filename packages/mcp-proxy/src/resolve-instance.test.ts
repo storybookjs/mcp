@@ -1,79 +1,106 @@
 import { describe, expect, it } from 'vitest';
 import { resolveInstance } from './resolve-instance.ts';
-import type { StorybookInstanceRecord } from './types.ts';
+import type { McpStatus, StorybookInstanceRecord } from './types.ts';
 
-const ready = (cwd: string, url = 'http://localhost:6006'): StorybookInstanceRecord => ({
-	pid: 1,
-	cwd,
-	url,
-	mcp: { ready: true, path: '/mcp' },
-});
+let nextInstance = 0;
+
+function record(
+	cwd: string,
+	status: McpStatus = 'ready',
+	overrides: Partial<StorybookInstanceRecord> = {},
+): StorybookInstanceRecord {
+	nextInstance += 1;
+	return {
+		schemaVersion: 1,
+		instanceId: `inst-${nextInstance}`,
+		pid: 1000 + nextInstance,
+		cwd,
+		url: `http://localhost:${6000 + nextInstance}`,
+		port: 6000 + nextInstance,
+		mcp: {
+			status,
+			endpoint:
+				status === 'ready' || status === 'error'
+					? `http://localhost:${6000 + nextInstance}/mcp`
+					: undefined,
+		},
+		...overrides,
+	};
+}
 
 describe('resolveInstance', () => {
-	it('returns no-instance intercept when registry is empty', () => {
+	it('returns no-instance with empty candidates when registry is empty', () => {
 		const result = resolveInstance([], '/Users/x/projects/foo');
-		expect(result).toEqual({ kind: 'intercept', reason: 'no-instance' });
+		expect(result).toEqual({ kind: 'intercept', reason: 'no-instance', records: [] });
 	});
 
-	it('returns the matching record when one record contains the target path', () => {
-		const record = ready('/Users/x/projects/foo');
-		const result = resolveInstance([record], '/Users/x/projects/foo/src/Button.tsx');
-		expect(result).toEqual({ kind: 'instance', record });
-	});
-
-	it('flags fallback when only one record is running and target path matches none', () => {
-		const record = ready('/Users/x/projects/foo');
-		const result = resolveInstance([record], '/Users/x/somewhere/else');
-		expect(result).toEqual({ kind: 'instance', record, fallback: true });
-	});
-
-	it('returns multiple-matches intercept when target matches none and several are running', () => {
-		const a = ready('/Users/x/projects/foo');
-		const b = ready('/Users/x/projects/bar', 'http://localhost:6007');
-		const result = resolveInstance([a, b], '/Users/x/elsewhere');
+	it('returns no-instance with candidates when no record cwd matches', () => {
+		const a = record('/Users/x/projects/foo');
+		const b = record('/Users/x/projects/bar');
+		const result = resolveInstance([a, b], '/Users/x/projects/baz');
 		expect(result.kind).toBe('intercept');
 		if (result.kind === 'intercept') {
-			expect(result.reason).toBe('multiple-matches');
+			expect(result.reason).toBe('no-instance');
+			expect(result.records).toEqual([a, b]);
 		}
 	});
 
-	it('prefers the innermost matching project on nested cwds', () => {
-		const outer = ready('/Users/x/projects/foo');
-		const inner = ready('/Users/x/projects/foo/packages/ui', 'http://localhost:6007');
-		const result = resolveInstance(
-			[outer, inner],
-			'/Users/x/projects/foo/packages/ui/src/Button.tsx',
-		);
-		expect(result).toEqual({ kind: 'instance', record: inner });
+	it('matches a record by exact normalized cwd', () => {
+		const r = record('/Users/x/projects/foo');
+		const result = resolveInstance([r], '/Users/x/projects/foo');
+		expect(result).toEqual({ kind: 'instance', record: r });
 	});
 
-	it('returns multiple-matches when 3+ records share the longest matching cwd depth', () => {
-		const a = ready('/Users/x/projects/foo', 'http://localhost:6006');
-		const b = ready('/Users/x/projects/bar', 'http://localhost:6007');
-		const c = ready('/Users/x/projects/baz', 'http://localhost:6008');
-		// targetPath under none of them — all 3 are "matches" by depth (none), so the
-		// fallback-multiple path triggers
-		const result = resolveInstance([a, b, c], '/Users/x/other');
+	it('normalizes trailing slashes and dot segments before matching', () => {
+		const r = record('/Users/x/projects/foo');
+		const result = resolveInstance([r], '/Users/x/projects/foo/./');
+		expect(result).toEqual({ kind: 'instance', record: r });
+	});
+
+	it('does NOT match a child path of a record cwd (exact only)', () => {
+		const r = record('/Users/x/projects/foo');
+		const result = resolveInstance([r], '/Users/x/projects/foo/src/Button.tsx');
 		expect(result.kind).toBe('intercept');
 		if (result.kind === 'intercept') {
-			expect(result.reason).toBe('multiple-matches');
+			expect(result.reason).toBe('no-instance');
 		}
 	});
 
-	it('returns mcp-starting intercept when matched instance is not ready', () => {
-		const record: StorybookInstanceRecord = {
-			...ready('/Users/x/projects/foo'),
-			mcp: { ready: false, path: '/mcp' },
-		};
-		const result = resolveInstance([record], '/Users/x/projects/foo/src');
+	it('does NOT match a sibling string prefix', () => {
+		const r = record('/Users/x/projects/foo');
+		const result = resolveInstance([r], '/Users/x/projects/foobar');
+		expect(result.kind).toBe('intercept');
+		if (result.kind === 'intercept') {
+			expect(result.reason).toBe('no-instance');
+		}
+	});
+
+	it('returns multiple-matches when 2+ records share the same exact cwd', () => {
+		const a = record('/Users/x/projects/foo');
+		const b = record('/Users/x/projects/foo');
+		const result = resolveInstance([a, b], '/Users/x/projects/foo');
+		expect(result.kind).toBe('intercept');
+		if (result.kind === 'intercept') {
+			expect(result.reason).toBe('multiple-matches');
+			expect(result.records).toEqual([a, b]);
+		}
+	});
+
+	it('dispatches mcp.status=starting as mcp-starting intercept', () => {
+		const r = record('/p', 'starting');
+		const result = resolveInstance([r], '/p');
 		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-starting' });
 	});
 
-	it('does not match a record whose cwd is a sibling string prefix', () => {
-		const record = ready('/Users/x/projects/foo');
-		// `/Users/x/projects/foobar` shares a string prefix but is a different directory
-		const result = resolveInstance([record], '/Users/x/projects/foobar/src');
-		// Falls back to the only running instance, flagged
-		expect(result).toEqual({ kind: 'instance', record, fallback: true });
+	it('dispatches mcp.status=not-installed as addon-missing intercept', () => {
+		const r = record('/p', 'not-installed');
+		const result = resolveInstance([r], '/p');
+		expect(result).toEqual({ kind: 'intercept', reason: 'addon-missing' });
+	});
+
+	it('dispatches mcp.status=error as mcp-error intercept', () => {
+		const r = record('/p', 'error');
+		const result = resolveInstance([r], '/p');
+		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error' });
 	});
 });
