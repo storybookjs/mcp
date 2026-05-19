@@ -6,33 +6,56 @@ settings:
 
 catalogs:
   default:
+    '@tmcp/adapter-valibot':
+      specifier: ^0.1.5
+      version: 0.1.6
     '@tmcp/transport-stdio':
       specifier: ^0.4.3
       version: 0.4.3
     tmcp:
       specifier: ^1.19.4
       version: 1.19.4
+    valibot:
+      specifier: 1.2.0
+      version: 1.2.0
 
 importers:
 
   .:
     dependencies:
+      '@tmcp/adapter-valibot':
+        specifier: 'catalog:'
+        version: 0.1.6(tmcp@1.19.4)(valibot@1.2.0)
       '@tmcp/transport-stdio':
         specifier: 'catalog:'
         version: 0.4.3(tmcp@1.19.4)
       tmcp:
         specifier: 'catalog:'
         version: 1.19.4
+      valibot:
+        specifier: 'catalog:'
+        version: 1.2.0
 
 packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@tmcp/adapter-valibot@0.1.6':
+    resolution: {integrity: sha512-drirZeNinhYLiRSMksN+m//u0ImFxtGRk1Vp425Xp/7CbBXFQdjAG+f7grssyHAukbVTGzmWsMMP6ejrGVErUA==}
+    peerDependencies:
+      tmcp: ^1.17.0
+      valibot: ^1.1.0
+
   '@tmcp/transport-stdio@0.4.3':
     resolution: {integrity: sha512-chdmSwk7PSXjkaQId2OAY8ZMFrTFWwckfCyXJuw6b6WFK9IMK95EoU2VDFioybcmawuQox0MNPM5R2DVxlptoA==}
     peerDependencies:
       tmcp: ^1.16.3
+
+  '@valibot/to-json-schema@1.7.0':
+    resolution: {integrity: sha512-Y3pPVibbIOHzohrlxSINvO7w/bvXkoYS3BQHoImV9ynE+bXKf171bdMucPurV2zp7gdmt0L1HCcNAsbo7cFRQw==}
+    peerDependencies:
+      valibot: ^1.4.0
 
   json-rpc-2.0@1.7.1:
     resolution: {integrity: sha512-JqZjhjAanbpkXIzFE7u8mE/iFblawwlXtONaCvRqI+pyABVz7B4M1EUNpyVW+dZjqgQ2L5HFmZCmOCgUKm00hg==}
@@ -46,8 +69,8 @@ packages:
   uri-template-matcher@1.1.2:
     resolution: {integrity: sha512-uZc1h12jdO3m/R77SfTEOuo6VbMhgWznaawKpBjRGSJb7i91x5PgI37NQJtG+Cerxkk0yr1pylBY2qG1kQ+aEQ==}
 
-  valibot@1.4.0:
-    resolution: {integrity: sha512-iC/x7fVcSyOwlm/VSt7RlHnzNGLGvR9GnxdifUeWoCJo0q4ZZvrVkIHC6faTlkxG47I2Y4UrFquPuVHCrOnrLg==}
+  valibot@1.2.0:
+    resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -58,9 +81,20 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
+  '@tmcp/adapter-valibot@0.1.6(tmcp@1.19.4)(valibot@1.2.0)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@valibot/to-json-schema': 1.7.0(valibot@1.2.0)
+      tmcp: 1.19.4
+      valibot: 1.2.0
+
   '@tmcp/transport-stdio@0.4.3(tmcp@1.19.4)':
     dependencies:
       tmcp: 1.19.4
+
+  '@valibot/to-json-schema@1.7.0(valibot@1.2.0)':
+    dependencies:
+      valibot: 1.2.0
 
   json-rpc-2.0@1.7.1: {}
 
@@ -72,10 +106,10 @@ snapshots:
       json-rpc-2.0: 1.7.1
       sqids: 0.3.0
       uri-template-matcher: 1.1.2
-      valibot: 1.4.0
+      valibot: 1.2.0
     transitivePeerDependencies:
       - typescript
 
   uri-template-matcher@1.1.2: {}
 
-  valibot@1.4.0: {}
+  valibot@1.2.0: {}

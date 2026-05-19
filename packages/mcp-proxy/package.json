@@ -39,7 +39,9 @@
 		"typecheck": "tsc"
 	},
 	"dependencies": {
+		"@tmcp/adapter-valibot": "catalog:",
 		"@tmcp/transport-stdio": "catalog:",
-		"tmcp": "catalog:"
+		"tmcp": "catalog:",
+		"valibot": "catalog:"
 	}
 }
