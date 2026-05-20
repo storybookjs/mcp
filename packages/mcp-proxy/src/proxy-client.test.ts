@@ -84,7 +84,7 @@ describe('proxyToolCall', () => {
 		const fetchImpl = (async () => sseResponse(sseBody)) as typeof fetch;
 
 		const result = await proxyToolCall(record, { name: 'list-all-documentation' }, fetchImpl);
-		expect(result.content[0]).toEqual({ type: 'text', text: 'line\nwith newline' });
+		expect(result.content?.[0]).toEqual({ type: 'text', text: 'line\nwith newline' });
 	});
 
 	it('throws on SSE responses that contain no data event', async () => {

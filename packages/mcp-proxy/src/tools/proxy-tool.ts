@@ -3,7 +3,6 @@ import * as v from 'valibot';
 import { resolveInstance } from '../resolve-instance.ts';
 import { intercept } from '../intercepts.ts';
 import type { ProxyDeps, ProxyToolCallResult } from '../types/index.ts';
-
 const CwdField = {
 	cwd: v.pipe(
 		v.string(),
@@ -46,7 +45,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 		// union (`text` / `image` / `audio` / `resource` / `resource_link`). We forward
 		// it as-is; tmcp's generic CallToolResult type narrows to a strict union, so we
 		// cast at the boundary rather than carry the union through every internal type.
-		async (input: Record<string, unknown> & { cwd: string }): Promise<any> => {
+		async (input: Record<string, unknown> & { cwd: string }): Promise<ProxyToolCallResult> => {
 			const { cwd, ...upstreamArgs } = input;
 			const records = await deps.readRegistry();
 			const resolution = resolveInstance(records, cwd);
@@ -55,9 +54,8 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				return intercept(resolution.reason, resolution.records);
 			}
 
-			let result: ProxyToolCallResult;
 			try {
-				result = await deps.proxyToolCall(resolution.record, {
+				return await deps.proxyToolCall(resolution.record, {
 					name: tool.name,
 					arguments: upstreamArgs,
 				});
@@ -65,7 +63,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				return {
 					content: [
 						{
-							type: 'text' as const,
+							type: 'text',
 							text: `Failed to reach Storybook MCP at ${resolution.record.mcp.endpoint ?? '(no endpoint)'}: ${
 								error instanceof Error ? error.message : String(error)
 							}`,
@@ -74,8 +72,6 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 					isError: true,
 				};
 			}
-
-			return result;
 		},
 	);
 }

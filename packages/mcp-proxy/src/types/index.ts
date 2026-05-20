@@ -1,3 +1,4 @@
+import type { CallToolResult } from 'tmcp';
 import type { StorybookInstanceRecordV1 } from './record/v1.ts';
 
 export type { McpStatusV1, StorybookInstanceRecordV1 } from './record/v1.ts';
@@ -15,13 +16,7 @@ export type ProxyToolCallParams = {
 	arguments?: Record<string, unknown>;
 };
 
-export type ProxyToolCallResult = {
-	content: Array<{ type: string; text?: string; [key: string]: unknown }>;
-	isError?: boolean;
-	structuredContent?: unknown;
-	_meta?: Record<string, unknown>;
-	[key: string]: unknown;
-};
+export type ProxyToolCallResult = CallToolResult<undefined>;
 
 export type ProxyDeps = {
 	readRegistry: () => Promise<StorybookInstanceRecordV1[]>;

@@ -60,6 +60,14 @@ async function callTool(
 	} as never)) as { result: ProxyToolCallResult };
 }
 
+function firstText(result: ProxyToolCallResult): string {
+	const item = result.content?.[0];
+	if (!item || item.type !== 'text') {
+		throw new Error(`expected text content, got ${JSON.stringify(item)}`);
+	}
+	return item.text;
+}
+
 describe('registerProxyTool / list-all-documentation', () => {
 	it('exposes all 7 proxied tools, each with cwd as a required field', async () => {
 		const server = await buildServer();
@@ -89,7 +97,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
-		expect(response.result.content[0]!.text).toContain('Storybook is not running');
+		expect(firstText(response.result)).toContain('Storybook is not running');
 	});
 
 	it('returns the no-instance intercept with candidate cwds when no record matches', async () => {
@@ -97,8 +105,8 @@ describe('registerProxyTool / list-all-documentation', () => {
 		const response = await callTool(server, { cwd: '/projects/bar' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
-		expect(response.result.content[0]!.text).toContain('Running Storybooks');
-		expect(response.result.content[0]!.text).toContain('/projects/foo');
+		expect(firstText(response.result)).toContain('Running Storybooks');
+		expect(firstText(response.result)).toContain('/projects/foo');
 	});
 
 	it('proxies tool args downstream and forwards the upstream result on exact match', async () => {
@@ -111,7 +119,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 			name: 'list-all-documentation',
 			arguments: { withStoryIds: true },
 		});
-		expect(response.result.content[0]!.text).toBe('COMPONENTS');
+		expect(firstText(response.result)).toBe('COMPONENTS');
 	});
 
 	it('dispatches mcp.status=starting to the mcp-starting intercept', async () => {
@@ -155,7 +163,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 		});
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
-		expect(response.result.content[0]!.text).toContain('Failed to reach Storybook MCP');
-		expect(response.result.content[0]!.text).toContain('connection refused');
+		expect(firstText(response.result)).toContain('Failed to reach Storybook MCP');
+		expect(firstText(response.result)).toContain('connection refused');
 	});
 });
