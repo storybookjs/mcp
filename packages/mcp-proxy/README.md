@@ -4,15 +4,11 @@ Stable MCP server package for Storybook agent integrations.
 
 This package is intentionally minimal in the plugin-package milestone. It starts a valid stdio MCP server and returns an empty tool list, so Claude and Codex plugin wiring can be installed and smoke-tested before the real proxy implementation exists.
 
+This package is private in this milestone and is not published to npm yet.
+
 Milestone 2 of storybookjs/storybook#34826 will replace this placeholder with the proxy that discovers running Storybook instances and forwards the seven Storybook MCP tools to the matching local Storybook `/mcp` endpoint.
 
 ## Usage
-
-After the package is released to npm, plugin MCP configs should run:
-
-```sh
-npx -y @storybook/mcp-proxy@latest
-```
 
 During development, the Claude and Codex plugins point at the latest pkg.pr.new preview for PR #227:
 
@@ -22,9 +18,11 @@ npx -y https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@227
 
 The `@227` ref tracks the newest preview build published by the `Publish preview` workflow for that pull request.
 
-> **TODO:** After this PR merges to `main`, switch plugin `.mcp.json` files to  
-> `https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@main`  
-> **TODO:** After `@storybook/mcp-proxy` is published to npm, switch to `@storybook/mcp-proxy@latest`.
+When this package is ready to publish, remove `private: true`, remove it from the Changesets ignore list, restore public npm publish config, add a changeset, and then switch plugin MCP configs to:
+
+```sh
+npx -y @storybook/mcp-proxy@latest
+```
 
 ## Local Testing
 

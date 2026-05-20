@@ -1,6 +1,7 @@
 {
 	"name": "@storybook/mcp-proxy",
 	"version": "0.0.0",
+	"private": true,
 	"description": "Stable MCP proxy for Storybook agent integrations",
 	"keywords": [
 		"mcp",
@@ -27,9 +28,6 @@
 			"default": "./dist/index.js"
 		},
 		"./package.json": "./package.json"
-	},
-	"publishConfig": {
-		"access": "public"
 	},
 	"scripts": {
 		"build": "tsdown",
