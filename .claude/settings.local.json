@@ -11,7 +11,5 @@
 		"ask": []
 	},
 	"enableAllProjectMcpServers": true,
-	"enabledMcpjsonServers": ["storybook-addon-mcp", "storybook-mcp"],
-	"enabledPlugins": {},
-	"extraKnownMarketplaces": {}
+	"enabledMcpjsonServers": ["storybook-addon-mcp", "storybook-mcp"]
 }
