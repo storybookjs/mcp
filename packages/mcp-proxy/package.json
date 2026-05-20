@@ -1,0 +1,44 @@
+{
+	"name": "@storybook/mcp-proxy",
+	"version": "0.0.0",
+	"description": "Stable MCP proxy for Storybook agent integrations",
+	"keywords": [
+		"mcp",
+		"storybook",
+		"storybook-mcp"
+	],
+	"homepage": "https://github.com/storybookjs/mcp/tree/main/packages/mcp-proxy#readme",
+	"license": "MIT",
+	"author": "Storybook Core Team",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/storybookjs/mcp.git",
+		"directory": "packages/mcp-proxy"
+	},
+	"bin": "./dist/bin.js",
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"publint": "publint",
+		"test": "cd ../.. && pnpm vitest --project=@storybook/mcp-proxy",
+		"typecheck": "tsc"
+	},
+	"dependencies": {
+		"@tmcp/transport-stdio": "catalog:",
+		"tmcp": "catalog:"
+	}
+}
