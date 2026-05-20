@@ -16,9 +16,7 @@ describe('bin', () => {
 	});
 
 	it('starts an stdio transport for the proxy server', async () => {
-		const listenSpy = vi
-			.spyOn(StdioTransport.prototype, 'listen')
-			.mockImplementation(() => {});
+		const listenSpy = vi.spyOn(StdioTransport.prototype, 'listen').mockImplementation(() => {});
 
 		await import('./bin.ts');
 
