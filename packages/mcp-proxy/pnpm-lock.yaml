@@ -23,10 +23,6 @@ importers:
       tmcp:
         specifier: 'catalog:'
         version: 1.19.4
-    devDependencies:
-      tinyexec:
-        specifier: ^1.0.2
-        version: 1.1.2
 
 packages:
 
@@ -43,10 +39,6 @@ packages:
 
   sqids@0.3.0:
     resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
-
-  tinyexec@1.1.2:
-    resolution: {integrity: sha512-dAqSqE/RabpBKI8+h26GfLq6Vb3JVXs30XYQjdMjaj/c2tS8IYYMbIzP599KtRj7c57/wYApb3QjgRgXmrCukA==}
-    engines: {node: '>=18'}
 
   tmcp@1.19.4:
     resolution: {integrity: sha512-fMoUJ3Gef9iA0yKZNeW2SQCCKTluCwghUyOz/qxPS8XxrQk6Jlw4lgql3S+s6L//FteLeSJ7erKxMWl727mZoQ==}
@@ -73,8 +65,6 @@ snapshots:
   json-rpc-2.0@1.7.1: {}
 
   sqids@0.3.0: {}
-
-  tinyexec@1.1.2: {}
 
   tmcp@1.19.4:
     dependencies:

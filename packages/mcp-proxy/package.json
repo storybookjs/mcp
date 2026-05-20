@@ -40,8 +40,5 @@
 	"dependencies": {
 		"@tmcp/transport-stdio": "catalog:",
 		"tmcp": "catalog:"
-	},
-	"devDependencies": {
-		"tinyexec": "^1.0.2"
 	}
 }
