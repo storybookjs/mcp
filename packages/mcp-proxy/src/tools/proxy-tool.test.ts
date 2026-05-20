@@ -9,7 +9,6 @@ import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/in
 
 vi.mock('../utils/registry.ts', () => ({
 	readRegistry: vi.fn(),
-	DEFAULT_REGISTRY_DIR: '/tmp/test-registry',
 }));
 
 vi.mock('../utils/proxy-client.ts', () => ({
