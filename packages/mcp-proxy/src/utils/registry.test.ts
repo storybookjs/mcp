@@ -67,4 +67,25 @@ describe('readRegistry', () => {
 		const result = await readRegistry(dir);
 		expect(result).toEqual([alive]);
 	});
+
+	it('filters records with non-positive PIDs (process-group sentinels)', async () => {
+		const base = {
+			schemaVersion: 1,
+			cwd: '/tmp/x',
+			url: 'http://localhost:6006',
+			port: 6006,
+			mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+		};
+		await fs.writeFile(
+			join(dir, 'zero.json'),
+			JSON.stringify({ ...base, instanceId: 'zero', pid: 0 }),
+		);
+		await fs.writeFile(
+			join(dir, 'negative.json'),
+			JSON.stringify({ ...base, instanceId: 'neg', pid: -1 }),
+		);
+
+		const result = await readRegistry(dir);
+		expect(result).toEqual([]);
+	});
 });

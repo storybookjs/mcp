@@ -64,6 +64,7 @@ export async function readRegistry(
  * lack permission to signal it (foreign user), which still counts as alive.
  */
 function isProcessAlive(pid: number): boolean {
+	if (!Number.isInteger(pid) || pid <= 0) return false;
 	try {
 		process.kill(pid, 0);
 		return true;
