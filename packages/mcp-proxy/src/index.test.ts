@@ -1,8 +1,7 @@
-import { StdioTransport } from '@tmcp/transport-stdio';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import pkg from '../package.json' with { type: 'json' };
-import { createStorybookMcpProxyServer, listen } from './index.ts';
+import { createMcpProxyServer } from './index.ts';
 
 const CLIENT_INFO = { name: 'test-client', version: '1.0.0' };
 const PROTOCOL_VERSION = '2024-11-05';
@@ -29,9 +28,17 @@ function toolsListRequest(id = 2) {
 	};
 }
 
-describe('createStorybookMcpProxyServer', () => {
-	it('responds to initialize with server metadata and placeholder instructions', async () => {
-		const server = createStorybookMcpProxyServer();
+async function makeServer() {
+	return createMcpProxyServer({
+		deps: {
+			readRegistry: async () => [],
+		},
+	});
+}
+
+describe('createMcpProxyServer', () => {
+	it('responds to initialize with server metadata and instructions', async () => {
+		const server = await makeServer();
 
 		const response = await server.receive(initializeRequest());
 
@@ -46,47 +53,30 @@ describe('createStorybookMcpProxyServer', () => {
 				capabilities: {
 					tools: { listChanged: true },
 				},
-				instructions: expect.stringContaining('placeholder Storybook MCP proxy'),
+				instructions: expect.any(String),
 			},
 		});
 	});
 
-	it('responds to tools/list with an empty tool list after initialize', async () => {
-		const server = createStorybookMcpProxyServer();
+	it('lists the proxied Storybook tools after initialize', async () => {
+		const server = await makeServer();
 
 		await server.receive(initializeRequest());
 
 		const response = await server.receive(toolsListRequest());
 
-		expect(response).toMatchObject({
-			jsonrpc: '2.0',
-			id: 2,
-			result: {
-				tools: [],
-			},
-		});
-	});
-});
-
-describe('listen', () => {
-	it('starts stdio transport for the proxy server', () => {
-		const listenSpy = vi.spyOn(StdioTransport.prototype, 'listen').mockImplementation(() => {});
-
-		listen();
-
-		expect(listenSpy).toHaveBeenCalledOnce();
-		listenSpy.mockRestore();
-	});
-});
-
-describe('bin.ts', () => {
-	it('invokes listen when loaded', async () => {
-		const listenSpy = vi.spyOn(StdioTransport.prototype, 'listen').mockImplementation(() => {});
-
-		await import('./bin.ts');
-
-		expect(listenSpy).toHaveBeenCalledOnce();
-		listenSpy.mockRestore();
-		vi.resetModules();
+		expect(response).toMatchObject({ jsonrpc: '2.0', id: 2 });
+		const tools = (response as { result: { tools: Array<{ name: string }> } }).result.tools;
+		expect(tools.map((t) => t.name)).toEqual(
+			expect.arrayContaining([
+				'list-all-documentation',
+				'get-documentation',
+				'get-documentation-for-story',
+				'preview-stories',
+				'get-changed-stories',
+				'get-storybook-story-instructions',
+				'run-story-tests',
+			]),
+		);
 	});
 });
