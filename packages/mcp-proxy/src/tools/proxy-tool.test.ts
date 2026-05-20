@@ -1,7 +1,22 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createMcpProxyServer } from '../index.ts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { McpServer } from 'tmcp';
+import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
+import { registerProxiedTools } from './index.ts';
 import { META_INTERCEPT_REASON } from './intercepts.ts';
-import type { ProxyDeps, ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
+import { readRegistry } from '../utils/registry.ts';
+import { proxyToolCall } from '../utils/proxy-client.ts';
+import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
+
+vi.mock('../utils/registry.ts', () => ({
+	readRegistry: vi.fn(),
+	DEFAULT_REGISTRY_DIR: '/tmp/test-registry',
+}));
+
+vi.mock('../utils/proxy-client.ts', () => ({
+	proxyToolCall: vi.fn(),
+}));
+
+const REGISTRY_DIR = '/tmp/test-registry';
 
 const record: StorybookInstanceRecordV1 = {
 	schemaVersion: 1,
@@ -13,19 +28,24 @@ const record: StorybookInstanceRecordV1 = {
 	mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
 };
 
-function buildDeps(overrides: Partial<ProxyDeps> = {}): ProxyDeps {
-	return {
-		readRegistry: overrides.readRegistry ?? (async () => [record]),
-		proxyToolCall:
-			overrides.proxyToolCall ??
-			(async () => ({
-				content: [{ type: 'text', text: 'upstream result' }],
-			})),
-	};
-}
+beforeEach(() => {
+	vi.mocked(readRegistry).mockReset();
+	vi.mocked(proxyToolCall).mockReset();
+	vi.mocked(readRegistry).mockResolvedValue([record]);
+	vi.mocked(proxyToolCall).mockResolvedValue({
+		content: [{ type: 'text', text: 'upstream result' }],
+	});
+});
 
-async function buildServer(deps?: Partial<ProxyDeps>) {
-	const server = await createMcpProxyServer({ deps: buildDeps(deps) });
+async function buildServer() {
+	const server = new McpServer(
+		{ name: 'test', version: '0.0.0', description: 'test' },
+		{
+			adapter: new ValibotJsonSchemaAdapter(),
+			capabilities: { tools: { listChanged: true } },
+		},
+	);
+	registerProxiedTools(server, REGISTRY_DIR);
 	await server.receive({
 		jsonrpc: '2.0',
 		id: 1,
@@ -39,7 +59,7 @@ async function buildServer(deps?: Partial<ProxyDeps>) {
 	return server;
 }
 
-async function listTools(server: Awaited<ReturnType<typeof createMcpProxyServer>>) {
+async function listTools(server: McpServer<any>) {
 	return (await server.receive({
 		jsonrpc: '2.0',
 		id: 2,
@@ -48,10 +68,7 @@ async function listTools(server: Awaited<ReturnType<typeof createMcpProxyServer>
 	} as never)) as { result: { tools: Array<{ name: string; inputSchema: any }> } };
 }
 
-async function callTool(
-	server: Awaited<ReturnType<typeof createMcpProxyServer>>,
-	args: Record<string, unknown>,
-) {
+async function callTool(server: McpServer<any>, args: Record<string, unknown>) {
 	return (await server.receive({
 		jsonrpc: '2.0',
 		id: 3,
@@ -93,7 +110,8 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('returns the no-instance intercept (empty) when the registry is empty', async () => {
-		const server = await buildServer({ readRegistry: async () => [] });
+		vi.mocked(readRegistry).mockResolvedValue([]);
+		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
@@ -110,10 +128,10 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('proxies tool args downstream and forwards the upstream result on exact match', async () => {
-		const proxyToolCall = vi.fn<ProxyDeps['proxyToolCall']>(async () => ({
+		vi.mocked(proxyToolCall).mockResolvedValue({
 			content: [{ type: 'text', text: 'COMPONENTS' }],
-		}));
-		const server = await buildServer({ proxyToolCall });
+		});
+		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo', withStoryIds: true });
 		expect(proxyToolCall).toHaveBeenCalledWith(record, {
 			name: 'list-all-documentation',
@@ -123,33 +141,26 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=starting to the mcp-starting intercept', async () => {
-		const starting: StorybookInstanceRecordV1 = {
-			...record,
-			mcp: { status: 'starting' },
-		};
-		const server = await buildServer({ readRegistry: async () => [starting] });
+		vi.mocked(readRegistry).mockResolvedValue([{ ...record, mcp: { status: 'starting' } }]);
+		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'mcp-starting' });
 	});
 
 	it('dispatches mcp.status=not-installed to the addon-missing intercept', async () => {
-		const noAddon: StorybookInstanceRecordV1 = {
-			...record,
-			mcp: { status: 'not-installed' },
-		};
-		const server = await buildServer({ readRegistry: async () => [noAddon] });
+		vi.mocked(readRegistry).mockResolvedValue([{ ...record, mcp: { status: 'not-installed' } }]);
+		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'addon-missing' });
 	});
 
 	it('dispatches mcp.status=error to the mcp-error intercept', async () => {
-		const errored: StorybookInstanceRecordV1 = {
-			...record,
-			mcp: { status: 'error', endpoint: 'http://localhost:6006/mcp' },
-		};
-		const server = await buildServer({ readRegistry: async () => [errored] });
+		vi.mocked(readRegistry).mockResolvedValue([
+			{ ...record, mcp: { status: 'error', endpoint: 'http://localhost:6006/mcp' } },
+		]);
+		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'mcp-error' });
@@ -167,11 +178,8 @@ describe('registerProxyTool / list-all-documentation', () => {
 	);
 
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
-		const server = await buildServer({
-			proxyToolCall: async () => {
-				throw new Error('connection refused');
-			},
-		});
+		vi.mocked(proxyToolCall).mockRejectedValue(new Error('connection refused'));
+		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(firstText(response.result)).toContain('Failed to reach Storybook MCP');

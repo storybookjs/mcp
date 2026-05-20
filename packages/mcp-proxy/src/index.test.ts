@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 
 import pkg from '../package.json' with { type: 'json' };
@@ -30,9 +32,7 @@ function toolsListRequest(id = 2) {
 
 async function makeServer() {
 	return createMcpProxyServer({
-		deps: {
-			readRegistry: async () => [],
-		},
+		registryDir: join(tmpdir(), 'mcp-proxy-empty-registry-does-not-exist'),
 	});
 }
 

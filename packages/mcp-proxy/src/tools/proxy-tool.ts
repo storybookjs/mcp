@@ -1,9 +1,11 @@
 import * as path from 'node:path';
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
+import { readRegistry } from '../utils/registry.ts';
+import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
 import { intercept } from './intercepts.ts';
-import type { ProxyDeps, ProxyToolCallResult } from '../types/index.ts';
+import type { ProxyToolCallResult } from '../types/index.ts';
 const CwdField = {
 	cwd: v.pipe(
 		v.string(),
@@ -29,7 +31,7 @@ type ProxyToolDefinition<Schema extends v.ObjectEntries> = {
  */
 export function registerProxyTool<Schema extends v.ObjectEntries>(
 	server: McpServer<any>,
-	deps: ProxyDeps,
+	registryDir: string,
 	tool: ProxyToolDefinition<Schema>,
 ) {
 	const baseEntries = (tool.schema?.entries ?? {}) as v.ObjectEntries;
@@ -53,7 +55,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				return intercept('invalid-cwd');
 			}
 
-			const records = await deps.readRegistry();
+			const records = await readRegistry(registryDir);
 			const resolution = resolveInstance(records, cwd);
 
 			if (resolution.kind === 'intercept') {
@@ -61,7 +63,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 			}
 
 			try {
-				return await deps.proxyToolCall(resolution.record, {
+				return await proxyToolCall(resolution.record, {
 					name: tool.name,
 					arguments: upstreamArgs,
 				});

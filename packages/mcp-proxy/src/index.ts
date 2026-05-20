@@ -3,12 +3,9 @@ import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import pkgJson from '../package.json' with { type: 'json' };
 import serverInstructions from './instructions.md';
 import { registerProxiedTools } from './tools/index.ts';
-import { readRegistry, DEFAULT_REGISTRY_DIR } from './utils/registry.ts';
-import { proxyToolCall as defaultProxyToolCall } from './utils/proxy-client.ts';
-import type { ProxyDeps } from './types/index.ts';
+import { DEFAULT_REGISTRY_DIR } from './utils/registry.ts';
 
 export type {
-	ProxyDeps,
 	StorybookInstanceRecordV1,
 	ProxyToolCallParams,
 	ProxyToolCallResult,
@@ -17,15 +14,10 @@ export type {
 
 export type CreateProxyServerOptions = {
 	registryDir?: string;
-	deps?: Partial<ProxyDeps>;
 };
 
 export async function createMcpProxyServer(options: CreateProxyServerOptions = {}) {
 	const registryDir = options.registryDir ?? DEFAULT_REGISTRY_DIR;
-	const deps: ProxyDeps = {
-		readRegistry: options.deps?.readRegistry ?? (() => readRegistry(registryDir)),
-		proxyToolCall: options.deps?.proxyToolCall ?? defaultProxyToolCall,
-	};
 
 	const server = new McpServer(
 		{
@@ -42,7 +34,7 @@ export async function createMcpProxyServer(options: CreateProxyServerOptions = {
 		},
 	);
 
-	registerProxiedTools(server, deps);
+	registerProxiedTools(server, registryDir);
 
 	return server;
 }

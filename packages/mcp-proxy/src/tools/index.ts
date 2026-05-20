@@ -1,11 +1,10 @@
 import * as v from 'valibot';
 import type { McpServer } from 'tmcp';
-import type { ProxyDeps } from '../types/index.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 import { StoryInputArray, StorybookIdField } from './shared.ts';
 
-export function registerProxiedTools(server: McpServer<any>, deps: ProxyDeps) {
-	registerProxyTool(server, deps, {
+export function registerProxiedTools(server: McpServer<any>, registryDir: string) {
+	registerProxyTool(server, registryDir, {
 		name: 'list-all-documentation',
 		title: 'List All Documentation',
 		description: 'List all available UI components and documentation entries from Storybook.',
@@ -22,7 +21,7 @@ export function registerProxiedTools(server: McpServer<any>, deps: ProxyDeps) {
 		}),
 	});
 
-	registerProxyTool(server, deps, {
+	registerProxyTool(server, registryDir, {
 		name: 'get-documentation',
 		title: 'Get Documentation',
 		description:
@@ -33,7 +32,7 @@ export function registerProxiedTools(server: McpServer<any>, deps: ProxyDeps) {
 		}),
 	});
 
-	registerProxyTool(server, deps, {
+	registerProxyTool(server, registryDir, {
 		name: 'get-documentation-for-story',
 		title: 'Get Documentation for Story',
 		description:
@@ -45,7 +44,7 @@ export function registerProxiedTools(server: McpServer<any>, deps: ProxyDeps) {
 		}),
 	});
 
-	registerProxyTool(server, deps, {
+	registerProxyTool(server, registryDir, {
 		name: 'preview-stories',
 		title: 'Get story preview URLs',
 		description:
@@ -60,21 +59,21 @@ export function registerProxiedTools(server: McpServer<any>, deps: ProxyDeps) {
 		}),
 	});
 
-	registerProxyTool(server, deps, {
+	registerProxyTool(server, registryDir, {
 		name: 'get-changed-stories',
 		title: 'Get changed stories metadata',
 		description:
 			'Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).',
 	});
 
-	registerProxyTool(server, deps, {
+	registerProxyTool(server, registryDir, {
 		name: 'get-storybook-story-instructions',
 		title: 'Storybook Story Development Instructions',
 		description:
 			'Get comprehensive instructions for writing, testing, and fixing Storybook stories (.stories.tsx, .stories.ts, .stories.jsx, .stories.js, .stories.svelte, .stories.vue files). CRITICAL: call this tool before creating, updating, or editing any story file. The instructions cover framework-specific imports, naming conventions, play functions, mocking, and test/a11y guidance.',
 	});
 
-	registerProxyTool(server, deps, {
+	registerProxyTool(server, registryDir, {
 		name: 'run-story-tests',
 		title: 'Storybook Tests',
 		description:
