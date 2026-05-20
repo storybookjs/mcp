@@ -70,9 +70,7 @@ describe('createStorybookMcpProxyServer', () => {
 
 describe('listen', () => {
 	it('starts stdio transport for the proxy server', () => {
-		const listenSpy = vi
-			.spyOn(StdioTransport.prototype, 'listen')
-			.mockImplementation(() => {});
+		const listenSpy = vi.spyOn(StdioTransport.prototype, 'listen').mockImplementation(() => {});
 
 		listen();
 
@@ -83,9 +81,7 @@ describe('listen', () => {
 
 describe('bin.ts', () => {
 	it('invokes listen when loaded', async () => {
-		const listenSpy = vi
-			.spyOn(StdioTransport.prototype, 'listen')
-			.mockImplementation(() => {});
+		const listenSpy = vi.spyOn(StdioTransport.prototype, 'listen').mockImplementation(() => {});
 
 		await import('./bin.ts');
 
