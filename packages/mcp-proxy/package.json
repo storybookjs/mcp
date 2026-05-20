@@ -2,14 +2,13 @@
 	"name": "@storybook/mcp-proxy",
 	"version": "0.0.0",
 	"private": true,
-	"description": "Storybook MCP Proxy for ADE",
+	"description": "Stable MCP proxy for Storybook agent integrations",
 	"keywords": [
-		"ADE",
 		"mcp",
-		"proxy",
-		"storybook"
+		"storybook",
+		"storybook-mcp"
 	],
-	"homepage": "https://github.com/storybookjs/mcp/blob/main/packages/mcp-proxy/README.md",
+	"homepage": "https://github.com/storybookjs/mcp/tree/main/packages/mcp-proxy#readme",
 	"license": "MIT",
 	"author": "Storybook Core Team",
 	"repository": {
@@ -17,12 +16,14 @@
 		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/mcp-proxy"
 	},
-	"bin": {
-		"storybook-mcp-proxy": "./dist/bin.js"
-	},
+	"bin": "./dist/bin.js",
 	"files": [
-		"dist"
+		"dist",
+		"README.md"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"type": "module",
 	"exports": {
 		".": {
@@ -35,7 +36,7 @@
 		"prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
 		"build": "tsdown",
 		"publint": "publint",
-		"test": "cd ../.. && pnpm vitest --project=@storybook/mcp-proxy --passWithNoTests",
+		"test": "cd ../.. && pnpm vitest --project=@storybook/mcp-proxy",
 		"typecheck": "tsc",
 		"run-storybook": "node scripts/run-storybook.ts",
 		"inspect": "npx -y @modelcontextprotocol/inspector@latest --server storybook-mcp-proxy"
