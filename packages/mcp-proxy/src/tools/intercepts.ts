@@ -28,6 +28,8 @@ const MCP_STARTING = `Storybook is running but its MCP server is still starting 
 
 const MCP_ERROR = `Storybook is running but its MCP server reported an error. Inspect the Storybook terminal output, fix the underlying issue, then retry the tool call.`;
 
+const INVALID_CWD = `\`cwd\` must be an absolute path matching the cwd from which \`storybook dev\` was started. Resolve the path on the client side (e.g. with \`path.resolve\`) and retry the tool call.`;
+
 const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 	`Multiple Storybook processes are registered at the same cwd. Stop all but one and retry.
 
@@ -51,6 +53,8 @@ export function getInterceptMarkdown(
 			return MCP_ERROR;
 		case 'multiple-matches':
 			return buildMultipleMatches(records ?? []);
+		case 'invalid-cwd':
+			return INVALID_CWD;
 	}
 }
 

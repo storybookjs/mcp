@@ -9,7 +9,8 @@ export type InterceptReason =
 	| 'addon-missing'
 	| 'mcp-starting'
 	| 'mcp-error'
-	| 'multiple-matches';
+	| 'multiple-matches'
+	| 'invalid-cwd';
 
 export type ProxyToolCallParams = {
 	name: string;

@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
 import { resolveInstance } from '../utils/resolve-instance.ts';
@@ -47,6 +48,11 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 		// cast at the boundary rather than carry the union through every internal type.
 		async (input: Record<string, unknown> & { cwd: string }): Promise<ProxyToolCallResult> => {
 			const { cwd, ...upstreamArgs } = input;
+
+			if (!path.isAbsolute(cwd)) {
+				return intercept('invalid-cwd');
+			}
+
 			const records = await deps.readRegistry();
 			const resolution = resolveInstance(records, cwd);
 

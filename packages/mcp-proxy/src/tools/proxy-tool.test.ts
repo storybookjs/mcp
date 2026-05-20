@@ -155,6 +155,17 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'mcp-error' });
 	});
 
+	it.each([['relative/path'], [''], ['./foo'], ['../foo']])(
+		'returns the invalid-cwd intercept when cwd is not absolute (%j)',
+		async (cwd) => {
+			const server = await buildServer();
+			const response = await callTool(server, { cwd });
+			expect(response.result.isError).toBe(true);
+			expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'invalid-cwd' });
+			expect(firstText(response.result)).toContain('absolute path');
+		},
+	);
+
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
 		const server = await buildServer({
 			proxyToolCall: async () => {

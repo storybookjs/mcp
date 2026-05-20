@@ -7,6 +7,7 @@ describe('intercepts', () => {
 		['addon-missing', '@storybook/addon-mcp'],
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
+		['invalid-cwd', 'absolute path'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
