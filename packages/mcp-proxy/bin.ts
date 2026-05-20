@@ -17,7 +17,7 @@
 import { parseArgs } from 'node:util';
 import { StdioTransport } from '@tmcp/transport-stdio';
 import { createMcpProxyServer } from './src/index.ts';
-import { DEFAULT_REGISTRY_DIR } from './src/registry.ts';
+import { DEFAULT_REGISTRY_DIR } from './src/utils/registry.ts';
 
 const { values } = parseArgs({
 	options: {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { proxyToolCall } from './proxy-client.ts';
-import type { StorybookInstanceRecordV1 } from './types/index.ts';
+import type { StorybookInstanceRecordV1 } from '../types/index.ts';
 
 const record: StorybookInstanceRecordV1 = {
 	schemaVersion: 1,

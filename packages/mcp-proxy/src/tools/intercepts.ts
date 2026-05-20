@@ -1,4 +1,4 @@
-import type { InterceptReason, StorybookInstanceRecordV1 } from './types/index.ts';
+import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /

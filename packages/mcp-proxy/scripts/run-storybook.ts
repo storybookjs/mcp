@@ -6,7 +6,7 @@ import * as fs from 'node:fs/promises';
 import { existsSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { DEFAULT_REGISTRY_DIR } from '../src/registry.ts';
+import { DEFAULT_REGISTRY_DIR } from '../src/utils/registry.ts';
 import type { McpStatusV1, StorybookInstanceRecordV1 } from '../src/types/index.ts';
 
 const DEFAULT_PORT = 6006;

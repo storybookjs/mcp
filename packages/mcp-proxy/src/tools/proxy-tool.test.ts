@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMcpProxyServer } from '../index.ts';
-import { META_INTERCEPT_REASON } from '../intercepts.ts';
+import { META_INTERCEPT_REASON } from './intercepts.ts';
 import type { ProxyDeps, ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 const record: StorybookInstanceRecordV1 = {

@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { InterceptReason, StorybookInstanceRecordV1 } from './types/index.ts';
+import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 export type ResolveResult =
 	| { kind: 'instance'; record: StorybookInstanceRecordV1 }

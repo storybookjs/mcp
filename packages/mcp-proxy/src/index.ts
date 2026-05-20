@@ -3,8 +3,8 @@ import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import pkgJson from '../package.json' with { type: 'json' };
 import serverInstructions from './instructions.md';
 import { registerProxiedTools } from './tools/index.ts';
-import { readRegistry, DEFAULT_REGISTRY_DIR } from './registry.ts';
-import { proxyToolCall as defaultProxyToolCall } from './proxy-client.ts';
+import { readRegistry, DEFAULT_REGISTRY_DIR } from './utils/registry.ts';
+import { proxyToolCall as defaultProxyToolCall } from './utils/proxy-client.ts';
 import type { ProxyDeps } from './types/index.ts';
 
 export type {

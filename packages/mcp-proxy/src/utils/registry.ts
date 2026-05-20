@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import * as v from 'valibot';
-import { StorybookInstanceRecordV1Schema, type StorybookInstanceRecordV1 } from './types/index.ts';
+import { StorybookInstanceRecordV1Schema, type StorybookInstanceRecordV1 } from '../types/index.ts';
 
 export const DEFAULT_REGISTRY_DIR = join(homedir(), '.storybook', 'instances');
 

@@ -2,7 +2,7 @@ import type {
 	ProxyToolCallParams,
 	ProxyToolCallResult,
 	StorybookInstanceRecordV1,
-} from './types/index.ts';
+} from '../types/index.ts';
 
 /**
  * Forward an MCP `tools/call` JSON-RPC request to a local Storybook MCP server.
