@@ -18,6 +18,7 @@
 		"eval.ts",
 		"clean-trials.ts",
 		"lib",
+		"review-changes",
 		"variant-configs",
 		"templates/result-docs",
 		"templates/grading",

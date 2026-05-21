@@ -1,0 +1,3 @@
+# E2E live-mcp captures are per-developer artifacts (non-deterministic by
+# definition — the agent makes a different diff each run). Local-only.
+*/

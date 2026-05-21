@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-05-21T16:29:29.644Z",
+  "count": 2,
+  "runs": [
+    {
+      "runFile": "review-changes/captures/restaurant-card-change/2026-05-21T15-50-33.858--claude-sonnet-4.6.json",
+      "payloadFile": "review-changes/captures/restaurant-card-change/2026-05-21T15-50-33.858--claude-sonnet-4.6.payload.json",
+      "scenarioId": "restaurant-card-change",
+      "model": "claude-sonnet-4.6",
+      "driver": "live-mcp",
+      "status": "ok",
+      "promptVersion": "sha-83b7f1cd",
+      "startedAt": "2026-05-21T15:50:33.858Z",
+      "latencyMs": 116740,
+      "inputTokens": 18,
+      "outputTokens": 6897,
+      "cacheCreationTokens": 37812,
+      "cacheReadTokens": 347288,
+      "costUsd": 0.35088339999999996,
+      "hasNotes": false,
+      "hasTranscript": true,
+      "scores": {
+        "schemaValid": true,
+        "kindCorrectness": 1,
+        "collectionPurity": 0.8888888888888888,
+        "changedFilesAccuracy": 1,
+        "collectionCount": 3,
+        "pushedStoryCount": 9
+      },
+      "source": {
+        "repoPath": "/Users/yannbraga/Dev/mealdrop",
+        "baseCommit": "4fffe8df9b99c4484b5d1cf1a0c89c655e65a938",
+        "baseTag": "eval-base/restaurant-card-change/2026-05-21T15-50-33.858",
+        "workingTreeDirty": false,
+        "storybookUrl": "http://localhost:6010"
+      }
+    },
+    {
+      "runFile": "review-changes/captures/add-meal/2026-05-21T16-25-31.748--claude-sonnet-4.6.json",
+      "payloadFile": "review-changes/captures/add-meal/2026-05-21T16-25-31.748--claude-sonnet-4.6.payload.json",
+      "scenarioId": "add-meal",
+      "model": "claude-sonnet-4.6",
+      "driver": "live-mcp",
+      "status": "ok",
+      "promptVersion": "sha-454b3a5f",
+      "startedAt": "2026-05-21T16:25:31.748Z",
+      "latencyMs": 42651,
+      "inputTokens": 1897,
+      "outputTokens": 1914,
+      "cacheCreationTokens": 19202,
+      "cacheReadTokens": 207999,
+      "costUsd": 0.1702032,
+      "hasNotes": false,
+      "hasTranscript": true,
+      "scores": {
+        "schemaValid": true,
+        "kindCorrectness": 0.3333333333333333,
+        "collectionPurity": 1,
+        "changedFilesAccuracy": 1,
+        "collectionCount": 3,
+        "pushedStoryCount": 9
+      },
+      "source": {
+        "repoPath": "/Users/yannbraga/Dev/mealdrop",
+        "baseCommit": "4fffe8df9b99c4484b5d1cf1a0c89c655e65a938",
+        "baseTag": "eval-base/add-meal/2026-05-21T16-25-31.748",
+        "workingTreeDirty": false,
+        "storybookUrl": "http://localhost:6010"
+      }
+    }
+  ]
+}
