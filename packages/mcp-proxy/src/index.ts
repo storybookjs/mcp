@@ -1,34 +1,40 @@
-import { StdioTransport } from '@tmcp/transport-stdio';
 import { McpServer } from 'tmcp';
+import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
+import pkgJson from '../package.json' with { type: 'json' };
+import serverInstructions from './instructions.md';
+import { registerProxiedTools } from './tools/index.ts';
+import { DEFAULT_REGISTRY_DIR } from './utils/registry.ts';
 
-import pkg from '../package.json' with { type: 'json' };
+export type {
+	StorybookInstanceRecordV1,
+	ProxyToolCallParams,
+	ProxyToolCallResult,
+	McpStatusV1,
+} from './types/index.ts';
 
-const instructions = [
-	'This is a placeholder Storybook MCP proxy.',
-	'It intentionally exposes no Storybook tools yet.',
-	'The real proxy implementation will be added in the @storybook/mcp-proxy milestone.',
-].join('\n');
+export type CreateProxyServerOptions = {
+	registryDir?: string;
+};
 
-export function createStorybookMcpProxyServer() {
-	return new McpServer(
+export async function createMcpProxyServer(options: CreateProxyServerOptions = {}) {
+	const registryDir = options.registryDir ?? DEFAULT_REGISTRY_DIR;
+
+	const server = new McpServer(
 		{
-			name: pkg.name,
-			version: pkg.version,
-			description: pkg.description,
+			name: pkgJson.name,
+			version: pkgJson.version,
+			description: pkgJson.description,
 		},
 		{
-			adapter: undefined,
-			instructions,
+			adapter: new ValibotJsonSchemaAdapter(),
+			instructions: serverInstructions,
 			capabilities: {
 				tools: { listChanged: true },
 			},
 		},
 	);
-}
 
-export function listen() {
-	const server = createStorybookMcpProxyServer();
-	const transport = new StdioTransport(server);
+	registerProxiedTools(server, registryDir);
 
-	transport.listen();
+	return server;
 }

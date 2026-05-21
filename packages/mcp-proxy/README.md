@@ -1,50 +1,98 @@
-# Storybook MCP Proxy
+# `@storybook/mcp-proxy`
 
-Stable MCP server package for Storybook agent integrations.
+A stable, stdio-fronted MCP server that forwards tool calls to the local Storybook MCP server exposed by [`@storybook/addon-mcp`](../addon-mcp).
 
-This package is intentionally minimal in the plugin-package milestone. It starts a valid stdio MCP server and returns an empty tool list, so Claude and Codex plugin wiring can be installed and smoke-tested before the real proxy implementation exists.
+## Why a proxy?
 
-This package is not published to npm yet. PR previews are available via pkg.pr.new; full npm release is still tracked in Changesets ignore until milestone 2.
+Agent clients (Claude, Codex, etc.) configure an MCP server once and expect it to keep working as long-running Storybook processes start and stop. The addon's HTTP endpoint moves with each `storybook dev` (cwd, port, lifecycle), so wiring an agent directly to it is brittle.
 
-Milestone 2 of storybookjs/storybook#34826 will replace this placeholder with the proxy that discovers running Storybook instances and forwards the seven Storybook MCP tools to the matching local Storybook `/mcp` endpoint.
+The proxy is the stable address: it reads the on-disk **registry** of running Storybook instances and routes each tool call to the right one based on the project's `cwd`.
 
-## Usage
-
-During development, the Claude and Codex plugins point at the latest pkg.pr.new preview for PR #227:
-
-```sh
-npx -y https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@227
+```
+agent ──stdio──▶ @storybook/mcp-proxy ──http──▶ @storybook/addon-mcp (per Storybook)
+                       ▲
+                       │  reads
+                ~/.storybook/instances/*.json   (one file per running Storybook)
 ```
 
-The `@227` ref tracks the newest preview build published by the `Publish preview` workflow for that pull request.
+## Install / run
 
-When this package is ready to publish to npm, remove it from the Changesets ignore list, add a changeset, and then switch plugin MCP configs to:
-
-```sh
-npx -y @storybook/mcp-proxy@latest
-```
-
-## Local Testing
-
-Build the package:
+Run via `npx`; no install needed:
 
 ```sh
-pnpm --filter @storybook/mcp-proxy build
+npx -y @storybook/mcp-proxy
 ```
 
-Run the built binary:
+Until the package is published to npm, use the pkg.pr.new preview from `main`:
 
 ```sh
-node packages/mcp-proxy/dist/bin.js
+npx -y https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@main
 ```
 
-Smoke-test the MCP handshake:
+### MCP client configuration
 
-```sh
-printf '%s\n' \
-  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
-  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | node packages/mcp-proxy/dist/bin.js
+```json
+{
+	"mcpServers": {
+		"storybook": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "@storybook/mcp-proxy"]
+		}
+	}
+}
 ```
 
-Expected result: the server responds to `initialize` and returns `"tools":[]` for `tools/list`.
+## How routing works
+
+Every proxied tool requires a `cwd` argument: the **absolute** path of the Storybook project the call targets. It must exactly match the cwd from which `storybook dev` was started — there is no prefix matching or fallback.
+
+1. The proxy reads every JSON file under the registry directory and drops records whose PID is no longer alive.
+2. It picks the record whose `cwd` matches the request after `path.resolve` normalisation.
+3. Based on that record's `mcp.status`, it either forwards the call over HTTP or returns a structured intercept message describing what to do.
+
+### Intercept reasons
+
+The proxy never silently fails. When it can't forward a call, it returns an `isError: true` result whose `_meta` carries one of:
+
+| Reason             | Meaning                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| `invalid-cwd`      | The supplied `cwd` was not an absolute path.                                                         |
+| `no-instance`      | No Storybook is running at the requested `cwd`. Lists other running cwds as candidates when present. |
+| `multiple-matches` | Two or more records share the same `cwd` (degenerate registry state).                                |
+| `mcp-starting`     | A Storybook is registered there but its MCP endpoint hasn't come up yet.                             |
+| `addon-missing`    | The matching Storybook does not have `@storybook/addon-mcp` installed.                               |
+| `mcp-error`        | The addon registered an error status for its MCP endpoint.                                           |
+
+## Proxied tools
+
+The proxy registers the seven Storybook tools exposed by `@storybook/addon-mcp`, each with `cwd` added as a required input. See [`src/instructions.md`](./src/instructions.md) for the agent-facing routing guide.
+
+- `list-all-documentation`
+- `get-documentation`
+- `get-documentation-for-story`
+- `preview-stories`
+- `get-changed-stories`
+- `get-storybook-story-instructions`
+- `run-story-tests`
+
+## Programmatic use
+
+```ts
+import { createMcpProxyServer } from '@storybook/mcp-proxy';
+
+const server = await createMcpProxyServer({
+	registryDir: '/custom/registry/dir', // optional
+});
+```
+
+`createMcpProxyServer` returns a configured `tmcp` `McpServer`; wire it to any transport you like.
+
+## Scripts
+
+| Command          | What it does                                           |
+| ---------------- | ------------------------------------------------------ |
+| `pnpm build`     | Bundle `bin.ts` and `src/index.ts` with `tsdown`.      |
+| `pnpm test`      | Run vitest from the repo root, scoped to this package. |
+| `pnpm typecheck` | `tsc --noEmit`.                                        |
+| `pnpm inspect`   | Launch the MCP Inspector against the proxy.            |
