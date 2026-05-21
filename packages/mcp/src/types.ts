@@ -20,9 +20,32 @@ export type SourceManifests = {
 	source: Source;
 	componentManifest: ComponentManifestMap;
 	docsManifest?: DocsManifestMap;
+	/** Informational message when this source should be accessed through another MCP endpoint */
+	notice?: string;
 	/** Error message if fetching this source failed */
 	error?: string;
 };
+
+/**
+ * Informational tool content for a source that should be accessed elsewhere.
+ */
+export type ManifestSourceNotice = {
+	listText: string;
+	detailText: string;
+};
+
+export type ManifestProviderResult = string | ManifestSourceNotice;
+
+export function isManifestSourceNotice(value: unknown): value is ManifestSourceNotice {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'listText' in value &&
+		typeof value.listText === 'string' &&
+		'detailText' in value &&
+		typeof value.detailText === 'string'
+	);
+}
 
 /**
  * Custom context passed to MCP server and tools.
@@ -46,7 +69,7 @@ export type StorybookContext = {
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<string>;
+	) => Promise<ManifestProviderResult>;
 	/**
 	 * Sources configuration for multi-source mode.
 	 * When provided, tools will fetch and display manifests grouped by source.

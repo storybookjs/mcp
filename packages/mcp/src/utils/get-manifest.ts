@@ -2,8 +2,11 @@ import {
 	ComponentManifestMap,
 	DocsManifestMap,
 	type AllManifests,
+	type ManifestProviderResult,
+	type ManifestSourceNotice,
 	type Source,
 	type SourceManifests,
+	isManifestSourceNotice,
 } from '../types.ts';
 import * as v from 'valibot';
 
@@ -29,12 +32,21 @@ export class ManifestGetError extends Error {
 }
 
 /**
- * MCP tool result type for error responses
+ * MCP tool result type for text responses
  */
-type MCPErrorResult = {
+type MCPTextResult = {
 	content: Array<{ type: 'text'; text: string }>;
-	isError: true;
+	isError?: true;
 };
+
+export const sourceNoticeToMCPContent = (notice: ManifestSourceNotice): MCPTextResult => ({
+	content: [
+		{
+			type: 'text',
+			text: notice.detailText,
+		},
+	],
+});
 
 /**
  * Converts an error to MCP-compatible content format
@@ -42,7 +54,7 @@ type MCPErrorResult = {
  * @param error - The error to convert (can be any type)
  * @returns A tool result with error content and isError flag
  */
-export const errorToMCPContent = (error: unknown): MCPErrorResult => {
+export const errorToMCPContent = (error: unknown): MCPTextResult => {
 	const errorPrefix =
 		error instanceof ManifestGetError ? 'Error getting manifest' : 'Unexpected error';
 	const errorMessage = error instanceof Error ? error.message : String(error);
@@ -105,9 +117,9 @@ export async function getManifests(
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<string>,
+	) => Promise<ManifestProviderResult>,
 	source?: Source,
-): Promise<AllManifests> {
+): Promise<AllManifests | ManifestSourceNotice> {
 	const provider = manifestProvider ?? defaultManifestProvider;
 
 	// Fetch both component and docs manifests in parallel
@@ -132,8 +144,13 @@ export async function getManifests(
 		);
 	}
 
+	const componentJson = componentResult.value;
+	if (isManifestSourceNotice(componentJson)) {
+		return componentJson;
+	}
+
 	const componentManifest = parseManifest({
-		jsonString: componentResult.value,
+		jsonString: componentJson,
 		schema: ComponentManifestMap,
 		name: 'component',
 		url: getUrl(COMPONENT_MANIFEST_PATH),
@@ -147,6 +164,10 @@ export async function getManifests(
 	}
 
 	if (docsResult.status === 'rejected') {
+		return { componentManifest };
+	}
+
+	if (isManifestSourceNotice(docsResult.value)) {
 		return { componentManifest };
 	}
 
@@ -224,13 +245,20 @@ export async function getMultiSourceManifests(
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<string>,
+	) => Promise<ManifestProviderResult>,
 ): Promise<SourceManifests[]> {
 	// Fetch all sources in parallel
 	const results = await Promise.all(
 		sources.map(async (source) => {
 			try {
 				const manifests = await getManifests(request, manifestProvider, source);
+				if (isManifestSourceNotice(manifests)) {
+					return {
+						source,
+						componentManifest: { v: 1, components: {} },
+						notice: manifests.listText,
+					};
+				}
 				return {
 					source,
 					componentManifest: manifests.componentManifest,

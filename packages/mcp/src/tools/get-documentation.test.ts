@@ -160,7 +160,51 @@ describe('getDocumentationTool', () => {
 			  ],
 			  "isError": true,
 			}
-		`);
+			`);
+	});
+
+	it('should return source notices as normal content', async () => {
+		getManifestsSpy.mockResolvedValue({
+			listText:
+				'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
+			detailText: `# Private Storybook
+
+This composed Storybook is private and requires Chromatic authentication.
+
+To access documentation from this source, register or use its MCP endpoint:
+https://example.com/mcp`,
+		});
+
+		const request = {
+			jsonrpc: '2.0' as const,
+			id: 1,
+			method: 'tools/call',
+			params: {
+				name: GET_TOOL_NAME,
+				arguments: {
+					id: 'button',
+				},
+			},
+		};
+
+		const mockHttpRequest = new Request('https://example.com/mcp');
+		const response = await server.receive(request, {
+			custom: { request: mockHttpRequest },
+		});
+
+		expect(response.result).toEqual({
+			content: [
+				{
+					type: 'text',
+					text: `# Private Storybook
+
+This composed Storybook is private and requires Chromatic authentication.
+
+To access documentation from this source, register or use its MCP endpoint:
+https://example.com/mcp`,
+				},
+			],
+		});
 	});
 
 	it('should call onGetDocumentation handler when provided', async () => {

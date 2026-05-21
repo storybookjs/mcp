@@ -206,6 +206,233 @@ describe('experimental_devServer', () => {
 		expect(mockRes.end).toHaveBeenCalledWith('Not found');
 	});
 
+	it('should challenge regular requests when composed refs require auth', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: false,
+					status: 401,
+					headers: new Headers({
+						'WWW-Authenticate':
+							'Bearer resource_metadata="https://remote.example.com/.well-known/oauth-protected-resource"',
+					}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resource: 'https://remote.example.com/mcp',
+							authorization_servers: ['https://auth.example.com'],
+						}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							issuer: 'https://auth.example.com',
+							authorization_endpoint: 'https://auth.example.com/authorize',
+							token_endpoint: 'https://auth.example.com/token',
+						}),
+				}),
+		);
+
+		const optionsWithPrivateRef = {
+			port: 6006,
+			presets: {
+				apply: vi.fn((key: string) => {
+					if (key === 'refs') {
+						return Promise.resolve({
+							private: { title: 'Private', url: 'https://remote.example.com' },
+						});
+					}
+					if (key === 'features') {
+						return Promise.resolve({ componentsManifest: false });
+					}
+					return Promise.resolve(undefined);
+				}),
+			},
+		} as unknown as Options;
+
+		await (experimental_devServer as any)(mockApp, optionsWithPrivateRef);
+
+		const mockReq = { headers: {} } as any;
+		const mockRes = { writeHead: vi.fn(), end: vi.fn() } as any;
+		await mcpHandler(mockReq, mockRes);
+
+		expect(mockRes.writeHead).toHaveBeenCalledWith(
+			401,
+			expect.objectContaining({
+				'WWW-Authenticate': expect.stringContaining('resource_metadata='),
+			}),
+		);
+		expect(mockRes.end).toHaveBeenCalledWith('401 - Unauthorized');
+	});
+
+	it('should allow Storybook MCP proxy requests when composed refs require auth', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: false,
+					status: 401,
+					headers: new Headers({
+						'WWW-Authenticate':
+							'Bearer resource_metadata="https://remote.example.com/.well-known/oauth-protected-resource"',
+					}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resource: 'https://remote.example.com/mcp',
+							authorization_servers: ['https://auth.example.com'],
+						}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							issuer: 'https://auth.example.com',
+							authorization_endpoint: 'https://auth.example.com/authorize',
+							token_endpoint: 'https://auth.example.com/token',
+						}),
+				}),
+		);
+
+		const optionsWithPrivateRef = {
+			port: 6006,
+			presets: {
+				apply: vi.fn((key: string) => {
+					if (key === 'refs') {
+						return Promise.resolve({
+							private: { title: 'Private', url: 'https://remote.example.com' },
+						});
+					}
+					if (key === 'features') {
+						return Promise.resolve({ componentsManifest: false });
+					}
+					return Promise.resolve(undefined);
+				}),
+			},
+		} as unknown as Options;
+
+		await (experimental_devServer as any)(mockApp, optionsWithPrivateRef);
+
+		const initializeRequest = JSON.stringify({
+			jsonrpc: '2.0',
+			id: 1,
+			method: 'initialize',
+			params: {
+				protocolVersion: '2024-11-05',
+				capabilities: {},
+				clientInfo: {
+					name: 'test-client',
+					version: '1.0.0',
+				},
+			},
+		});
+		const mockReq = {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				host: 'localhost:6006',
+				'x-storybook-mcp-proxy': 'true',
+			},
+			socket: { encrypted: false, remoteAddress: '127.0.0.1' },
+			url: '/mcp',
+			[Symbol.asyncIterator]: async function* () {
+				yield Buffer.from(initializeRequest);
+			},
+		} as any;
+		const mockRes = {
+			writeHead: vi.fn(),
+			write: vi.fn(),
+			end: vi.fn(),
+			setHeader: vi.fn(),
+			statusCode: 0,
+		} as any;
+
+		await mcpHandler(mockReq, mockRes);
+
+		expect(mockRes.writeHead).not.toHaveBeenCalledWith(
+			401,
+			expect.objectContaining({ 'WWW-Authenticate': expect.any(String) }),
+		);
+		expect(mockRes.end).toHaveBeenCalled();
+	});
+
+	it('should challenge spoofed Storybook MCP proxy requests from non-loopback clients', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: false,
+					status: 401,
+					headers: new Headers({
+						'WWW-Authenticate':
+							'Bearer resource_metadata="https://remote.example.com/.well-known/oauth-protected-resource"',
+					}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resource: 'https://remote.example.com/mcp',
+							authorization_servers: ['https://auth.example.com'],
+						}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							issuer: 'https://auth.example.com',
+							authorization_endpoint: 'https://auth.example.com/authorize',
+							token_endpoint: 'https://auth.example.com/token',
+						}),
+				}),
+		);
+
+		const optionsWithPrivateRef = {
+			port: 6006,
+			presets: {
+				apply: vi.fn((key: string) => {
+					if (key === 'refs') {
+						return Promise.resolve({
+							private: { title: 'Private', url: 'https://remote.example.com' },
+						});
+					}
+					if (key === 'features') {
+						return Promise.resolve({ componentsManifest: false });
+					}
+					return Promise.resolve(undefined);
+				}),
+			},
+		} as unknown as Options;
+
+		await (experimental_devServer as any)(mockApp, optionsWithPrivateRef);
+
+		const mockReq = {
+			headers: {
+				'x-storybook-mcp-proxy': 'true',
+			},
+			socket: { remoteAddress: '10.0.0.5' },
+		} as any;
+		const mockRes = { writeHead: vi.fn(), end: vi.fn() } as any;
+		await mcpHandler(mockReq, mockRes);
+
+		expect(mockRes.writeHead).toHaveBeenCalledWith(
+			401,
+			expect.objectContaining({
+				'WWW-Authenticate': expect.stringContaining('resource_metadata='),
+			}),
+		);
+		expect(mockRes.end).toHaveBeenCalledWith('401 - Unauthorized');
+	});
+
 	it('should forward non-HTML GET /mcp requests to MCP handler', async () => {
 		const handlers: Record<string, any> = {};
 		mockApp.get = vi.fn((path: string, handler: any) => {
@@ -254,28 +481,29 @@ describe('experimental_devServer', () => {
 	});
 
 	it('should parse refs from storybook config', async () => {
+		const apply = vi.fn((key: string) => {
+			if (key === 'refs') {
+				return Promise.resolve({
+					'my-lib': { title: 'My Library', url: 'https://my-lib.example.com' },
+					'design-system': { url: 'https://ds.example.com' },
+				});
+			}
+			if (key === 'features') {
+				return Promise.resolve({ componentsManifest: false });
+			}
+			return Promise.resolve(undefined);
+		});
 		const optionsWithRefs = {
 			port: 6006,
 			presets: {
-				apply: vi.fn((key: string) => {
-					if (key === 'refs') {
-						return Promise.resolve({
-							'my-lib': { title: 'My Library', url: 'https://my-lib.example.com' },
-							'design-system': { url: 'https://ds.example.com' },
-						});
-					}
-					if (key === 'features') {
-						return Promise.resolve({ componentsManifest: false });
-					}
-					return Promise.resolve(undefined);
-				}),
+				apply,
 			},
 		} as unknown as Options;
 
 		await (experimental_devServer as any)(mockApp, optionsWithRefs);
 
 		// The preset should have called presets.apply('refs')
-		expect(optionsWithRefs.presets.apply).toHaveBeenCalledWith('refs', {});
+		expect(apply).toHaveBeenCalledWith('refs', {});
 	});
 
 	it('should handle refs config returning non-object gracefully', async () => {

@@ -6,7 +6,13 @@
  * MCP clients like VS Code to handle the OAuth flow with Chromatic.
  */
 
-import { ComponentManifestMap, DocsManifestMap, type Source } from '@storybook/mcp';
+import {
+	ComponentManifestMap,
+	DocsManifestMap,
+	type ManifestProviderResult,
+	type ManifestSourceNotice,
+	type Source,
+} from '@storybook/mcp';
 import * as v from 'valibot';
 
 export interface ComposedRef {
@@ -14,6 +20,8 @@ export interface ComposedRef {
 	title: string;
 	url: string;
 }
+
+type RemoteSource = Source & { url: string };
 
 const OAuthResourceMetadata = v.object({
 	resource: v.optional(v.string()),
@@ -36,14 +44,21 @@ interface AuthRequirement {
 	serverMetadata: OAuthServerMetadata;
 }
 
+interface McpAuthCheck {
+	unauthorized: boolean;
+	authRequirement: AuthRequirement | null;
+}
+
 export type ManifestProvider = (
 	request: Request | undefined,
 	path: string,
 	source?: Source,
-) => Promise<string>;
+) => Promise<ManifestProviderResult>;
 
 const MANIFEST_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 const REVALIDATION_TTL = 60 * 1000; // 60 seconds
+export const STORYBOOK_MCP_PROXY_HEADER = 'X-Storybook-MCP-Proxy';
+export const STORYBOOK_MCP_PROXY_HEADER_VALUE = 'true';
 
 interface CacheEntry {
 	text: string;
@@ -52,7 +67,10 @@ interface CacheEntry {
 }
 
 export class AuthenticationError extends Error {
-	constructor(url: string) {
+	constructor(
+		url: string,
+		public readonly authRequirement: AuthRequirement | null = null,
+	) {
 		super(`Authentication failed for ${url}. Your token may be invalid or expired.`);
 		this.name = 'AuthenticationError';
 	}
@@ -61,7 +79,7 @@ export class AuthenticationError extends Error {
 export class CompositionAuth {
 	#authRequirement: AuthRequirement | null = null;
 	#authRequiredUrls: string[] = [];
-	#refsWithManifests: ComposedRef[] = [];
+	#sourceRefs: ComposedRef[] = [];
 	#manifestCache = new Map<string, CacheEntry>();
 	#lastToken: string | null = null;
 	#authErrors = new WeakMap<Request, AuthenticationError>();
@@ -73,27 +91,16 @@ export class CompositionAuth {
 				const result = await this.#checkRef(ref.url);
 				if (result === 'no-manifest') continue;
 
-				this.#refsWithManifests.push(ref);
+				this.#sourceRefs.push(ref);
 
 				if (result === 'public') continue;
 
-				// Auth required
-				this.#authRequiredUrls.push(ref.url);
-				if (!this.#authRequirement) {
-					this.#authRequirement = result;
-				} else {
-					const existingServer = this.#authRequirement.resourceMetadata.authorization_servers[0];
-					const newServer = result.resourceMetadata.authorization_servers[0];
-					if (existingServer !== newServer) {
-						console.warn(
-							`[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`,
-						);
-					}
-				}
+				this.#recordAuthRequirement(ref, result);
 			} catch (error) {
 				console.warn(
-					`[addon-mcp] Failed to check auth for composed ref "${ref.title}" (${ref.url}): ${error instanceof Error ? error.message : String(error)}. Skipping this ref.`,
+					`[addon-mcp] Failed to check auth for composed ref "${ref.title}" (${ref.url}): ${error instanceof Error ? error.message : String(error)}. Keeping this ref in the MCP source list for request-time resolution.`,
 				);
+				this.#sourceRefs.push(ref);
 			}
 		}
 	}
@@ -116,6 +123,24 @@ export class CompositionAuth {
 		return this.#authRequiredUrls.some((authUrl) => url.startsWith(authUrl));
 	}
 
+	#recordAuthRequirement(ref: ComposedRef, result: AuthRequirement): void {
+		if (!this.#authRequiredUrls.includes(ref.url)) {
+			this.#authRequiredUrls.push(ref.url);
+		}
+		if (!this.#authRequirement) {
+			this.#authRequirement = result;
+			return;
+		}
+
+		const existingServer = this.#authRequirement.resourceMetadata.authorization_servers[0];
+		const newServer = result.resourceMetadata.authorization_servers[0];
+		if (existingServer !== newServer) {
+			console.warn(
+				`[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`,
+			);
+		}
+	}
+
 	/** Build .well-known/oauth-protected-resource response. */
 	buildWellKnown(origin: string): object | null {
 		if (!this.#authRequirement) return null;
@@ -131,11 +156,11 @@ export class CompositionAuth {
 		return `Bearer error="unauthorized", error_description="Authorization needed for composed Storybooks", resource_metadata="${origin}/.well-known/oauth-protected-resource"`;
 	}
 
-	/** Build sources configuration: local first, then refs that have manifests. */
+	/** Build sources configuration: local first, then refs that have manifests or inconclusive startup probes. */
 	buildSources(): Source[] {
 		return [
 			{ id: 'local', title: 'Local' },
-			...this.#refsWithManifests.map((ref) => ({
+			...this.#sourceRefs.map((ref) => ({
 				id: ref.id,
 				title: ref.title,
 				url: ref.url,
@@ -147,11 +172,19 @@ export class CompositionAuth {
 	createManifestProvider(localOrigin: string): ManifestProvider {
 		return async (request, path, source) => {
 			const token = extractBearerToken(request?.headers.get('Authorization'));
-			const baseUrl = source?.url ?? localOrigin;
+			const remoteSource = isRemoteSource(source) ? source : undefined;
+			const baseUrl = remoteSource?.url ?? localOrigin;
 			const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
-			const isRemote = !!source?.url;
+			const isRemote = !!remoteSource;
 			const needsAuth = isRemote && this.#isAuthRequiredUrl(baseUrl);
+			const isProxyRequest = isStorybookMcpProxyRequest(
+				request?.headers.get(STORYBOOK_MCP_PROXY_HEADER),
+			);
 			const tokenForRequest = needsAuth ? token : null;
+
+			if (needsAuth && !token && isProxyRequest && remoteSource) {
+				return createPrivateCompositionNotice(remoteSource);
+			}
 
 			// New token = user re-authenticated, invalidate all cached manifests
 			if (token && token !== this.#lastToken) {
@@ -197,6 +230,12 @@ export class CompositionAuth {
 				return text;
 			} catch (error) {
 				if (error instanceof AuthenticationError && request) {
+					if (remoteSource && error.authRequirement) {
+						this.#recordAuthRequirement(remoteSource, error.authRequirement);
+					}
+					if (isProxyRequest && !token && remoteSource) {
+						return createPrivateCompositionNotice(remoteSource);
+					}
 					this.#authErrors.set(request, error);
 				}
 				throw error;
@@ -215,7 +254,10 @@ export class CompositionAuth {
 		const response = await fetch(url, { headers });
 
 		if (response.status === 401) {
-			throw new AuthenticationError(url);
+			const authRequirement =
+				(await this.#parseAuthFromResponse(response)) ??
+				(await this.#tryCheckMcpAuth(new URL(url).origin)).authRequirement;
+			throw new AuthenticationError(url, authRequirement);
 		}
 
 		if (!response.ok) {
@@ -230,8 +272,9 @@ export class CompositionAuth {
 		}
 
 		// Invalid manifest — check /mcp to see if it's an auth issue
-		if (await this.#isMcpUnauthorized(new URL(url).origin)) {
-			throw new AuthenticationError(url);
+		const mcpAuth = await this.#tryCheckMcpAuth(new URL(url).origin);
+		if (mcpAuth.unauthorized) {
+			throw new AuthenticationError(url, mcpAuth.authRequirement);
 		}
 
 		throw new Error(
@@ -279,24 +322,30 @@ export class CompositionAuth {
 		return this.#parseAuthFromResponse(response);
 	}
 
-	/** Quick check: does the remote /mcp return 401? */
-	async #isMcpUnauthorized(origin: string): Promise<boolean> {
+	/** Best-effort /mcp auth check for request-time discovery. */
+	async #tryCheckMcpAuth(origin: string): Promise<McpAuthCheck> {
 		try {
 			const response = await fetch(`${origin}/mcp`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
 			});
-			return response.status === 401;
+			if (response.status !== 401) {
+				return { unauthorized: false, authRequirement: null };
+			}
+			return {
+				unauthorized: true,
+				authRequirement: await this.#parseAuthFromResponse(response),
+			};
 		} catch {
-			return false;
+			return { unauthorized: false, authRequirement: null };
 		}
 	}
 
 	/** Extract auth requirement from a 401 response's WWW-Authenticate header. */
 	async #parseAuthFromResponse(response: Response): Promise<AuthRequirement | null> {
 		if (response.status !== 401) return null;
-		const wwwAuth = response.headers.get('WWW-Authenticate');
+		const wwwAuth = response.headers?.get('WWW-Authenticate');
 		if (!wwwAuth) return null;
 
 		const match = wwwAuth.match(/resource_metadata="([^"]+)"/);
@@ -344,6 +393,37 @@ export class CompositionAuth {
 	}
 }
 
+function isRemoteSource(source: Source | undefined): source is RemoteSource {
+	return typeof source?.url === 'string' && source.url.length > 0;
+}
+
+function isChromaticUrl(url: string): boolean {
+	try {
+		const hostname = new URL(url).hostname;
+		return hostname === 'chromatic.com' || hostname.endsWith('.chromatic.com');
+	} catch {
+		return false;
+	}
+}
+
+function createPrivateCompositionNotice(source: RemoteSource): ManifestSourceNotice {
+	const mcpEndpoint = `${source.url.replace(/\/$/, '')}/mcp`;
+	const isChromatic = isChromaticUrl(source.url);
+	const authMessage = isChromatic
+		? 'This composed Storybook is private and requires Chromatic authentication.'
+		: 'This composed Storybook requires authentication.';
+
+	return {
+		listText: `${authMessage} Use its MCP endpoint: ${mcpEndpoint}`,
+		detailText: `# ${source.title}
+
+${authMessage}
+
+To access documentation from this source, register or use its MCP endpoint:
+${mcpEndpoint}`,
+	};
+}
+
 /**
  * Extract Bearer token from Authorization header.
  * Handles both Node.js (string | string[] | undefined) and Web API (string | null) headers.
@@ -354,4 +434,14 @@ export function extractBearerToken(
 	const values = Array.isArray(authHeader) ? authHeader : [authHeader];
 	const bearer = values.find((value) => typeof value === 'string' && value.startsWith('Bearer '));
 	return bearer ? bearer.slice(7) : null;
+}
+
+export function isStorybookMcpProxyRequest(
+	headerValue: string | string[] | null | undefined,
+): boolean {
+	const values = Array.isArray(headerValue) ? headerValue : [headerValue];
+	return values.some(
+		(value) =>
+			typeof value === 'string' && value.trim().toLowerCase() === STORYBOOK_MCP_PROXY_HEADER_VALUE,
+	);
 }

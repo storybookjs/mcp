@@ -7,9 +7,18 @@ import { getAddonVitestConstants } from './tools/run-story-tests.ts';
 import { isAddonA11yEnabled } from './utils/is-addon-a11y-enabled.ts';
 import htmlTemplate from './template.html';
 import path from 'node:path';
-import { CompositionAuth, extractBearerToken, type ComposedRef } from './auth/index.ts';
+import {
+	CompositionAuth,
+	STORYBOOK_MCP_PROXY_HEADER,
+	extractBearerToken,
+	isStorybookMcpProxyRequest,
+	type ComposedRef,
+} from './auth/index.ts';
 import { logger } from 'storybook/internal/node-logger';
-import type { Source } from '@storybook/mcp';
+import type { ManifestProviderResult, Source } from '@storybook/mcp';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
+const STORYBOOK_MCP_PROXY_HEADER_KEY = STORYBOOK_MCP_PROXY_HEADER.toLowerCase();
 
 export const previewAnnotations: PresetPropertyFn<'previewAnnotations'> = async (
 	existingAnnotations = [],
@@ -36,7 +45,11 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 	// Build sources and manifest provider only if refs are configured
 	let sources: Source[] | undefined;
 	let manifestProvider:
-		| ((request: Request | undefined, path: string, source?: Source) => Promise<string>)
+		| ((
+				request: Request | undefined,
+				path: string,
+				source?: Source,
+		  ) => Promise<ManifestProviderResult>)
 		| undefined;
 
 	if (refs.length > 0) {
@@ -67,12 +80,9 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 		res.end(JSON.stringify(wellKnown));
 	});
 
-	const requireAuth = (
-		req: import('node:http').IncomingMessage,
-		res: import('node:http').ServerResponse,
-	): boolean => {
-		const token = extractBearerToken(req.headers['authorization']);
-		if (compositionAuth.requiresAuth && !token) {
+	const requireAuth = (req: IncomingMessage, res: ServerResponse): boolean => {
+		const token = extractBearerToken(req.headers.authorization);
+		if (compositionAuth.requiresAuth && !token && !isLocalStorybookMcpProxyRequest(req)) {
 			res.writeHead(401, {
 				'Content-Type': 'text/plain',
 				'WWW-Authenticate': compositionAuth.buildWwwAuthenticate(origin),
@@ -173,6 +183,17 @@ export const features: PresetPropertyFn<'features'> = async (existingFeatures) =
 		componentsManifest: true,
 	};
 };
+
+function isLocalStorybookMcpProxyRequest(req: IncomingMessage): boolean {
+	return (
+		isStorybookMcpProxyRequest(req.headers[STORYBOOK_MCP_PROXY_HEADER_KEY]) &&
+		isLoopbackAddress(req.socket.remoteAddress)
+	);
+}
+
+function isLoopbackAddress(address: string | undefined): boolean {
+	return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+}
 
 /**
  * Get composed Storybook refs from Storybook config.

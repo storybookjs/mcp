@@ -4,14 +4,17 @@ import type {
 	StorybookInstanceRecordV1,
 } from '../types/index.ts';
 
+const STORYBOOK_MCP_PROXY_HEADER = 'X-Storybook-MCP-Proxy';
+const STORYBOOK_MCP_PROXY_HEADER_VALUE = 'true';
+
 /**
  * Forward an MCP `tools/call` JSON-RPC request to a local Storybook MCP server.
  *
  * The downstream is `@storybook/addon-mcp` over HTTP at `record.mcp.endpoint`.
  * tmcp's HttpTransport hardcodes `text/event-stream` for any request with an
  * id, so we accept both content-types and parse the SSE envelope when needed.
- * The proxy is stdio-fronted and stateless; every call is independent and we
- * don't need session bookkeeping.
+ * The proxy is stateless; every call is independent and we don't need session
+ * bookkeeping.
  */
 export async function proxyToolCall(
 	record: StorybookInstanceRecordV1,
@@ -28,6 +31,7 @@ export async function proxyToolCall(
 		headers: {
 			'Content-Type': 'application/json',
 			Accept: 'application/json, text/event-stream',
+			[STORYBOOK_MCP_PROXY_HEADER]: STORYBOOK_MCP_PROXY_HEADER_VALUE,
 		},
 		body: JSON.stringify({
 			jsonrpc: '2.0',

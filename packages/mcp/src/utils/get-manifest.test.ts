@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getManifests, getMultiSourceManifests, ManifestGetError } from './get-manifest.ts';
-import type { ComponentManifestMap, DocsManifestMap, Source } from '../types.ts';
+import type {
+	ComponentManifestMap,
+	DocsManifestMap,
+	ManifestSourceNotice,
+	Source,
+} from '../types.ts';
 
 global.fetch = vi.fn();
 
@@ -68,8 +73,8 @@ function createFetchMock(responses: { components?: unknown; docs?: unknown }) {
  * Helper to create a manifestProvider mock that returns different responses based on path
  */
 function createManifestProviderMock(responses: {
-	components?: string | Error;
-	docs?: string | Error;
+	components?: string | Error | ManifestSourceNotice;
+	docs?: string | Error | ManifestSourceNotice;
 }) {
 	return vi.fn().mockImplementation((_request: Request | undefined, path: string) => {
 		if (path.includes('components.json')) {
@@ -410,6 +415,48 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 		});
 
+		it('should preserve source notices from manifestProvider', async () => {
+			const request = createMockRequest('https://example.com/mcp');
+			const notice: ManifestSourceNotice = {
+				listText:
+					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
+				detailText: 'Use https://example.com/mcp',
+			};
+			const manifestProvider = createManifestProviderMock({
+				components: notice,
+			});
+
+			await expect(getManifests(request, manifestProvider)).resolves.toBe(notice);
+		});
+
+		it('should preserve fetched component documentation when only the optional docs manifest returns a notice', async () => {
+			const validManifest: ComponentManifestMap = {
+				v: 1,
+				components: {
+					button: {
+						id: 'button',
+						path: 'src/components/Button.tsx',
+						name: 'Button',
+						description: 'A button component',
+					},
+				},
+			};
+			const request = createMockRequest('https://example.com/mcp');
+			const notice: ManifestSourceNotice = {
+				listText:
+					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
+				detailText: 'Use https://example.com/mcp',
+			};
+			const manifestProvider = createManifestProviderMock({
+				components: JSON.stringify(validManifest),
+				docs: notice,
+			});
+
+			await expect(getManifests(request, manifestProvider)).resolves.toEqual({
+				componentManifest: validManifest,
+			});
+		});
+
 		it('should handle invalid JSON from manifestProvider', async () => {
 			const request = createMockRequest('https://example.com/mcp');
 			const manifestProvider = createManifestProviderMock({
@@ -499,6 +546,36 @@ Invalid key: Expected "v" but received undefined]`);
 			expect(results[0]!.error).toBeUndefined();
 			expect(results[0]!.componentManifest).toEqual(localManifest);
 			expect(results[1]!.error).toContain('401 Unauthorized');
+			expect(results[1]!.componentManifest).toEqual({ v: 1, components: {} });
+		});
+
+		it('should capture source notices without marking the source as an error', async () => {
+			const notice: ManifestSourceNotice = {
+				listText:
+					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
+				detailText: 'Use http://remote.example.com/mcp',
+			};
+			const manifestProvider = vi
+				.fn()
+				.mockImplementation((_req: Request | undefined, path: string, source?: Source) => {
+					if (source?.id === 'remote') {
+						return Promise.resolve(notice);
+					}
+					if (path.includes('docs.json')) {
+						return Promise.reject(new Error('Not found'));
+					}
+					return Promise.resolve(JSON.stringify(localManifest));
+				});
+
+			const results = await getMultiSourceManifests(
+				[localSource, remoteSource],
+				undefined,
+				manifestProvider,
+			);
+
+			expect(results[0]!.error).toBeUndefined();
+			expect(results[1]!.error).toBeUndefined();
+			expect(results[1]!.notice).toContain('Use its MCP endpoint');
 			expect(results[1]!.componentManifest).toEqual({ v: 1, components: {} });
 		});
 

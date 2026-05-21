@@ -357,10 +357,16 @@ export function formatMultiSourceManifestsToLists(
 ): string {
 	const parts: string[] = [];
 
-	for (const { source, componentManifest, docsManifest, error } of manifests) {
+	for (const { source, componentManifest, docsManifest, notice, error } of manifests) {
 		parts.push(`# ${source.title}`);
 		parts.push(`id: ${source.id}`);
 		parts.push('');
+
+		if (notice) {
+			parts.push(notice);
+			parts.push('');
+			continue;
+		}
 
 		if (error) {
 			parts.push(`error: ${error}`);

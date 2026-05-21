@@ -7,11 +7,11 @@ settings:
 catalogs:
   default:
     '@storybook/addon-a11y':
-      specifier: 10.5.0-alpha.1
-      version: 10.5.0-alpha.1
+      specifier: 10.5.0-alpha.2
+      version: 10.5.0-alpha.2
     '@storybook/addon-vitest':
-      specifier: 10.5.0-alpha.1
-      version: 10.5.0-alpha.1
+      specifier: 10.5.0-alpha.2
+      version: 10.5.0-alpha.2
     '@tmcp/adapter-valibot':
       specifier: ^0.1.5
       version: 0.1.5
@@ -19,8 +19,8 @@ catalogs:
       specifier: ^0.8.5
       version: 0.8.5
     storybook:
-      specifier: 10.5.0-alpha.1
-      version: 10.5.0-alpha.1
+      specifier: 10.5.0-alpha.2
+      version: 10.5.0-alpha.2
     tmcp:
       specifier: ^1.19.4
       version: 1.19.4
@@ -53,13 +53,13 @@ importers:
     devDependencies:
       '@storybook/addon-a11y':
         specifier: 'catalog:'
-        version: 10.5.0-alpha.1(storybook@10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.5.0-alpha.2(storybook@10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@storybook/addon-vitest':
         specifier: 'catalog:'
-        version: 10.5.0-alpha.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 10.5.0-alpha.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       storybook:
         specifier: 'catalog:'
-        version: 10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
 packages:
 
@@ -490,18 +490,18 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@storybook/addon-a11y@10.5.0-alpha.1':
-    resolution: {integrity: sha512-PnjJgl0wlpH/w7P4hR1znz1exUrAt6A5DKmLRUtoMQ0cjOvckaFcyJs3SoSfQTe5qqseeTkhFoXbb523pSedog==}
+  '@storybook/addon-a11y@10.5.0-alpha.2':
+    resolution: {integrity: sha512-Nw4DwvekQrGJ01lARHTBg+jDWaRo1+nF1XNP60gtKAdvMdo4u8Rk4sOykT3RfyH3KPj5exq8G9d9S+/gWfWblw==}
     peerDependencies:
-      storybook: ^10.5.0-alpha.1
+      storybook: ^10.5.0-alpha.2
 
-  '@storybook/addon-vitest@10.5.0-alpha.1':
-    resolution: {integrity: sha512-mbY8a6wcteNnR9p+09uBIxGklc4Qzf7gk0CsOoGUT5re4Q4V7N7lXXoM94MX5uYEZsyKsrOXfBc4FV/H/wb+sg==}
+  '@storybook/addon-vitest@10.5.0-alpha.2':
+    resolution: {integrity: sha512-agNzDQGXydQVmmAXLN6NkQ6XFo1ONLBLCgcBBoBpKfPZk27EiYxDJNfAilky5cPv/4+jZQL5veZtdkSdKSK2Ag==}
     peerDependencies:
       '@vitest/browser': ^3.0.0 || ^4.0.0
       '@vitest/browser-playwright': ^4.0.0
       '@vitest/runner': ^3.0.0 || ^4.0.0
-      storybook: ^10.5.0-alpha.1
+      storybook: ^10.5.0-alpha.2
       vitest: ^3.0.0 || ^4.0.0
     peerDependenciesMeta:
       '@vitest/browser':
@@ -768,8 +768,8 @@ packages:
   sqids@0.3.0:
     resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
 
-  storybook@10.5.0-alpha.1:
-    resolution: {integrity: sha512-5iTRa0fS1YLF14ZqiePabiCrLp6AnEvF1EiFLjhvXLWH7AUZTxd6BrUXAqD11Ql0R0gPGhST8GSrXknG6kvfEA==}
+  storybook@10.5.0-alpha.2:
+    resolution: {integrity: sha512-bxdnOntnglD9loavf1AGELgo36QvIpBFEkypHBHmEEausSZkdyxSHZ4QlC1CTv+5oeg8B7CEo9sGq6JGgIuZzw==}
     hasBin: true
     peerDependencies:
       '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -1084,17 +1084,17 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/addon-a11y@10.5.0-alpha.1(storybook@10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-a11y@10.5.0-alpha.2(storybook@10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       axe-core: 4.11.1
-      storybook: 10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  '@storybook/addon-vitest@10.5.0-alpha.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@storybook/addon-vitest@10.5.0-alpha.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(storybook@10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      storybook: 10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      storybook: 10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -1397,7 +1397,7 @@ snapshots:
 
   sqids@0.3.0: {}
 
-  storybook@10.5.0-alpha.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  storybook@10.5.0-alpha.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.0.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

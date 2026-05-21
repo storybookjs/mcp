@@ -1,5 +1,59 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CompositionAuth, extractBearerToken } from './composition-auth.ts';
+import { isManifestSourceNotice } from '@storybook/mcp';
+import {
+	CompositionAuth,
+	extractBearerToken,
+	isStorybookMcpProxyRequest,
+} from './composition-auth.ts';
+
+const remoteRef = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
+const chromaticRef = {
+	id: 'chromatic',
+	title: 'Chromatic',
+	url: 'https://main--abc.chromatic.com',
+};
+
+function stubRemoteAuthDiscovery() {
+	vi.stubGlobal(
+		'fetch',
+		vi
+			.fn()
+			.mockResolvedValueOnce({
+				ok: false,
+				status: 401,
+				headers: new Headers({
+					'WWW-Authenticate':
+						'Bearer resource_metadata="http://remote.example.com/.well-known/oauth-protected-resource"',
+				}),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						resource: 'http://remote.example.com/mcp',
+						authorization_servers: ['http://auth.example.com'],
+					}),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						issuer: 'http://auth.example.com',
+						authorization_endpoint: 'http://auth.example.com/authorize',
+						token_endpoint: 'http://auth.example.com/token',
+					}),
+			}),
+	);
+}
+
+function expectRemoteSourceNotice(result: unknown) {
+	expect(isManifestSourceNotice(result)).toBe(true);
+	expect(result).toMatchObject({
+		listText:
+			'This composed Storybook requires authentication. Use its MCP endpoint: http://remote.example.com/mcp',
+		detailText: expect.stringContaining('register or use its MCP endpoint'),
+	});
+}
 
 describe('CompositionAuth', () => {
 	beforeEach(() => {
@@ -33,6 +87,16 @@ describe('CompositionAuth', () => {
 
 		it('returns null for array without Bearer', () => {
 			expect(extractBearerToken(['Basic xyz'])).toBeNull();
+		});
+	});
+
+	describe('isStorybookMcpProxyRequest', () => {
+		it('detects proxy marker header values', () => {
+			expect(isStorybookMcpProxyRequest('true')).toBe(true);
+			expect(isStorybookMcpProxyRequest('TRUE')).toBe(true);
+			expect(isStorybookMcpProxyRequest(['false', 'true'])).toBe(true);
+			expect(isStorybookMcpProxyRequest(undefined)).toBe(false);
+			expect(isStorybookMcpProxyRequest('1')).toBe(false);
 		});
 	});
 
@@ -145,6 +209,20 @@ describe('CompositionAuth', () => {
 			expect(sources).toHaveLength(2);
 			expect(sources.map((s) => s.id)).toEqual(['local', 'ref-a']);
 		});
+
+		it('keeps refs with inconclusive startup probes in the source list', async () => {
+			const auth = new CompositionAuth();
+			vi.spyOn(console, 'warn').mockImplementation(() => {});
+			vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network timeout')));
+
+			await auth.initialize([{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' }]);
+			const sources = auth.buildSources();
+
+			expect(sources).toEqual([
+				{ id: 'local', title: 'Local' },
+				{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' },
+			]);
+		});
 	});
 
 	describe('createManifestProvider', () => {
@@ -198,7 +276,104 @@ describe('CompositionAuth', () => {
 		it('extracts token from request headers for auth-required sources', async () => {
 			const auth = new CompositionAuth();
 
-			// Initialize with a ref that requires auth (401 → resource metadata → server metadata)
+			stubRemoteAuthDiscovery();
+			await auth.initialize([remoteRef]);
+
+			const mockFetch = vi.fn().mockResolvedValue({
+				ok: true,
+				text: () => Promise.resolve('{"v":1,"components":{}}'),
+			});
+			vi.stubGlobal('fetch', mockFetch);
+
+			const provider = auth.createManifestProvider('http://localhost:6006');
+
+			const request = new Request('http://localhost:6006/mcp', {
+				headers: { Authorization: 'Bearer test-token-123' },
+			});
+
+			await provider(request, './manifests/components.json', remoteRef);
+
+			expect(mockFetch).toHaveBeenCalledWith(
+				'http://remote.example.com/manifests/components.json',
+				expect.objectContaining({
+					headers: expect.objectContaining({
+						Authorization: 'Bearer test-token-123',
+					}),
+				}),
+			);
+		});
+
+		it('returns a source notice for private refs requested through the Storybook MCP proxy', async () => {
+			const auth = new CompositionAuth();
+
+			stubRemoteAuthDiscovery();
+			await auth.initialize([remoteRef]);
+
+			const mockFetch = vi.fn();
+			vi.stubGlobal('fetch', mockFetch);
+
+			const provider = auth.createManifestProvider('http://localhost:6006');
+			const request = new Request('http://localhost:6006/mcp', {
+				headers: { 'X-Storybook-MCP-Proxy': 'true' },
+			});
+
+			const result = await provider(request, './manifests/components.json', remoteRef);
+			expectRemoteSourceNotice(result);
+			expect(mockFetch).not.toHaveBeenCalled();
+		});
+
+		it('uses Chromatic-specific wording for private Chromatic refs', async () => {
+			const auth = new CompositionAuth();
+			const mockFetch = vi.fn().mockResolvedValue({
+				ok: false,
+				status: 401,
+			});
+			vi.stubGlobal('fetch', mockFetch);
+
+			const provider = auth.createManifestProvider('http://localhost:6006');
+			const request = new Request('http://localhost:6006/mcp', {
+				headers: { 'X-Storybook-MCP-Proxy': 'true' },
+			});
+
+			const result = await provider(request, './manifests/components.json', chromaticRef);
+
+			expect(isManifestSourceNotice(result)).toBe(true);
+			expect(result).toMatchObject({
+				listText:
+					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://main--abc.chromatic.com/mcp',
+				detailText: expect.stringContaining('requires Chromatic authentication'),
+			});
+		});
+
+		it('returns a source notice for proxy requests when auth is discovered while fetching', async () => {
+			const auth = new CompositionAuth();
+			const mockFetch = vi.fn().mockResolvedValue({
+				ok: false,
+				status: 401,
+			});
+			vi.stubGlobal('fetch', mockFetch);
+
+			const provider = auth.createManifestProvider('http://localhost:6006');
+			const request = new Request('http://localhost:6006/mcp', {
+				headers: { 'X-Storybook-MCP-Proxy': 'true' },
+			});
+
+			const result = await provider(request, './manifests/components.json', remoteRef);
+
+			expectRemoteSourceNotice(result);
+			expect(auth.hadAuthError(request)).toBe(false);
+		});
+
+		it('records OAuth metadata when auth is discovered after an inconclusive startup probe', async () => {
+			const auth = new CompositionAuth();
+			vi.spyOn(console, 'warn').mockImplementation(() => {});
+			vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network timeout')));
+
+			await auth.initialize([remoteRef]);
+
+			expect(auth.requiresAuth).toBe(false);
+			expect(auth.buildWellKnown('http://localhost:6006')).toBeNull();
+
 			vi.stubGlobal(
 				'fetch',
 				vi
@@ -217,6 +392,7 @@ describe('CompositionAuth', () => {
 							Promise.resolve({
 								resource: 'http://remote.example.com/mcp',
 								authorization_servers: ['http://auth.example.com'],
+								scopes_supported: ['storybook:read'],
 							}),
 					})
 					.mockResolvedValueOnce({
@@ -230,9 +406,29 @@ describe('CompositionAuth', () => {
 					}),
 			);
 
-			await auth.initialize([{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' }]);
+			const provider = auth.createManifestProvider('http://localhost:6006');
+			const request = new Request('http://localhost:6006/mcp');
 
-			// Now set up mock for manifest fetching
+			await expect(provider(request, './manifests/components.json', remoteRef)).rejects.toThrow(
+				'Authentication failed',
+			);
+
+			expect(auth.requiresAuth).toBe(true);
+			expect(auth.authUrls).toContain('http://remote.example.com');
+			expect(auth.hadAuthError(request)).toBe(true);
+			expect(auth.buildWellKnown('http://localhost:6006')).toEqual({
+				resource: 'http://localhost:6006/mcp',
+				authorization_servers: ['http://auth.example.com'],
+				scopes_supported: ['storybook:read'],
+			});
+		});
+
+		it('does not serve cached private manifests to Storybook MCP proxy requests', async () => {
+			const auth = new CompositionAuth();
+
+			stubRemoteAuthDiscovery();
+			await auth.initialize([remoteRef]);
+
 			const mockFetch = vi.fn().mockResolvedValue({
 				ok: true,
 				text: () => Promise.resolve('{"v":1,"components":{}}'),
@@ -240,22 +436,24 @@ describe('CompositionAuth', () => {
 			vi.stubGlobal('fetch', mockFetch);
 
 			const provider = auth.createManifestProvider('http://localhost:6006');
-
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { Authorization: 'Bearer test-token-123' },
-			});
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			await provider(request, './manifests/components.json', source);
-
-			expect(mockFetch).toHaveBeenCalledWith(
-				'http://remote.example.com/manifests/components.json',
-				expect.objectContaining({
-					headers: expect.objectContaining({
-						Authorization: 'Bearer test-token-123',
-					}),
+			await provider(
+				new Request('http://localhost:6006/mcp', {
+					headers: { Authorization: 'Bearer test-token-123' },
 				}),
+				'./manifests/components.json',
+				remoteRef,
 			);
+
+			const result = await provider(
+				new Request('http://localhost:6006/mcp', {
+					headers: { 'X-Storybook-MCP-Proxy': 'true' },
+				}),
+				'./manifests/components.json',
+				remoteRef,
+			);
+			expectRemoteSourceNotice(result);
+
+			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
 	});
 

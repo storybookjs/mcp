@@ -245,6 +245,45 @@ describe('listAllDocumentationTool', () => {
 
 			getMultiSourceManifestsSpy.mockRestore();
 		});
+
+		it('should show notices for sources that should be accessed through another MCP endpoint', async () => {
+			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
+			getMultiSourceManifestsSpy.mockResolvedValue([
+				{
+					source: sources[0]!,
+					componentManifest: smallManifestFixture,
+				},
+				{
+					source: sources[1]!,
+					componentManifest: { v: 1, components: {} },
+					notice:
+						'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
+				},
+			]);
+
+			const request = {
+				jsonrpc: '2.0' as const,
+				id: 1,
+				method: 'tools/call',
+				params: {
+					name: LIST_TOOL_NAME,
+					arguments: {},
+				},
+			};
+
+			const mockHttpRequest = new Request('https://example.com/mcp');
+			const response = await server.receive(request, {
+				custom: { request: mockHttpRequest, sources },
+			});
+
+			const text = (response.result as any).content[0].text;
+			expect(text).toContain('# Remote');
+			expect(text).toContain('id: remote');
+			expect(text).toContain('Use its MCP endpoint: http://remote.example.com/mcp');
+			expect(text).not.toContain('error:');
+
+			getMultiSourceManifestsSpy.mockRestore();
+		});
 	});
 
 	it('should handle fetch errors gracefully', async () => {
