@@ -33,13 +33,13 @@ npx -y https://pkg.pr.new/storybookjs/mcp/@storybook/mcp-proxy@main
 
 ```json
 {
-  "mcpServers": {
-    "storybook": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@storybook/mcp-proxy"]
-    }
-  }
+	"mcpServers": {
+		"storybook": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "@storybook/mcp-proxy"]
+		}
+	}
 }
 ```
 
@@ -55,14 +55,14 @@ Every proxied tool requires a `cwd` argument: the **absolute** path of the Story
 
 The proxy never silently fails. When it can't forward a call, it returns an `isError: true` result whose `_meta` carries one of:
 
-| Reason | Meaning |
-| --- | --- |
-| `invalid-cwd` | The supplied `cwd` was not an absolute path. |
-| `no-instance` | No Storybook is running at the requested `cwd`. Lists other running cwds as candidates when present. |
-| `multiple-matches` | Two or more records share the same `cwd` (degenerate registry state). |
-| `mcp-starting` | A Storybook is registered there but its MCP endpoint hasn't come up yet. |
-| `addon-missing` | The matching Storybook does not have `@storybook/addon-mcp` installed. |
-| `mcp-error` | The addon registered an error status for its MCP endpoint. |
+| Reason             | Meaning                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| `invalid-cwd`      | The supplied `cwd` was not an absolute path.                                                         |
+| `no-instance`      | No Storybook is running at the requested `cwd`. Lists other running cwds as candidates when present. |
+| `multiple-matches` | Two or more records share the same `cwd` (degenerate registry state).                                |
+| `mcp-starting`     | A Storybook is registered there but its MCP endpoint hasn't come up yet.                             |
+| `addon-missing`    | The matching Storybook does not have `@storybook/addon-mcp` installed.                               |
+| `mcp-error`        | The addon registered an error status for its MCP endpoint.                                           |
 
 ## Proxied tools
 
@@ -82,7 +82,7 @@ The proxy registers the seven Storybook tools exposed by `@storybook/addon-mcp`,
 import { createMcpProxyServer } from '@storybook/mcp-proxy';
 
 const server = await createMcpProxyServer({
-  registryDir: '/custom/registry/dir', // optional
+	registryDir: '/custom/registry/dir', // optional
 });
 ```
 
@@ -90,9 +90,9 @@ const server = await createMcpProxyServer({
 
 ## Scripts
 
-| Command | What it does |
-| --- | --- |
-| `pnpm build` | Bundle `bin.ts` and `src/index.ts` with `tsdown`. |
-| `pnpm test` | Run vitest from the repo root, scoped to this package. |
-| `pnpm typecheck` | `tsc --noEmit`. |
-| `pnpm inspect` | Launch the MCP Inspector against the proxy. |
+| Command          | What it does                                           |
+| ---------------- | ------------------------------------------------------ |
+| `pnpm build`     | Bundle `bin.ts` and `src/index.ts` with `tsdown`.      |
+| `pnpm test`      | Run vitest from the repo root, scoped to this package. |
+| `pnpm typecheck` | `tsc --noEmit`.                                        |
+| `pnpm inspect`   | Launch the MCP Inspector against the proxy.            |
