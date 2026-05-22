@@ -8,9 +8,30 @@ describe('intercepts', () => {
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
 		['invalid-cwd', 'absolute path'],
-		['storybook-needs-upgrade', 'too old'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
+	});
+
+	it('no-instance tells the agent to verify and offer upgrade if the user thinks Storybook is running', () => {
+		// Old Storybooks don't write to the instance registry, so they surface as
+		// `no-instance` even when running. Both message paths (empty + with
+		// candidates) must carry the verify/upgrade hint.
+		const empty = getInterceptMarkdown('no-instance');
+		const withCandidates = getInterceptMarkdown('no-instance', [
+			{
+				schemaVersion: 1,
+				instanceId: 'a',
+				pid: 1,
+				cwd: '/a',
+				url: 'http://localhost:6006',
+				port: 6006,
+				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+			},
+		]);
+		for (const md of [empty, withCandidates]) {
+			expect(md).toContain('verify the installed Storybook version');
+			expect(md).toContain('upgrade');
+		}
 	});
 
 	it('no-instance lists running candidates when any are provided', () => {
@@ -28,28 +49,6 @@ describe('intercepts', () => {
 		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
-	});
-
-	it('storybook-needs-upgrade surfaces the detected version and tells the agent to upgrade first', () => {
-		const md = getInterceptMarkdown('storybook-needs-upgrade', [
-			{
-				schemaVersion: 1,
-				instanceId: 'a',
-				pid: 1,
-				cwd: '/p',
-				url: 'http://localhost:6006',
-				port: 6006,
-				storybookVersion: '8.6.0',
-				mcp: { status: 'not-installed' },
-			},
-		]);
-		expect(md).toContain('too old');
-		expect(md).toContain('Ask the user to upgrade Storybook');
-		expect(md).toContain('8.6.0');
-		expect(md).toContain('9.1.16');
-		expect(md).toContain('npx storybook upgrade');
-		expect(md).toContain('npx storybook add @storybook/addon-mcp');
-		expect(md).toContain('storybook:storybook-upgrade');
 	});
 
 	it('multiple-matches lists conflicting pids', () => {

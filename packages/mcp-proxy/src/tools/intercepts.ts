@@ -1,5 +1,4 @@
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
-import { MIN_SUPPORTED_STORYBOOK_VERSION } from '../utils/resolve-instance.ts';
 
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /
@@ -8,13 +7,19 @@ import { MIN_SUPPORTED_STORYBOOK_VERSION } from '../utils/resolve-instance.ts';
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.`;
+const OLD_STORYBOOK_HINT = `If the user thinks Storybook is already running, verify the installed Storybook version yourself (e.g. read the project's \`package.json\`) and offer to upgrade if needed. Storybook versions prior to 9.1.16 do not support MCP and will not work with the proxy tool.`;
+
+const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.
+
+${OLD_STORYBOOK_HINT}`;
 
 const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
 	`No Storybook is running at this cwd. Either start \`storybook dev\` from the project's cwd, or retry with one of the running cwds below.
 
 Running Storybooks:
-${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
+${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}
+
+${OLD_STORYBOOK_HINT}`;
 
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
@@ -30,22 +35,6 @@ const MCP_STARTING = `Storybook is running but its MCP server is still starting 
 const MCP_ERROR = `Storybook is running but its MCP server reported an error. Inspect the Storybook terminal output, fix the underlying issue, then retry the tool call.`;
 
 const INVALID_CWD = `\`cwd\` must be an absolute path matching the cwd from which \`storybook dev\` was started. Resolve the path on the client side (e.g. with \`path.resolve\`) and retry the tool call.`;
-
-const buildStorybookNeedsUpgrade = (records: StorybookInstanceRecordV1[]) =>
-	`The running Storybook is too old to support \`@storybook/addon-mcp\`. Ask the user to upgrade Storybook first; the MCP tools cannot proxy to this instance until they do.
-
-- Detected Storybook version: \`${records[0]?.storybookVersion ?? 'unknown'}\`
-- Minimum supported: \`${MIN_SUPPORTED_STORYBOOK_VERSION}\` (or any 10.x)
-
-If the \`storybook:storybook-upgrade\` skill is available, invoke it. Otherwise upgrade manually:
-\`\`\`
-npx storybook upgrade
-\`\`\`
-
-Then install the addon and restart \`storybook dev\`:
-\`\`\`
-npx storybook add @storybook/addon-mcp
-\`\`\``;
 
 const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 	`Multiple Storybook processes are registered at the same cwd. Stop all but one and retry.
@@ -72,8 +61,6 @@ export function getInterceptMarkdown(
 			return buildMultipleMatches(records ?? []);
 		case 'invalid-cwd':
 			return INVALID_CWD;
-		case 'storybook-needs-upgrade':
-			return buildStorybookNeedsUpgrade(records ?? []);
 	}
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { storybookNeedsUpgrade, resolveInstance } from './resolve-instance.ts';
+import { resolveInstance } from './resolve-instance.ts';
 import type { McpStatusV1, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 let nextInstance = 0;
@@ -102,51 +102,5 @@ describe('resolveInstance', () => {
 		const r = record('/p', 'error');
 		const result = resolveInstance([r], '/p');
 		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error' });
-	});
-
-	it('dispatches storybook-needs-upgrade before status when storybookVersion is below the floor', () => {
-		// `not-installed` would normally surface `addon-missing`; the version
-		// gate must override so we don't tell the user to install an addon that
-		// is incompatible with their Storybook.
-		const r = record('/p', 'not-installed', { storybookVersion: '8.6.0' });
-		const result = resolveInstance([r], '/p');
-		expect(result).toEqual({ kind: 'intercept', reason: 'storybook-needs-upgrade', records: [r] });
-	});
-
-	it('still gates a `ready` instance when its storybookVersion is too old', () => {
-		const r = record('/p', 'ready', { storybookVersion: '9.0.0' });
-		const result = resolveInstance([r], '/p');
-		expect(result.kind).toBe('intercept');
-		if (result.kind === 'intercept') {
-			expect(result.reason).toBe('storybook-needs-upgrade');
-		}
-	});
-
-	it('does not gate when storybookVersion is missing (older proxies)', () => {
-		const r = record('/p', 'ready', { storybookVersion: undefined });
-		const result = resolveInstance([r], '/p');
-		expect(result).toEqual({ kind: 'instance', record: r });
-	});
-});
-
-describe('storybookNeedsUpgrade', () => {
-	it.each([
-		['8.6.0', true],
-		['9.0.0', true],
-		['9.1.15', true],
-		['9.1.16', false],
-		['9.1.17', false],
-		['9.2.0', false],
-		['10.0.0', false],
-		['10.1.0-alpha.0', false],
-		// Unparseable strings are treated as unknown → not too old.
-		['', false],
-		['unknown', false],
-	] as const)('%s → %s', (version, expected) => {
-		expect(storybookNeedsUpgrade(version)).toBe(expected);
-	});
-
-	it('returns false for undefined (no metadata)', () => {
-		expect(storybookNeedsUpgrade(undefined)).toBe(false);
 	});
 });

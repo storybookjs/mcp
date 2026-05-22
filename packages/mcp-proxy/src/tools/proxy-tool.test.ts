@@ -155,18 +155,6 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'addon-missing' });
 	});
 
-	it('dispatches a too-old storybookVersion to the storybook-needs-upgrade intercept', async () => {
-		vi.mocked(readRegistry).mockResolvedValue([
-			{ ...record, storybookVersion: '8.6.0', mcp: { status: 'not-installed' } },
-		]);
-		const server = await buildServer();
-		const response = await callTool(server, { cwd: '/projects/foo' });
-		expect(response.result.isError).toBe(true);
-		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'storybook-needs-upgrade' });
-		expect(firstText(response.result)).toContain('8.6.0');
-		expect(firstText(response.result)).toContain('npx storybook upgrade');
-	});
-
 	it('dispatches mcp.status=error to the mcp-error intercept', async () => {
 		vi.mocked(readRegistry).mockResolvedValue([
 			{ ...record, mcp: { status: 'error', endpoint: 'http://localhost:6006/mcp' } },
