@@ -121,6 +121,8 @@ type McpServerHandlerParams = {
 	) => Promise<string>;
 	/** Composition auth handler for multi-source mode */
 	compositionAuth: CompositionAuth;
+	/** True when the Node request was verified as local Storybook MCP proxy traffic. */
+	trustedProxyRequest?: boolean;
 };
 
 export const mcpServerHandler = async ({
@@ -131,6 +133,7 @@ export const mcpServerHandler = async ({
 	sources,
 	manifestProvider,
 	compositionAuth,
+	trustedProxyRequest,
 }: McpServerHandlerParams) => {
 	// Initialize MCP server and transport on first request, with concurrency safety
 	if (!initialize) {
@@ -143,6 +146,9 @@ export const mcpServerHandler = async ({
 
 	// Convert Node.js request to Web API Request
 	const webRequest = await incomingMessageToWebRequest(req);
+	if (trustedProxyRequest) {
+		compositionAuth.markTrustedProxyRequest(webRequest);
+	}
 
 	const addonContext: AddonContext = {
 		options,

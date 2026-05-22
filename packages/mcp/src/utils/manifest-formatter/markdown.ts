@@ -395,7 +395,7 @@ export function formatMultiSourceManifestsToLists(
 				parts.push('');
 				break;
 			default:
-				assertNever(sourceResult);
+				assertNeverSourceResult(sourceResult);
 		}
 	}
 
@@ -409,12 +409,16 @@ function formatSourceError(error: Extract<SourceManifests, { kind: 'error' }>['e
 		case 'fetch-failed':
 			return `error: ${error.message}`;
 		default:
-			return assertNever(error);
+			return assertNeverSourceError(error);
 	}
 }
 
-function assertNever(value: never): never {
+function assertNeverSourceResult(value: never): never {
 	throw new Error(`Unhandled source manifest result: ${JSON.stringify(value)}`);
+}
+
+function assertNeverSourceError(value: never): never {
+	throw new Error(`Unhandled source manifest failure: ${JSON.stringify(value)}`);
 }
 
 /**

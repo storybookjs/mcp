@@ -74,10 +74,13 @@ const sourceManifestFailureToMCPContent = (failure: SourceManifestFailure): MCPT
 };
 
 /**
- * Converts an error to MCP-compatible content format
+ * Converts an error to MCP-compatible content format.
+ *
+ * Source-level private-auth failures return guidance content without `isError`;
+ * all other failures return error content with `isError`.
  *
  * @param error - The error to convert (can be any type)
- * @returns A tool result with error content and isError flag
+ * @returns A tool result with guidance or error content
  */
 export const errorToMCPContent = (error: unknown): MCPTextResult => {
 	if (error instanceof SourceManifestError) {

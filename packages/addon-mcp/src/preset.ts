@@ -100,6 +100,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 			sources,
 			manifestProvider,
 			compositionAuth,
+			trustedProxyRequest: isLocalStorybookMcpProxyRequest(req),
 		});
 	});
 
@@ -123,6 +124,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 				sources,
 				manifestProvider,
 				compositionAuth,
+				trustedProxyRequest: isLocalStorybookMcpProxyRequest(req),
 			});
 		}
 

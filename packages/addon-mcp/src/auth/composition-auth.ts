@@ -82,6 +82,7 @@ export class CompositionAuth {
 	#manifestCache = new Map<string, CacheEntry>();
 	#lastToken: string | null = null;
 	#authErrors = new WeakMap<Request, AuthenticationError>();
+	#trustedProxyRequests = new WeakSet<Request>();
 
 	/** Initialize by checking which refs require authentication and have manifests. */
 	async initialize(refs: ComposedRef[]): Promise<void> {
@@ -115,6 +116,11 @@ export class CompositionAuth {
 	/** Check if a request encountered an auth error during manifest fetching. */
 	hadAuthError(request: Request): boolean {
 		return this.#authErrors.has(request);
+	}
+
+	/** Mark a request as coming from the local Storybook MCP proxy. */
+	markTrustedProxyRequest(request: Request): void {
+		this.#trustedProxyRequests.add(request);
 	}
 
 	/** Check if a URL requires authentication based on discovered auth requirements. */
@@ -176,9 +182,7 @@ export class CompositionAuth {
 			const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 			const isRemote = !!remoteSource;
 			const needsAuth = isRemote && this.#isAuthRequiredUrl(baseUrl);
-			const isProxyRequest = isStorybookMcpProxyRequest(
-				request?.headers.get(STORYBOOK_MCP_PROXY_HEADER),
-			);
+			const isProxyRequest = !!request && this.#trustedProxyRequests.has(request);
 			const tokenForRequest = needsAuth ? token : null;
 
 			if (needsAuth && !token && isProxyRequest && remoteSource) {
@@ -255,7 +259,7 @@ export class CompositionAuth {
 		if (response.status === 401) {
 			const authRequirement =
 				(await this.#parseAuthFromResponse(response)) ??
-				(await this.#tryCheckMcpAuth(new URL(url).origin)).authRequirement;
+				(await this.#tryCheckMcpAuth(getStorybookUrlFromManifestUrl(url))).authRequirement;
 			throw new AuthenticationError(url, authRequirement);
 		}
 
@@ -271,7 +275,7 @@ export class CompositionAuth {
 		}
 
 		// Invalid manifest — check /mcp to see if it's an auth issue
-		const mcpAuth = await this.#tryCheckMcpAuth(new URL(url).origin);
+		const mcpAuth = await this.#tryCheckMcpAuth(getStorybookUrlFromManifestUrl(url));
 		if (mcpAuth.unauthorized) {
 			throw new AuthenticationError(url, mcpAuth.authRequirement);
 		}
@@ -322,9 +326,9 @@ export class CompositionAuth {
 	}
 
 	/** Best-effort /mcp auth check for request-time discovery. */
-	async #tryCheckMcpAuth(origin: string): Promise<McpAuthCheck> {
+	async #tryCheckMcpAuth(storybookUrl: string): Promise<McpAuthCheck> {
 		try {
-			const response = await fetch(`${origin}/mcp`, {
+			const response = await fetch(`${storybookUrl}/mcp`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
@@ -403,6 +407,14 @@ function isChromaticUrl(url: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function getStorybookUrlFromManifestUrl(manifestUrl: string): string {
+	const url = new URL(manifestUrl);
+	url.pathname = url.pathname.replace(/\/manifests\/(?:components|docs)\.json$/, '');
+	url.search = '';
+	url.hash = '';
+	return url.toString().replace(/\/$/, '');
 }
 
 function createRequiresOwnMcpError(source: RemoteSource): SourceManifestError {

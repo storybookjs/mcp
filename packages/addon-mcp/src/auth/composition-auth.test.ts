@@ -63,6 +63,12 @@ function createProxyRequest(): Request {
 	});
 }
 
+function createTrustedProxyRequest(auth: CompositionAuth): Request {
+	const request = createProxyRequest();
+	auth.markTrustedProxyRequest(request);
+	return request;
+}
+
 describe('CompositionAuth', () => {
 	beforeEach(() => {
 		vi.restoreAllMocks();
@@ -309,9 +315,40 @@ describe('CompositionAuth', () => {
 
 			const provider = auth.createManifestProvider('http://localhost:6006');
 			await expectRemoteSourceError(
-				provider(createProxyRequest(), './manifests/components.json', remoteRef),
+				provider(createTrustedProxyRequest(auth), './manifests/components.json', remoteRef),
 			);
 			expect(mockFetch).not.toHaveBeenCalled();
+		});
+
+		it('does not trust proxy marker headers unless the server marks the request as trusted', async () => {
+			const auth = new CompositionAuth();
+
+			stubRemoteAuthDiscovery();
+			await auth.initialize([remoteRef]);
+
+			vi.stubGlobal(
+				'fetch',
+				vi
+					.fn()
+					.mockResolvedValueOnce({
+						ok: false,
+						status: 401,
+						headers: new Headers(),
+					})
+					.mockResolvedValueOnce({
+						ok: false,
+						status: 401,
+						headers: new Headers(),
+					}),
+			);
+
+			const provider = auth.createManifestProvider('http://localhost:6006');
+			const request = createProxyRequest();
+
+			await expect(provider(request, './manifests/components.json', remoteRef)).rejects.toThrow(
+				'Authentication failed',
+			);
+			expect(auth.hadAuthError(request)).toBe(true);
 		});
 
 		it('uses Chromatic-specific wording for private Chromatic refs', async () => {
@@ -323,7 +360,7 @@ describe('CompositionAuth', () => {
 			vi.stubGlobal('fetch', mockFetch);
 
 			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = createProxyRequest();
+			const request = createTrustedProxyRequest(auth);
 
 			await expect(
 				provider(request, './manifests/components.json', chromaticRef),
@@ -421,7 +458,7 @@ describe('CompositionAuth', () => {
 			);
 
 			await expectRemoteSourceError(
-				provider(createProxyRequest(), './manifests/components.json', remoteRef),
+				provider(createTrustedProxyRequest(auth), './manifests/components.json', remoteRef),
 			);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -517,6 +554,37 @@ describe('CompositionAuth', () => {
 
 			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
 				'Authentication failed',
+			);
+		});
+
+		it('checks the source /mcp endpoint without dropping a composed ref base path', async () => {
+			const auth = new CompositionAuth();
+			const mockFetch = vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: true,
+					text: () => Promise.resolve('{"some":"unexpected"}'),
+				})
+				.mockResolvedValueOnce({
+					status: 401,
+				});
+			vi.stubGlobal('fetch', mockFetch);
+
+			const provider = auth.createManifestProvider('http://localhost:6006');
+			const request = new Request('http://localhost:6006/mcp');
+			const source = {
+				id: 'remote',
+				title: 'Remote',
+				url: 'https://host.example.com/storybook',
+			};
+
+			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
+				'Authentication failed',
+			);
+			expect(mockFetch).toHaveBeenNthCalledWith(
+				2,
+				'https://host.example.com/storybook/mcp',
+				expect.any(Object),
 			);
 		});
 
