@@ -43,7 +43,11 @@
 	"dependencies": {
 		"@tmcp/adapter-valibot": "catalog:",
 		"@tmcp/transport-stdio": "catalog:",
+		"semver": "^7.7.3",
 		"tmcp": "catalog:",
 		"valibot": "catalog:"
+	},
+	"devDependencies": {
+		"@types/semver": "^7.7.1"
 	}
 }

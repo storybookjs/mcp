@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { lt, valid } from 'semver';
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 export type ResolveResult =
@@ -6,11 +7,25 @@ export type ResolveResult =
 	| { kind: 'intercept'; reason: InterceptReason; records?: StorybookInstanceRecordV1[] };
 
 /**
+ * Minimum Storybook version that ships a compatible `@storybook/addon-mcp`.
+ * 
+ * @see packages/addon-mcp/packages.json `peerDependencies`
+ */
+export const MIN_SUPPORTED_STORYBOOK_VERSION = '9.1.16';
+
+export function storybookNeedsUpgrade(version: string | undefined): boolean {
+	const parsed = version ? valid(version) : null;
+	if (!parsed) return false;
+	return lt(parsed, MIN_SUPPORTED_STORYBOOK_VERSION);
+}
+
+/**
  * Pick the Storybook instance whose cwd exactly matches `targetCwd` after
  * normalisation. Per milestone 2 of storybookjs/storybook#34826: matching is
  * exact-normalized, with no longest-prefix or fallback behaviour.
  *
- * If a single record matches, dispatch based on `mcp.status`:
+ * If a single record matches, the version gate runs first (an out-of-date
+ * Storybook preempts every status), then dispatch based on `mcp.status`:
  *   - ready          → proxy
  *   - starting       → mcp-starting intercept
  *   - not-installed  → addon-missing intercept
@@ -33,6 +48,10 @@ export function resolveInstance(
 		return { kind: 'intercept', reason: 'multiple-matches', records: matches };
 	}
 	const record = matches[0]!;
+
+	if (storybookNeedsUpgrade(record.storybookVersion)) {
+		return { kind: 'intercept', reason: 'storybook-needs-upgrade', records: [record] };
+	}
 	switch (record.mcp.status) {
 		case 'ready':
 			return { kind: 'instance', record };

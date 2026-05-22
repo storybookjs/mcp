@@ -8,6 +8,7 @@ describe('intercepts', () => {
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
 		['invalid-cwd', 'absolute path'],
+		['storybook-needs-upgrade', 'too old'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
@@ -27,6 +28,28 @@ describe('intercepts', () => {
 		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
+	});
+
+	it('storybook-needs-upgrade surfaces the detected version and tells the agent to upgrade first', () => {
+		const md = getInterceptMarkdown('storybook-needs-upgrade', [
+			{
+				schemaVersion: 1,
+				instanceId: 'a',
+				pid: 1,
+				cwd: '/p',
+				url: 'http://localhost:6006',
+				port: 6006,
+				storybookVersion: '8.6.0',
+				mcp: { status: 'not-installed' },
+			},
+		]);
+		expect(md).toContain('too old');
+		expect(md).toContain('Ask the user to upgrade Storybook');
+		expect(md).toContain('8.6.0');
+		expect(md).toContain('9.1.16');
+		expect(md).toContain('npx storybook upgrade');
+		expect(md).toContain('npx storybook add @storybook/addon-mcp');
+		expect(md).toContain('storybook:storybook-upgrade');
 	});
 
 	it('multiple-matches lists conflicting pids', () => {
