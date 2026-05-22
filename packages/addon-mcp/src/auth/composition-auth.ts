@@ -419,23 +419,15 @@ function getStorybookUrlFromManifestUrl(manifestUrl: string): string {
 
 function createRequiresOwnMcpError(source: RemoteSource): SourceManifestError {
 	const mcpEndpoint = `${source.url.replace(/\/$/, '')}/mcp`;
-	const isChromatic = isChromaticUrl(source.url);
-	const authMessage = isChromatic
-		? 'This composed Storybook is private and requires Chromatic authentication.'
-		: 'This composed Storybook requires authentication.';
 
-	return new SourceManifestError({
-		kind: 'requires-own-mcp',
-		endpoint: mcpEndpoint,
-		authProvider: isChromatic ? 'chromatic' : 'unknown',
-		message: `${authMessage} Use its MCP endpoint: ${mcpEndpoint}`,
-		detailText: `# ${source.title}
-
-${authMessage}
-
-To access documentation from this source, register or use its MCP endpoint:
-${mcpEndpoint}`,
-	});
+	return new SourceManifestError(
+		{
+			kind: 'requires-own-mcp',
+			endpoint: mcpEndpoint,
+			authProvider: isChromaticUrl(source.url) ? 'chromatic' : 'unknown',
+		},
+		source,
+	);
 }
 
 /**

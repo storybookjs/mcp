@@ -14,6 +14,7 @@ import {
 } from '../parse-react-docgen.ts';
 import { dedent } from '../dedent.ts';
 import { extractDocsSummary, MAX_SUMMARY_LENGTH } from './extract-docs-summary.ts';
+import { formatSourceManifestFailureSummary } from './source-errors.ts';
 
 /**
  * Maximum number of stories to show in full detail in component manifests.
@@ -403,22 +404,11 @@ export function formatMultiSourceManifestsToLists(
 }
 
 function formatSourceError(error: Extract<SourceManifests, { kind: 'error' }>['error']): string {
-	switch (error.kind) {
-		case 'requires-own-mcp':
-			return error.message;
-		case 'fetch-failed':
-			return `error: ${error.message}`;
-		default:
-			return assertNeverSourceError(error);
-	}
+	return formatSourceManifestFailureSummary(error);
 }
 
 function assertNeverSourceResult(value: never): never {
 	throw new Error(`Unhandled source manifest result: ${JSON.stringify(value)}`);
-}
-
-function assertNeverSourceError(value: never): never {
-	throw new Error(`Unhandled source manifest failure: ${JSON.stringify(value)}`);
 }
 
 /**

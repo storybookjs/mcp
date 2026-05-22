@@ -6,6 +6,10 @@ import {
 	type SourceManifestFailure,
 	type SourceManifests,
 } from '../types.ts';
+import {
+	formatSourceManifestFailureDetail,
+	formatSourceManifestFailureSummary,
+} from './manifest-formatter/source-errors.ts';
 import * as v from 'valibot';
 
 /**
@@ -31,11 +35,13 @@ export class ManifestGetError extends Error {
 
 export class SourceManifestError extends Error {
 	public readonly failure: SourceManifestFailure;
+	public readonly source?: Source;
 
-	constructor(failure: SourceManifestFailure) {
-		super(failure.message);
+	constructor(failure: SourceManifestFailure, source?: Source) {
+		super(formatSourceManifestFailureSummary(failure));
 		this.name = 'SourceManifestError';
 		this.failure = failure;
+		this.source = source;
 	}
 }
 
@@ -47,14 +53,14 @@ type MCPTextResult = {
 	isError?: true;
 };
 
-const sourceManifestFailureToMCPContent = (failure: SourceManifestFailure): MCPTextResult => {
-	switch (failure.kind) {
+const sourceManifestErrorToMCPContent = (error: SourceManifestError): MCPTextResult => {
+	switch (error.failure.kind) {
 		case 'requires-own-mcp':
 			return {
 				content: [
 					{
 						type: 'text',
-						text: failure.detailText,
+						text: formatSourceManifestFailureDetail(error.failure, error.source),
 					},
 				],
 			};
@@ -63,13 +69,13 @@ const sourceManifestFailureToMCPContent = (failure: SourceManifestFailure): MCPT
 				content: [
 					{
 						type: 'text',
-						text: `Error getting manifest: ${failure.message}`,
+						text: formatSourceManifestFailureDetail(error.failure, error.source),
 					},
 				],
 				isError: true,
 			};
 		default:
-			return assertNever(failure);
+			return assertNever(error.failure);
 	}
 };
 
@@ -84,7 +90,7 @@ const sourceManifestFailureToMCPContent = (failure: SourceManifestFailure): MCPT
  */
 export const errorToMCPContent = (error: unknown): MCPTextResult => {
 	if (error instanceof SourceManifestError) {
-		return sourceManifestFailureToMCPContent(error.failure);
+		return sourceManifestErrorToMCPContent(error);
 	}
 
 	const errorPrefix =
@@ -301,7 +307,7 @@ export async function getMultiSourceManifests(
 	);
 	if (!hasDisplayableResult) {
 		throw new ManifestGetError(
-			`Failed to fetch manifests from any source. Errors:\n${results.map((r) => `- ${r.source.title}: ${r.kind === 'error' ? r.error.message : 'unknown error'}`).join('\n')}`,
+			`Failed to fetch manifests from any source. Errors:\n${results.map((r) => `- ${r.source.title}: ${r.kind === 'error' ? formatSourceManifestFailureSummary(r.error) : 'unknown error'}`).join('\n')}`,
 		);
 	}
 

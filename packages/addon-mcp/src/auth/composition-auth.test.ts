@@ -15,9 +15,6 @@ const remoteRequiresOwnMcpFailure = {
 	kind: 'requires-own-mcp',
 	endpoint: 'http://remote.example.com/mcp',
 	authProvider: 'unknown',
-	message:
-		'This composed Storybook requires authentication. Use its MCP endpoint: http://remote.example.com/mcp',
-	detailText: expect.stringContaining('register or use its MCP endpoint'),
 };
 
 function stubRemoteAuthDiscovery() {
@@ -351,7 +348,7 @@ describe('CompositionAuth', () => {
 			expect(auth.hadAuthError(request)).toBe(true);
 		});
 
-		it('uses Chromatic-specific wording for private Chromatic refs', async () => {
+		it('records the Chromatic auth provider for private Chromatic refs', async () => {
 			const auth = new CompositionAuth();
 			const mockFetch = vi.fn().mockResolvedValue({
 				ok: false,
@@ -369,9 +366,6 @@ describe('CompositionAuth', () => {
 					kind: 'requires-own-mcp',
 					endpoint: 'https://main--abc.chromatic.com/mcp',
 					authProvider: 'chromatic',
-					message:
-						'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://main--abc.chromatic.com/mcp',
-					detailText: expect.stringContaining('requires Chromatic authentication'),
 				},
 			});
 			expect(auth.hadAuthError(request)).toBe(false);

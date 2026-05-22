@@ -421,9 +421,6 @@ Invalid key: Expected "v" but received undefined]`);
 				kind: 'requires-own-mcp',
 				endpoint: 'https://example.com/mcp',
 				authProvider: 'chromatic',
-				message:
-					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
-				detailText: 'Use https://example.com/mcp',
 			});
 			const manifestProvider = createManifestProviderMock({
 				components: sourceError,
@@ -449,9 +446,6 @@ Invalid key: Expected "v" but received undefined]`);
 				kind: 'requires-own-mcp',
 				endpoint: 'https://example.com/mcp',
 				authProvider: 'chromatic',
-				message:
-					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
-				detailText: 'Use https://example.com/mcp',
 			});
 			const manifestProvider = createManifestProviderMock({
 				components: JSON.stringify(validManifest),
@@ -571,9 +565,6 @@ Invalid key: Expected "v" but received undefined]`);
 				kind: 'requires-own-mcp',
 				endpoint: 'http://remote.example.com/mcp',
 				authProvider: 'chromatic',
-				message:
-					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
-				detailText: 'Use http://remote.example.com/mcp',
 			});
 			const manifestProvider = vi
 				.fn()

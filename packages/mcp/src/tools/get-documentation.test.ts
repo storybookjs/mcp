@@ -169,14 +169,6 @@ describe('getDocumentationTool', () => {
 				kind: 'requires-own-mcp',
 				endpoint: 'https://example.com/mcp',
 				authProvider: 'chromatic',
-				message:
-					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
-				detailText: `# Private Storybook
-
-This composed Storybook is private and requires Chromatic authentication.
-
-To access documentation from this source, register or use its MCP endpoint:
-https://example.com/mcp`,
 			}),
 		);
 

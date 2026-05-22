@@ -22,8 +22,6 @@ export type SourceManifestFailure =
 			kind: 'requires-own-mcp';
 			endpoint: string;
 			authProvider: 'chromatic' | 'unknown';
-			message: string;
-			detailText: string;
 	  };
 
 /**

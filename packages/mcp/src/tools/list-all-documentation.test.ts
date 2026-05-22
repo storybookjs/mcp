@@ -269,9 +269,6 @@ describe('listAllDocumentationTool', () => {
 						kind: 'requires-own-mcp',
 						endpoint: 'http://remote.example.com/mcp',
 						authProvider: 'chromatic',
-						message:
-							'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
-						detailText: 'Use http://remote.example.com/mcp',
 					},
 				},
 			]);
