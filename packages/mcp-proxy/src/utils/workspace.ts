@@ -44,11 +44,13 @@ export async function findWorkspaceManifest(
 }
 
 async function readManifestAt(dir: string): Promise<WorkspaceManifest | undefined> {
-	const pnpmPatterns = await readPnpmWorkspace(join(dir, 'pnpm-workspace.yaml'));
+	const [pnpmPatterns, pkgPatterns] = await Promise.all([
+		readPnpmWorkspace(join(dir, 'pnpm-workspace.yaml')),
+		readPackageJsonWorkspaces(join(dir, 'package.json')),
+	]);
 	if (pnpmPatterns) {
 		return { root: dir, patterns: pnpmPatterns, source: 'pnpm-workspace.yaml' };
 	}
-	const pkgPatterns = await readPackageJsonWorkspaces(join(dir, 'package.json'));
 	if (pkgPatterns) {
 		return { root: dir, patterns: pkgPatterns, source: 'package.json' };
 	}
