@@ -232,7 +232,7 @@ describe('createMcpProxyServer', () => {
 			expect(text).toContain('npx storybook add @storybook/addon-mcp');
 		});
 
-		it('walks up to the workspace root when called from a nested package cwd', async () => {
+		it('omits the workspace section when called from a nested package cwd', async () => {
 			const nested = join(PNPM_MONOREPO, 'packages', 'has-sb');
 			const server = await createMcpProxyServer();
 			await server.receive(initializeRequest());
@@ -243,9 +243,8 @@ describe('createMcpProxyServer', () => {
 
 			expect(response.result.isError).toBe(true);
 			const text = firstText(response.result);
-			expect(text).toContain('@fixture/has-sb');
-			// Sibling packages should also be listed — the proxy enumerates the whole workspace.
-			expect(text).toContain('@fixture/web-app');
+			expect(text).not.toContain('Workspace packages in this monorepo');
+			expect(text).not.toContain('@fixture/web-app');
 		});
 
 		it('asks the user when no workspace package has Storybook installed', async () => {

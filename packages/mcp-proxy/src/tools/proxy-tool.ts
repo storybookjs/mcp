@@ -4,7 +4,7 @@ import * as v from 'valibot';
 import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
-import { enumerateWorkspacePackages, findWorkspaceRoot } from '../utils/workspace.ts';
+import { enumerateWorkspacePackages, findWorkspaceManifest } from '../utils/workspace.ts';
 import type { WorkspacePackage } from '../utils/workspace.ts';
 import { intercept } from './intercepts.ts';
 import type { ProxyToolCallResult } from '../types/index.ts';
@@ -27,7 +27,7 @@ type ProxyToolDefinition<Schema extends v.ObjectEntries> = {
 
 async function discoverWorkspacePackages(cwd: string): Promise<WorkspacePackage[] | undefined> {
 	try {
-		const manifest = await findWorkspaceRoot(cwd);
+		const manifest = await findWorkspaceManifest(cwd);
 		if (!manifest) return undefined;
 		return await enumerateWorkspacePackages(manifest);
 	} catch {

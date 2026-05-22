@@ -1,13 +1,13 @@
 import { isAbsolute, join, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { enumerateWorkspacePackages, findWorkspaceRoot } from './workspace.ts';
+import { enumerateWorkspacePackages, findWorkspaceManifest } from './workspace.ts';
 
 const FIXTURES = join(__dirname, '..', '..', '__fixtures__', 'workspace');
 
-describe('findWorkspaceRoot', () => {
+describe('findWorkspaceManifest', () => {
 	it('detects a pnpm-workspace.yaml at the cwd', async () => {
-		const manifest = await findWorkspaceRoot(join(FIXTURES, 'pnpm-monorepo'));
+		const manifest = await findWorkspaceManifest(join(FIXTURES, 'pnpm-monorepo'));
 		expect(manifest?.source).toBe('pnpm-workspace.yaml');
 		expect(manifest?.root).toBe(join(FIXTURES, 'pnpm-monorepo'));
 		expect(manifest?.patterns).toEqual([
@@ -18,40 +18,35 @@ describe('findWorkspaceRoot', () => {
 		]);
 	});
 
-	it('walks upward to find a workspace root from a nested cwd', async () => {
-		const manifest = await findWorkspaceRoot(
+	it('returns undefined for a nested cwd inside a monorepo (no upward walk)', async () => {
+		const manifest = await findWorkspaceManifest(
 			join(FIXTURES, 'pnpm-monorepo', 'packages', 'has-sb'),
 		);
-		expect(manifest?.root).toBe(join(FIXTURES, 'pnpm-monorepo'));
+		expect(manifest).toBeUndefined();
 	});
 
 	it('detects npm workspaces (array form)', async () => {
-		const manifest = await findWorkspaceRoot(join(FIXTURES, 'npm-monorepo'));
+		const manifest = await findWorkspaceManifest(join(FIXTURES, 'npm-monorepo'));
 		expect(manifest?.source).toBe('package.json');
 		expect(manifest?.patterns).toEqual(['packages/*']);
 	});
 
 	it('detects yarn classic workspaces (object form)', async () => {
-		const manifest = await findWorkspaceRoot(join(FIXTURES, 'yarn-classic'));
+		const manifest = await findWorkspaceManifest(join(FIXTURES, 'yarn-classic'));
 		expect(manifest?.source).toBe('package.json');
 		expect(manifest?.patterns).toEqual(['packages/*']);
 	});
 
-	it('does not treat a leaf package directory as its own workspace root', async () => {
-		// The single-package fixture itself has no manifest; the helper may still
-		// resolve to an ancestor workspace root (e.g. the repo's own root) when
-		// invoked inside a monorepo. We only assert that the leaf itself is not
-		// reported as the root.
-		const leaf = join(FIXTURES, 'single-package');
-		const manifest = await findWorkspaceRoot(leaf);
-		expect(manifest?.root).not.toBe(leaf);
+	it('returns undefined for a single-package directory with no workspace manifest', async () => {
+		const manifest = await findWorkspaceManifest(join(FIXTURES, 'single-package'));
+		expect(manifest).toBeUndefined();
 	});
 });
 
 describe('enumerateWorkspacePackages', () => {
 	it('expands glob patterns and annotates Storybook + addon-mcp install state', async () => {
 		const root = join(FIXTURES, 'pnpm-monorepo');
-		const manifest = await findWorkspaceRoot(root);
+		const manifest = await findWorkspaceManifest(root);
 		const packages = await enumerateWorkspacePackages(manifest!);
 
 		const byName = Object.fromEntries(packages.map((p) => [p.name, p]));
@@ -77,7 +72,7 @@ describe('enumerateWorkspacePackages', () => {
 
 	it('returns absolute paths under the workspace root', async () => {
 		const root = join(FIXTURES, 'pnpm-monorepo');
-		const manifest = await findWorkspaceRoot(root);
+		const manifest = await findWorkspaceManifest(root);
 		const packages = await enumerateWorkspacePackages(manifest!);
 		for (const pkg of packages) {
 			expect(isAbsolute(pkg.packagePath)).toBe(true);
@@ -88,7 +83,7 @@ describe('enumerateWorkspacePackages', () => {
 	it('skips workspace candidate dirs that lack a package.json', async () => {
 		// `apps/*` matches `apps/web` (has package.json) but no other dir under apps/.
 		const root = join(FIXTURES, 'pnpm-monorepo');
-		const manifest = await findWorkspaceRoot(root);
+		const manifest = await findWorkspaceManifest(root);
 		const packages = await enumerateWorkspacePackages(manifest!);
 		expect(packages.filter((p) => p.packagePath.includes(`${sep}apps${sep}`))).toHaveLength(
 			1,

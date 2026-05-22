@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { glob } from 'tinyglobby';
 import { parse as parseYaml } from 'yaml';
 
@@ -33,22 +33,14 @@ export type WorkspacePackage = {
 };
 
 /**
- * Walk up from `cwd` looking for a workspace manifest. Returns the first dir
- * containing either `pnpm-workspace.yaml` or a `package.json` with a
- * `workspaces` field. Returns `undefined` for plain single-package projects.
+ * Look for a workspace manifest at `cwd`. Returns the manifest if `cwd`
+ * contains either `pnpm-workspace.yaml` or a `package.json` with a
+ * `workspaces` field, otherwise `undefined`.
  */
-export async function findWorkspaceRoot(cwd: string): Promise<WorkspaceManifest | undefined> {
-	for (const dir of ancestorsOf(cwd)) {
-		const manifest = await readManifestAt(dir);
-		if (manifest) return manifest;
-	}
-	return undefined;
-}
-
-function ancestorsOf(start: string): string[] {
-	const dir = resolve(start);
-	const parent = dirname(dir);
-	return parent === dir ? [dir] : [dir, ...ancestorsOf(parent)];
+export async function findWorkspaceManifest(
+	cwd: string,
+): Promise<WorkspaceManifest | undefined> {
+	return readManifestAt(resolve(cwd));
 }
 
 async function readManifestAt(dir: string): Promise<WorkspaceManifest | undefined> {
@@ -97,9 +89,7 @@ async function readPackageJsonWorkspaces(filePath: string): Promise<string[] | u
 
 /**
  * Expand workspace glob patterns into a list of package directories and
- * annotate each with Storybook/addon-mcp install status. Pattern expansion is
- * delegated to `tinyglobby`, which natively handles negation (`!...`) and the
- * full workspace glob syntax used by pnpm/yarn/npm.
+ * annotate each with Storybook/addon-mcp install status.
  */
 export async function enumerateWorkspacePackages(
 	manifest: WorkspaceManifest,

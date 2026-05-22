@@ -5,7 +5,7 @@ import { registerProxiedTools } from './index.ts';
 import { META_INTERCEPT_REASON } from './intercepts.ts';
 import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
-import { enumerateWorkspacePackages, findWorkspaceRoot } from '../utils/workspace.ts';
+import { enumerateWorkspacePackages, findWorkspaceManifest } from '../utils/workspace.ts';
 import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 vi.mock('../utils/registry.ts', () => ({
@@ -17,7 +17,7 @@ vi.mock('../utils/proxy-client.ts', () => ({
 }));
 
 vi.mock('../utils/workspace.ts', () => ({
-	findWorkspaceRoot: vi.fn(),
+	findWorkspaceManifest: vi.fn(),
 	enumerateWorkspacePackages: vi.fn(),
 }));
 
@@ -36,13 +36,13 @@ const record: StorybookInstanceRecordV1 = {
 beforeEach(() => {
 	vi.mocked(readRegistry).mockReset();
 	vi.mocked(proxyToolCall).mockReset();
-	vi.mocked(findWorkspaceRoot).mockReset();
+	vi.mocked(findWorkspaceManifest).mockReset();
 	vi.mocked(enumerateWorkspacePackages).mockReset();
 	vi.mocked(readRegistry).mockResolvedValue([record]);
 	vi.mocked(proxyToolCall).mockResolvedValue({
 		content: [{ type: 'text', text: 'upstream result' }],
 	});
-	vi.mocked(findWorkspaceRoot).mockResolvedValue(undefined);
+	vi.mocked(findWorkspaceManifest).mockResolvedValue(undefined);
 	vi.mocked(enumerateWorkspacePackages).mockResolvedValue([]);
 });
 
@@ -188,7 +188,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 
 	it('enriches no-instance with workspace packages when the cwd is in a monorepo', async () => {
 		vi.mocked(readRegistry).mockResolvedValue([]);
-		vi.mocked(findWorkspaceRoot).mockResolvedValue({
+		vi.mocked(findWorkspaceManifest).mockResolvedValue({
 			root: '/projects/monorepo',
 			patterns: ['packages/*'],
 			source: 'pnpm-workspace.yaml',
@@ -217,12 +217,12 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(text).toContain('@app/ui');
 		expect(text).toContain('@app/api');
 		expect(text).toContain('Workspace packages in this monorepo');
-		expect(vi.mocked(findWorkspaceRoot)).toHaveBeenCalledWith('/projects/monorepo');
+		expect(vi.mocked(findWorkspaceManifest)).toHaveBeenCalledWith('/projects/monorepo');
 	});
 
 	it('falls back gracefully when workspace discovery throws', async () => {
 		vi.mocked(readRegistry).mockResolvedValue([]);
-		vi.mocked(findWorkspaceRoot).mockRejectedValue(new Error('boom'));
+		vi.mocked(findWorkspaceManifest).mockRejectedValue(new Error('boom'));
 
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/anywhere' });
