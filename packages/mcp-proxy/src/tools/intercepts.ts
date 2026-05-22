@@ -35,14 +35,18 @@ const INVALID_CWD = `\`cwd\` must be an absolute path matching the cwd from whic
 function buildNoInstance(data: InterceptData): string {
 	const sections: string[] = [];
 	const cwdLabel = data.requestedCwd ? `\`${data.requestedCwd}\`` : 'this cwd';
+	const hasRunning = (data.records?.length ?? 0) > 0;
 
 	sections.push(
-		`No Storybook is running at ${cwdLabel}. To fix this, either start \`storybook dev\` from the project you want, or retry with a cwd listed below.`,
+		`No Storybook is running at ${cwdLabel}. Start \`storybook dev\` from the project you want, then retry the tool call.`,
 	);
 
-	if (data.records && data.records.length > 0) {
+	if (hasRunning) {
 		sections.push(
-			['Running Storybooks:', ...data.records.map((r) => `- \`${r.cwd}\` (${r.url})`)].join('\n'),
+			[
+				'Running Storybooks:',
+				...(data.records ?? []).map((r) => `- \`${r.cwd}\` (${r.url})`),
+			].join('\n'),
 		);
 	}
 

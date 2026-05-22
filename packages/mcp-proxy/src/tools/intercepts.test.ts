@@ -34,6 +34,19 @@ describe('intercepts', () => {
 		expect(md).toContain('http://localhost:6006');
 	});
 
+	it('no-instance lead-in never promises a list of cwds (lists below are best-effort)', () => {
+		const withRecords = getInterceptMarkdown('no-instance', {
+			requestedCwd: '/wherever',
+			records: [record()],
+		});
+		const without = getInterceptMarkdown('no-instance', { requestedCwd: '/wherever' });
+		for (const md of [withRecords, without]) {
+			expect(md).not.toContain('listed below');
+			expect(md).toContain('Start `storybook dev`');
+		}
+		expect(without).not.toContain('Running Storybooks');
+	});
+
 	it('no-instance lists workspace packages with install status when supplied', () => {
 		const md = getInterceptMarkdown('no-instance', {
 			requestedCwd: '/repo',
