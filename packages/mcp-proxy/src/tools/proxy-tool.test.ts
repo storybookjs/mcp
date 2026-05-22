@@ -5,6 +5,7 @@ import { registerProxiedTools } from './index.ts';
 import { META_INTERCEPT_REASON } from './intercepts.ts';
 import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
+import { enumerateWorkspacePackages, findWorkspaceRoot } from '../utils/workspace.ts';
 import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 vi.mock('../utils/registry.ts', () => ({
@@ -13,6 +14,11 @@ vi.mock('../utils/registry.ts', () => ({
 
 vi.mock('../utils/proxy-client.ts', () => ({
 	proxyToolCall: vi.fn(),
+}));
+
+vi.mock('../utils/workspace.ts', () => ({
+	findWorkspaceRoot: vi.fn(),
+	enumerateWorkspacePackages: vi.fn(),
 }));
 
 const REGISTRY_DIR = '/tmp/test-registry';
@@ -30,10 +36,14 @@ const record: StorybookInstanceRecordV1 = {
 beforeEach(() => {
 	vi.mocked(readRegistry).mockReset();
 	vi.mocked(proxyToolCall).mockReset();
+	vi.mocked(findWorkspaceRoot).mockReset();
+	vi.mocked(enumerateWorkspacePackages).mockReset();
 	vi.mocked(readRegistry).mockResolvedValue([record]);
 	vi.mocked(proxyToolCall).mockResolvedValue({
 		content: [{ type: 'text', text: 'upstream result' }],
 	});
+	vi.mocked(findWorkspaceRoot).mockResolvedValue(undefined);
+	vi.mocked(enumerateWorkspacePackages).mockResolvedValue([]);
 });
 
 async function buildServer() {
@@ -114,7 +124,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
-		expect(firstText(response.result)).toContain('Storybook is not running');
+		expect(firstText(response.result)).toContain('No Storybook is running');
 	});
 
 	it('returns the no-instance intercept with candidate cwds when no record matches', async () => {
@@ -175,6 +185,52 @@ describe('registerProxyTool / list-all-documentation', () => {
 			expect(firstText(response.result)).toContain('absolute path');
 		},
 	);
+
+	it('enriches no-instance with workspace packages when the cwd is in a monorepo', async () => {
+		vi.mocked(readRegistry).mockResolvedValue([]);
+		vi.mocked(findWorkspaceRoot).mockResolvedValue({
+			root: '/projects/monorepo',
+			patterns: ['packages/*'],
+			source: 'pnpm-workspace.yaml',
+		});
+		vi.mocked(enumerateWorkspacePackages).mockResolvedValue([
+			{
+				packagePath: '/projects/monorepo/packages/ui',
+				name: '@app/ui',
+				hasStorybook: true,
+				hasAddonMcp: false,
+			},
+			{
+				packagePath: '/projects/monorepo/packages/api',
+				name: '@app/api',
+				hasStorybook: false,
+				hasAddonMcp: false,
+			},
+		]);
+
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/monorepo' });
+
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
+		const text = firstText(response.result);
+		expect(text).toContain('@app/ui');
+		expect(text).toContain('@app/api');
+		expect(text).toContain('Workspace packages in this monorepo');
+		expect(vi.mocked(findWorkspaceRoot)).toHaveBeenCalledWith('/projects/monorepo');
+	});
+
+	it('falls back gracefully when workspace discovery throws', async () => {
+		vi.mocked(readRegistry).mockResolvedValue([]);
+		vi.mocked(findWorkspaceRoot).mockRejectedValue(new Error('boom'));
+
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/anywhere' });
+
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
+		expect(firstText(response.result)).toContain('No Storybook is running');
+	});
 
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
 		vi.mocked(proxyToolCall).mockRejectedValue(new Error('connection refused'));

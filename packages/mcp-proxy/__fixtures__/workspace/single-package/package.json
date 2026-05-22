@@ -1,0 +1,6 @@
+{
+  "name": "@fixture/single",
+  "devDependencies": {
+    "storybook": "^10.0.0"
+  }
+}

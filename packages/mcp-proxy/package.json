@@ -43,7 +43,9 @@
 	"dependencies": {
 		"@tmcp/adapter-valibot": "catalog:",
 		"@tmcp/transport-stdio": "catalog:",
+		"tinyglobby": "^0.2.16",
 		"tmcp": "catalog:",
-		"valibot": "catalog:"
+		"valibot": "catalog:",
+		"yaml": "^2.9.0"
 	}
 }

@@ -1,0 +1,8 @@
+{
+  "name": "yarn-classic-root",
+  "private": true,
+  "workspaces": {
+    "packages": ["packages/*"],
+    "nohoist": []
+  }
+}

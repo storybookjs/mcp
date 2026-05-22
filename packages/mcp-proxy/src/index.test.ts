@@ -1,4 +1,5 @@
-import * as http from 'node:http';
+import { createServer } from 'node:http';
+import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import pkg from '../package.json' with { type: 'json' };
@@ -13,6 +14,10 @@ vi.mock('./utils/registry.ts', () => ({
 
 const CLIENT_INFO = { name: 'test-client', version: '1.0.0' };
 const PROTOCOL_VERSION = '2024-11-05';
+
+const FIXTURES = join(__dirname, '..', '__fixtures__', 'workspace');
+const PNPM_MONOREPO = join(FIXTURES, 'pnpm-monorepo');
+const EMPTY_MONOREPO = join(FIXTURES, 'empty-monorepo');
 
 function initializeRequest(id = 1) {
 	return {
@@ -36,6 +41,18 @@ function toolsListRequest(id = 2) {
 	};
 }
 
+function callToolRequest(cwd: string, extra: Record<string, unknown> = {}, id = 2) {
+	return {
+		jsonrpc: '2.0' as const,
+		id,
+		method: 'tools/call',
+		params: {
+			name: 'list-all-documentation',
+			arguments: { cwd, ...extra },
+		},
+	};
+}
+
 type CapturedRequest = {
 	url: string;
 	body: { jsonrpc: string; id: string | number; method: string; params: unknown };
@@ -45,7 +62,7 @@ async function startFakeAddon(
 	respond: (req: CapturedRequest) => { contentType: 'json' | 'sse'; result: ProxyToolCallResult },
 ) {
 	const captured: CapturedRequest[] = [];
-	const server = http.createServer((req, res) => {
+	const server = createServer((req, res) => {
 		const chunks: Buffer[] = [];
 		req.on('data', (chunk) => chunks.push(chunk));
 		req.on('end', () => {
@@ -74,6 +91,12 @@ async function startFakeAddon(
 		captured,
 		close: () => new Promise<void>((resolve) => server.close(() => resolve())),
 	};
+}
+
+function firstText(result: ProxyToolCallResult): string {
+	const item = result.content?.[0];
+	if (!item || item.type !== 'text') throw new Error('expected text content');
+	return item.text;
 }
 
 describe('createMcpProxyServer', () => {
@@ -148,7 +171,7 @@ describe('createMcpProxyServer', () => {
 	});
 
 	it('forwards a tools/call through the full proxy → registry → addon-mcp path', async () => {
-		const projectCwd = '/projects/storybook-e2e';
+		const projectCwd = PNPM_MONOREPO;
 		const record: StorybookInstanceRecordV1 = {
 			schemaVersion: 1,
 			instanceId: 'e2e-instance',
@@ -161,22 +184,15 @@ describe('createMcpProxyServer', () => {
 		vi.mocked(readRegistry).mockResolvedValue([record]);
 
 		const server = await createMcpProxyServer();
-
 		await server.receive(initializeRequest());
 
-		const response = (await server.receive({
-			jsonrpc: '2.0',
-			id: 2,
-			method: 'tools/call',
-			params: {
-				name: 'list-all-documentation',
-				arguments: { cwd: projectCwd, withStoryIds: true },
-			},
-		} as never)) as { result: ProxyToolCallResult };
+		const response = (await server.receive(
+			callToolRequest(projectCwd, { withStoryIds: true }) as never,
+		)) as { result: ProxyToolCallResult };
 
-		const item = response.result.content?.[0];
-		if (!item || item.type !== 'text') throw new Error('expected text content');
-		expect(item.text).toBe('addon received list-all-documentation with {"withStoryIds":true}');
+		expect(firstText(response.result)).toBe(
+			'addon received list-all-documentation with {"withStoryIds":true}',
+		);
 
 		expect(addon.captured).toHaveLength(1);
 		expect(addon.captured[0]!.body).toMatchObject({
@@ -191,5 +207,88 @@ describe('createMcpProxyServer', () => {
 		expect(
 			(addon.captured[0]!.body.params as { arguments?: Record<string, unknown> }).arguments,
 		).not.toHaveProperty('cwd');
+	});
+
+	describe('monorepo-aware no-instance intercept (real workspace discovery)', () => {
+		it('lists the real workspace packages of a pnpm monorepo when called at its root', async () => {
+			const server = await createMcpProxyServer();
+			await server.receive(initializeRequest());
+
+			const response = (await server.receive(callToolRequest(PNPM_MONOREPO) as never)) as {
+				result: ProxyToolCallResult;
+			};
+
+			expect(response.result.isError).toBe(true);
+			const text = firstText(response.result);
+			expect(text).toContain('Workspace packages in this monorepo');
+			// All non-negated workspace packages should appear.
+			expect(text).toContain('@fixture/has-sb');
+			expect(text).toContain('@fixture/has-addon');
+			expect(text).toContain('@fixture/no-sb');
+			expect(text).toContain('@fixture/web-app');
+			// Negated package must not appear.
+			expect(text).not.toContain('@fixture/skip-me');
+			// Per-package addon-mcp install state is rendered.
+			expect(text).toContain('npx storybook add @storybook/addon-mcp');
+		});
+
+		it('walks up to the workspace root when called from a nested package cwd', async () => {
+			const nested = join(PNPM_MONOREPO, 'packages', 'has-sb');
+			const server = await createMcpProxyServer();
+			await server.receive(initializeRequest());
+
+			const response = (await server.receive(callToolRequest(nested) as never)) as {
+				result: ProxyToolCallResult;
+			};
+
+			expect(response.result.isError).toBe(true);
+			const text = firstText(response.result);
+			expect(text).toContain('@fixture/has-sb');
+			// Sibling packages should also be listed — the proxy enumerates the whole workspace.
+			expect(text).toContain('@fixture/web-app');
+		});
+
+		it('asks the user when no workspace package has Storybook installed', async () => {
+			const server = await createMcpProxyServer();
+			await server.receive(initializeRequest());
+
+			const response = (await server.receive(callToolRequest(EMPTY_MONOREPO) as never)) as {
+				result: ProxyToolCallResult;
+			};
+
+			expect(response.result.isError).toBe(true);
+			const text = firstText(response.result);
+			expect(text).toContain('No package in this monorepo has Storybook installed');
+			expect(text).toContain('Ask the user which package');
+			expect(text).toContain('@empty/a');
+			expect(text).toContain('@empty/b');
+		});
+
+		it('still lists running Storybook cwds alongside the monorepo packages', async () => {
+			const runningCwd = '/somewhere/else';
+			const record: StorybookInstanceRecordV1 = {
+				schemaVersion: 1,
+				instanceId: 'other',
+				pid: process.pid,
+				cwd: runningCwd,
+				url: 'http://localhost:6007',
+				port: 6007,
+				mcp: { status: 'ready', endpoint: addon.endpoint },
+			};
+			vi.mocked(readRegistry).mockResolvedValue([record]);
+
+			const server = await createMcpProxyServer();
+			await server.receive(initializeRequest());
+
+			const response = (await server.receive(callToolRequest(PNPM_MONOREPO) as never)) as {
+				result: ProxyToolCallResult;
+			};
+
+			expect(response.result.isError).toBe(true);
+			const text = firstText(response.result);
+			expect(text).toContain('Running Storybooks');
+			expect(text).toContain(runningCwd);
+			expect(text).toContain('@fixture/has-sb');
+		});
 	});
 });

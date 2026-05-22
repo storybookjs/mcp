@@ -1,9 +1,11 @@
-import * as path from 'node:path';
+import { isAbsolute } from 'node:path';
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
 import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
+import { enumerateWorkspacePackages, findWorkspaceRoot } from '../utils/workspace.ts';
+import type { WorkspacePackage } from '../utils/workspace.ts';
 import { intercept } from './intercepts.ts';
 import type { ProxyToolCallResult } from '../types/index.ts';
 
@@ -22,6 +24,17 @@ type ProxyToolDefinition<Schema extends v.ObjectEntries> = {
 	description: string;
 	schema?: v.ObjectSchema<Schema, undefined>;
 };
+
+async function discoverWorkspacePackages(cwd: string): Promise<WorkspacePackage[] | undefined> {
+	try {
+		const manifest = await findWorkspaceRoot(cwd);
+		if (!manifest) return undefined;
+		return await enumerateWorkspacePackages(manifest);
+	} catch {
+		// Workspace info is best-effort metadata; never let it crash the proxy.
+		return undefined;
+	}
+}
 
 /**
  * Register a tool on the proxy server that forwards to the matching local
@@ -52,7 +65,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 		async (input: Record<string, unknown> & { cwd: string }): Promise<ProxyToolCallResult> => {
 			const { cwd, ...upstreamArgs } = input;
 
-			if (!path.isAbsolute(cwd)) {
+			if (!isAbsolute(cwd)) {
 				return intercept('invalid-cwd');
 			}
 
@@ -60,7 +73,13 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 			const resolution = resolveInstance(records, cwd);
 
 			if (resolution.kind === 'intercept') {
-				return intercept(resolution.reason, resolution.records);
+				const workspaces =
+					resolution.reason === 'no-instance' ? await discoverWorkspacePackages(cwd) : undefined;
+				return intercept(resolution.reason, {
+					requestedCwd: cwd,
+					records: resolution.records,
+					workspaces,
+				});
 			}
 
 			try {
