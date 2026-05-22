@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { getInterceptMarkdown, intercept, isClaudeClient, META_INTERCEPT_REASON } from './intercepts.ts';
+import {
+	getInterceptMarkdown,
+	intercept,
+	isClaudeClient,
+	META_INTERCEPT_REASON,
+} from './intercepts.ts';
 
 describe('intercepts', () => {
 	it.each([

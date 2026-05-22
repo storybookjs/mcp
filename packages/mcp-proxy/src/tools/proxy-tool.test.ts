@@ -71,14 +71,17 @@ async function listTools(server: McpServer<any>) {
 
 async function callTool(server: McpServer<any>, args: Record<string, unknown>) {
 	const clientInfo = serverClientInfo.get(server);
-	return (await server.receive({
-		jsonrpc: '2.0',
-		id: 3,
-		method: 'tools/call',
-		params: { name: 'list-all-documentation', arguments: args },
-	} as never, {
-		sessionInfo: { clientInfo },
-	} as never)) as { result: ProxyToolCallResult };
+	return (await server.receive(
+		{
+			jsonrpc: '2.0',
+			id: 3,
+			method: 'tools/call',
+			params: { name: 'list-all-documentation', arguments: args },
+		} as never,
+		{
+			sessionInfo: { clientInfo },
+		} as never,
+	)) as { result: ProxyToolCallResult };
 }
 
 function firstText(result: ProxyToolCallResult): string {

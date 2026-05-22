@@ -69,9 +69,7 @@ export function getInterceptMarkdown(
 	switch (reason) {
 		case 'no-instance':
 			return appendClientSpecificRepair(
-				records && records.length > 0
-					? buildNoInstanceWithCandidates(records)
-					: NO_INSTANCE_EMPTY,
+				records && records.length > 0 ? buildNoInstanceWithCandidates(records) : NO_INSTANCE_EMPTY,
 				context,
 			);
 		case 'addon-missing':
