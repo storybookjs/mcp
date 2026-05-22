@@ -30,9 +30,12 @@ export class ManifestGetError extends Error {
 }
 
 export class SourceManifestError extends Error {
-	constructor(public readonly failure: SourceManifestFailure) {
+	public readonly failure: SourceManifestFailure;
+
+	constructor(failure: SourceManifestFailure) {
 		super(failure.message);
 		this.name = 'SourceManifestError';
+		this.failure = failure;
 	}
 }
 
