@@ -1,11 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
 	getManifests,
+	getManifestResult,
 	getMultiSourceManifests,
 	ManifestGetError,
-	SourceManifestError,
 } from './get-manifest.ts';
-import type { ComponentManifestMap, DocsManifestMap, Source } from '../types.ts';
+import type {
+	ComponentManifestMap,
+	DocsManifestMap,
+	ManifestProviderResult,
+	Source,
+} from '../types.ts';
 
 global.fetch = vi.fn();
 
@@ -73,8 +78,8 @@ function createFetchMock(responses: { components?: unknown; docs?: unknown }) {
  * Helper to create a manifestProvider mock that returns different responses based on path
  */
 function createManifestProviderMock(responses: {
-	components?: string | Error;
-	docs?: string | Error;
+	components?: ManifestProviderResult | Error;
+	docs?: ManifestProviderResult | Error;
 }) {
 	return vi.fn().mockImplementation((_request: Request | undefined, path: string) => {
 		if (path.includes('components.json')) {
@@ -415,18 +420,24 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 		});
 
-		it('should preserve typed source errors from manifestProvider', async () => {
+		it('should return source failures from manifestProvider as data', async () => {
 			const request = createMockRequest('https://example.com/mcp');
-			const sourceError = new SourceManifestError({
-				kind: 'requires-own-mcp',
-				endpoint: 'https://example.com/mcp',
-				authProvider: 'chromatic',
-			});
+			const sourceFailure = {
+				kind: 'source-failure',
+				failure: {
+					kind: 'requires-own-mcp',
+					endpoint: 'https://example.com/mcp',
+					authProvider: 'chromatic',
+				},
+			} satisfies ManifestProviderResult;
 			const manifestProvider = createManifestProviderMock({
-				components: sourceError,
+				components: sourceFailure,
 			});
 
-			await expect(getManifests(request, manifestProvider)).rejects.toBe(sourceError);
+			await expect(getManifestResult(request, manifestProvider)).resolves.toEqual({
+				kind: 'source-failure',
+				failure: sourceFailure.failure,
+			});
 		});
 
 		it('should preserve fetched component documentation when only the optional docs manifest returns a source error', async () => {
@@ -442,14 +453,17 @@ Invalid key: Expected "v" but received undefined]`);
 				},
 			};
 			const request = createMockRequest('https://example.com/mcp');
-			const sourceError = new SourceManifestError({
-				kind: 'requires-own-mcp',
-				endpoint: 'https://example.com/mcp',
-				authProvider: 'chromatic',
-			});
+			const sourceFailure = {
+				kind: 'source-failure',
+				failure: {
+					kind: 'requires-own-mcp',
+					endpoint: 'https://example.com/mcp',
+					authProvider: 'chromatic',
+				},
+			} satisfies ManifestProviderResult;
 			const manifestProvider = createManifestProviderMock({
 				components: JSON.stringify(validManifest),
-				docs: sourceError,
+				docs: sourceFailure,
 			});
 
 			await expect(getManifests(request, manifestProvider)).resolves.toEqual({
@@ -561,16 +575,19 @@ Invalid key: Expected "v" but received undefined]`);
 		});
 
 		it('should capture requires-own-mcp source errors without failing the whole request', async () => {
-			const sourceError = new SourceManifestError({
-				kind: 'requires-own-mcp',
-				endpoint: 'http://remote.example.com/mcp',
-				authProvider: 'chromatic',
-			});
+			const sourceFailure = {
+				kind: 'source-failure',
+				failure: {
+					kind: 'requires-own-mcp',
+					endpoint: 'http://remote.example.com/mcp',
+					authProvider: 'chromatic',
+				},
+			} satisfies ManifestProviderResult;
 			const manifestProvider = vi
 				.fn()
 				.mockImplementation((_req: Request | undefined, path: string, source?: Source) => {
 					if (source?.id === 'remote') {
-						return Promise.reject(sourceError);
+						return Promise.resolve(sourceFailure);
 					}
 					if (path.includes('docs.json')) {
 						return Promise.reject(new Error('Not found'));

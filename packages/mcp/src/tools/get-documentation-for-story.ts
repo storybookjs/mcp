@@ -2,7 +2,11 @@ import * as v from 'valibot';
 import type { McpServer } from 'tmcp';
 import type { StorybookContext } from '../types.ts';
 import { StorybookIdField } from '../types.ts';
-import { errorToMCPContent, getManifests } from '../utils/get-manifest.ts';
+import {
+	errorToMCPContent,
+	getManifestResult,
+	sourceManifestFailureToMCPContent,
+} from '../utils/get-manifest.ts';
 import { formatStoryDocumentation } from '../utils/manifest-formatter/markdown.ts';
 import { LIST_TOOL_NAME } from './list-all-documentation.ts';
 
@@ -69,7 +73,10 @@ export async function addGetStoryDocumentationTool(
 					}
 				}
 
-				const manifest = await getManifests(ctx?.request, ctx?.manifestProvider, source);
+				const manifest = await getManifestResult(ctx?.request, ctx?.manifestProvider, source);
+				if (manifest.kind === 'source-failure') {
+					return sourceManifestFailureToMCPContent(manifest.failure, manifest.source);
+				}
 
 				const component = manifest.componentManifest?.components[componentId];
 

@@ -1,7 +1,12 @@
 import type { McpServer } from 'tmcp';
 import * as v from 'valibot';
 import type { StorybookContext } from '../types.ts';
-import { getManifests, getMultiSourceManifests, errorToMCPContent } from '../utils/get-manifest.ts';
+import {
+	errorToMCPContent,
+	getManifestResult,
+	getMultiSourceManifests,
+	sourceManifestFailureToMCPContent,
+} from '../utils/get-manifest.ts';
 import {
 	formatMultiSourceManifestsToLists,
 	formatManifestsToLists,
@@ -74,15 +79,22 @@ export async function addListAllDocumentationTool(
 				}
 
 				// Single-source mode: existing behavior
-				const manifests = await getManifests(ctx?.request, ctx?.manifestProvider);
+				const manifests = await getManifestResult(ctx?.request, ctx?.manifestProvider);
+				if (manifests.kind === 'source-failure') {
+					return sourceManifestFailureToMCPContent(manifests.failure, manifests.source);
+				}
+				const allManifests = {
+					componentManifest: manifests.componentManifest,
+					docsManifest: manifests.docsManifest,
+				};
 
-				const lists = formatManifestsToLists(manifests, {
+				const lists = formatManifestsToLists(allManifests, {
 					withStoryIds,
 				});
 
 				await ctx?.onListAllDocumentation?.({
 					context: ctx,
-					manifests,
+					manifests: allManifests,
 					resultText: lists,
 				});
 

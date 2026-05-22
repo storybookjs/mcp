@@ -9,8 +9,9 @@
 import {
 	ComponentManifestMap,
 	DocsManifestMap,
-	SourceManifestError,
+	type ManifestProvider,
 	type Source,
+	type SourceManifestFailure,
 } from '@storybook/mcp';
 import * as v from 'valibot';
 
@@ -48,11 +49,28 @@ interface McpAuthCheck {
 	authRequirement: AuthRequirement | null;
 }
 
-export type ManifestProvider = (
-	request: Request | undefined,
-	path: string,
-	source?: Source,
-) => Promise<string>;
+type SourceState =
+	| {
+			kind: 'public';
+			ref: ComposedRef;
+	  }
+	| {
+			kind: 'requires-auth';
+			ref: ComposedRef;
+			authRequirement: AuthRequirement;
+	  }
+	| {
+			kind: 'unknown';
+			ref: ComposedRef;
+	  };
+
+export type RequestAccessKind = 'oauth-client' | 'local-proxy';
+
+export interface RequestAccess {
+	kind: RequestAccessKind;
+	token: string | null;
+	authError: AuthenticationError | null;
+}
 
 const MANIFEST_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 const REVALIDATION_TTL = 60 * 1000; // 60 seconds
@@ -76,13 +94,9 @@ export class AuthenticationError extends Error {
 }
 
 export class CompositionAuth {
-	#authRequirement: AuthRequirement | null = null;
-	#authRequiredUrls: string[] = [];
-	#sourceRefs: ComposedRef[] = [];
+	#sourceStates = new Map<string, SourceState>();
 	#manifestCache = new Map<string, CacheEntry>();
 	#lastToken: string | null = null;
-	#authErrors = new WeakMap<Request, AuthenticationError>();
-	#trustedProxyRequests = new WeakSet<Request>();
 
 	/** Initialize by checking which refs require authentication and have manifests. */
 	async initialize(refs: ComposedRef[]): Promise<void> {
@@ -91,68 +105,75 @@ export class CompositionAuth {
 				const result = await this.#checkRef(ref.url);
 				if (result === 'no-manifest') continue;
 
-				this.#sourceRefs.push(ref);
-
-				if (result === 'public') continue;
+				if (result === 'public') {
+					this.#sourceStates.set(ref.id, { kind: 'public', ref });
+					continue;
+				}
 
 				this.#recordAuthRequirement(ref, result);
 			} catch (error) {
 				console.warn(
 					`[addon-mcp] Failed to check auth for composed ref "${ref.title}" (${ref.url}): ${error instanceof Error ? error.message : String(error)}. Keeping this ref in the MCP source list for request-time resolution.`,
 				);
-				this.#sourceRefs.push(ref);
+				this.#sourceStates.set(ref.id, { kind: 'unknown', ref });
 			}
 		}
 	}
 
 	get requiresAuth(): boolean {
-		return this.#authRequiredUrls.length > 0;
+		return [...this.#sourceStates.values()].some((state) => state.kind === 'requires-auth');
 	}
 
 	get authUrls(): string[] {
-		return this.#authRequiredUrls;
+		return [...this.#sourceStates.values()]
+			.filter((state) => state.kind === 'requires-auth')
+			.map((state) => state.ref.url);
 	}
 
-	/** Check if a request encountered an auth error during manifest fetching. */
-	hadAuthError(request: Request): boolean {
-		return this.#authErrors.has(request);
-	}
-
-	/** Mark a request as coming from the local Storybook MCP proxy. */
-	markTrustedProxyRequest(request: Request): void {
-		this.#trustedProxyRequests.add(request);
+	createRequestAccess(request: Request, kind: RequestAccessKind): RequestAccess {
+		return {
+			kind,
+			token: extractBearerToken(request.headers.get('Authorization')),
+			authError: null,
+		};
 	}
 
 	/** Check if a URL requires authentication based on discovered auth requirements. */
 	#isAuthRequiredUrl(url: string): boolean {
-		return this.#authRequiredUrls.some((authUrl) => url.startsWith(authUrl));
+		return [...this.#sourceStates.values()].some(
+			(state) => state.kind === 'requires-auth' && url.startsWith(state.ref.url),
+		);
 	}
 
 	#recordAuthRequirement(ref: ComposedRef, result: AuthRequirement): void {
-		if (!this.#authRequiredUrls.includes(ref.url)) {
-			this.#authRequiredUrls.push(ref.url);
-		}
-		if (!this.#authRequirement) {
-			this.#authRequirement = result;
-			return;
-		}
-
-		const existingServer = this.#authRequirement.resourceMetadata.authorization_servers[0];
+		const existingRequirement = this.#firstAuthRequirement();
+		const existingServer = existingRequirement?.resourceMetadata.authorization_servers[0];
 		const newServer = result.resourceMetadata.authorization_servers[0];
-		if (existingServer !== newServer) {
+		if (existingServer && existingServer !== newServer) {
 			console.warn(
 				`[addon-mcp] Composed ref "${ref.title}" uses a different OAuth server (${newServer}) than the first authenticated ref (${existingServer}). Only the first OAuth server will be used for authentication.`,
 			);
 		}
+		this.#sourceStates.set(ref.id, { kind: 'requires-auth', ref, authRequirement: result });
+	}
+
+	#firstAuthRequirement(): AuthRequirement | null {
+		for (const state of this.#sourceStates.values()) {
+			if (state.kind === 'requires-auth') {
+				return state.authRequirement;
+			}
+		}
+		return null;
 	}
 
 	/** Build .well-known/oauth-protected-resource response. */
 	buildWellKnown(origin: string): object | null {
-		if (!this.#authRequirement) return null;
+		const authRequirement = this.#firstAuthRequirement();
+		if (!authRequirement) return null;
 		return {
 			resource: `${origin}/mcp`,
-			authorization_servers: this.#authRequirement.resourceMetadata.authorization_servers,
-			scopes_supported: this.#authRequirement.resourceMetadata.scopes_supported,
+			authorization_servers: authRequirement.resourceMetadata.authorization_servers,
+			scopes_supported: authRequirement.resourceMetadata.scopes_supported,
 		};
 	}
 
@@ -165,7 +186,7 @@ export class CompositionAuth {
 	buildSources(): Source[] {
 		return [
 			{ id: 'local', title: 'Local' },
-			...this.#sourceRefs.map((ref) => ({
+			...[...this.#sourceStates.values()].map(({ ref }) => ({
 				id: ref.id,
 				title: ref.title,
 				url: ref.url,
@@ -174,25 +195,26 @@ export class CompositionAuth {
 	}
 
 	/** Create a manifest provider for multi-source mode. */
-	createManifestProvider(localOrigin: string): ManifestProvider {
+	createManifestProvider(localOrigin: string, access: RequestAccess): ManifestProvider {
 		return async (request, path, source) => {
-			const token = extractBearerToken(request?.headers.get('Authorization'));
 			const remoteSource = isRemoteSource(source) ? source : undefined;
 			const baseUrl = remoteSource?.url ?? localOrigin;
 			const manifestUrl = `${baseUrl}${path.replace('./', '/')}`;
 			const isRemote = !!remoteSource;
 			const needsAuth = isRemote && this.#isAuthRequiredUrl(baseUrl);
-			const isProxyRequest = !!request && this.#trustedProxyRequests.has(request);
-			const tokenForRequest = needsAuth ? token : null;
+			const tokenForRequest = needsAuth ? access.token : null;
 
-			if (needsAuth && !token && isProxyRequest && remoteSource) {
-				throw createRequiresOwnMcpError(remoteSource);
+			if (needsAuth && !access.token && access.kind === 'local-proxy' && remoteSource) {
+				return {
+					kind: 'source-failure',
+					failure: createRequiresOwnMcpFailure(remoteSource),
+				};
 			}
 
 			// New token = user re-authenticated, invalidate all cached manifests
-			if (token && token !== this.#lastToken) {
+			if (access.token && access.token !== this.#lastToken) {
 				this.#manifestCache.clear();
-				this.#lastToken = token;
+				this.#lastToken = access.token;
 			}
 
 			if (isRemote) {
@@ -236,10 +258,13 @@ export class CompositionAuth {
 					if (remoteSource && error.authRequirement) {
 						this.#recordAuthRequirement(remoteSource, error.authRequirement);
 					}
-					if (isProxyRequest && !token && remoteSource) {
-						throw createRequiresOwnMcpError(remoteSource);
+					if (access.kind === 'local-proxy' && !access.token && remoteSource) {
+						return {
+							kind: 'source-failure',
+							failure: createRequiresOwnMcpFailure(remoteSource),
+						};
 					}
-					this.#authErrors.set(request, error);
+					access.authError = error;
 				}
 				throw error;
 			}
@@ -417,17 +442,14 @@ function getStorybookUrlFromManifestUrl(manifestUrl: string): string {
 	return url.toString().replace(/\/$/, '');
 }
 
-function createRequiresOwnMcpError(source: RemoteSource): SourceManifestError {
+function createRequiresOwnMcpFailure(source: RemoteSource): SourceManifestFailure {
 	const mcpEndpoint = `${source.url.replace(/\/$/, '')}/mcp`;
 
-	return new SourceManifestError(
-		{
-			kind: 'requires-own-mcp',
-			endpoint: mcpEndpoint,
-			authProvider: isChromaticUrl(source.url) ? 'chromatic' : 'unknown',
-		},
-		source,
-	);
+	return {
+		kind: 'requires-own-mcp',
+		endpoint: mcpEndpoint,
+		authProvider: isChromaticUrl(source.url) ? 'chromatic' : 'unknown',
+	};
 }
 
 /**

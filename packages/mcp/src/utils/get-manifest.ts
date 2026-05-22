@@ -2,6 +2,8 @@ import {
 	ComponentManifestMap,
 	DocsManifestMap,
 	type AllManifests,
+	type ManifestProvider,
+	type ManifestProviderResult,
 	type Source,
 	type SourceManifestFailure,
 	type SourceManifests,
@@ -33,18 +35,6 @@ export class ManifestGetError extends Error {
 	}
 }
 
-export class SourceManifestError extends Error {
-	public readonly failure: SourceManifestFailure;
-	public readonly source?: Source;
-
-	constructor(failure: SourceManifestFailure, source?: Source) {
-		super(formatSourceManifestFailureSummary(failure));
-		this.name = 'SourceManifestError';
-		this.failure = failure;
-		this.source = source;
-	}
-}
-
 /**
  * MCP tool result type for text responses
  */
@@ -53,14 +43,17 @@ type MCPTextResult = {
 	isError?: true;
 };
 
-const sourceManifestErrorToMCPContent = (error: SourceManifestError): MCPTextResult => {
-	switch (error.failure.kind) {
+export const sourceManifestFailureToMCPContent = (
+	failure: SourceManifestFailure,
+	source?: Source,
+): MCPTextResult => {
+	switch (failure.kind) {
 		case 'requires-own-mcp':
 			return {
 				content: [
 					{
 						type: 'text',
-						text: formatSourceManifestFailureDetail(error.failure, error.source),
+						text: formatSourceManifestFailureDetail(failure, source),
 					},
 				],
 			};
@@ -69,30 +62,23 @@ const sourceManifestErrorToMCPContent = (error: SourceManifestError): MCPTextRes
 				content: [
 					{
 						type: 'text',
-						text: formatSourceManifestFailureDetail(error.failure, error.source),
+						text: formatSourceManifestFailureDetail(failure, source),
 					},
 				],
 				isError: true,
 			};
 		default:
-			return assertNever(error.failure);
+			return assertNever(failure);
 	}
 };
 
 /**
  * Converts an error to MCP-compatible content format.
  *
- * Source-level private-auth failures return guidance content without `isError`;
- * all other failures return error content with `isError`.
- *
  * @param error - The error to convert (can be any type)
- * @returns A tool result with guidance or error content
+ * @returns A tool result with error content
  */
 export const errorToMCPContent = (error: unknown): MCPTextResult => {
-	if (error instanceof SourceManifestError) {
-		return sourceManifestErrorToMCPContent(error);
-	}
-
 	const errorPrefix =
 		error instanceof ManifestGetError ? 'Error getting manifest' : 'Unexpected error';
 	const errorMessage = error instanceof Error ? error.message : String(error);
@@ -140,6 +126,14 @@ ${error instanceof v.ValiError ? error.issues.map((i) => i.message).join('\n') :
 	}
 }
 
+export type ManifestLoadResult =
+	| ({ kind: 'manifest' } & AllManifests)
+	| {
+			kind: 'source-failure';
+			source?: Source;
+			failure: SourceManifestFailure;
+	  };
+
 /**
  * Gets component and docs manifest from a request or using a custom provider
  *
@@ -151,13 +145,24 @@ ${error instanceof v.ValiError ? error.issues.map((i) => i.message).join('\n') :
  */
 export async function getManifests(
 	request?: Request,
-	manifestProvider?: (
-		request: Request | undefined,
-		path: string,
-		source?: Source,
-	) => Promise<string>,
+	manifestProvider?: ManifestProvider,
 	source?: Source,
 ): Promise<AllManifests> {
+	const result = await getManifestResult(request, manifestProvider, source);
+	if (result.kind === 'source-failure') {
+		throw new ManifestGetError(formatSourceManifestFailureSummary(result.failure));
+	}
+	return {
+		componentManifest: result.componentManifest,
+		docsManifest: result.docsManifest,
+	};
+}
+
+export async function getManifestResult(
+	request?: Request,
+	manifestProvider?: ManifestProvider,
+	source?: Source,
+): Promise<ManifestLoadResult> {
 	const provider = manifestProvider ?? defaultManifestProvider;
 
 	// Fetch both component and docs manifests in parallel
@@ -171,9 +176,6 @@ export async function getManifests(
 
 	if (componentResult.status === 'rejected') {
 		const reason = componentResult.reason;
-		if (reason instanceof SourceManifestError) {
-			throw reason;
-		}
 		const is404 = reason instanceof ManifestGetError && reason.message.includes('404');
 		const hint = is404
 			? `\nHint: The Storybook at this URL may not have the component manifest enabled. Add \`features: { componentsManifest: true }\` (or \`features: { experimentalComponentsManifest: true }\` for older Storybook versions) to its main.ts config.`
@@ -183,6 +185,9 @@ export async function getManifests(
 			getUrl(COMPONENT_MANIFEST_PATH),
 			reason instanceof Error ? reason : undefined,
 		);
+	}
+	if (isSourceManifestFailureResult(componentResult.value)) {
+		return { kind: 'source-failure', source, failure: componentResult.value.failure };
 	}
 
 	const componentManifest = parseManifest({
@@ -200,7 +205,10 @@ export async function getManifests(
 	}
 
 	if (docsResult.status === 'rejected') {
-		return { componentManifest };
+		return { kind: 'manifest', componentManifest };
+	}
+	if (isSourceManifestFailureResult(docsResult.value)) {
+		return { kind: 'manifest', componentManifest };
 	}
 
 	// Handle docs manifest result (optional - only exists when addon-docs is used)
@@ -211,7 +219,7 @@ export async function getManifests(
 		url: getUrl(DOCS_MANIFEST_PATH),
 	});
 
-	return { componentManifest, docsManifest };
+	return { kind: 'manifest', componentManifest, docsManifest };
 }
 
 /**
@@ -233,7 +241,7 @@ function getManifestUrlFromRequest(request: Request, path: string): string {
 async function defaultManifestProvider(
 	request: Request | undefined,
 	path: string,
-): Promise<string> {
+): Promise<ManifestProviderResult> {
 	if (!request) {
 		throw new ManifestGetError(
 			"Request is required when using the default manifest provider. You must either pass the original request forward to the server context, or set a custom manifestProvider that doesn't need the request.",
@@ -273,17 +281,20 @@ async function defaultManifestProvider(
 export async function getMultiSourceManifests(
 	sources: Source[],
 	request?: Request,
-	manifestProvider?: (
-		request: Request | undefined,
-		path: string,
-		source?: Source,
-	) => Promise<string>,
+	manifestProvider?: ManifestProvider,
 ): Promise<SourceManifests[]> {
 	// Fetch all sources in parallel
 	const results = await Promise.all(
 		sources.map(async (source) => {
 			try {
-				const manifests = await getManifests(request, manifestProvider, source);
+				const manifests = await getManifestResult(request, manifestProvider, source);
+				if (manifests.kind === 'source-failure') {
+					return {
+						kind: 'error',
+						source,
+						error: manifests.failure,
+					} satisfies SourceManifests;
+				}
 				return {
 					kind: 'manifest',
 					source,
@@ -314,11 +325,13 @@ export async function getMultiSourceManifests(
 	return results;
 }
 
-function sourceManifestFailureFromError(error: unknown): SourceManifestFailure {
-	if (error instanceof SourceManifestError) {
-		return error.failure;
-	}
+function isSourceManifestFailureResult(
+	result: ManifestProviderResult,
+): result is Extract<ManifestProviderResult, { kind: 'source-failure' }> {
+	return typeof result !== 'string' && result.kind === 'source-failure';
+}
 
+function sourceManifestFailureFromError(error: unknown): SourceManifestFailure {
 	return {
 		kind: 'fetch-failed',
 		message: error instanceof Error ? error.message : String(error),

@@ -9,6 +9,7 @@ import {
 	addListAllDocumentationTool,
 	addGetDocumentationTool,
 	addGetStoryDocumentationTool,
+	type ManifestProvider,
 	type Source,
 } from '@storybook/mcp';
 import type { Options } from 'storybook/internal/types';
@@ -21,7 +22,7 @@ import { getManifestStatus } from './tools/is-manifest-available.ts';
 import { addRunStoryTestsTool, getAddonVitestConstants } from './tools/run-story-tests.ts';
 import { estimateTokens } from './utils/estimate-tokens.ts';
 import { isAddonA11yEnabled } from './utils/is-addon-a11y-enabled.ts';
-import type { CompositionAuth } from './auth/index.ts';
+import type { CompositionAuth, RequestAccess } from './auth/index.ts';
 import { buildServerInstructions } from './instructions/build-server-instructions.ts';
 
 let transport: HttpTransport<AddonContext> | undefined;
@@ -41,6 +42,7 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	const addonVitestConstants = await getAddonVitestConstants();
 	const manifestStatus = await getManifestStatus(options);
 	a11yEnabled = await isAddonA11yEnabled(options);
+	const docsAvailable = manifestStatus.available || !!multiSource;
 
 	let server: McpServer<any, AddonContext>;
 
@@ -50,7 +52,7 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 			return buildServerInstructions({
 				devEnabled: server?.ctx.custom?.toolsets?.dev ?? true,
 				testEnabled: (server?.ctx.custom?.toolsets?.test ?? true) && !!addonVitestConstants,
-				docsEnabled: (server?.ctx.custom?.toolsets?.docs ?? true) && manifestStatus.available,
+				docsEnabled: (server?.ctx.custom?.toolsets?.docs ?? true) && docsAvailable,
 				changeDetectionEnabled,
 			});
 		},
@@ -86,9 +88,9 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	// Register test addon tools
 	await addRunStoryTestsTool(server, { a11yEnabled });
 
-	// Only register the additional tools if the component manifest feature is enabled
-	if (manifestStatus.available) {
-		logger.info('Experimental components manifest feature detected - registering component tools');
+	// Register documentation tools when local manifests exist or remote composed sources can provide them.
+	if (docsAvailable) {
+		logger.info('Documentation sources detected - registering component tools');
 		const contextAwareEnabled = () => server.ctx.custom?.toolsets?.docs ?? true;
 		await addListAllDocumentationTool(server, contextAwareEnabled);
 		await addGetDocumentationTool(server, contextAwareEnabled, { multiSource });
@@ -113,12 +115,8 @@ type McpServerHandlerParams = {
 	addonOptions: AddonOptionsOutput;
 	/** Sources for multi-source mode (when refs are configured) */
 	sources?: Source[];
-	/** Optional custom manifest provider, receives source as third param in multi-source mode */
-	manifestProvider?: (
-		request: Request | undefined,
-		path: string,
-		source?: Source,
-	) => Promise<string>;
+	/** Builds a manifest provider with the current request's access policy baked in. */
+	manifestProviderFactory?: (access: RequestAccess) => ManifestProvider;
 	/** Composition auth handler for multi-source mode */
 	compositionAuth: CompositionAuth;
 	/** True when the Node request was verified as local Storybook MCP proxy traffic. */
@@ -131,7 +129,7 @@ export const mcpServerHandler = async ({
 	options,
 	addonOptions,
 	sources,
-	manifestProvider,
+	manifestProviderFactory,
 	compositionAuth,
 	trustedProxyRequest,
 }: McpServerHandlerParams) => {
@@ -146,9 +144,11 @@ export const mcpServerHandler = async ({
 
 	// Convert Node.js request to Web API Request
 	const webRequest = await incomingMessageToWebRequest(req);
-	if (trustedProxyRequest) {
-		compositionAuth.markTrustedProxyRequest(webRequest);
-	}
+	const requestAccess = compositionAuth.createRequestAccess(
+		webRequest,
+		trustedProxyRequest ? 'local-proxy' : 'oauth-client',
+	);
+	const manifestProvider = manifestProviderFactory?.(requestAccess);
 
 	const addonContext: AddonContext = {
 		options,
@@ -192,7 +192,7 @@ export const mcpServerHandler = async ({
 		// is fully consumed can we check whether a tool hit an auth error.
 		const body = await response.arrayBuffer();
 
-		const finalResponse = compositionAuth.hadAuthError(webRequest)
+		const finalResponse = requestAccess.authError
 			? new Response('401 - Unauthorized', {
 					status: 401,
 					headers: {

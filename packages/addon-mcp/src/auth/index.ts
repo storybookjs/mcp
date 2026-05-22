@@ -10,5 +10,6 @@ export {
 	extractBearerToken,
 	isStorybookMcpProxyRequest,
 	type ComposedRef,
-	type ManifestProvider,
+	type RequestAccess,
+	type RequestAccessKind,
 } from './composition-auth.ts';

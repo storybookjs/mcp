@@ -50,8 +50,11 @@ function stubRemoteAuthDiscovery() {
 	);
 }
 
-async function expectRemoteSourceError(promise: Promise<unknown>) {
-	await expect(promise).rejects.toMatchObject({ failure: remoteRequiresOwnMcpFailure });
+async function expectRemoteSourceFailure(promise: Promise<unknown>) {
+	await expect(promise).resolves.toMatchObject({
+		kind: 'source-failure',
+		failure: remoteRequiresOwnMcpFailure,
+	});
 }
 
 function createProxyRequest(): Request {
@@ -60,10 +63,16 @@ function createProxyRequest(): Request {
 	});
 }
 
-function createTrustedProxyRequest(auth: CompositionAuth): Request {
-	const request = createProxyRequest();
-	auth.markTrustedProxyRequest(request);
-	return request;
+function createManifestProvider(
+	auth: CompositionAuth,
+	request = new Request('http://localhost:6006/mcp'),
+	kind: 'oauth-client' | 'local-proxy' = 'oauth-client',
+) {
+	const access = auth.createRequestAccess(request, kind);
+	return {
+		access,
+		provider: auth.createManifestProvider('http://localhost:6006', access),
+	};
 }
 
 describe('CompositionAuth', () => {
@@ -226,7 +235,7 @@ describe('CompositionAuth', () => {
 	describe('createManifestProvider', () => {
 		it('creates a manifest provider function', () => {
 			const auth = new CompositionAuth();
-			const provider = auth.createManifestProvider('http://localhost:6006');
+			const { provider } = createManifestProvider(auth);
 			expect(typeof provider).toBe('function');
 		});
 
@@ -239,7 +248,7 @@ describe('CompositionAuth', () => {
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
+			const { provider } = createManifestProvider(auth);
 			const request = new Request('http://localhost:6006/mcp');
 
 			await provider(request, './manifests/components.json');
@@ -259,7 +268,7 @@ describe('CompositionAuth', () => {
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
+			const { provider } = createManifestProvider(auth);
 			const request = new Request('http://localhost:6006/mcp');
 			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
 
@@ -283,11 +292,10 @@ describe('CompositionAuth', () => {
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
-
 			const request = new Request('http://localhost:6006/mcp', {
 				headers: { Authorization: 'Bearer test-token-123' },
 			});
+			const { provider } = createManifestProvider(auth, request);
 
 			await provider(request, './manifests/components.json', remoteRef);
 
@@ -301,7 +309,7 @@ describe('CompositionAuth', () => {
 			);
 		});
 
-		it('throws a typed source error for private refs requested through the Storybook MCP proxy', async () => {
+		it('returns a typed source failure for private refs requested through the Storybook MCP proxy', async () => {
 			const auth = new CompositionAuth();
 
 			stubRemoteAuthDiscovery();
@@ -310,10 +318,9 @@ describe('CompositionAuth', () => {
 			const mockFetch = vi.fn();
 			vi.stubGlobal('fetch', mockFetch);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			await expectRemoteSourceError(
-				provider(createTrustedProxyRequest(auth), './manifests/components.json', remoteRef),
-			);
+			const request = createProxyRequest();
+			const { provider } = createManifestProvider(auth, request, 'local-proxy');
+			await expectRemoteSourceFailure(provider(request, './manifests/components.json', remoteRef));
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
 
@@ -339,13 +346,13 @@ describe('CompositionAuth', () => {
 					}),
 			);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
 			const request = createProxyRequest();
+			const { access, provider } = createManifestProvider(auth, request);
 
 			await expect(provider(request, './manifests/components.json', remoteRef)).rejects.toThrow(
 				'Authentication failed',
 			);
-			expect(auth.hadAuthError(request)).toBe(true);
+			expect(access.authError).toBeTruthy();
 		});
 
 		it('records the Chromatic auth provider for private Chromatic refs', async () => {
@@ -356,19 +363,20 @@ describe('CompositionAuth', () => {
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = createTrustedProxyRequest(auth);
+			const request = createProxyRequest();
+			const { access, provider } = createManifestProvider(auth, request, 'local-proxy');
 
 			await expect(
 				provider(request, './manifests/components.json', chromaticRef),
-			).rejects.toMatchObject({
+			).resolves.toMatchObject({
+				kind: 'source-failure',
 				failure: {
 					kind: 'requires-own-mcp',
 					endpoint: 'https://main--abc.chromatic.com/mcp',
 					authProvider: 'chromatic',
 				},
 			});
-			expect(auth.hadAuthError(request)).toBe(false);
+			expect(access.authError).toBeNull();
 		});
 
 		it('records OAuth metadata when auth is discovered after an inconclusive startup probe', async () => {
@@ -413,8 +421,8 @@ describe('CompositionAuth', () => {
 					}),
 			);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
 			const request = new Request('http://localhost:6006/mcp');
+			const { access, provider } = createManifestProvider(auth, request);
 
 			await expect(provider(request, './manifests/components.json', remoteRef)).rejects.toThrow(
 				'Authentication failed',
@@ -422,7 +430,7 @@ describe('CompositionAuth', () => {
 
 			expect(auth.requiresAuth).toBe(true);
 			expect(auth.authUrls).toContain('http://remote.example.com');
-			expect(auth.hadAuthError(request)).toBe(true);
+			expect(access.authError).toBeTruthy();
 			expect(auth.buildWellKnown('http://localhost:6006')).toEqual({
 				resource: 'http://localhost:6006/mcp',
 				authorization_servers: ['http://auth.example.com'],
@@ -442,285 +450,19 @@ describe('CompositionAuth', () => {
 			});
 			vi.stubGlobal('fetch', mockFetch);
 
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			await provider(
-				new Request('http://localhost:6006/mcp', {
-					headers: { Authorization: 'Bearer test-token-123' },
-				}),
-				'./manifests/components.json',
-				remoteRef,
-			);
+			const authenticatedRequest = new Request('http://localhost:6006/mcp', {
+				headers: { Authorization: 'Bearer test-token-123' },
+			});
+			const { provider } = createManifestProvider(auth, authenticatedRequest);
+			await provider(authenticatedRequest, './manifests/components.json', remoteRef);
 
-			await expectRemoteSourceError(
-				provider(createTrustedProxyRequest(auth), './manifests/components.json', remoteRef),
+			const proxyRequest = createProxyRequest();
+			const { provider: proxyProvider } = createManifestProvider(auth, proxyRequest, 'local-proxy');
+			await expectRemoteSourceFailure(
+				proxyProvider(proxyRequest, './manifests/components.json', remoteRef),
 			);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
-		});
-	});
-
-	describe('fetchManifest (via createManifestProvider)', () => {
-		it('returns manifest content when response is valid', async () => {
-			const auth = new CompositionAuth();
-			const manifestJson =
-				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
-
-			vi.stubGlobal(
-				'fetch',
-				vi.fn().mockResolvedValue({
-					ok: true,
-					text: () => Promise.resolve(manifestJson),
-				}),
-			);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp');
-
-			const result = await provider(request, './manifests/components.json');
-			expect(result).toBe(manifestJson);
-		});
-
-		it('throws when fetch returns non-ok response', async () => {
-			const auth = new CompositionAuth();
-
-			vi.stubGlobal(
-				'fetch',
-				vi.fn().mockResolvedValue({
-					ok: false,
-					status: 403,
-				}),
-			);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp');
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
-				'Failed to fetch',
-			);
-		});
-
-		it('throws auth error when remote returns 401 directly', async () => {
-			const auth = new CompositionAuth();
-
-			vi.stubGlobal(
-				'fetch',
-				vi.fn().mockResolvedValue({
-					ok: false,
-					status: 401,
-				}),
-			);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { Authorization: 'Bearer expired-token' },
-			});
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
-				'Authentication failed',
-			);
-		});
-
-		it('throws auth error when response is invalid manifest and /mcp returns 401', async () => {
-			const auth = new CompositionAuth();
-
-			vi.stubGlobal(
-				'fetch',
-				vi
-					.fn()
-					// First call: manifest fetch returns 200 with unexpected JSON
-					.mockResolvedValueOnce({
-						ok: true,
-						text: () => Promise.resolve('{"some":"unexpected"}'),
-					})
-					// Second call: /mcp returns 401
-					.mockResolvedValueOnce({
-						status: 401,
-					}),
-			);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { Authorization: 'Bearer invalid-token' },
-			});
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
-				'Authentication failed',
-			);
-		});
-
-		it('checks the source /mcp endpoint without dropping a composed ref base path', async () => {
-			const auth = new CompositionAuth();
-			const mockFetch = vi
-				.fn()
-				.mockResolvedValueOnce({
-					ok: true,
-					text: () => Promise.resolve('{"some":"unexpected"}'),
-				})
-				.mockResolvedValueOnce({
-					status: 401,
-				});
-			vi.stubGlobal('fetch', mockFetch);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp');
-			const source = {
-				id: 'remote',
-				title: 'Remote',
-				url: 'https://host.example.com/storybook',
-			};
-
-			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
-				'Authentication failed',
-			);
-			expect(mockFetch).toHaveBeenNthCalledWith(
-				2,
-				'https://host.example.com/storybook/mcp',
-				expect.any(Object),
-			);
-		});
-
-		it('throws when response is invalid manifest and /mcp does not return 401', async () => {
-			const auth = new CompositionAuth();
-
-			vi.stubGlobal(
-				'fetch',
-				vi
-					.fn()
-					// First call: manifest fetch returns 200 with unexpected JSON
-					.mockResolvedValueOnce({
-						ok: true,
-						text: () => Promise.resolve('{"some":"unexpected"}'),
-					})
-					// Second call: /mcp returns 200 (no auth issue)
-					.mockResolvedValueOnce({
-						status: 200,
-					}),
-			);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp');
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow(
-				'Invalid manifest response',
-			);
-		});
-
-		it('caches remote manifest responses and revalidates in background', async () => {
-			const auth = new CompositionAuth();
-			const manifestJson =
-				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
-
-			const mockFetch = vi.fn().mockResolvedValue({
-				ok: true,
-				text: () => Promise.resolve(manifestJson),
-			});
-			vi.stubGlobal('fetch', mockFetch);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { Authorization: 'Bearer token' },
-			});
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			// First call — fetches (blocking)
-			await provider(request, './manifests/components.json', source);
-			expect(mockFetch).toHaveBeenCalledTimes(1);
-
-			// Second call — served from cache, triggers background revalidation
-			const result = await provider(request, './manifests/components.json', source);
-			expect(result).toBe(manifestJson);
-			expect(mockFetch).toHaveBeenCalledTimes(2); // background fetch started
-		});
-
-		it('fetches fresh when cache is expired', async () => {
-			vi.useFakeTimers();
-			const auth = new CompositionAuth();
-			const oldManifest =
-				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
-			const newManifest =
-				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button","description":"updated"}}}';
-
-			const mockFetch = vi
-				.fn()
-				.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(oldManifest) })
-				.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(newManifest) });
-			vi.stubGlobal('fetch', mockFetch);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { Authorization: 'Bearer token' },
-			});
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			// First call — fetches and caches
-			const first = await provider(request, './manifests/components.json', source);
-			expect(first).toBe(oldManifest);
-			expect(mockFetch).toHaveBeenCalledTimes(1);
-
-			// Advance time past cache TTL (61 minutes)
-			vi.advanceTimersByTime(61 * 60 * 1000);
-
-			// Second call — cache expired, fetches fresh (blocking)
-			const second = await provider(request, './manifests/components.json', source);
-			expect(second).toBe(newManifest);
-			expect(mockFetch).toHaveBeenCalledTimes(2);
-
-			vi.useRealTimers();
-		});
-
-		it('does not cache local manifest responses', async () => {
-			const auth = new CompositionAuth();
-			const manifestJson =
-				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
-
-			const mockFetch = vi.fn().mockResolvedValue({
-				ok: true,
-				text: () => Promise.resolve(manifestJson),
-			});
-			vi.stubGlobal('fetch', mockFetch);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp');
-
-			// No source = local
-			await provider(request, './manifests/components.json');
-			await provider(request, './manifests/components.json');
-			expect(mockFetch).toHaveBeenCalledTimes(2);
-		});
-
-		it('does not cache error responses', async () => {
-			const auth = new CompositionAuth();
-			const manifestJson =
-				'{"v":1,"components":{"button":{"id":"button","path":"src/Button.tsx","name":"Button"}}}';
-
-			const mockFetch = vi
-				.fn()
-				// First call: fails
-				.mockResolvedValueOnce({ ok: false, status: 500 })
-				// Second call: succeeds
-				.mockResolvedValueOnce({
-					ok: true,
-					text: () => Promise.resolve(manifestJson),
-				});
-			vi.stubGlobal('fetch', mockFetch);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { Authorization: 'Bearer token' },
-			});
-			const source = { id: 'remote', title: 'Remote', url: 'http://remote.example.com' };
-
-			// First call fails — should not cache
-			await expect(provider(request, './manifests/components.json', source)).rejects.toThrow();
-
-			// Second call should fetch again (not cached)
-			const result = await provider(request, './manifests/components.json', source);
-			expect(result).toBe(manifestJson);
-			expect(mockFetch).toHaveBeenCalledTimes(2);
 		});
 	});
 

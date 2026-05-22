@@ -44,7 +44,7 @@ describe('listAllDocumentationTool', () => {
 		await addListAllDocumentationTool(server);
 
 		// Mock getManifests to return the fixture
-		getManifestsSpy = vi.spyOn(getManifest, 'getManifests');
+		getManifestsSpy = vi.spyOn(getManifest, 'getManifestResult');
 		getManifestsSpy.mockResolvedValue({
 			componentManifest: smallManifestFixture,
 		});

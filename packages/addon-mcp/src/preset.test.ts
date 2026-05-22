@@ -68,6 +68,71 @@ describe('experimental_devServer', () => {
 		expect(mockRes.end).toHaveBeenCalledWith(expect.stringContaining('<html'));
 	});
 
+	it('should show docs enabled for composed refs without showing local manifest warnings', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: true,
+				text: () =>
+					Promise.resolve(
+						JSON.stringify({
+							v: 1,
+							components: {
+								button: {
+									id: 'button',
+									path: 'src/Button.tsx',
+									name: 'Button',
+								},
+							},
+						}),
+					),
+			}),
+		);
+
+		const handlers: Record<string, any> = {};
+		mockApp.get = vi.fn((path: string, handler: any) => {
+			handlers[path] = handler;
+		});
+
+		const optionsWithRemoteRef = {
+			port: 6006,
+			presets: {
+				apply: vi.fn((key: string) => {
+					if (key === 'refs') {
+						return Promise.resolve({
+							remote: { title: 'Remote', url: 'https://remote.example.com' },
+						});
+					}
+					if (key === 'features') {
+						return Promise.resolve({});
+					}
+					return Promise.resolve(undefined);
+				}),
+			},
+		} as unknown as Options;
+
+		await (experimental_devServer as any)(mockApp, optionsWithRemoteRef);
+
+		const mockReq = {
+			headers: {
+				accept: 'text/html',
+			},
+		} as any;
+		const mockRes = {
+			writeHead: vi.fn(),
+			end: vi.fn(),
+		} as any;
+
+		await handlers['/mcp'](mockReq, mockRes);
+
+		const html = mockRes.end.mock.calls[0][0];
+		expect(html).toMatch(
+			/<span>docs<\/span>\s*<span class="toolset-status enabled">enabled<\/span>/,
+		);
+		expect(html).not.toContain('This toolset is only supported in React-based setups.');
+		expect(html).not.toContain('This toolset requires enabling the component manifest feature.');
+	});
+
 	it('should show Storybook version requirement for addon-vitest and a manual manifest link', async () => {
 		vi.spyOn(runStoryTests, 'getAddonVitestConstants').mockResolvedValue(undefined);
 		const manifestEnabledOptions = {
@@ -481,6 +546,15 @@ describe('experimental_devServer', () => {
 	});
 
 	it('should parse refs from storybook config', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 404,
+				headers: new Headers(),
+			}),
+		);
+
 		const apply = vi.fn((key: string) => {
 			if (key === 'refs') {
 				return Promise.resolve({

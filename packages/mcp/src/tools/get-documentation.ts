@@ -2,7 +2,11 @@ import * as v from 'valibot';
 import type { McpServer } from 'tmcp';
 import type { ComponentManifest, Doc, StorybookContext } from '../types.ts';
 import { StorybookIdField } from '../types.ts';
-import { getManifests, errorToMCPContent } from '../utils/get-manifest.ts';
+import {
+	errorToMCPContent,
+	getManifestResult,
+	sourceManifestFailureToMCPContent,
+} from '../utils/get-manifest.ts';
 import { LIST_TOOL_NAME } from './list-all-documentation.ts';
 import {
 	formatComponentManifest,
@@ -76,11 +80,11 @@ Example: id="button" returns Primary, Secondary, Large stories with code like <B
 					}
 				}
 
-				const { componentManifest, docsManifest } = await getManifests(
-					ctx?.request,
-					ctx?.manifestProvider,
-					source,
-				);
+				const manifestResult = await getManifestResult(ctx?.request, ctx?.manifestProvider, source);
+				if (manifestResult.kind === 'source-failure') {
+					return sourceManifestFailureToMCPContent(manifestResult.failure, manifestResult.source);
+				}
+				const { componentManifest, docsManifest } = manifestResult;
 
 				const component = componentManifest.components[id];
 				const docsEntry = docsManifest?.docs[id];

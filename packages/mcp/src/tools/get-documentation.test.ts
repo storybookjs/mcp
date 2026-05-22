@@ -44,7 +44,7 @@ describe('getDocumentationTool', () => {
 		await addGetDocumentationTool(server);
 
 		// Mock getManifests to return the fixture
-		getManifestsSpy = vi.spyOn(getManifest, 'getManifests');
+		getManifestsSpy = vi.spyOn(getManifest, 'getManifestResult');
 		getManifestsSpy.mockResolvedValue({
 			componentManifest: smallManifestFixture,
 		});
@@ -164,13 +164,14 @@ describe('getDocumentationTool', () => {
 	});
 
 	it('should return requires-own-mcp source errors as guidance content', async () => {
-		getManifestsSpy.mockRejectedValue(
-			new getManifest.SourceManifestError({
+		getManifestsSpy.mockResolvedValue({
+			kind: 'source-failure',
+			failure: {
 				kind: 'requires-own-mcp',
 				endpoint: 'https://example.com/mcp',
 				authProvider: 'chromatic',
-			}),
-		);
+			},
+		});
 
 		const request = {
 			jsonrpc: '2.0' as const,
@@ -564,7 +565,7 @@ https://example.com/mcp`,
 			);
 			await addGetDocumentationTool(server, undefined, { multiSource: true });
 
-			getManifestsSpy = vi.spyOn(getManifest, 'getManifests');
+			getManifestsSpy = vi.spyOn(getManifest, 'getManifestResult');
 			getManifestsSpy.mockResolvedValue({
 				componentManifest: smallManifestFixture,
 			});

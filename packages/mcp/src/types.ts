@@ -24,6 +24,19 @@ export type SourceManifestFailure =
 			authProvider: 'chromatic' | 'unknown';
 	  };
 
+export type ManifestProviderResult =
+	| string
+	| {
+			kind: 'source-failure';
+			failure: SourceManifestFailure;
+	  };
+
+export type ManifestProvider = (
+	request: Request | undefined,
+	path: string,
+	source?: Source,
+) => Promise<ManifestProviderResult>;
+
 /**
  * Result for a single source in multi-source manifest loading.
  */
@@ -58,11 +71,7 @@ export type StorybookContext = {
 	 * replacing /mcp with /manifests/components.json.
 	 * Custom providers can use the request parameter to determine the manifest source, or ignore it entirely.
 	 */
-	manifestProvider?: (
-		request: Request | undefined,
-		path: string,
-		source?: Source,
-	) => Promise<string>;
+	manifestProvider?: ManifestProvider;
 	/**
 	 * Sources configuration for multi-source mode.
 	 * When provided, tools will fetch and display manifests grouped by source.

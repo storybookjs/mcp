@@ -128,7 +128,7 @@ type StorybookContext = {
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<string>;
+	) => Promise<ManifestProviderResult>;
 	sources?: Source[];
 	onListAllDocumentation?: (params: {
 		context: StorybookContext;
@@ -166,12 +166,12 @@ type StorybookMcpHandlerOptions = StorybookContext & {
 Type:
 
 ```ts
-(request: Request | undefined, path: string, source?: Source) => Promise<string>;
+(request: Request | undefined, path: string, source?: Source) => Promise<ManifestProviderResult>;
 ```
 
 Primary extension point for production setups.
 
-Use this when manifests are not available at the default same-origin paths. Your function returns the raw JSON string for each requested manifest path.
+Use this when manifests are not available at the default same-origin paths. Your function returns the raw JSON string for each requested manifest path. It may also return a `source-failure` result when a source should be shown as guidance instead of fetched as a manifest.
 
 For a real customization example (switching between HTTP and filesystem-backed manifest loading), see the [Example implementation](#example-implementation) section above.
 
@@ -274,8 +274,13 @@ type SourceManifestFailure =
 			kind: 'requires-own-mcp';
 			endpoint: string;
 			authProvider: 'chromatic' | 'unknown';
-			message: string;
-			detailText: string;
+	  };
+
+type ManifestProviderResult =
+	| string
+	| {
+			kind: 'source-failure';
+			failure: SourceManifestFailure;
 	  };
 ```
 

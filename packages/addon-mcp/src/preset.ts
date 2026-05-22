@@ -44,8 +44,8 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 
 	// Build sources and manifest provider only if refs are configured
 	let sources: Source[] | undefined;
-	let manifestProvider:
-		| ((request: Request | undefined, path: string, source?: Source) => Promise<string>)
+	let manifestProviderFactory:
+		| Parameters<typeof mcpServerHandler>[0]['manifestProviderFactory']
 		| undefined;
 
 	if (refs.length > 0) {
@@ -60,7 +60,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 		logger.info(`Sources: ${sources.map((s) => s.id).join(', ')}`);
 
 		// Create manifest provider that handles multi-source
-		manifestProvider = compositionAuth.createManifestProvider(origin);
+		manifestProviderFactory = (access) => compositionAuth.createManifestProvider(origin, access);
 	}
 
 	// Serve .well-known/oauth-protected-resource for MCP auth
@@ -98,7 +98,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 			options,
 			addonOptions,
 			sources,
-			manifestProvider,
+			manifestProviderFactory,
 			compositionAuth,
 			trustedProxyRequest: isLocalStorybookMcpProxyRequest(req),
 		});
@@ -108,8 +108,10 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 	const addonVitestConstants = await getAddonVitestConstants();
 	const a11yEnabled = await isAddonA11yEnabled(options);
 
+	const hasRemoteSources = sources?.some((source) => source.url) ?? false;
 	const isDevEnabled = addonOptions.toolsets?.dev ?? true;
-	const isDocsEnabled = manifestStatus.available && (addonOptions.toolsets?.docs ?? true);
+	const isDocsEnabled =
+		(manifestStatus.available || hasRemoteSources) && (addonOptions.toolsets?.docs ?? true);
 	const isTestEnabled = !!addonVitestConstants && (addonOptions.toolsets?.test ?? true);
 
 	app!.get('/mcp', (req, res) => {
@@ -122,7 +124,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 				options,
 				addonOptions,
 				sources,
-				manifestProvider,
+				manifestProviderFactory,
 				compositionAuth,
 				trustedProxyRequest: isLocalStorybookMcpProxyRequest(req),
 			});
@@ -132,14 +134,14 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 		res.writeHead(200, { 'Content-Type': 'text/html' });
 
 		let docsNotice = '';
-		if (!manifestStatus.hasManifests) {
+		if (!hasRemoteSources && !manifestStatus.hasManifests) {
 			docsNotice = `<div class="toolset-notice">
-				This toolset is only supported in React-based setups.
-			</div>`;
-		} else if (!manifestStatus.hasFeatureFlag) {
+					This toolset is only supported in React-based setups.
+				</div>`;
+		} else if (!hasRemoteSources && !manifestStatus.hasFeatureFlag) {
 			docsNotice = `<div class="toolset-notice">
-				This toolset requires enabling the component manifest feature.
-				<a target="_blank" href="https://github.com/storybookjs/mcp/tree/main/packages/addon-mcp#docs-tools-experimental">Learn how to enable it</a>
+					This toolset requires enabling the component manifest feature.
+					<a target="_blank" href="https://github.com/storybookjs/mcp/tree/main/packages/addon-mcp#docs-tools-experimental">Learn how to enable it</a>
 			</div>`;
 		}
 

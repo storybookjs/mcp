@@ -233,6 +233,12 @@ describe('mcpServerHandler', () => {
 		};
 	}
 
+	function parseSseResponse(body: string) {
+		const dataLine = body.split('\n').find((line) => line.startsWith('data: '));
+		const responseText = dataLine!.replace(/^data: /, '').trim();
+		return JSON.parse(responseText);
+	}
+
 	it('should initialize MCP server and handle requests', async () => {
 		const mockOptions = createMockOptions();
 		const mockReq = createMockIncomingMessage({
@@ -258,9 +264,7 @@ describe('mcpServerHandler', () => {
 		const { body } = getResponseData();
 		expect(response.end).toHaveBeenCalled();
 
-		const dataLine = body.split('\n').find((line) => line.startsWith('data: '));
-		const responseText = dataLine!.replace(/^data: /, '').trim();
-		const parsedResponse = JSON.parse(responseText);
+		const parsedResponse = parseSseResponse(body);
 
 		expect(parsedResponse).toMatchObject({
 			jsonrpc: '2.0',
@@ -333,9 +337,7 @@ describe('mcpServerHandler', () => {
 		});
 
 		const { body } = getResponseData();
-		const dataLine = body.split('\n').find((line) => line.startsWith('data: '));
-		const responseText = dataLine!.replace(/^data: /, '').trim();
-		const parsedResponse = JSON.parse(responseText);
+		const parsedResponse = parseSseResponse(body);
 
 		expect(parsedResponse.result.instructions).toContain(
 			'Follow these workflows when working with UI and/or Storybook.',
@@ -454,11 +456,80 @@ describe('mcpServerHandler', () => {
 
 		// Parse the SSE response
 		const { body } = getResponseData();
-		const dataLine = body.split('\n').find((line) => line.startsWith('data: '));
-		const responseText = dataLine!.replace(/^data: /, '').trim();
-		const parsedResponse = JSON.parse(responseText);
+		const parsedResponse = parseSseResponse(body);
 
 		// Verify component manifest tools are included
+		const toolNames = parsedResponse.result.tools.map((t: any) => t.name);
+		expect(toolNames).toContain('list-all-documentation');
+		expect(toolNames).toContain('get-documentation');
+		expect(toolNames).toContain('get-documentation-for-story');
+	});
+
+	it('should register documentation tools when remote composed sources exist without local manifests', async () => {
+		const applyMock = vi.fn(async (key: string, defaultValue?: any) => {
+			if (key === 'core') {
+				return { disableTelemetry: false };
+			}
+			if (key === 'features') {
+				return {};
+			}
+			if (key === 'experimental_manifests') {
+				return undefined;
+			}
+			return defaultValue;
+		});
+
+		const mockOptions = createMockOptions({
+			port: 6012,
+			presets: { apply: applyMock },
+		});
+		const sources = [
+			{ id: 'local', title: 'Local' },
+			{ id: 'remote', title: 'Remote', url: 'http://remote.example.com' },
+		];
+
+		const initReq = createMockIncomingMessage({
+			method: 'POST',
+			headers: { 'content-type': 'application/json', host: 'localhost:6012' },
+			body: createMCPInitializeRequest(),
+		});
+		const { response: initResponse } = createMockServerResponse();
+
+		await mcpServerHandler({
+			req: initReq,
+			res: initResponse,
+			options: mockOptions as any,
+			addonOptions: {
+				toolsets: { dev: true, docs: true },
+			},
+			sources,
+			compositionAuth: new CompositionAuth(),
+		});
+
+		const listToolsReq = createMockIncomingMessage({
+			method: 'POST',
+			headers: { 'content-type': 'application/json', host: 'localhost:6012' },
+			body: {
+				jsonrpc: '2.0',
+				id: 2,
+				method: 'tools/list',
+				params: {},
+			},
+		});
+		const { response: listResponse, getResponseData } = createMockServerResponse();
+
+		await mcpServerHandler({
+			req: listToolsReq,
+			res: listResponse,
+			options: mockOptions as any,
+			addonOptions: {
+				toolsets: { dev: true, docs: true },
+			},
+			sources,
+			compositionAuth: new CompositionAuth(),
+		});
+
+		const parsedResponse = parseSseResponse(getResponseData().body);
 		const toolNames = parsedResponse.result.tools.map((t: any) => t.name);
 		expect(toolNames).toContain('list-all-documentation');
 		expect(toolNames).toContain('get-documentation');
