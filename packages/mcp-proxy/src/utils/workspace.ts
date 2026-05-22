@@ -60,8 +60,13 @@ async function readManifestAt(dir: string): Promise<WorkspaceManifest | undefine
 async function readPnpmWorkspace(filePath: string): Promise<string[] | undefined> {
 	const raw = await readFileSoft(filePath);
 	if (raw === undefined) return undefined;
-	const parsed = parseYaml(raw);
-	const packages = (parsed as { packages?: unknown }).packages;
+	let parsed: unknown;
+	try {
+		parsed = parseYaml(raw);
+	} catch {
+		return undefined;
+	}
+	const packages = (parsed as { packages?: unknown } | null)?.packages;
 	if (!Array.isArray(packages)) return undefined;
 	return packages.filter((p): p is string => typeof p === 'string');
 }
