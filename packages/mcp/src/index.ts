@@ -23,17 +23,11 @@ export {
 	COMPONENT_MANIFEST_PATH,
 	DOCS_MANIFEST_PATH,
 	getMultiSourceManifests,
-	sourceNoticeToMCPContent,
+	SourceManifestError,
 } from './utils/get-manifest.ts';
 
 // Export types for reuse
-export type {
-	StorybookContext,
-	Source,
-	SourceManifests,
-	ManifestSourceNotice,
-	ManifestProviderResult,
-} from './types.ts';
+export type { StorybookContext, Source, SourceManifestFailure, SourceManifests } from './types.ts';
 
 // copied from tmcp internals as it's not exposed
 type InitializeRequestParams = {
@@ -76,7 +70,7 @@ export interface StorybookMcpHandlerOptions extends StorybookContext {
 	onSessionInitialize?: (initializeRequestParams: InitializeRequestParams) => void | Promise<void>;
 }
 export type { ComponentManifest } from './types.ts';
-export { ComponentManifestMap, DocsManifestMap, isManifestSourceNotice } from './types.ts';
+export { ComponentManifestMap, DocsManifestMap } from './types.ts';
 
 type Handler = (req: Request, context?: StorybookContext) => Promise<Response>;
 

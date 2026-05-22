@@ -9,8 +9,7 @@
 import {
 	ComponentManifestMap,
 	DocsManifestMap,
-	type ManifestProviderResult,
-	type ManifestSourceNotice,
+	SourceManifestError,
 	type Source,
 } from '@storybook/mcp';
 import * as v from 'valibot';
@@ -53,7 +52,7 @@ export type ManifestProvider = (
 	request: Request | undefined,
 	path: string,
 	source?: Source,
-) => Promise<ManifestProviderResult>;
+) => Promise<string>;
 
 const MANIFEST_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 const REVALIDATION_TTL = 60 * 1000; // 60 seconds
@@ -183,7 +182,7 @@ export class CompositionAuth {
 			const tokenForRequest = needsAuth ? token : null;
 
 			if (needsAuth && !token && isProxyRequest && remoteSource) {
-				return createPrivateCompositionNotice(remoteSource);
+				throw createRequiresOwnMcpError(remoteSource);
 			}
 
 			// New token = user re-authenticated, invalidate all cached manifests
@@ -234,7 +233,7 @@ export class CompositionAuth {
 						this.#recordAuthRequirement(remoteSource, error.authRequirement);
 					}
 					if (isProxyRequest && !token && remoteSource) {
-						return createPrivateCompositionNotice(remoteSource);
+						throw createRequiresOwnMcpError(remoteSource);
 					}
 					this.#authErrors.set(request, error);
 				}
@@ -406,22 +405,25 @@ function isChromaticUrl(url: string): boolean {
 	}
 }
 
-function createPrivateCompositionNotice(source: RemoteSource): ManifestSourceNotice {
+function createRequiresOwnMcpError(source: RemoteSource): SourceManifestError {
 	const mcpEndpoint = `${source.url.replace(/\/$/, '')}/mcp`;
 	const isChromatic = isChromaticUrl(source.url);
 	const authMessage = isChromatic
 		? 'This composed Storybook is private and requires Chromatic authentication.'
 		: 'This composed Storybook requires authentication.';
 
-	return {
-		listText: `${authMessage} Use its MCP endpoint: ${mcpEndpoint}`,
+	return new SourceManifestError({
+		kind: 'requires-own-mcp',
+		endpoint: mcpEndpoint,
+		authProvider: isChromatic ? 'chromatic' : 'unknown',
+		message: `${authMessage} Use its MCP endpoint: ${mcpEndpoint}`,
 		detailText: `# ${source.title}
 
 ${authMessage}
 
 To access documentation from this source, register or use its MCP endpoint:
 ${mcpEndpoint}`,
-	};
+	});
 }
 
 /**

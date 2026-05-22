@@ -33,4 +33,4 @@ Use `withStoryIds: true` on **list-all-documentation** when you also need story 
 
 - When the downstream Storybook composes multiple sources, **list-all-documentation** returns entries from all of them.
 - Use `storybookId` in **get-documentation** when you need to scope a request to one source.
-- If a composed Storybook source says it requires authentication, use the MCP endpoint shown in that source's notice instead of trying to access that source through this proxy.
+- If a composed Storybook source says it requires authentication, use the MCP endpoint shown for that source instead of trying to access that source through this proxy.

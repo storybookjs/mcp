@@ -127,10 +127,12 @@ describe('listAllDocumentationTool', () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
+					kind: 'manifest',
 					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
+					kind: 'manifest',
 					source: sources[1]!,
 					componentManifest: remoteManifest,
 				},
@@ -166,10 +168,12 @@ describe('listAllDocumentationTool', () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
+					kind: 'manifest',
 					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
+					kind: 'manifest',
 					source: sources[1]!,
 					componentManifest: remoteManifest,
 				},
@@ -212,13 +216,17 @@ describe('listAllDocumentationTool', () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
+					kind: 'manifest',
 					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
+					kind: 'error',
 					source: sources[1]!,
-					componentManifest: { v: 1, components: {} },
-					error: 'Failed to fetch manifest: 401 Unauthorized',
+					error: {
+						kind: 'fetch-failed',
+						message: 'Failed to fetch manifest: 401 Unauthorized',
+					},
 				},
 			]);
 
@@ -246,18 +254,25 @@ describe('listAllDocumentationTool', () => {
 			getMultiSourceManifestsSpy.mockRestore();
 		});
 
-		it('should show notices for sources that should be accessed through another MCP endpoint', async () => {
+		it('should show auth guidance for sources that should be accessed through another MCP endpoint', async () => {
 			const getMultiSourceManifestsSpy = vi.spyOn(getManifest, 'getMultiSourceManifests');
 			getMultiSourceManifestsSpy.mockResolvedValue([
 				{
+					kind: 'manifest',
 					source: sources[0]!,
 					componentManifest: smallManifestFixture,
 				},
 				{
+					kind: 'error',
 					source: sources[1]!,
-					componentManifest: { v: 1, components: {} },
-					notice:
-						'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
+					error: {
+						kind: 'requires-own-mcp',
+						endpoint: 'http://remote.example.com/mcp',
+						authProvider: 'chromatic',
+						message:
+							'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
+						detailText: 'Use http://remote.example.com/mcp',
+					},
 				},
 			]);
 

@@ -357,49 +357,64 @@ export function formatMultiSourceManifestsToLists(
 ): string {
 	const parts: string[] = [];
 
-	for (const { source, componentManifest, docsManifest, notice, error } of manifests) {
+	for (const sourceResult of manifests) {
+		const { source } = sourceResult;
 		parts.push(`# ${source.title}`);
 		parts.push(`id: ${source.id}`);
 		parts.push('');
 
-		if (notice) {
-			parts.push(notice);
-			parts.push('');
-			continue;
-		}
-
-		if (error) {
-			parts.push(`error: ${error}`);
-			parts.push('');
-			continue;
-		}
-
-		const components = Object.values(componentManifest.components);
-		if (components.length > 0) {
-			parts.push('## Components');
-			parts.push('');
-			for (const component of components) {
-				parts.push(formatComponentLine(component));
-				if (options.withStoryIds) {
-					for (const story of component.stories ?? []) {
-						parts.push(formatStorySubLine(story));
+		switch (sourceResult.kind) {
+			case 'manifest': {
+				const components = Object.values(sourceResult.componentManifest.components);
+				if (components.length > 0) {
+					parts.push('## Components');
+					parts.push('');
+					for (const component of components) {
+						parts.push(formatComponentLine(component));
+						if (options.withStoryIds) {
+							for (const story of component.stories ?? []) {
+								parts.push(formatStorySubLine(story));
+							}
+						}
 					}
+					parts.push('');
 				}
-			}
-			parts.push('');
-		}
 
-		if (docsManifest && Object.keys(docsManifest.docs).length > 0) {
-			parts.push('## Docs');
-			parts.push('');
-			for (const doc of Object.values(docsManifest.docs)) {
-				parts.push(formatDocLine(doc));
+				if (sourceResult.docsManifest && Object.keys(sourceResult.docsManifest.docs).length > 0) {
+					parts.push('## Docs');
+					parts.push('');
+					for (const doc of Object.values(sourceResult.docsManifest.docs)) {
+						parts.push(formatDocLine(doc));
+					}
+					parts.push('');
+				}
+				break;
 			}
-			parts.push('');
+			case 'error':
+				parts.push(formatSourceError(sourceResult.error));
+				parts.push('');
+				break;
+			default:
+				assertNever(sourceResult);
 		}
 	}
 
 	return parts.join('\n').trim();
+}
+
+function formatSourceError(error: Extract<SourceManifests, { kind: 'error' }>['error']): string {
+	switch (error.kind) {
+		case 'requires-own-mcp':
+			return error.message;
+		case 'fetch-failed':
+			return `error: ${error.message}`;
+		default:
+			return assertNever(error);
+	}
+}
+
+function assertNever(value: never): never {
+	throw new Error(`Unhandled source manifest result: ${JSON.stringify(value)}`);
 }
 
 /**

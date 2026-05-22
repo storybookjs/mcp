@@ -9,7 +9,6 @@ import {
 	addListAllDocumentationTool,
 	addGetDocumentationTool,
 	addGetStoryDocumentationTool,
-	type ManifestProviderResult,
 	type Source,
 } from '@storybook/mcp';
 import type { Options } from 'storybook/internal/types';
@@ -119,7 +118,7 @@ type McpServerHandlerParams = {
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<ManifestProviderResult>;
+	) => Promise<string>;
 	/** Composition auth handler for multi-source mode */
 	compositionAuth: CompositionAuth;
 };

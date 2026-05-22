@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getManifests, getMultiSourceManifests, ManifestGetError } from './get-manifest.ts';
-import type {
-	ComponentManifestMap,
-	DocsManifestMap,
-	ManifestSourceNotice,
-	Source,
-} from '../types.ts';
+import {
+	getManifests,
+	getMultiSourceManifests,
+	ManifestGetError,
+	SourceManifestError,
+} from './get-manifest.ts';
+import type { ComponentManifestMap, DocsManifestMap, Source } from '../types.ts';
 
 global.fetch = vi.fn();
 
@@ -73,8 +73,8 @@ function createFetchMock(responses: { components?: unknown; docs?: unknown }) {
  * Helper to create a manifestProvider mock that returns different responses based on path
  */
 function createManifestProviderMock(responses: {
-	components?: string | Error | ManifestSourceNotice;
-	docs?: string | Error | ManifestSourceNotice;
+	components?: string | Error;
+	docs?: string | Error;
 }) {
 	return vi.fn().mockImplementation((_request: Request | undefined, path: string) => {
 		if (path.includes('components.json')) {
@@ -415,21 +415,24 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 		});
 
-		it('should preserve source notices from manifestProvider', async () => {
+		it('should preserve typed source errors from manifestProvider', async () => {
 			const request = createMockRequest('https://example.com/mcp');
-			const notice: ManifestSourceNotice = {
-				listText:
+			const sourceError = new SourceManifestError({
+				kind: 'requires-own-mcp',
+				endpoint: 'https://example.com/mcp',
+				authProvider: 'chromatic',
+				message:
 					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
 				detailText: 'Use https://example.com/mcp',
-			};
+			});
 			const manifestProvider = createManifestProviderMock({
-				components: notice,
+				components: sourceError,
 			});
 
-			await expect(getManifests(request, manifestProvider)).resolves.toBe(notice);
+			await expect(getManifests(request, manifestProvider)).rejects.toBe(sourceError);
 		});
 
-		it('should preserve fetched component documentation when only the optional docs manifest returns a notice', async () => {
+		it('should preserve fetched component documentation when only the optional docs manifest returns a source error', async () => {
 			const validManifest: ComponentManifestMap = {
 				v: 1,
 				components: {
@@ -442,14 +445,17 @@ Invalid key: Expected "v" but received undefined]`);
 				},
 			};
 			const request = createMockRequest('https://example.com/mcp');
-			const notice: ManifestSourceNotice = {
-				listText:
+			const sourceError = new SourceManifestError({
+				kind: 'requires-own-mcp',
+				endpoint: 'https://example.com/mcp',
+				authProvider: 'chromatic',
+				message:
 					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
 				detailText: 'Use https://example.com/mcp',
-			};
+			});
 			const manifestProvider = createManifestProviderMock({
 				components: JSON.stringify(validManifest),
-				docs: notice,
+				docs: sourceError,
 			});
 
 			await expect(getManifests(request, manifestProvider)).resolves.toEqual({
@@ -515,12 +521,16 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 
 			expect(results).toHaveLength(2);
-			expect(results[0]!.source.id).toBe('local');
-			expect(results[0]!.componentManifest).toEqual(localManifest);
-			expect(results[0]!.error).toBeUndefined();
-			expect(results[1]!.source.id).toBe('remote');
-			expect(results[1]!.componentManifest).toEqual(remoteManifest);
-			expect(results[1]!.error).toBeUndefined();
+			expect(results[0]).toMatchObject({
+				kind: 'manifest',
+				source: { id: 'local' },
+				componentManifest: localManifest,
+			});
+			expect(results[1]).toMatchObject({
+				kind: 'manifest',
+				source: { id: 'remote' },
+				componentManifest: remoteManifest,
+			});
 		});
 
 		it('should capture errors for individual sources without failing', async () => {
@@ -543,23 +553,33 @@ Invalid key: Expected "v" but received undefined]`);
 			);
 
 			expect(results).toHaveLength(2);
-			expect(results[0]!.error).toBeUndefined();
-			expect(results[0]!.componentManifest).toEqual(localManifest);
-			expect(results[1]!.error).toContain('401 Unauthorized');
-			expect(results[1]!.componentManifest).toEqual({ v: 1, components: {} });
+			expect(results[0]).toMatchObject({
+				kind: 'manifest',
+				componentManifest: localManifest,
+			});
+			expect(results[1]).toMatchObject({
+				kind: 'error',
+				error: {
+					kind: 'fetch-failed',
+					message: 'Failed to get component manifest: 401 Unauthorized',
+				},
+			});
 		});
 
-		it('should capture source notices without marking the source as an error', async () => {
-			const notice: ManifestSourceNotice = {
-				listText:
+		it('should capture requires-own-mcp source errors without failing the whole request', async () => {
+			const sourceError = new SourceManifestError({
+				kind: 'requires-own-mcp',
+				endpoint: 'http://remote.example.com/mcp',
+				authProvider: 'chromatic',
+				message:
 					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: http://remote.example.com/mcp',
 				detailText: 'Use http://remote.example.com/mcp',
-			};
+			});
 			const manifestProvider = vi
 				.fn()
 				.mockImplementation((_req: Request | undefined, path: string, source?: Source) => {
 					if (source?.id === 'remote') {
-						return Promise.resolve(notice);
+						return Promise.reject(sourceError);
 					}
 					if (path.includes('docs.json')) {
 						return Promise.reject(new Error('Not found'));
@@ -573,10 +593,14 @@ Invalid key: Expected "v" but received undefined]`);
 				manifestProvider,
 			);
 
-			expect(results[0]!.error).toBeUndefined();
-			expect(results[1]!.error).toBeUndefined();
-			expect(results[1]!.notice).toContain('Use its MCP endpoint');
-			expect(results[1]!.componentManifest).toEqual({ v: 1, components: {} });
+			expect(results[0]).toMatchObject({ kind: 'manifest' });
+			expect(results[1]).toMatchObject({
+				kind: 'error',
+				error: {
+					kind: 'requires-own-mcp',
+					endpoint: 'http://remote.example.com/mcp',
+				},
+			});
 		});
 
 		it('should throw when all sources fail', async () => {

@@ -255,12 +255,28 @@ Represents one Storybook source in multi-source mode.
 Type:
 
 ```ts
-type SourceManifests = {
-	source: Source;
-	componentManifest: ComponentManifestMap;
-	docsManifest?: DocsManifestMap;
-	error?: string;
-};
+type SourceManifests =
+	| {
+			kind: 'manifest';
+			source: Source;
+			componentManifest: ComponentManifestMap;
+			docsManifest?: DocsManifestMap;
+	  }
+	| {
+			kind: 'error';
+			source: Source;
+			error: SourceManifestFailure;
+	  };
+
+type SourceManifestFailure =
+	| { kind: 'fetch-failed'; message: string }
+	| {
+			kind: 'requires-own-mcp';
+			endpoint: string;
+			authProvider: 'chromatic' | 'unknown';
+			message: string;
+			detailText: string;
+	  };
 ```
 
 Represents fetched manifests (or an error) for a single source.

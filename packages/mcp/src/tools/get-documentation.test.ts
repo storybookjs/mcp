@@ -163,17 +163,22 @@ describe('getDocumentationTool', () => {
 			`);
 	});
 
-	it('should return source notices as normal content', async () => {
-		getManifestsSpy.mockResolvedValue({
-			listText:
-				'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
-			detailText: `# Private Storybook
+	it('should return requires-own-mcp source errors as guidance content', async () => {
+		getManifestsSpy.mockRejectedValue(
+			new getManifest.SourceManifestError({
+				kind: 'requires-own-mcp',
+				endpoint: 'https://example.com/mcp',
+				authProvider: 'chromatic',
+				message:
+					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://example.com/mcp',
+				detailText: `# Private Storybook
 
 This composed Storybook is private and requires Chromatic authentication.
 
 To access documentation from this source, register or use its MCP endpoint:
 https://example.com/mcp`,
-		});
+			}),
+		);
 
 		const request = {
 			jsonrpc: '2.0' as const,

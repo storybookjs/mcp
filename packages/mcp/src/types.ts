@@ -13,39 +13,34 @@ export type Source = {
 	url?: string;
 };
 
-/**
- * All manifests for a single source.
- */
-export type SourceManifests = {
-	source: Source;
-	componentManifest: ComponentManifestMap;
-	docsManifest?: DocsManifestMap;
-	/** Informational message when this source should be accessed through another MCP endpoint */
-	notice?: string;
-	/** Error message if fetching this source failed */
-	error?: string;
-};
+export type SourceManifestFailure =
+	| {
+			kind: 'fetch-failed';
+			message: string;
+	  }
+	| {
+			kind: 'requires-own-mcp';
+			endpoint: string;
+			authProvider: 'chromatic' | 'unknown';
+			message: string;
+			detailText: string;
+	  };
 
 /**
- * Informational tool content for a source that should be accessed elsewhere.
+ * Result for a single source in multi-source manifest loading.
  */
-export type ManifestSourceNotice = {
-	listText: string;
-	detailText: string;
-};
-
-export type ManifestProviderResult = string | ManifestSourceNotice;
-
-export function isManifestSourceNotice(value: unknown): value is ManifestSourceNotice {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'listText' in value &&
-		typeof value.listText === 'string' &&
-		'detailText' in value &&
-		typeof value.detailText === 'string'
-	);
-}
+export type SourceManifests =
+	| {
+			kind: 'manifest';
+			source: Source;
+			componentManifest: ComponentManifestMap;
+			docsManifest?: DocsManifestMap;
+	  }
+	| {
+			kind: 'error';
+			source: Source;
+			error: SourceManifestFailure;
+	  };
 
 /**
  * Custom context passed to MCP server and tools.
@@ -69,7 +64,7 @@ export type StorybookContext = {
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<ManifestProviderResult>;
+	) => Promise<string>;
 	/**
 	 * Sources configuration for multi-source mode.
 	 * When provided, tools will fetch and display manifests grouped by source.

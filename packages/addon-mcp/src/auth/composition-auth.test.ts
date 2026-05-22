@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isManifestSourceNotice } from '@storybook/mcp';
 import {
 	CompositionAuth,
 	extractBearerToken,
@@ -11,6 +10,14 @@ const chromaticRef = {
 	id: 'chromatic',
 	title: 'Chromatic',
 	url: 'https://main--abc.chromatic.com',
+};
+const remoteRequiresOwnMcpFailure = {
+	kind: 'requires-own-mcp',
+	endpoint: 'http://remote.example.com/mcp',
+	authProvider: 'unknown',
+	message:
+		'This composed Storybook requires authentication. Use its MCP endpoint: http://remote.example.com/mcp',
+	detailText: expect.stringContaining('register or use its MCP endpoint'),
 };
 
 function stubRemoteAuthDiscovery() {
@@ -46,12 +53,13 @@ function stubRemoteAuthDiscovery() {
 	);
 }
 
-function expectRemoteSourceNotice(result: unknown) {
-	expect(isManifestSourceNotice(result)).toBe(true);
-	expect(result).toMatchObject({
-		listText:
-			'This composed Storybook requires authentication. Use its MCP endpoint: http://remote.example.com/mcp',
-		detailText: expect.stringContaining('register or use its MCP endpoint'),
+async function expectRemoteSourceError(promise: Promise<unknown>) {
+	await expect(promise).rejects.toMatchObject({ failure: remoteRequiresOwnMcpFailure });
+}
+
+function createProxyRequest(): Request {
+	return new Request('http://localhost:6006/mcp', {
+		headers: { 'X-Storybook-MCP-Proxy': 'true' },
 	});
 }
 
@@ -61,33 +69,20 @@ describe('CompositionAuth', () => {
 	});
 
 	describe('extractBearerToken', () => {
-		it('extracts token from valid Bearer header', () => {
-			expect(extractBearerToken('Bearer abc123')).toBe('abc123');
+		it.each([
+			['Bearer abc123', 'abc123'],
+			[['Bearer abc'], 'abc'],
+			[['Basic xyz', 'Bearer abc'], 'abc'],
+		])('extracts token from Bearer header %#', (header, token) => {
+			expect(extractBearerToken(header)).toBe(token);
 		});
 
-		it('returns null for non-Bearer header', () => {
-			expect(extractBearerToken('Basic abc123')).toBeNull();
-		});
-
-		it('returns null for undefined', () => {
-			expect(extractBearerToken(undefined)).toBeNull();
-		});
-
-		it('returns null for null', () => {
-			expect(extractBearerToken(null)).toBeNull();
-		});
-
-		it('extracts token from array header', () => {
-			expect(extractBearerToken(['Bearer abc'])).toBe('abc');
-		});
-
-		it('finds Bearer in mixed array', () => {
-			expect(extractBearerToken(['Basic xyz', 'Bearer abc'])).toBe('abc');
-		});
-
-		it('returns null for array without Bearer', () => {
-			expect(extractBearerToken(['Basic xyz'])).toBeNull();
-		});
+		it.each(['Basic abc123', undefined, null, ['Basic xyz']])(
+			'returns null for non-Bearer header %#',
+			(header) => {
+				expect(extractBearerToken(header)).toBeNull();
+			},
+		);
 	});
 
 	describe('isStorybookMcpProxyRequest', () => {
@@ -303,7 +298,7 @@ describe('CompositionAuth', () => {
 			);
 		});
 
-		it('returns a source notice for private refs requested through the Storybook MCP proxy', async () => {
+		it('throws a typed source error for private refs requested through the Storybook MCP proxy', async () => {
 			const auth = new CompositionAuth();
 
 			stubRemoteAuthDiscovery();
@@ -313,12 +308,9 @@ describe('CompositionAuth', () => {
 			vi.stubGlobal('fetch', mockFetch);
 
 			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { 'X-Storybook-MCP-Proxy': 'true' },
-			});
-
-			const result = await provider(request, './manifests/components.json', remoteRef);
-			expectRemoteSourceNotice(result);
+			await expectRemoteSourceError(
+				provider(createProxyRequest(), './manifests/components.json', remoteRef),
+			);
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
 
@@ -331,36 +323,20 @@ describe('CompositionAuth', () => {
 			vi.stubGlobal('fetch', mockFetch);
 
 			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { 'X-Storybook-MCP-Proxy': 'true' },
+			const request = createProxyRequest();
+
+			await expect(
+				provider(request, './manifests/components.json', chromaticRef),
+			).rejects.toMatchObject({
+				failure: {
+					kind: 'requires-own-mcp',
+					endpoint: 'https://main--abc.chromatic.com/mcp',
+					authProvider: 'chromatic',
+					message:
+						'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://main--abc.chromatic.com/mcp',
+					detailText: expect.stringContaining('requires Chromatic authentication'),
+				},
 			});
-
-			const result = await provider(request, './manifests/components.json', chromaticRef);
-
-			expect(isManifestSourceNotice(result)).toBe(true);
-			expect(result).toMatchObject({
-				listText:
-					'This composed Storybook is private and requires Chromatic authentication. Use its MCP endpoint: https://main--abc.chromatic.com/mcp',
-				detailText: expect.stringContaining('requires Chromatic authentication'),
-			});
-		});
-
-		it('returns a source notice for proxy requests when auth is discovered while fetching', async () => {
-			const auth = new CompositionAuth();
-			const mockFetch = vi.fn().mockResolvedValue({
-				ok: false,
-				status: 401,
-			});
-			vi.stubGlobal('fetch', mockFetch);
-
-			const provider = auth.createManifestProvider('http://localhost:6006');
-			const request = new Request('http://localhost:6006/mcp', {
-				headers: { 'X-Storybook-MCP-Proxy': 'true' },
-			});
-
-			const result = await provider(request, './manifests/components.json', remoteRef);
-
-			expectRemoteSourceNotice(result);
 			expect(auth.hadAuthError(request)).toBe(false);
 		});
 
@@ -444,14 +420,9 @@ describe('CompositionAuth', () => {
 				remoteRef,
 			);
 
-			const result = await provider(
-				new Request('http://localhost:6006/mcp', {
-					headers: { 'X-Storybook-MCP-Proxy': 'true' },
-				}),
-				'./manifests/components.json',
-				remoteRef,
+			await expectRemoteSourceError(
+				provider(createProxyRequest(), './manifests/components.json', remoteRef),
 			);
-			expectRemoteSourceNotice(result);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});

@@ -15,7 +15,7 @@ import {
 	type ComposedRef,
 } from './auth/index.ts';
 import { logger } from 'storybook/internal/node-logger';
-import type { ManifestProviderResult, Source } from '@storybook/mcp';
+import type { Source } from '@storybook/mcp';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 const STORYBOOK_MCP_PROXY_HEADER_KEY = STORYBOOK_MCP_PROXY_HEADER.toLowerCase();
@@ -45,11 +45,7 @@ export const experimental_devServer: PresetPropertyFn<'experimental_devServer'> 
 	// Build sources and manifest provider only if refs are configured
 	let sources: Source[] | undefined;
 	let manifestProvider:
-		| ((
-				request: Request | undefined,
-				path: string,
-				source?: Source,
-		  ) => Promise<ManifestProviderResult>)
+		| ((request: Request | undefined, path: string, source?: Source) => Promise<string>)
 		| undefined;
 
 	if (refs.length > 0) {

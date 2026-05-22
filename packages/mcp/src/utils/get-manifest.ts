@@ -2,11 +2,9 @@ import {
 	ComponentManifestMap,
 	DocsManifestMap,
 	type AllManifests,
-	type ManifestProviderResult,
-	type ManifestSourceNotice,
 	type Source,
+	type SourceManifestFailure,
 	type SourceManifests,
-	isManifestSourceNotice,
 } from '../types.ts';
 import * as v from 'valibot';
 
@@ -31,6 +29,13 @@ export class ManifestGetError extends Error {
 	}
 }
 
+export class SourceManifestError extends Error {
+	constructor(public readonly failure: SourceManifestFailure) {
+		super(failure.message);
+		this.name = 'SourceManifestError';
+	}
+}
+
 /**
  * MCP tool result type for text responses
  */
@@ -39,14 +44,31 @@ type MCPTextResult = {
 	isError?: true;
 };
 
-export const sourceNoticeToMCPContent = (notice: ManifestSourceNotice): MCPTextResult => ({
-	content: [
-		{
-			type: 'text',
-			text: notice.detailText,
-		},
-	],
-});
+const sourceManifestFailureToMCPContent = (failure: SourceManifestFailure): MCPTextResult => {
+	switch (failure.kind) {
+		case 'requires-own-mcp':
+			return {
+				content: [
+					{
+						type: 'text',
+						text: failure.detailText,
+					},
+				],
+			};
+		case 'fetch-failed':
+			return {
+				content: [
+					{
+						type: 'text',
+						text: `Error getting manifest: ${failure.message}`,
+					},
+				],
+				isError: true,
+			};
+		default:
+			return assertNever(failure);
+	}
+};
 
 /**
  * Converts an error to MCP-compatible content format
@@ -55,6 +77,10 @@ export const sourceNoticeToMCPContent = (notice: ManifestSourceNotice): MCPTextR
  * @returns A tool result with error content and isError flag
  */
 export const errorToMCPContent = (error: unknown): MCPTextResult => {
+	if (error instanceof SourceManifestError) {
+		return sourceManifestFailureToMCPContent(error.failure);
+	}
+
 	const errorPrefix =
 		error instanceof ManifestGetError ? 'Error getting manifest' : 'Unexpected error';
 	const errorMessage = error instanceof Error ? error.message : String(error);
@@ -117,9 +143,9 @@ export async function getManifests(
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<ManifestProviderResult>,
+	) => Promise<string>,
 	source?: Source,
-): Promise<AllManifests | ManifestSourceNotice> {
+): Promise<AllManifests> {
 	const provider = manifestProvider ?? defaultManifestProvider;
 
 	// Fetch both component and docs manifests in parallel
@@ -133,6 +159,9 @@ export async function getManifests(
 
 	if (componentResult.status === 'rejected') {
 		const reason = componentResult.reason;
+		if (reason instanceof SourceManifestError) {
+			throw reason;
+		}
 		const is404 = reason instanceof ManifestGetError && reason.message.includes('404');
 		const hint = is404
 			? `\nHint: The Storybook at this URL may not have the component manifest enabled. Add \`features: { componentsManifest: true }\` (or \`features: { experimentalComponentsManifest: true }\` for older Storybook versions) to its main.ts config.`
@@ -144,13 +173,8 @@ export async function getManifests(
 		);
 	}
 
-	const componentJson = componentResult.value;
-	if (isManifestSourceNotice(componentJson)) {
-		return componentJson;
-	}
-
 	const componentManifest = parseManifest({
-		jsonString: componentJson,
+		jsonString: componentResult.value,
 		schema: ComponentManifestMap,
 		name: 'component',
 		url: getUrl(COMPONENT_MANIFEST_PATH),
@@ -164,10 +188,6 @@ export async function getManifests(
 	}
 
 	if (docsResult.status === 'rejected') {
-		return { componentManifest };
-	}
-
-	if (isManifestSourceNotice(docsResult.value)) {
 		return { componentManifest };
 	}
 
@@ -245,44 +265,54 @@ export async function getMultiSourceManifests(
 		request: Request | undefined,
 		path: string,
 		source?: Source,
-	) => Promise<ManifestProviderResult>,
+	) => Promise<string>,
 ): Promise<SourceManifests[]> {
 	// Fetch all sources in parallel
 	const results = await Promise.all(
 		sources.map(async (source) => {
 			try {
 				const manifests = await getManifests(request, manifestProvider, source);
-				if (isManifestSourceNotice(manifests)) {
-					return {
-						source,
-						componentManifest: { v: 1, components: {} },
-						notice: manifests.listText,
-					};
-				}
 				return {
+					kind: 'manifest',
 					source,
 					componentManifest: manifests.componentManifest,
 					docsManifest: manifests.docsManifest,
-				};
+				} satisfies SourceManifests;
 			} catch (error) {
 				// Capture error but don't fail the entire request
-				const errorMessage = error instanceof Error ? error.message : String(error);
 				return {
+					kind: 'error',
 					source,
-					componentManifest: { v: 1, components: {} },
-					error: errorMessage,
-				};
+					error: sourceManifestFailureFromError(error),
+				} satisfies SourceManifests;
 			}
 		}),
 	);
 
-	// Check if at least one source succeeded
-	const successCount = results.filter((r) => !r.error).length;
-	if (successCount === 0) {
+	// Check if at least one source can produce useful tool output.
+	const hasDisplayableResult = results.some(
+		(result) => result.kind === 'manifest' || result.error.kind === 'requires-own-mcp',
+	);
+	if (!hasDisplayableResult) {
 		throw new ManifestGetError(
-			`Failed to fetch manifests from any source. Errors:\n${results.map((r) => `- ${r.source.title}: ${r.error}`).join('\n')}`,
+			`Failed to fetch manifests from any source. Errors:\n${results.map((r) => `- ${r.source.title}: ${r.kind === 'error' ? r.error.message : 'unknown error'}`).join('\n')}`,
 		);
 	}
 
 	return results;
+}
+
+function sourceManifestFailureFromError(error: unknown): SourceManifestFailure {
+	if (error instanceof SourceManifestError) {
+		return error.failure;
+	}
+
+	return {
+		kind: 'fetch-failed',
+		message: error instanceof Error ? error.message : String(error),
+	};
+}
+
+function assertNever(value: never): never {
+	throw new Error(`Unhandled source manifest failure: ${JSON.stringify(value)}`);
 }
