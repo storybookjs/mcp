@@ -13,6 +13,8 @@ Use this skill when Storybook is configured but Claude needs a `.claude/launch.j
 2. Inspect any existing `.claude/launch.json`.
 3. Add or repair a Storybook launch entry that runs the existing Storybook script from the Storybook invocation directory.
 4. Keep other launch entries intact.
-5. Verify the launch command manually or by running the equivalent shell command.
+5. Verify the launch entry by using the Claude launcher or by inspecting the saved launch config.
 
 Use the project's existing Storybook script instead of inventing a new command whenever possible.
+
+Do not start Storybook as an ad hoc Bash command or background task in Claude. The Claude flow should always start Storybook through `.claude/launch.json` and the Claude launcher.

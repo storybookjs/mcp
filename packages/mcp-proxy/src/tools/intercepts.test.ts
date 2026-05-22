@@ -12,6 +12,15 @@ describe('intercepts', () => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
 
+	it('no-instance includes Claude launch repair guidance', () => {
+		const md = getInterceptMarkdown('no-instance');
+		expect(md).toContain('/storybook-setup-claude-launch');
+		expect(md).toContain('.claude/launch.json');
+		expect(md).toContain('do not start Storybook as an ad hoc Bash/background task');
+		expect(md).toContain('Claude launcher');
+		expect(md).toContain('exact same cwd');
+	});
+
 	it('no-instance lists running candidates when any are provided', () => {
 		const md = getInterceptMarkdown('no-instance', [
 			{
@@ -27,6 +36,8 @@ describe('intercepts', () => {
 		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
+		expect(md).toContain('/storybook-setup-claude-launch');
+		expect(md).toContain('Claude launcher');
 	});
 
 	it('multiple-matches lists conflicting pids', () => {

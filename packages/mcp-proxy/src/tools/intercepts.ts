@@ -7,13 +7,19 @@ import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.`;
+const CLAUDE_LAUNCH_REPAIR = `If you are using Claude Code with the Storybook plugin, do not start Storybook as an ad hoc Bash/background task. Use \`/storybook-setup-claude-launch\` to create or repair \`.claude/launch.json\`, then start Storybook through the Claude launcher from the exact same cwd and retry the tool call.`;
+
+const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.
+
+${CLAUDE_LAUNCH_REPAIR}`;
 
 const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
-	`No Storybook is running at this cwd. Either start \`storybook dev\` from the project's cwd, or retry with one of the running cwds below.
+	`No Storybook is running at this cwd. Either start Storybook from the project's cwd, or retry with one of the running cwds below.
 
 Running Storybooks:
-${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
+${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}
+
+${CLAUDE_LAUNCH_REPAIR}`;
 
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
