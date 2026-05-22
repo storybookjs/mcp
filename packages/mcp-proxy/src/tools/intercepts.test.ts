@@ -50,26 +50,29 @@ describe('intercepts', () => {
 	it('no-instance lists workspace packages with install status when supplied', () => {
 		const md = getInterceptMarkdown('no-instance', {
 			requestedCwd: '/repo',
-			workspaces: [
-				{
-					packagePath: '/repo/packages/ui',
-					name: '@app/ui',
-					hasStorybook: true,
-					hasAddonMcp: true,
-				},
-				{
-					packagePath: '/repo/packages/api',
-					name: '@app/api',
-					hasStorybook: true,
-					hasAddonMcp: false,
-				},
-				{
-					packagePath: '/repo/apps/web',
-					name: '@app/web',
-					hasStorybook: false,
-					hasAddonMcp: false,
-				},
-			],
+			workspaces: {
+				kind: 'enumerated',
+				packages: [
+					{
+						packagePath: '/repo/packages/ui',
+						name: '@app/ui',
+						hasStorybook: true,
+						hasAddonMcp: true,
+					},
+					{
+						packagePath: '/repo/packages/api',
+						name: '@app/api',
+						hasStorybook: true,
+						hasAddonMcp: false,
+					},
+					{
+						packagePath: '/repo/apps/web',
+						name: '@app/web',
+						hasStorybook: false,
+						hasAddonMcp: false,
+					},
+				],
+			},
 		});
 		expect(md).toContain('Workspace packages in this monorepo');
 		expect(md).toContain('@app/ui');
@@ -82,20 +85,23 @@ describe('intercepts', () => {
 	it('no-instance pivots wording when no workspace package has Storybook installed', () => {
 		const md = getInterceptMarkdown('no-instance', {
 			requestedCwd: '/repo',
-			workspaces: [
-				{
-					packagePath: '/repo/packages/a',
-					name: '@app/a',
-					hasStorybook: false,
-					hasAddonMcp: false,
-				},
-				{
-					packagePath: '/repo/packages/b',
-					name: '@app/b',
-					hasStorybook: false,
-					hasAddonMcp: false,
-				},
-			],
+			workspaces: {
+				kind: 'enumerated',
+				packages: [
+					{
+						packagePath: '/repo/packages/a',
+						name: '@app/a',
+						hasStorybook: false,
+						hasAddonMcp: false,
+					},
+					{
+						packagePath: '/repo/packages/b',
+						name: '@app/b',
+						hasStorybook: false,
+						hasAddonMcp: false,
+					},
+				],
+			},
 		});
 		expect(md).toContain('No package in this monorepo has Storybook installed');
 		expect(md).toContain('Ask the user which package');
@@ -105,22 +111,35 @@ describe('intercepts', () => {
 	it('no-instance tells the agent to ask the user when Storybook is installed in multiple packages', () => {
 		const md = getInterceptMarkdown('no-instance', {
 			requestedCwd: '/repo',
-			workspaces: [
-				{
-					packagePath: '/repo/packages/a',
-					name: '@app/a',
-					hasStorybook: true,
-					hasAddonMcp: true,
-				},
-				{
-					packagePath: '/repo/packages/b',
-					name: '@app/b',
-					hasStorybook: true,
-					hasAddonMcp: true,
-				},
-			],
+			workspaces: {
+				kind: 'enumerated',
+				packages: [
+					{
+						packagePath: '/repo/packages/a',
+						name: '@app/a',
+						hasStorybook: true,
+						hasAddonMcp: true,
+					},
+					{
+						packagePath: '/repo/packages/b',
+						name: '@app/b',
+						hasStorybook: true,
+						hasAddonMcp: true,
+					},
+				],
+			},
 		});
 		expect(md).toContain('ask them before starting');
+	});
+
+	it('no-instance tells the agent to ask the user when the workspace is too large to enumerate', () => {
+		const md = getInterceptMarkdown('no-instance', {
+			requestedCwd: '/repo',
+			workspaces: { kind: 'too-many', totalCount: 312, limit: 50 },
+		});
+		expect(md).toContain('312 packages');
+		expect(md).toContain('50-package');
+		expect(md).toContain('Ask the user which package');
 	});
 
 	it('multiple-matches lists conflicting pids', () => {

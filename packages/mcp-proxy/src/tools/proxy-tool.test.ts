@@ -43,7 +43,7 @@ beforeEach(() => {
 		content: [{ type: 'text', text: 'upstream result' }],
 	});
 	vi.mocked(findWorkspaceManifest).mockResolvedValue(undefined);
-	vi.mocked(enumerateWorkspacePackages).mockResolvedValue([]);
+	vi.mocked(enumerateWorkspacePackages).mockResolvedValue({ kind: 'enumerated', packages: [] });
 });
 
 async function buildServer() {
@@ -193,20 +193,23 @@ describe('registerProxyTool / list-all-documentation', () => {
 			patterns: ['packages/*'],
 			source: 'pnpm-workspace.yaml',
 		});
-		vi.mocked(enumerateWorkspacePackages).mockResolvedValue([
-			{
-				packagePath: '/projects/monorepo/packages/ui',
-				name: '@app/ui',
-				hasStorybook: true,
-				hasAddonMcp: false,
-			},
-			{
-				packagePath: '/projects/monorepo/packages/api',
-				name: '@app/api',
-				hasStorybook: false,
-				hasAddonMcp: false,
-			},
-		]);
+		vi.mocked(enumerateWorkspacePackages).mockResolvedValue({
+			kind: 'enumerated',
+			packages: [
+				{
+					packagePath: '/projects/monorepo/packages/ui',
+					name: '@app/ui',
+					hasStorybook: true,
+					hasAddonMcp: false,
+				},
+				{
+					packagePath: '/projects/monorepo/packages/api',
+					name: '@app/api',
+					hasStorybook: false,
+					hasAddonMcp: false,
+				},
+			],
+		});
 
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/monorepo' });

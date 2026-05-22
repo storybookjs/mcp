@@ -93,12 +93,28 @@ async function readPackageJsonWorkspaces(filePath: string): Promise<string[] | u
 }
 
 /**
+ * Cap on the number of workspace packages we'll enumerate. Past this point,
+ * the intercept message itself would be too noisy to be useful, and the
+ * package.json reads risk fd pressure on the proxy. Callers receive a
+ * `too-many` result and should instruct the agent to specify the target
+ * package's cwd directly.
+ */
+export const MAX_WORKSPACE_PACKAGES = 50;
+
+export type WorkspaceEnumeration =
+	| { kind: 'enumerated'; packages: WorkspacePackage[] }
+	| { kind: 'too-many'; totalCount: number; limit: number };
+
+/**
  * Expand workspace glob patterns into a list of package directories and
- * annotate each with Storybook/addon-mcp install status.
+ * annotate each with Storybook/addon-mcp install status. Bails out without
+ * reading any `package.json` files when the glob matches more than
+ * {@link MAX_WORKSPACE_PACKAGES} candidates.
  */
 export async function enumerateWorkspacePackages(
 	manifest: WorkspaceManifest,
-): Promise<WorkspacePackage[]> {
+	limit: number = MAX_WORKSPACE_PACKAGES,
+): Promise<WorkspaceEnumeration> {
 	const matched = await glob(manifest.patterns, {
 		cwd: manifest.root,
 		absolute: true,
@@ -106,13 +122,20 @@ export async function enumerateWorkspacePackages(
 		expandDirectories: false,
 	});
 
+	if (matched.length > limit) {
+		return { kind: 'too-many', totalCount: matched.length, limit };
+	}
+
 	const pkgs = await Promise.all(
 		matched.sort().map(async (packagePath) => {
 			const pkg = await readPackageJsonPartial(join(packagePath, 'package.json'));
 			return pkg ? toWorkspacePackage(packagePath, pkg) : undefined;
 		}),
 	);
-	return pkgs.filter((p): p is WorkspacePackage => p !== undefined);
+	return {
+		kind: 'enumerated',
+		packages: pkgs.filter((p): p is WorkspacePackage => p !== undefined),
+	};
 }
 
 type PartialPackageJson = {

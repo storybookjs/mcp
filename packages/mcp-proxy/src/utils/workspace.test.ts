@@ -47,7 +47,9 @@ describe('enumerateWorkspacePackages', () => {
 	it('expands glob patterns and annotates Storybook + addon-mcp install state', async () => {
 		const root = join(FIXTURES, 'pnpm-monorepo');
 		const manifest = await findWorkspaceManifest(root);
-		const packages = await enumerateWorkspacePackages(manifest!);
+		const result = await enumerateWorkspacePackages(manifest!);
+		expect(result.kind).toBe('enumerated');
+		const packages = result.kind === 'enumerated' ? result.packages : [];
 
 		const byName = Object.fromEntries(packages.map((p) => [p.name, p]));
 
@@ -73,7 +75,9 @@ describe('enumerateWorkspacePackages', () => {
 	it('returns absolute paths under the workspace root', async () => {
 		const root = join(FIXTURES, 'pnpm-monorepo');
 		const manifest = await findWorkspaceManifest(root);
-		const packages = await enumerateWorkspacePackages(manifest!);
+		const result = await enumerateWorkspacePackages(manifest!);
+		expect(result.kind).toBe('enumerated');
+		const packages = result.kind === 'enumerated' ? result.packages : [];
 		for (const pkg of packages) {
 			expect(isAbsolute(pkg.packagePath)).toBe(true);
 			expect(pkg.packagePath.startsWith(root)).toBe(true);
@@ -84,7 +88,19 @@ describe('enumerateWorkspacePackages', () => {
 		// `apps/*` matches `apps/web` (has package.json) but no other dir under apps/.
 		const root = join(FIXTURES, 'pnpm-monorepo');
 		const manifest = await findWorkspaceManifest(root);
-		const packages = await enumerateWorkspacePackages(manifest!);
+		const result = await enumerateWorkspacePackages(manifest!);
+		expect(result.kind).toBe('enumerated');
+		const packages = result.kind === 'enumerated' ? result.packages : [];
 		expect(packages.filter((p) => p.packagePath.includes(`${sep}apps${sep}`))).toHaveLength(1);
+	});
+
+	it('returns `too-many` without reading package.jsons when match count exceeds the limit', async () => {
+		const root = join(FIXTURES, 'pnpm-monorepo');
+		const manifest = await findWorkspaceManifest(root);
+		const result = await enumerateWorkspacePackages(manifest!, 1);
+		expect(result).toEqual({ kind: 'too-many', totalCount: expect.any(Number), limit: 1 });
+		if (result.kind === 'too-many') {
+			expect(result.totalCount).toBeGreaterThan(1);
+		}
 	});
 });

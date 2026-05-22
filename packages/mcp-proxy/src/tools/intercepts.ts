@@ -1,5 +1,5 @@
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
-import type { WorkspacePackage } from '../utils/workspace.ts';
+import type { WorkspaceEnumeration } from '../utils/workspace.ts';
 
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /
@@ -13,8 +13,8 @@ export type InterceptData = {
 	requestedCwd?: string;
 	/** Storybook instance records — running candidates for `no-instance`, conflicts for `multiple-matches`. */
 	records?: StorybookInstanceRecordV1[];
-	/** Workspace packages discovered for the supplied cwd. */
-	workspaces?: WorkspacePackage[];
+	/** Workspace enumeration for the supplied cwd. */
+	workspaces?: WorkspaceEnumeration;
 };
 
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
@@ -49,8 +49,13 @@ function buildNoInstance(data: InterceptData): string {
 		);
 	}
 
-	if (data.workspaces && data.workspaces.length > 0) {
-		const lines = data.workspaces.map((pkg) => {
+	if (data.workspaces?.kind === 'too-many') {
+		sections.push(
+			`This workspace declares ${data.workspaces.totalCount} packages (over the ${data.workspaces.limit}-package enumeration cap). Ask the user which package they want to target, then retry the tool call with that package's directory as \`cwd\`.`,
+		);
+	} else if (data.workspaces?.kind === 'enumerated' && data.workspaces.packages.length > 0) {
+		const packages = data.workspaces.packages;
+		const lines = packages.map((pkg) => {
 			const name = pkg.name ?? '(unnamed)';
 			const sb = pkg.hasStorybook ? '✓' : '✗';
 			const addon = pkg.hasAddonMcp
@@ -60,7 +65,7 @@ function buildNoInstance(data: InterceptData): string {
 					: '✗';
 			return `- \`${pkg.packagePath}\` (${name}) — Storybook: ${sb}, @storybook/addon-mcp: ${addon}`;
 		});
-		const noneHaveStorybook = data.workspaces.every((p) => !p.hasStorybook);
+		const noneHaveStorybook = packages.every((p) => !p.hasStorybook);
 		const intro = noneHaveStorybook
 			? 'No package in this monorepo has Storybook installed. Ask the user which package they want Storybook in, then run `npx storybook init` from that package directory:'
 			: 'Workspace packages in this monorepo. If the user has not indicated which package to target, ask them before starting `storybook dev` or installing anything:';

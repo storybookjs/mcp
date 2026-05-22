@@ -5,7 +5,7 @@ import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
 import { enumerateWorkspacePackages, findWorkspaceManifest } from '../utils/workspace.ts';
-import type { WorkspacePackage } from '../utils/workspace.ts';
+import type { WorkspaceEnumeration } from '../utils/workspace.ts';
 import { intercept } from './intercepts.ts';
 import type { ProxyToolCallResult } from '../types/index.ts';
 
@@ -25,7 +25,7 @@ type ProxyToolDefinition<Schema extends v.ObjectEntries> = {
 	schema?: v.ObjectSchema<Schema, undefined>;
 };
 
-async function discoverWorkspacePackages(cwd: string): Promise<WorkspacePackage[] | undefined> {
+async function discoverWorkspacePackages(cwd: string): Promise<WorkspaceEnumeration | undefined> {
 	try {
 		const manifest = await findWorkspaceManifest(cwd);
 		if (!manifest) return undefined;
