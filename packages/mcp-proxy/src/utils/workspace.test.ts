@@ -3,19 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 import { enumerateWorkspacePackages, findWorkspaceManifest } from './workspace.ts';
 
-const FIXTURES = join(__dirname, '..', '..', '__fixtures__', 'workspace');
+const FIXTURES = join(__dirname, '..', '..', 'fixtures', 'workspace');
 
 describe('findWorkspaceManifest', () => {
 	it('detects a pnpm-workspace.yaml at the cwd', async () => {
 		const manifest = await findWorkspaceManifest(join(FIXTURES, 'pnpm-monorepo'));
 		expect(manifest?.source).toBe('pnpm-workspace.yaml');
 		expect(manifest?.root).toBe(join(FIXTURES, 'pnpm-monorepo'));
-		expect(manifest?.patterns).toEqual([
-			'packages/*',
-			'apps/*',
-			'excluded/*',
-			'!excluded/skip-me',
-		]);
+		expect(manifest?.patterns).toEqual(['packages/*', 'apps/*', 'excluded/*', '!excluded/skip-me']);
 	});
 
 	it('returns undefined for a nested cwd inside a monorepo (no upward walk)', async () => {
@@ -39,6 +34,11 @@ describe('findWorkspaceManifest', () => {
 
 	it('returns undefined for a single-package directory with no workspace manifest', async () => {
 		const manifest = await findWorkspaceManifest(join(FIXTURES, 'single-package'));
+		expect(manifest).toBeUndefined();
+	});
+
+	it('degrades to undefined when pnpm-workspace.yaml is malformed', async () => {
+		const manifest = await findWorkspaceManifest(join(FIXTURES, 'malformed-pnpm'));
 		expect(manifest).toBeUndefined();
 	});
 });
@@ -85,8 +85,6 @@ describe('enumerateWorkspacePackages', () => {
 		const root = join(FIXTURES, 'pnpm-monorepo');
 		const manifest = await findWorkspaceManifest(root);
 		const packages = await enumerateWorkspacePackages(manifest!);
-		expect(packages.filter((p) => p.packagePath.includes(`${sep}apps${sep}`))).toHaveLength(
-			1,
-		);
+		expect(packages.filter((p) => p.packagePath.includes(`${sep}apps${sep}`))).toHaveLength(1);
 	});
 });

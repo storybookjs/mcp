@@ -126,8 +126,20 @@ describe('intercepts', () => {
 	it('multiple-matches lists conflicting pids', () => {
 		const md = getInterceptMarkdown('multiple-matches', {
 			records: [
-				record({ instanceId: 'a', pid: 111, cwd: '/same', url: 'http://localhost:6006', port: 6006 }),
-				record({ instanceId: 'b', pid: 222, cwd: '/same', url: 'http://localhost:6007', port: 6007 }),
+				record({
+					instanceId: 'a',
+					pid: 111,
+					cwd: '/same',
+					url: 'http://localhost:6006',
+					port: 6006,
+				}),
+				record({
+					instanceId: 'b',
+					pid: 222,
+					cwd: '/same',
+					url: 'http://localhost:6007',
+					port: 6007,
+				}),
 			],
 		});
 		expect(md).toContain('111');

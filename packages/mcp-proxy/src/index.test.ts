@@ -15,7 +15,7 @@ vi.mock('./utils/registry.ts', () => ({
 const CLIENT_INFO = { name: 'test-client', version: '1.0.0' };
 const PROTOCOL_VERSION = '2024-11-05';
 
-const FIXTURES = join(__dirname, '..', '__fixtures__', 'workspace');
+const FIXTURES = join(__dirname, '..', 'fixtures', 'workspace');
 const PNPM_MONOREPO = join(FIXTURES, 'pnpm-monorepo');
 const EMPTY_MONOREPO = join(FIXTURES, 'empty-monorepo');
 

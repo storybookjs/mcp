@@ -1,6 +1,0 @@
-{
-  "name": "@fixture/has-sb",
-  "devDependencies": {
-    "storybook": "^10.0.0"
-  }
-}

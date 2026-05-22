@@ -1,0 +1,6 @@
+{
+	"name": "@fixture/web-app",
+	"dependencies": {
+		"storybook": "^10.0.0"
+	}
+}

@@ -43,10 +43,9 @@ function buildNoInstance(data: InterceptData): string {
 
 	if (hasRunning) {
 		sections.push(
-			[
-				'Running Storybooks:',
-				...(data.records ?? []).map((r) => `- \`${r.cwd}\` (${r.url})`),
-			].join('\n'),
+			['Running Storybooks:', ...(data.records ?? []).map((r) => `- \`${r.cwd}\` (${r.url})`)].join(
+				'\n',
+			),
 		);
 	}
 

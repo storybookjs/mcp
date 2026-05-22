@@ -1,7 +1,0 @@
-{
-  "name": "@fixture/has-addon",
-  "devDependencies": {
-    "storybook": "^10.0.0",
-    "@storybook/addon-mcp": "^0.1.0"
-  }
-}

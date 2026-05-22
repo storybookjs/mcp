@@ -37,9 +37,7 @@ export type WorkspacePackage = {
  * contains either `pnpm-workspace.yaml` or a `package.json` with a
  * `workspaces` field, otherwise `undefined`.
  */
-export async function findWorkspaceManifest(
-	cwd: string,
-): Promise<WorkspaceManifest | undefined> {
+export async function findWorkspaceManifest(cwd: string): Promise<WorkspaceManifest | undefined> {
 	return readManifestAt(resolve(cwd));
 }
 
