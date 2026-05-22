@@ -51,16 +51,17 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 		// cast at the boundary rather than carry the union through every internal type.
 		async (input: Record<string, unknown> & { cwd: string }): Promise<ProxyToolCallResult> => {
 			const { cwd, ...upstreamArgs } = input;
+			const context = { clientInfo: server.ctx.sessionInfo?.clientInfo };
 
 			if (!path.isAbsolute(cwd)) {
-				return intercept('invalid-cwd');
+				return intercept('invalid-cwd', undefined, context);
 			}
 
 			const records = await readRegistry(registryDir);
 			const resolution = resolveInstance(records, cwd);
 
 			if (resolution.kind === 'intercept') {
-				return intercept(resolution.reason, resolution.records);
+				return intercept(resolution.reason, resolution.records, context);
 			}
 
 			try {

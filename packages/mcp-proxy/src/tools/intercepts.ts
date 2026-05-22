@@ -1,5 +1,16 @@
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
 
+type ClientInfoLike = {
+	name?: string;
+	version?: string;
+	title?: string;
+	websiteUrl?: string;
+};
+
+type InterceptContext = {
+	clientInfo?: ClientInfoLike;
+};
+
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /
  * `modelcontextprotocol.*` / `anthropic.*` keys; everything else should live
@@ -9,17 +20,13 @@ export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
 const CLAUDE_LAUNCH_REPAIR = `If you are using Claude Code with the Storybook plugin, do not start Storybook as an ad hoc Bash/background task. Use \`/storybook-setup-claude-launch\` to create or repair \`.claude/launch.json\`, then start Storybook through the Claude launcher from the exact same cwd and retry the tool call.`;
 
-const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.
-
-${CLAUDE_LAUNCH_REPAIR}`;
+const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.`;
 
 const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
 	`No Storybook is running at this cwd. Either start Storybook from the project's cwd, or retry with one of the running cwds below.
 
 Running Storybooks:
-${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}
-
-${CLAUDE_LAUNCH_REPAIR}`;
+${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
@@ -42,15 +49,31 @@ const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 Conflicting instances:
 ${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
+export function isClaudeClient(clientInfo?: ClientInfoLike): boolean {
+	const clientText = [clientInfo?.name, clientInfo?.title, clientInfo?.websiteUrl]
+		.filter(Boolean)
+		.join(' ')
+		.toLowerCase();
+
+	return /(^|[^a-z])claude([^a-z]|$)/.test(clientText);
+}
+
+const appendClientSpecificRepair = (message: string, context?: InterceptContext) =>
+	isClaudeClient(context?.clientInfo) ? `${message}\n\n${CLAUDE_LAUNCH_REPAIR}` : message;
+
 export function getInterceptMarkdown(
 	reason: InterceptReason,
 	records?: StorybookInstanceRecordV1[],
+	context?: InterceptContext,
 ): string {
 	switch (reason) {
 		case 'no-instance':
-			return records && records.length > 0
-				? buildNoInstanceWithCandidates(records)
-				: NO_INSTANCE_EMPTY;
+			return appendClientSpecificRepair(
+				records && records.length > 0
+					? buildNoInstanceWithCandidates(records)
+					: NO_INSTANCE_EMPTY,
+				context,
+			);
 		case 'addon-missing':
 			return ADDON_MISSING;
 		case 'mcp-starting':
@@ -64,9 +87,13 @@ export function getInterceptMarkdown(
 	}
 }
 
-export function intercept(reason: InterceptReason, records?: StorybookInstanceRecordV1[]) {
+export function intercept(
+	reason: InterceptReason,
+	records?: StorybookInstanceRecordV1[],
+	context?: InterceptContext,
+) {
 	return {
-		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, records) }],
+		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, records, context) }],
 		isError: true,
 		_meta: { [META_INTERCEPT_REASON]: reason },
 	};
