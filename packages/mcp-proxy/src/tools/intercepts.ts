@@ -17,7 +17,7 @@ Running Storybooks:
 ${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
 const buildStorybookTooOld = (version: string) =>
-	`The Storybook installed at this cwd is version \`${version}\`, but the MCP proxy requires \`${STORYBOOK_MIN_VERSION}\` or newer.
+	`The Storybook installed at this cwd is version \`${version}\`, but this plugin requires \`${STORYBOOK_MIN_VERSION}\` or newer.
 
 Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
 \`\`\`
