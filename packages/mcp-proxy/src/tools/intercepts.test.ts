@@ -23,7 +23,7 @@ describe('intercepts', () => {
 			npx storybook add @storybook/addon-mcp
 			\`\`\`
 			to install the MCP addon. Restart Storybook, then retry the tool call."
-		`)
+		`);
 	});
 
 	it('no-instance lists running candidates when any are provided', () => {

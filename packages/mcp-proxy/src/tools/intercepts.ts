@@ -51,7 +51,10 @@ export type InterceptExtras = {
 	version?: string;
 };
 
-export function getInterceptMarkdown(reason: InterceptReason, extras: InterceptExtras = {}): string {
+export function getInterceptMarkdown(
+	reason: InterceptReason,
+	extras: InterceptExtras = {},
+): string {
 	const { records, version } = extras;
 	switch (reason) {
 		case 'no-instance':
