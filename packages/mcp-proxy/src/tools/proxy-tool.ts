@@ -63,8 +63,8 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				return intercept('storybook-too-old', { version: versionStatus.version });
 			}
 
-			// read the registry and resolve the target instance based on the input cwd
-			// only works with sb > 10.5
+			// read the registry and resolve the target instance based on the input cwd;
+			// compatibility has already been validated by the Storybook version check above
 			const records = await readRegistry(registryDir);
 			const resolution = resolveInstance(records, cwd);
 
