@@ -1,4 +1,5 @@
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
+import { STORYBOOK_MIN_VERSION } from '../utils/version-check.ts';
 
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /
@@ -7,19 +8,22 @@ import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const OLD_STORYBOOK_HINT = `If the user thinks Storybook is already running, verify the installed Storybook version yourself (e.g. read the project's \`package.json\`) and offer to upgrade if needed. Storybook versions prior to 9.1.16 do not support MCP and will not work with the proxy tool.`;
-
-const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.
-
-${OLD_STORYBOOK_HINT}`;
+const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.`;
 
 const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
 	`No Storybook is running at this cwd. Either start \`storybook dev\` from the project's cwd, or retry with one of the running cwds below.
 
 Running Storybooks:
-${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}
+${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
-${OLD_STORYBOOK_HINT}`;
+const buildStorybookTooOld = (version: string) =>
+	`The Storybook installed at this cwd is version \`${version}\`, but the MCP proxy requires \`${STORYBOOK_MIN_VERSION}\` or newer.
+
+Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
+\`\`\`
+npx storybook add @storybook/addon-mcp
+\`\`\`
+to install the MCP addon. Restart Storybook, then retry the tool call.`;
 
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
@@ -42,10 +46,13 @@ const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 Conflicting instances:
 ${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
-export function getInterceptMarkdown(
-	reason: InterceptReason,
-	records?: StorybookInstanceRecordV1[],
-): string {
+export type InterceptExtras = {
+	records?: StorybookInstanceRecordV1[];
+	version?: string;
+};
+
+export function getInterceptMarkdown(reason: InterceptReason, extras: InterceptExtras = {}): string {
+	const { records, version } = extras;
 	switch (reason) {
 		case 'no-instance':
 			return records && records.length > 0
@@ -61,12 +68,14 @@ export function getInterceptMarkdown(
 			return buildMultipleMatches(records ?? []);
 		case 'invalid-cwd':
 			return INVALID_CWD;
+		case 'storybook-too-old':
+			return buildStorybookTooOld(version ?? 'unknown');
 	}
 }
 
-export function intercept(reason: InterceptReason, records?: StorybookInstanceRecordV1[]) {
+export function intercept(reason: InterceptReason, extras: InterceptExtras = {}) {
 	return {
-		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, records) }],
+		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, extras) }],
 		isError: true,
 		_meta: { [META_INTERCEPT_REASON]: reason },
 	};

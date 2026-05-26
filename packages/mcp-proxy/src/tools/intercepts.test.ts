@@ -8,70 +8,66 @@ describe('intercepts', () => {
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
 		['invalid-cwd', 'absolute path'],
+		['storybook-too-old', 'storybook-upgrade'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
 
-	it('no-instance tells the agent to verify and offer upgrade if the user thinks Storybook is running', () => {
-		// Old Storybooks don't write to the instance registry, so they surface as
-		// `no-instance` even when running. Both message paths (empty + with
-		// candidates) must carry the verify/upgrade hint.
-		const empty = getInterceptMarkdown('no-instance');
-		const withCandidates = getInterceptMarkdown('no-instance', [
-			{
-				schemaVersion: 1,
-				instanceId: 'a',
-				pid: 1,
-				cwd: '/a',
-				url: 'http://localhost:6006',
-				port: 6006,
-				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-			},
-		]);
-		for (const md of [empty, withCandidates]) {
-			expect(md).toContain('verify the installed Storybook version');
-			expect(md).toContain('upgrade');
-		}
+	it('storybook-too-old reports the detected version, the required version, and points to the upgrade skill', () => {
+		const md = getInterceptMarkdown('storybook-too-old', { version: '9.0.5' });
+		expect(md).toMatchInlineSnapshot(`
+			"The Storybook installed at this cwd is version \`9.0.5\`, but the MCP proxy requires \`9.1.16\` or newer.
+
+			Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
+			\`\`\`
+			npx storybook add @storybook/addon-mcp
+			\`\`\`
+			to install the MCP addon. Restart Storybook, then retry the tool call."
+		`)
 	});
 
 	it('no-instance lists running candidates when any are provided', () => {
-		const md = getInterceptMarkdown('no-instance', [
-			{
-				schemaVersion: 1,
-				instanceId: 'a',
-				pid: 1,
-				cwd: '/a',
-				url: 'http://localhost:6006',
-				port: 6006,
-				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-			},
-		]);
+		const md = getInterceptMarkdown('no-instance', {
+			records: [
+				{
+					schemaVersion: 1,
+					instanceId: 'a',
+					pid: 1,
+					cwd: '/a',
+					url: 'http://localhost:6006',
+					port: 6006,
+					mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+				},
+			],
+		});
 		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
 	});
 
 	it('multiple-matches lists conflicting pids', () => {
-		const md = getInterceptMarkdown('multiple-matches', [
-			{
-				schemaVersion: 1,
-				instanceId: 'a',
-				pid: 111,
-				cwd: '/same',
-				url: 'http://localhost:6006',
-				port: 6006,
-				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-			},
-			{
-				schemaVersion: 1,
-				instanceId: 'b',
-				pid: 222,
-				cwd: '/same',
-				url: 'http://localhost:6007',
-				port: 6007,
-				mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
-			},
-		]);
+		const md = getInterceptMarkdown('multiple-matches', {
+			records: [
+				{
+					schemaVersion: 1,
+					instanceId: 'a',
+					pid: 111,
+					cwd: '/same',
+					url: 'http://localhost:6006',
+					port: 6006,
+					mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+				},
+				{
+					schemaVersion: 1,
+					instanceId: 'b',
+					pid: 222,
+					cwd: '/same',
+					url: 'http://localhost:6007',
+					port: 6007,
+					mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
+				},
+			],
+		});
 		expect(md).toContain('111');
 		expect(md).toContain('222');
 		expect(md).toContain('/same');

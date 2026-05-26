@@ -35,6 +35,13 @@ importers:
       valibot:
         specifier: 'catalog:'
         version: 1.2.0
+    devDependencies:
+      '@types/semver':
+        specifier: ^7.7.1
+        version: 7.7.1
+      semver:
+        specifier: ^7.8.1
+        version: 7.8.1
 
 packages:
 
@@ -52,6 +59,9 @@ packages:
     peerDependencies:
       tmcp: ^1.16.3
 
+  '@types/semver@7.7.1':
+    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
+
   '@valibot/to-json-schema@1.7.0':
     resolution: {integrity: sha512-Y3pPVibbIOHzohrlxSINvO7w/bvXkoYS3BQHoImV9ynE+bXKf171bdMucPurV2zp7gdmt0L1HCcNAsbo7cFRQw==}
     peerDependencies:
@@ -59,6 +69,11 @@ packages:
 
   json-rpc-2.0@1.7.1:
     resolution: {integrity: sha512-JqZjhjAanbpkXIzFE7u8mE/iFblawwlXtONaCvRqI+pyABVz7B4M1EUNpyVW+dZjqgQ2L5HFmZCmOCgUKm00hg==}
+
+  semver@7.8.1:
+    resolution: {integrity: sha512-rkVq3IXh+4FDGch+KwzX3aV9W3kO54GyEgpvBzSyctDA6Xtd7RJQV1xmXbeQp5v7+VzLOfVqiutSE6GICgPFvg==}
+    engines: {node: '>=10'}
+    hasBin: true
 
   sqids@0.3.0:
     resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
@@ -92,11 +107,15 @@ snapshots:
     dependencies:
       tmcp: 1.19.4
 
+  '@types/semver@7.7.1': {}
+
   '@valibot/to-json-schema@1.7.0(valibot@1.2.0)':
     dependencies:
       valibot: 1.2.0
 
   json-rpc-2.0@1.7.1: {}
+
+  semver@7.8.1: {}
 
   sqids@0.3.0: {}
 
