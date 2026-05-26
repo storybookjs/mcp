@@ -12,6 +12,12 @@ catalogs:
     '@tmcp/transport-stdio':
       specifier: ^0.4.3
       version: 0.4.3
+    '@types/semver':
+      specifier: 7.7.1
+      version: 7.7.1
+    semver:
+      specifier: 7.8.1
+      version: 7.8.1
     tmcp:
       specifier: ^1.19.4
       version: 1.19.4
@@ -29,19 +35,18 @@ importers:
       '@tmcp/transport-stdio':
         specifier: 'catalog:'
         version: 0.4.3(tmcp@1.19.4)
+      '@types/semver':
+        specifier: 'catalog:'
+        version: 7.7.1
+      semver:
+        specifier: 'catalog:'
+        version: 7.8.1
       tmcp:
         specifier: 'catalog:'
         version: 1.19.4
       valibot:
         specifier: 'catalog:'
         version: 1.2.0
-    devDependencies:
-      '@types/semver':
-        specifier: ^7.7.1
-        version: 7.7.1
-      semver:
-        specifier: ^7.8.1
-        version: 7.8.1
 
 packages:
 
