@@ -63,6 +63,7 @@ The proxy never silently fails. When it can't forward a call, it returns an `isE
 | `mcp-starting`     | A Storybook is registered there but its MCP endpoint hasn't come up yet.                             |
 | `addon-missing`    | The matching Storybook does not have `@storybook/addon-mcp` installed.                               |
 | `mcp-error`        | The addon registered an error status for its MCP endpoint.                                           |
+| `storybook-too-old` | The Storybook installed at the requested `cwd` is older than the minimum version the proxy supports (`9.1.16`). The intercept reports the detected version and points the agent at the `storybook-upgrade` skill. |
 
 ## Proxied tools
 
