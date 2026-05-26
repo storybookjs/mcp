@@ -252,7 +252,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 			    "type": "text",
 			  },
 			]
-		`)
+		`);
 	});
 
 	it('does not inject the multi-instance warning when only one record matches the cwd', async () => {
