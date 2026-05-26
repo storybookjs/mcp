@@ -1,4 +1,5 @@
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
+import { STORYBOOK_MIN_VERSION } from '../utils/version-check.ts';
 
 /**
  * Namespaced `_meta` key. MCP reserves unprefixed and `mcp.*` /
@@ -14,6 +15,15 @@ const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
 
 Running Storybooks:
 ${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
+
+const buildStorybookTooOld = (version: string) =>
+	`The Storybook installed at this cwd is version \`${version}\`, but this plugin requires \`${STORYBOOK_MIN_VERSION}\` or newer.
+
+Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
+\`\`\`
+npx storybook add @storybook/addon-mcp
+\`\`\`
+to install the MCP addon. Restart Storybook, then retry the tool call.`;
 
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
@@ -36,10 +46,16 @@ const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 Conflicting instances:
 ${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
+export type InterceptExtras = {
+	records?: StorybookInstanceRecordV1[];
+	version?: string;
+};
+
 export function getInterceptMarkdown(
 	reason: InterceptReason,
-	records?: StorybookInstanceRecordV1[],
+	extras: InterceptExtras = {},
 ): string {
+	const { records, version } = extras;
 	switch (reason) {
 		case 'no-instance':
 			return records && records.length > 0
@@ -55,12 +71,14 @@ export function getInterceptMarkdown(
 			return buildMultipleMatches(records ?? []);
 		case 'invalid-cwd':
 			return INVALID_CWD;
+		case 'storybook-too-old':
+			return buildStorybookTooOld(version ?? 'unknown');
 	}
 }
 
-export function intercept(reason: InterceptReason, records?: StorybookInstanceRecordV1[]) {
+export function intercept(reason: InterceptReason, extras: InterceptExtras = {}) {
 	return {
-		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, records) }],
+		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, extras) }],
 		isError: true,
 		_meta: { [META_INTERCEPT_REASON]: reason },
 	};

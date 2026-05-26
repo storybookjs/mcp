@@ -4,6 +4,9 @@ import type {
 	StorybookInstanceRecordV1,
 } from '../types/index.ts';
 
+const STORYBOOK_MCP_PROXY_HEADER = 'X-Storybook-MCP-Proxy';
+const STORYBOOK_MCP_PROXY_HEADER_VALUE = 'true';
+
 /**
  * Forward an MCP `tools/call` JSON-RPC request to a local Storybook MCP server.
  *
@@ -28,6 +31,7 @@ export async function proxyToolCall(
 		headers: {
 			'Content-Type': 'application/json',
 			Accept: 'application/json, text/event-stream',
+			[STORYBOOK_MCP_PROXY_HEADER]: STORYBOOK_MCP_PROXY_HEADER_VALUE,
 		},
 		body: JSON.stringify({
 			jsonrpc: '2.0',
