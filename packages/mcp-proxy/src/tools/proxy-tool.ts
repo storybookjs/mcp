@@ -4,6 +4,7 @@ import * as v from 'valibot';
 import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
+import { checkStorybookVersion } from '../utils/version-check.ts';
 import { intercept } from './intercepts.ts';
 import type { ProxyToolCallResult } from '../types/index.ts';
 
@@ -56,11 +57,19 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				return intercept('invalid-cwd');
 			}
 
+			// first check the Storybook version before hitting the registry or doing instance resolution, to fail fast if the version is too old
+			const versionStatus = checkStorybookVersion(cwd);
+			if (versionStatus.status === 'too-old') {
+				return intercept('storybook-too-old', { version: versionStatus.version });
+			}
+
+			// read the registry and resolve the target instance based on the input cwd;
+			// compatibility has already been validated by the Storybook version check above
 			const records = await readRegistry(registryDir);
 			const resolution = resolveInstance(records, cwd);
 
 			if (resolution.kind === 'intercept') {
-				return intercept(resolution.reason, resolution.records);
+				return intercept(resolution.reason, { records: resolution.records });
 			}
 
 			try {

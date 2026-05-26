@@ -11,6 +11,7 @@ catalog:
   '@storybook/addon-themes': 10.5.0-alpha.2
   '@storybook/addon-vitest': 10.5.0-alpha.2
   '@storybook/react-vite': 10.5.0-alpha.2
+  '@types/semver': 7.7.1
   '@tmcp/adapter-valibot': ^0.1.5
   '@tmcp/transport-http': ^0.8.5
   '@tmcp/transport-stdio': ^0.4.3
@@ -19,6 +20,7 @@ catalog:
   playwright: 1.56.1
   storybook: 10.5.0-alpha.2
   tmcp: ^1.19.4
+  semver: 7.8.1
   tsdown: ^0.15.12
   typescript: ^5.9.3
   valibot: 1.2.0
