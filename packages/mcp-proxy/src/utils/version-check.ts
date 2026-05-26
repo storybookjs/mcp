@@ -3,11 +3,9 @@ import * as path from 'node:path';
 import { lt } from 'semver';
 
 /**
- * Minimum Storybook version that writes a registry entry the proxy can resolve.
- * Anything older won't appear in the registry and can't be reached via the proxy.
+ * Minimum Storybook version that addon-mcp supports.
  */
 export const STORYBOOK_MIN_VERSION = '9.1.16';
-
 
 function readStorybookVersion(cwd: string): string | null {
 	try {
