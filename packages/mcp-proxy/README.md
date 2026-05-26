@@ -55,14 +55,14 @@ Every proxied tool requires a `cwd` argument: the **absolute** path of the Story
 
 The proxy never silently fails. When it can't forward a call, it returns an `isError: true` result whose `_meta` carries one of:
 
-| Reason             | Meaning                                                                                              |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| `invalid-cwd`      | The supplied `cwd` was not an absolute path.                                                         |
-| `no-instance`      | No Storybook is running at the requested `cwd`. Lists other running cwds as candidates when present. |
-| `multiple-matches` | Two or more records share the same `cwd` (degenerate registry state).                                |
-| `mcp-starting`     | A Storybook is registered there but its MCP endpoint hasn't come up yet.                             |
-| `addon-missing`    | The matching Storybook does not have `@storybook/addon-mcp` installed.                               |
-| `mcp-error`        | The addon registered an error status for its MCP endpoint.                                           |
+| Reason              | Meaning                                                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid-cwd`       | The supplied `cwd` was not an absolute path.                                                                                                                                                                      |
+| `no-instance`       | No Storybook is running at the requested `cwd`. Lists other running cwds as candidates when present.                                                                                                              |
+| `multiple-matches`  | Two or more records share the same `cwd` (degenerate registry state).                                                                                                                                             |
+| `mcp-starting`      | A Storybook is registered there but its MCP endpoint hasn't come up yet.                                                                                                                                          |
+| `addon-missing`     | The matching Storybook does not have `@storybook/addon-mcp` installed.                                                                                                                                            |
+| `mcp-error`         | The addon registered an error status for its MCP endpoint.                                                                                                                                                        |
 | `storybook-too-old` | The Storybook installed at the requested `cwd` is older than the minimum version the proxy supports (`9.1.16`). The intercept reports the detected version and points the agent at the `storybook-upgrade` skill. |
 
 ## Proxied tools
