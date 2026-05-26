@@ -22,7 +22,7 @@ describe('intercepts', () => {
 			\`\`\`
 			npx storybook add @storybook/addon-mcp
 			\`\`\`
-			to install the MCP addon. Restart Storybook, then retry the tool call."
+			to install the MCP addon. After the upgrade, call the \`clear-storybook-version-cache\` tool with the same \`cwd\` so the proxy re-detects the new version. Restart Storybook, then retry the tool call."
 		`);
 	});
 
