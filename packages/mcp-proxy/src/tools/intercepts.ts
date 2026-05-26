@@ -40,12 +40,6 @@ const MCP_ERROR = `Storybook is running but its MCP server reported an error. In
 
 const INVALID_CWD = `\`cwd\` must be an absolute path matching the cwd from which \`storybook dev\` was started. Resolve the path on the client side (e.g. with \`path.resolve\`) and retry the tool call.`;
 
-const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
-	`Multiple Storybook processes are registered at the same cwd. Stop all but one and retry.
-
-Conflicting instances:
-${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')}`;
-
 export type InterceptExtras = {
 	records?: StorybookInstanceRecordV1[];
 	version?: string;
@@ -67,8 +61,6 @@ export function getInterceptMarkdown(
 			return MCP_STARTING;
 		case 'mcp-error':
 			return MCP_ERROR;
-		case 'multiple-matches':
-			return buildMultipleMatches(records ?? []);
 		case 'invalid-cwd':
 			return INVALID_CWD;
 		case 'storybook-too-old':

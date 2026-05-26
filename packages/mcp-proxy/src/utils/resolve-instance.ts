@@ -2,7 +2,11 @@ import { resolve } from 'node:path';
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 export type ResolveResult =
-	| { kind: 'instance'; record: StorybookInstanceRecordV1 }
+	| {
+			kind: 'instance';
+			record: StorybookInstanceRecordV1;
+			siblings?: StorybookInstanceRecordV1[];
+	  }
 	| { kind: 'intercept'; reason: InterceptReason; records?: StorybookInstanceRecordV1[] };
 
 /**
@@ -17,7 +21,9 @@ export type ResolveResult =
  *   - error          → mcp-error intercept
  *
  * Zero matches → no-instance intercept (callers may surface running cwds).
- * Two or more matches at the same cwd → multiple-matches intercept (degenerate).
+ * 2+ matches at the same cwd → pick a deterministic instance (lowest pid among
+ * `ready` records, else lowest pid overall) and surface the others as
+ * `siblings` so callers can warn the agent without blocking the call.
  */
 export function resolveInstance(
 	records: StorybookInstanceRecordV1[],
@@ -29,13 +35,14 @@ export function resolveInstance(
 	if (matches.length === 0) {
 		return { kind: 'intercept', reason: 'no-instance', records };
 	}
-	if (matches.length > 1) {
-		return { kind: 'intercept', reason: 'multiple-matches', records: matches };
-	}
-	const record = matches[0]!;
-	switch (record.mcp.status) {
+
+	const sorted = [...matches].sort((a, b) => a.pid - b.pid);
+	const chosen = sorted.find((r) => r.mcp.status === 'ready') ?? sorted[0]!;
+	const siblings = matches.length > 1 ? sorted.filter((r) => r !== chosen) : undefined;
+
+	switch (chosen.mcp.status) {
 		case 'ready':
-			return { kind: 'instance', record };
+			return { kind: 'instance', record: chosen, siblings };
 		case 'starting':
 			return { kind: 'intercept', reason: 'mcp-starting' };
 		case 'not-installed':

@@ -6,7 +6,36 @@ import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
 import { checkStorybookVersion } from '../utils/version-check.ts';
 import { intercept } from './intercepts.ts';
-import type { ProxyToolCallResult } from '../types/index.ts';
+import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
+
+function formatMultiInstanceWarning(
+	chosen: StorybookInstanceRecordV1,
+	siblings: StorybookInstanceRecordV1[],
+): string {
+	const all = [chosen, ...siblings];
+	const lines = all.map((r) => {
+		const marker = r === chosen ? ' (proxied)' : '';
+		return `> - pid \`${r.pid}\` at ${r.url} (mcp: \`${r.mcp.status}\`)${marker}`;
+	});
+	return `> Note: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`${chosen.pid}\`.
+>
+> Instances at \`${chosen.cwd}\`:
+${lines.join('\n')}
+>
+> No action required from you. If the user wants only one Storybook running, they can stop the unwanted process(es) by pid.`;
+}
+
+function prependMultiInstanceWarning(
+	result: ProxyToolCallResult,
+	chosen: StorybookInstanceRecordV1,
+	siblings: StorybookInstanceRecordV1[],
+): ProxyToolCallResult {
+	const warning = formatMultiInstanceWarning(chosen, siblings);
+	return {
+		...result,
+		content: [{ type: 'text', text: warning }, ...(result.content ?? [])],
+	};
+}
 
 const CwdField = {
 	cwd: v.pipe(
@@ -73,10 +102,14 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 			}
 
 			try {
-				return await proxyToolCall(resolution.record, {
+				const result = await proxyToolCall(resolution.record, {
 					name: tool.name,
 					arguments: upstreamArgs,
 				});
+				if (resolution.siblings && resolution.siblings.length > 0) {
+					return prependMultiInstanceWarning(result, resolution.record, resolution.siblings);
+				}
+				return result;
 			} catch (error) {
 				return {
 					content: [

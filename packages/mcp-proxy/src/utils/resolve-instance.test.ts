@@ -75,15 +75,33 @@ describe('resolveInstance', () => {
 		}
 	});
 
-	it('returns multiple-matches when 2+ records share the same exact cwd', () => {
-		const a = record('/Users/x/projects/foo');
-		const b = record('/Users/x/projects/foo');
+	it('returns the lowest-pid ready instance plus siblings when 2+ records share the same exact cwd', () => {
+		const a = record('/Users/x/projects/foo', 'ready', { pid: 200 });
+		const b = record('/Users/x/projects/foo', 'ready', { pid: 100 });
 		const result = resolveInstance([a, b], '/Users/x/projects/foo');
-		expect(result.kind).toBe('intercept');
-		if (result.kind === 'intercept') {
-			expect(result.reason).toBe('multiple-matches');
-			expect(result.records).toEqual([a, b]);
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(b);
+			expect(result.siblings).toEqual([a]);
 		}
+	});
+
+	it('prefers a ready record over non-ready ones when multiple records share the cwd', () => {
+		const starting = record('/Users/x/projects/foo', 'starting', { pid: 100 });
+		const ready = record('/Users/x/projects/foo', 'ready', { pid: 200 });
+		const result = resolveInstance([starting, ready], '/Users/x/projects/foo');
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(ready);
+			expect(result.siblings).toEqual([starting]);
+		}
+	});
+
+	it('falls back to dispatching the lowest-pid status when no record at the cwd is ready', () => {
+		const a = record('/Users/x/projects/foo', 'starting', { pid: 200 });
+		const b = record('/Users/x/projects/foo', 'error', { pid: 100 });
+		const result = resolveInstance([a, b], '/Users/x/projects/foo');
+		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error' });
 	});
 
 	it('dispatches mcp.status=starting as mcp-starting intercept', () => {

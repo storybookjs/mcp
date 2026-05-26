@@ -194,6 +194,77 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(firstText(response.result)).toContain('storybook-upgrade');
 	});
 
+	it('proxies the call and prepends a multi-instance warning when 2+ ready instances share the cwd', async () => {
+		const a: StorybookInstanceRecordV1 = {
+			...record,
+			instanceId: 'inst-a',
+			pid: 200,
+			port: 6006,
+			url: 'http://localhost:6006',
+			mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+		};
+		const b: StorybookInstanceRecordV1 = {
+			...record,
+			instanceId: 'inst-b',
+			pid: 100,
+			port: 6007,
+			url: 'http://localhost:6007',
+			mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
+		};
+		vi.mocked(readRegistry).mockResolvedValue([a, b]);
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		// Lowest pid (b) is chosen.
+		expect(proxyToolCall).toHaveBeenCalledWith(b, expect.anything());
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(2);
+		const warning = items[0];
+		const primary = items[1];
+		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
+		if (!primary || primary.type !== 'text') throw new Error('expected primary text');
+		expect(warning.text).toContain('Multiple Storybook instances');
+		expect(warning.text).toContain('pid `100`');
+		expect(warning.text).toContain('pid `200`');
+		expect(warning.text).toContain('(proxied)');
+		expect(primary.text).toBe('PRIMARY');
+		expect(response.result.isError).toBeFalsy();
+
+		expect(response.result.content).toMatchInlineSnapshot(`
+			[
+			  {
+			    "text": "> Note: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`100\`.
+			>
+			> Instances at \`/projects/foo\`:
+			> - pid \`100\` at http://localhost:6007 (mcp: \`ready\`) (proxied)
+			> - pid \`200\` at http://localhost:6006 (mcp: \`ready\`)
+			>
+			> No action required from you. If the user wants only one Storybook running, they can stop the unwanted process(es) by pid.",
+			    "type": "text",
+			  },
+			  {
+			    "text": "PRIMARY",
+			    "type": "text",
+			  },
+			]
+		`)
+	});
+
+	it('does not inject the multi-instance warning when only one record matches the cwd', async () => {
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(1);
+		const only = items[0];
+		if (!only || only.type !== 'text') throw new Error('expected text content');
+		expect(only.text).not.toContain('Multiple Storybook instances');
+	});
+
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
 		vi.mocked(proxyToolCall).mockRejectedValue(new Error('connection refused'));
 		const server = await buildServer();
