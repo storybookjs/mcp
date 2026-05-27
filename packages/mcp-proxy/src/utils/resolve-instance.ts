@@ -42,7 +42,11 @@ export function resolveInstance(
 
 	switch (chosen.mcp.status) {
 		case 'ready':
-			return { kind: 'instance', record: chosen, siblings };
+			return {
+				kind: 'instance',
+				record: chosen,
+				...(siblings ? { siblings } : {}),
+			};
 		case 'starting':
 			return { kind: 'intercept', reason: 'mcp-starting' };
 		case 'not-installed':
