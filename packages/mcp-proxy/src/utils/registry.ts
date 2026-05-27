@@ -47,9 +47,10 @@ type FileOutcome =
  *
  * Returns alive v1 records plus a list of per-record anomalies the proxy
  * could not interpret but could tie to a `cwd`: either records with a
- * schema version newer than the proxy supports, or records the proxy could
- * not parse at all. Each anomaly carries its `cwd` so the caller can decide
- * whether the warning applies to the cwd the agent is targeting.
+ * schema version newer than the proxy supports, or other JSON objects with
+ * a usable `cwd` that still could not be interpreted as a supported record.
+ * Each anomaly carries its `cwd` so the caller can decide whether the
+ * warning applies to the cwd the agent is targeting.
  */
 export async function readRegistry(
 	registryDir: string = DEFAULT_REGISTRY_DIR,
