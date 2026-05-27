@@ -1,6 +1,11 @@
 ---
 name: storybook-setup-claude-launch
-description: Create or repair Claude launch configuration so Claude can start the project's Storybook preview.
+description: >-
+  Create or repair the .claude/launch.json so Claude can start the project's
+  Storybook dev server. Use when the user asks to set up or repair launch
+  config, detect dev servers, create or update .claude/launch.json, or start
+  Storybook through the Claude launcher — or when repair instructions mention
+  a missing launch entry.
 ---
 
 # Storybook Setup — Claude Launch
