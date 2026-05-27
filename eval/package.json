@@ -8,6 +8,9 @@
 		"clean-trials": "node clean-trials.ts",
 		"advanced-eval": "node advanced-eval.ts",
 		"eval": "node eval.ts",
+		"link-addon-mcp": "node review-changes/cli/link-addon-mcp.ts",
+		"capture": "node review-changes/cli/capture.ts",
+		"replay-capture": "node review-changes/cli/replay-capture.ts",
 		"storybook:trial": "node start-trial-storybook.ts",
 		"storybook": "storybook dev --port 6007 --no-open",
 		"typecheck": "tsc"

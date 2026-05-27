@@ -16,3 +16,4 @@ CLAUDE.local.md
 .mcpregistry_github_token
 .mcpregistry_registry_token
 packages/mcp-proxy/*.tgz
+eval/.eval-cache/

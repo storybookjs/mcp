@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mealdrop-storybook",
+      "runtimeExecutable": "true",
+      "runtimeArgs": [],
+      "port": 6010
+    },
+    {
+      "name": "eval-storybook",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@storybook/mcp-eval-root", "storybook"],
+      "port": 6007
+    }
+  ]
+}

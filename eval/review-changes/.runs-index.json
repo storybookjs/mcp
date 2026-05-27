@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-05-27T10:36:51.571Z",
+  "count": 1,
+  "runs": [
+    {
+      "runFile": "review-changes/captures/internal-button-bold/2026-05-27T10-34-49.522--claude-sonnet-4.6.json",
+      "payloadFile": "review-changes/captures/internal-button-bold/2026-05-27T10-34-49.522--claude-sonnet-4.6.payload.json",
+      "scenarioId": "internal-button-bold",
+      "model": "claude-sonnet-4.6",
+      "driver": "live-mcp",
+      "status": "ok",
+      "promptVersion": "sha-6ad07516",
+      "startedAt": "2026-05-27T10:34:49.522Z",
+      "latencyMs": 122035,
+      "inputTokens": 20,
+      "outputTokens": 5567,
+      "cacheCreationTokens": 25366,
+      "cacheReadTokens": 298051,
+      "costUsd": 0.2695278,
+      "hasNotes": false,
+      "hasTranscript": true,
+      "scores": {
+        "schemaValid": true,
+        "collectionPurity": 1,
+        "changedFilesAccuracy": 0,
+        "collectionCount": 1,
+        "pushedStoryCount": 5
+      },
+      "source": {
+        "repoPath": "/Users/yannbraga/open-source/mcp/apps/internal-storybook",
+        "baseCommit": "65b820f8c66aa3edd4c26ba287ef1926ffad4e20",
+        "baseTag": "eval-base/internal-button-bold/2026-05-27T10-34-49.522",
+        "workingTreeDirty": false,
+        "storybookUrl": "http://localhost:6011"
+      }
+    }
+  ]
+}
