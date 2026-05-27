@@ -140,7 +140,7 @@ function formatIncompatibleRegistryWarning(
 		const plural = unparseableCount === 1 ? 'record file' : 'record files';
 		parts.push(`${unparseableCount} ${plural} this proxy could not parse`);
 	}
-	return `> Note: The Storybook instance registry has record(s) at \`${targetCwd}\` that this MCP proxy cannot interpret: ${parts.join(' and ')}. The user's Storybook at that cwd is likely newer than the proxy or writing a format the proxy does not yet recognise. Tell the user to upgrade \`@storybook/mcp-proxy\` so the proxy can recognise that Storybook instance. The current call was handled using only the records this proxy could parse.`;
+	return `> Note: The Storybook instance registry has record(s) at \`${targetCwd}\` that this MCP proxy cannot interpret: ${parts.join(' and ')}. The user's Storybook at that cwd is likely newer than the proxy or writing a format the proxy does not yet recognise. Upgrade \`@storybook/mcp-proxy\` you are running. The current call was handled using only the records this proxy could parse.`;
 }
 
 function prependIncompatibleRegistryWarning(
