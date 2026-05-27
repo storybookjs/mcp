@@ -7,7 +7,7 @@ import { readRegistry } from './utils/registry.ts';
 import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from './types/index.ts';
 
 vi.mock('./utils/registry.ts', () => ({
-	readRegistry: vi.fn().mockResolvedValue({ records: [], anomalies: [] }),
+	readRegistry: vi.fn().mockResolvedValue({ records: [], errors: [] }),
 	DEFAULT_REGISTRY_DIR: '/tmp/mcp-proxy-test-default-registry',
 }));
 
