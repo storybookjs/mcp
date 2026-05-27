@@ -97,7 +97,7 @@ async function classify(filePath: string): Promise<FileOutcome> {
 	}
 	if (typeof json !== 'object' || json === null) return { kind: 'drop' };
 
-	const obj = json as { schemaVersion?: unknown; cwd?: unknown; pid?: unknown; };
+	const obj = json as { schemaVersion?: unknown; cwd?: unknown; pid?: unknown };
 	const cwd = typeof obj.cwd === 'string' && obj.cwd.length ? obj.cwd : null;
 	const schemaVersion = obj.schemaVersion;
 

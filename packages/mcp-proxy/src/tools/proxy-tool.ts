@@ -114,10 +114,7 @@ function anomaliesAtCwd(anomalies: RegistryError[], targetCwd: string): Registry
 	});
 }
 
-function formatIncompatibleRegistryWarning(
-	targetCwd: string,
-	anomalies: RegistryError[],
-): string {
+function formatIncompatibleRegistryWarning(targetCwd: string, anomalies: RegistryError[]): string {
 	const unsupportedVersions = [
 		...new Set(
 			anomalies

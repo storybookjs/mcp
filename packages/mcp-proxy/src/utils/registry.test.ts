@@ -92,11 +92,10 @@ describe('readRegistry', () => {
 		const result = await readRegistry(dir);
 		expect(result.records).toEqual([v1Alive]);
 		expect(result.errors).toStrictEqual([
-				{ kind: 'unsupported-schema', cwd: '/tmp/a', schemaVersion: 2 },
-				{ kind: 'unsupported-schema', cwd: '/tmp/b', schemaVersion: 2 },
-				{ kind: 'unsupported-schema', cwd: '/tmp/a', schemaVersion: 3 },
-			]
-		);
+			{ kind: 'unsupported-schema', cwd: '/tmp/a', schemaVersion: 2 },
+			{ kind: 'unsupported-schema', cwd: '/tmp/b', schemaVersion: 2 },
+			{ kind: 'unsupported-schema', cwd: '/tmp/a', schemaVersion: 3 },
+		]);
 		expect(result.errors).toHaveLength(3);
 	});
 
