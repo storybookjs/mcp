@@ -93,12 +93,13 @@ function firstText(result: ProxyToolCallResult): string {
 }
 
 describe('registerProxyTool / list-all-documentation', () => {
-	it('exposes all 7 proxied tools, each with cwd as a required field', async () => {
+	it('exposes all proxied tools plus the cache-clear control tool, each with cwd as a required field', async () => {
 		const server = await buildServer();
 		const response = await listTools(server);
 		const names = response.result.tools.map((t) => t.name).sort();
 		expect(names).toEqual(
 			[
+				'clear-storybook-version-cache',
 				'get-changed-stories',
 				'get-documentation',
 				'get-documentation-for-story',
