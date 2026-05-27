@@ -121,7 +121,12 @@ async function classify(filePath: string): Promise<FileOutcome> {
 	if (cwd === null) return { kind: 'drop' };
 
 	if (typeof schemaVersion === 'number' && Number.isInteger(schemaVersion) && schemaVersion > 1) {
-		if (typeof obj.pid === 'number' && !isProcessAlive(obj.pid)) return { kind: 'drop' };
+		if (typeof obj.pid === 'number' && !isProcessAlive(obj.pid)) {
+			clearRegistry(filePath).catch(() => {
+				/* ignore cleanup errors */
+			});
+			return { kind: 'drop' };
+		}
 		return { kind: 'error', error: { kind: 'unsupported-schema', cwd, schemaVersion } };
 	}
 
