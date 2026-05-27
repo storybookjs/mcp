@@ -7,7 +7,7 @@ import { readRegistry } from './utils/registry.ts';
 import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from './types/index.ts';
 
 vi.mock('./utils/registry.ts', () => ({
-	readRegistry: vi.fn().mockResolvedValue([]),
+	readRegistry: vi.fn().mockResolvedValue({ records: [], anomalies: [] }),
 	DEFAULT_REGISTRY_DIR: '/tmp/mcp-proxy-test-default-registry',
 }));
 
@@ -102,7 +102,7 @@ describe('createMcpProxyServer', () => {
 
 	afterEach(() => {
 		vi.mocked(readRegistry).mockReset();
-		vi.mocked(readRegistry).mockResolvedValue([]);
+		vi.mocked(readRegistry).mockResolvedValue({ records: [], errors: [] });
 	});
 
 	it('responds to initialize with server metadata and instructions', async () => {
@@ -158,7 +158,10 @@ describe('createMcpProxyServer', () => {
 			port: 6006,
 			mcp: { status: 'ready', endpoint: addon.endpoint },
 		};
-		vi.mocked(readRegistry).mockResolvedValue([record]);
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [record],
+			errors: [],
+		});
 
 		const server = await createMcpProxyServer();
 
