@@ -18,7 +18,11 @@ type InterceptContext = {
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const CLAUDE_LAUNCH_REPAIR = `If you are using Claude Code with the Storybook plugin, do not start Storybook as an ad hoc Bash/background task. Use \`/storybook-setup-claude-launch\` to create or repair \`.claude/launch.json\`, then start Storybook through the Claude launcher from the exact same cwd and retry the tool call.`;
+const CLAUDE_LAUNCH_REPAIR = `To repair this:
+
+1. Invoke the \`/storybook-setup-claude-launch\` skill to create or repair \`.claude/launch.json\` for this project.
+2. Start Storybook through that launcher entry — not via a Bash command or background task — at the same cwd.
+3. Once Storybook reports ready, retry this tool call.`;
 
 const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.`;
 
