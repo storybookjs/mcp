@@ -18,23 +18,12 @@ type InterceptContext = {
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const CLAUDE_LAUNCH_REPAIR = `
-If you are using Claude Code and ONLY if you are Claude Code
-
-STOP. Do not write or modify story files — and do not fall back to
-writing them "blind" from existing patterns. Unverified stories are
-not a deliverable.
-Recovery (do this now, without asking the user):
-  1. Invoke skill: storybook:storybook-setup-claude-launch
-     (creates or repairs .claude/launch.json)
-  2. Ask the user to click "Launch" on the Storybook entry in the
-     Claude Code launcher panel. Claude cannot start it directly —
-     \`pnpm storybook &\` and background Bash tasks will NOT work
-     because the MCP server cannot attach to ad-hoc processes.
-  3. Once the user confirms Storybook is up, retry this MCP tool call
-     with the same cwd. The plugin:storybook:storybook MCP server
-     reconnects automatically within a few seconds.
-`;
+const CLAUDE_LAUNCH_REPAIR = `The story file you wrote cannot be verified (no play tests, no preview, no a11y)
+until Storybook is started.
+If you are using Claude Code and ONLY if you are Claude Code:
+STOP. Recover now, without asking the user:
+  1. Skill: storybook-setup-claude-launch
+  2. Retry this MCP tool call`;
 
 const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.`;
 
