@@ -18,11 +18,15 @@ type InterceptContext = {
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const CLAUDE_LAUNCH_REPAIR = `To repair this:
-
-1. Invoke the \`/storybook-setup-claude-launch\` skill to create or repair \`.claude/launch.json\` for this project.
-2. Start Storybook through that launcher entry — not via a Bash command or background task — at the same cwd.
-3. Once Storybook reports ready, retry this tool call.`;
+const CLAUDE_LAUNCH_REPAIR = `The story file you wrote cannot be verified (no play tests, no preview, no a11y)
+until Storybook is started.
+Required next step:
+  1. Run the /storybook-setup-claude-launch skill to create or repair
+     .claude/launch.json for this cwd.
+  2. Start Storybook through the Claude launcher (NOT via \`pnpm storybook &\`
+     or a background Bash task — the MCP cannot attach to ad-hoc processes).
+  3. Retry this tool call with the same cwd.
+Do not report the story as complete until step 3 succeeds.`;
 
 const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.`;
 
