@@ -22,9 +22,31 @@ export type StorybookVersionStatus =
 	| { status: 'too-old'; version: string }
 	| { status: 'not-installed' };
 
+const versionCache = new Map<string, StorybookVersionStatus>();
+
 export function checkStorybookVersion(cwd: string): StorybookVersionStatus {
+	const cached = versionCache.get(cwd);
+	if (cached) return cached;
 	const version = readStorybookVersion(cwd);
-	if (!version) return { status: 'not-installed' };
-	if (lt(version, STORYBOOK_MIN_VERSION)) return { status: 'too-old', version };
-	return { status: 'ok' };
+	const status: StorybookVersionStatus =
+		version === null
+			? { status: 'not-installed' }
+			: lt(version, STORYBOOK_MIN_VERSION)
+				? { status: 'too-old', version }
+				: { status: 'ok' };
+	versionCache.set(cwd, status);
+	return status;
+}
+
+/**
+ * Drop the cached Storybook version detection. With no argument, clears every
+ * entry; with a cwd, only that project's entry. The next `checkStorybookVersion`
+ * for a cleared cwd will re-read `storybook/package.json` from disk.
+ */
+export function clearStorybookVersionCache(cwd?: string): void {
+	if (cwd === undefined) {
+		versionCache.clear();
+		return;
+	}
+	versionCache.delete(cwd);
 }
