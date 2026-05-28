@@ -68,6 +68,7 @@ export async function readRegistry(
 	const outcomes = await Promise.all(
 		entries
 			.filter((name) => name.endsWith('.json'))
+			.sort((a, b) => a.localeCompare(b))
 			.map((name) => classify(join(registryDir, name))),
 	);
 
@@ -128,6 +129,13 @@ async function classify(filePath: string): Promise<FileOutcome> {
 			return { kind: 'drop' };
 		}
 		return { kind: 'error', error: { kind: 'unsupported-schema', cwd, schemaVersion } };
+	}
+
+	if (typeof obj.pid === 'number' && !isProcessAlive(obj.pid)) {
+		clearRegistry(filePath).catch(() => {
+			/* ignore cleanup errors */
+		});
+		return { kind: 'drop' };
 	}
 
 	return { kind: 'error', error: { kind: 'unparseable', cwd } };
