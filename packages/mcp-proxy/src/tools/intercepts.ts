@@ -20,10 +20,12 @@ export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
 const CLAUDE_LAUNCH_REPAIR = `The story file you wrote cannot be verified (no play tests, no preview, no a11y)
 until Storybook is started.
-If you are using Claude Code and ONLY if you are Claude Code:
-STOP. Recover now, without asking the user:
-  1. Skill: storybook-setup-claude-launch
-  2. Retry this MCP tool call`;
+(Claude Code only:) STOP. Recover now, without asking the user:
+	1. Invoke skill: storybook:storybook-setup-claude-launch (creates/repairs .claude/launch.json AND starts Storybook)
+	2. Retry this MCP tool call.
+	Do NOT fall back to writing stories from existing patterns —
+	unverified stories are not a deliverable. If step 1 reports an
+	error, surface it to the user and stop.`;
 
 const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.`;
 
