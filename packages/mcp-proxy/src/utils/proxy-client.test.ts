@@ -47,6 +47,7 @@ describe('proxyToolCall', () => {
 		const init = call[1] as RequestInit;
 		const headers = init.headers as Record<string, string>;
 		expect(headers.Accept).toBe('application/json, text/event-stream');
+		expect(headers['X-Storybook-MCP-Proxy']).toBe('true');
 		const body = JSON.parse(init.body as string);
 		expect(body).toMatchObject({
 			jsonrpc: '2.0',

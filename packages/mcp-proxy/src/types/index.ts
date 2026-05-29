@@ -9,7 +9,8 @@ export type InterceptReason =
 	| 'mcp-starting'
 	| 'mcp-error'
 	| 'multiple-matches'
-	| 'invalid-cwd';
+	| 'invalid-cwd'
+	| 'storybook-too-old';
 
 export type ProxyToolCallParams = {
 	name: string;

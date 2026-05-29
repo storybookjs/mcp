@@ -1,4 +1,5 @@
 import type { InterceptReason, StorybookInstanceRecordV1 } from '../types/index.ts';
+import { STORYBOOK_MIN_VERSION } from '../utils/version-check.ts';
 
 type ClientInfoLike = {
 	name?: string;
@@ -7,7 +8,7 @@ type ClientInfoLike = {
 	websiteUrl?: string;
 };
 
-type InterceptContext = {
+export type InterceptContext = {
 	clientInfo?: ClientInfoLike;
 };
 
@@ -35,6 +36,15 @@ const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
 Running Storybooks:
 ${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
+const buildStorybookTooOld = (version: string) =>
+	`The Storybook installed at this cwd is version \`${version}\`, but this plugin requires \`${STORYBOOK_MIN_VERSION}\` or newer.
+
+Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
+\`\`\`
+npx storybook add @storybook/addon-mcp
+\`\`\`
+to install the MCP addon. After the upgrade, call the \`clear-storybook-version-cache\` tool with the same \`cwd\` so the proxy re-detects the new version. Restart Storybook, then retry the tool call.`;
+
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
 Install it:
@@ -56,6 +66,11 @@ const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
 Conflicting instances:
 ${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')}`;
 
+export type InterceptExtras = {
+	records?: StorybookInstanceRecordV1[];
+	version?: string;
+};
+
 export function isClaudeClient(clientInfo?: ClientInfoLike): boolean {
 	const clientText = [clientInfo?.name, clientInfo?.title, clientInfo?.websiteUrl]
 		.filter(Boolean)
@@ -70,9 +85,10 @@ const appendClientSpecificRepair = (message: string, context?: InterceptContext)
 
 export function getInterceptMarkdown(
 	reason: InterceptReason,
-	records?: StorybookInstanceRecordV1[],
+	extras: InterceptExtras = {},
 	context?: InterceptContext,
 ): string {
+	const { records, version } = extras;
 	switch (reason) {
 		case 'no-instance':
 			return appendClientSpecificRepair(
@@ -89,16 +105,18 @@ export function getInterceptMarkdown(
 			return buildMultipleMatches(records ?? []);
 		case 'invalid-cwd':
 			return INVALID_CWD;
+		case 'storybook-too-old':
+			return buildStorybookTooOld(version ?? 'unknown');
 	}
 }
 
 export function intercept(
 	reason: InterceptReason,
-	records?: StorybookInstanceRecordV1[],
+	extras: InterceptExtras = {},
 	context?: InterceptContext,
 ) {
 	return {
-		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, records, context) }],
+		content: [{ type: 'text' as const, text: getInterceptMarkdown(reason, extras, context) }],
 		isError: true,
 		_meta: { [META_INTERCEPT_REASON]: reason },
 	};

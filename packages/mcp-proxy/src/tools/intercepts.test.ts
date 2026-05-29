@@ -13,6 +13,7 @@ describe('intercepts', () => {
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
 		['invalid-cwd', 'absolute path'],
+		['storybook-too-old', 'storybook-upgrade'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
@@ -20,19 +21,28 @@ describe('intercepts', () => {
 	it('no-instance omits Claude launch repair guidance for generic clients', () => {
 		const md = getInterceptMarkdown('no-instance');
 		expect(md).toContain('Storybook is not running');
-		expect(md).not.toContain('/storybook-setup-claude-launch');
-		expect(md).not.toContain('Claude launcher');
+		expect(md).not.toContain('storybook-setup-claude-launch');
 	});
 
 	it('no-instance includes Claude launch repair guidance for Claude clients', () => {
 		const md = getInterceptMarkdown('no-instance', undefined, {
 			clientInfo: { name: 'claude-code', version: '2.1.145' },
 		});
-		expect(md).toContain('/storybook-setup-claude-launch');
+		expect(md).toContain('storybook-setup-claude-launch');
 		expect(md).toContain('.claude/launch.json');
-		expect(md).toContain('do not start Storybook as an ad hoc Bash/background task');
-		expect(md).toContain('Claude launcher');
-		expect(md).toContain('exact same cwd');
+	});
+
+	it('storybook-too-old reports the detected version, the required version, and points to the upgrade skill', () => {
+		const md = getInterceptMarkdown('storybook-too-old', { version: '9.0.5' });
+		expect(md).toMatchInlineSnapshot(`
+			"The Storybook installed at this cwd is version \`9.0.5\`, but this plugin requires \`9.1.16\` or newer.
+
+			Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
+			\`\`\`
+			npx storybook add @storybook/addon-mcp
+			\`\`\`
+			to install the MCP addon. After the upgrade, call the \`clear-storybook-version-cache\` tool with the same \`cwd\` so the proxy re-detects the new version. Restart Storybook, then retry the tool call."
+		`);
 	});
 
 	it('no-instance lists running candidates when any are provided', () => {
@@ -47,41 +57,43 @@ describe('intercepts', () => {
 				mcp: { status: 'ready' as const, endpoint: 'http://localhost:6006/mcp' },
 			},
 		];
-		const md = getInterceptMarkdown('no-instance', records);
+		const md = getInterceptMarkdown('no-instance', { records });
 		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
-		expect(md).not.toContain('/storybook-setup-claude-launch');
-		expect(md).not.toContain('Claude launcher');
+		expect(md).not.toContain('storybook-setup-claude-launch');
 
-		const claudeMd = getInterceptMarkdown('no-instance', records, {
-			clientInfo: { name: 'Claude Code', version: '2.1.145' },
-		});
-		expect(claudeMd).toContain('/storybook-setup-claude-launch');
-		expect(claudeMd).toContain('Claude launcher');
+		const claudeMd = getInterceptMarkdown(
+			'no-instance',
+			{ records },
+			{ clientInfo: { name: 'Claude Code', version: '2.1.145' } },
+		);
+		expect(claudeMd).toContain('storybook-setup-claude-launch');
 	});
 
 	it('multiple-matches lists conflicting pids', () => {
-		const md = getInterceptMarkdown('multiple-matches', [
-			{
-				schemaVersion: 1,
-				instanceId: 'a',
-				pid: 111,
-				cwd: '/same',
-				url: 'http://localhost:6006',
-				port: 6006,
-				mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-			},
-			{
-				schemaVersion: 1,
-				instanceId: 'b',
-				pid: 222,
-				cwd: '/same',
-				url: 'http://localhost:6007',
-				port: 6007,
-				mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
-			},
-		]);
+		const md = getInterceptMarkdown('multiple-matches', {
+			records: [
+				{
+					schemaVersion: 1,
+					instanceId: 'a',
+					pid: 111,
+					cwd: '/same',
+					url: 'http://localhost:6006',
+					port: 6006,
+					mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+				},
+				{
+					schemaVersion: 1,
+					instanceId: 'b',
+					pid: 222,
+					cwd: '/same',
+					url: 'http://localhost:6007',
+					port: 6007,
+					mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
+				},
+			],
+		});
 		expect(md).toContain('111');
 		expect(md).toContain('222');
 		expect(md).toContain('/same');

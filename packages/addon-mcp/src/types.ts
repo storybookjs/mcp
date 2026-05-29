@@ -3,7 +3,22 @@ import type { Options } from 'storybook/internal/types';
 import { GET_TOOL_NAME, LIST_TOOL_NAME, type StorybookContext } from '@storybook/mcp';
 import { GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME } from './tools/tool-names.ts';
 
+const isLiteralEndpointPathname = (endpoint: string) => {
+	try {
+		const { pathname } = new URL(endpoint, 'http://storybook.local');
+		return pathname === endpoint && pathname !== '/';
+	} catch {
+		return false;
+	}
+};
+
 export const AddonOptions = v.object({
+	endpoint: v.optional(
+		v.pipe(
+			v.string(),
+			v.check(isLiteralEndpointPathname, 'Endpoint must be a literal URL pathname'),
+		),
+	),
 	toolsets: v.optional(
 		v.object({
 			dev: v.exactOptional(v.boolean(), true),
@@ -32,6 +47,11 @@ export type AddonContext = StorybookContext & {
 	 * port, presets, and other runtime information.
 	 */
 	options: Options;
+
+	/**
+	 * The resolved MCP endpoint pathname for this Storybook instance.
+	 */
+	endpoint?: string;
 
 	/**
 	 * The origin URL of the running Storybook instance.

@@ -5,6 +5,7 @@ import { registerProxiedTools } from './index.ts';
 import { META_INTERCEPT_REASON } from './intercepts.ts';
 import { readRegistry } from '../utils/registry.ts';
 import { proxyToolCall } from '../utils/proxy-client.ts';
+import { checkStorybookVersion } from '../utils/version-check.ts';
 import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
 
 vi.mock('../utils/registry.ts', () => ({
@@ -14,6 +15,11 @@ vi.mock('../utils/registry.ts', () => ({
 vi.mock('../utils/proxy-client.ts', () => ({
 	proxyToolCall: vi.fn(),
 }));
+
+vi.mock('../utils/version-check.ts', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('../utils/version-check.ts')>();
+	return { ...actual, checkStorybookVersion: vi.fn() };
+});
 
 const REGISTRY_DIR = '/tmp/test-registry';
 const serverClientInfo = new WeakMap<McpServer<any>, { name: string; version: string }>();
@@ -31,10 +37,12 @@ const record: StorybookInstanceRecordV1 = {
 beforeEach(() => {
 	vi.mocked(readRegistry).mockReset();
 	vi.mocked(proxyToolCall).mockReset();
+	vi.mocked(checkStorybookVersion).mockReset();
 	vi.mocked(readRegistry).mockResolvedValue([record]);
 	vi.mocked(proxyToolCall).mockResolvedValue({
 		content: [{ type: 'text', text: 'upstream result' }],
 	});
+	vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'ok' });
 });
 
 async function buildServer(clientInfo = { name: 't', version: '0' }) {
@@ -93,12 +101,13 @@ function firstText(result: ProxyToolCallResult): string {
 }
 
 describe('registerProxyTool / list-all-documentation', () => {
-	it('exposes all 7 proxied tools, each with cwd as a required field', async () => {
+	it('exposes all proxied tools plus the cache-clear control tool, each with cwd as a required field', async () => {
 		const server = await buildServer();
 		const response = await listTools(server);
 		const names = response.result.tools.map((t) => t.name).sort();
 		expect(names).toEqual(
 			[
+				'clear-storybook-version-cache',
 				'get-changed-stories',
 				'get-documentation',
 				'get-documentation-for-story',
@@ -123,7 +132,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
 		expect(firstText(response.result)).toContain('Storybook is not running');
-		expect(firstText(response.result)).not.toContain('/storybook-setup-claude-launch');
+		expect(firstText(response.result)).not.toContain('storybook-setup-claude-launch');
 	});
 
 	it('adds Claude launch repair guidance when the MCP client is Claude', async () => {
@@ -132,8 +141,8 @@ describe('registerProxyTool / list-all-documentation', () => {
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
-		expect(firstText(response.result)).toContain('/storybook-setup-claude-launch');
-		expect(firstText(response.result)).toContain('Claude launcher');
+		expect(firstText(response.result)).toContain('storybook-setup-claude-launch');
+		expect(firstText(response.result)).toContain('Claude Code only');
 	});
 
 	it('returns the no-instance intercept with candidate cwds when no record matches', async () => {
@@ -194,6 +203,16 @@ describe('registerProxyTool / list-all-documentation', () => {
 			expect(firstText(response.result)).toContain('absolute path');
 		},
 	);
+
+	it('returns the storybook-too-old intercept when the installed Storybook predates the min version', async () => {
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'too-old', version: '9.0.5' });
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'storybook-too-old' });
+		expect(firstText(response.result)).toContain('9.0.5');
+		expect(firstText(response.result)).toContain('storybook-upgrade');
+	});
 
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
 		vi.mocked(proxyToolCall).mockRejectedValue(new Error('connection refused'));
