@@ -68,6 +68,60 @@ describe('readRegistry', () => {
 		expect(result).toEqual([alive]);
 	});
 
+	it('drops records whose mcp.endpoint is not loopback', async () => {
+		const base = {
+			schemaVersion: 1,
+			pid: process.pid,
+			cwd: '/tmp/x',
+			url: 'http://localhost:6006',
+			port: 6006,
+		};
+		await fs.writeFile(
+			join(dir, 'remote.json'),
+			JSON.stringify({
+				...base,
+				instanceId: 'remote',
+				mcp: { status: 'ready', endpoint: 'http://attacker.test/mcp' },
+			}),
+		);
+		await fs.writeFile(
+			join(dir, 'lan.json'),
+			JSON.stringify({
+				...base,
+				instanceId: 'lan',
+				mcp: { status: 'ready', endpoint: 'http://10.0.0.5:6006/mcp' },
+			}),
+		);
+		await fs.writeFile(
+			join(dir, 'malformed-endpoint.json'),
+			JSON.stringify({
+				...base,
+				instanceId: 'bad-url',
+				mcp: { status: 'ready', endpoint: 'not a url' },
+			}),
+		);
+		await fs.writeFile(
+			join(dir, 'loopback.json'),
+			JSON.stringify({
+				...base,
+				instanceId: 'loopback',
+				mcp: { status: 'ready', endpoint: 'http://127.0.0.1:6006/mcp' },
+			}),
+		);
+		await fs.writeFile(
+			join(dir, 'no-endpoint.json'),
+			JSON.stringify({
+				...base,
+				instanceId: 'starting',
+				mcp: { status: 'starting' },
+			}),
+		);
+
+		const result = await readRegistry(dir);
+		const ids = result.map((r) => r.instanceId).sort();
+		expect(ids).toEqual(['loopback', 'starting']);
+	});
+
 	it('filters records with non-positive PIDs (process-group sentinels)', async () => {
 		const base = {
 			schemaVersion: 1,

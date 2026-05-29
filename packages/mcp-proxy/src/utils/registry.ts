@@ -14,6 +14,17 @@ export const DEFAULT_REGISTRY_DIR = join(tmpdir(), '.storybook', 'instances');
  */
 const SOFT_REGISTRY_ERRORS = new Set(['ENOENT', 'EACCES', 'EPERM', 'ENOTDIR']);
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+function hasTrustedEndpoint(endpoint: string | undefined): boolean {
+	if (endpoint === undefined) return true;
+	try {
+		return LOOPBACK_HOSTS.has(new URL(endpoint).hostname);
+	} catch {
+		return false;
+	}
+}
+
 /**
  * Read all Storybook instance records from `registryDir`.
  *
@@ -43,6 +54,7 @@ export async function readRegistry(
 					const raw = await fs.readFile(join(registryDir, name), 'utf-8');
 					const parsed = v.safeParse(StorybookInstanceRecordV1Schema, JSON.parse(raw));
 					if (!parsed.success) return null;
+					if (!hasTrustedEndpoint(parsed.output.mcp.endpoint)) return null;
 					if (!isProcessAlive(parsed.output.pid)) {
 						clearRegistry(join(registryDir, name)).catch(() => {
 							/* ignore cleanup errors */
