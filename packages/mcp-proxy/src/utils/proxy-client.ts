@@ -3,7 +3,6 @@ import type {
 	ProxyToolCallResult,
 	StorybookInstanceRecordV1,
 } from '../types/index.ts';
-import { join } from 'pathe';
 
 const STORYBOOK_MCP_PROXY_HEADER = 'X-Storybook-MCP-Proxy';
 const STORYBOOK_MCP_PROXY_HEADER_VALUE = 'true';
@@ -27,7 +26,9 @@ export async function proxyToolCall(
 		throw new Error(`Storybook MCP record for ${record.cwd} is missing mcp.endpoint`);
 	}
 
-	const response = await fetchImpl(join(record.url, endpoint), {
+	const target = new URL(endpoint, record.url).href;
+
+	const response = await fetchImpl(target, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
@@ -44,11 +45,11 @@ export async function proxyToolCall(
 
 	if (!response.ok) {
 		throw new Error(
-			`Storybook MCP at ${endpoint} responded with ${response.status} ${response.statusText}`,
+			`Storybook MCP at ${target} responded with ${response.status} ${response.statusText}`,
 		);
 	}
 
-	const payload = (await readJsonRpcResponse(response, endpoint)) as {
+	const payload = (await readJsonRpcResponse(response, target)) as {
 		result?: ProxyToolCallResult;
 		error?: { code: number; message: string };
 	};
