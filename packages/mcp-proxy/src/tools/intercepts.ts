@@ -21,7 +21,8 @@ export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
 const CLAUDE_LAUNCH_REPAIR = `The story file you wrote cannot be verified (no play tests, no preview, no a11y)
 until Storybook is started.
-(Claude Code only:) STOP. Recover now, without asking the user:
+You CANNOT ignore this error! DO NOT ATTEMPT A FIX ON YOUR OWN, IT WILL NOT WORK! You MUST do these healing steps before continuing with writing a story, OTHERWISE IT WON'T WORK ANYWAY.
+Recover now, without asking the user:
 	1. Invoke skill: storybook:storybook-setup-claude-launch (creates/repairs .claude/launch.json AND starts Storybook)
 	2. Retry this MCP tool call.
 	Do NOT fall back to writing stories from existing patterns —
