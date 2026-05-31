@@ -3,6 +3,7 @@ import type {
 	ProxyToolCallResult,
 	StorybookInstanceRecordV1,
 } from '../types/index.ts';
+import { join } from 'pathe';
 
 const STORYBOOK_MCP_PROXY_HEADER = 'X-Storybook-MCP-Proxy';
 const STORYBOOK_MCP_PROXY_HEADER_VALUE = 'true';
@@ -26,7 +27,7 @@ export async function proxyToolCall(
 		throw new Error(`Storybook MCP record for ${record.cwd} is missing mcp.endpoint`);
 	}
 
-	const response = await fetchImpl(endpoint, {
+	const response = await fetchImpl(join(record.url, endpoint), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
