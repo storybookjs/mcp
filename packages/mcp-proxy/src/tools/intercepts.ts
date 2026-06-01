@@ -23,7 +23,10 @@ const CLAUDE_LAUNCH_REPAIR = `The story file you wrote cannot be verified (no pl
 until Storybook is started.
 You CANNOT ignore this error! DO NOT ATTEMPT A FIX ON YOUR OWN, IT WILL NOT WORK! You MUST do these healing steps before continuing with writing a story, OTHERWISE IT WON'T WORK ANYWAY.
 Recover now, without asking the user:
-	1. Invoke skill: storybook:storybook-setup-claude-launch (creates/repairs .claude/launch.json AND starts Storybook)
+
+ 	1. Start the preview to run Storybook dev server.
+		- If launch.json needs repair. Repair it with the skill storybook-setup-claude-launch
+		- start the preview
 	2. Retry this MCP tool call.
 	Do NOT fall back to writing stories from existing patterns —
 	unverified stories are not a deliverable. If step 1 reports an
