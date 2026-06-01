@@ -3,7 +3,8 @@ import { x } from 'tinyexec';
 import path from 'node:path';
 
 const PACKAGES_TO_CHECK = ['@storybook/addon-docs', '@storybook/react-vite', 'storybook'];
-const STORYBOOK_PR_CANARY_VERSION = /^0\.0\.0-pr-\d+-sha-[0-9a-f]+$/;
+
+const stripPrerelease = (version: string) => version.split(/[+-]/)[0]!;
 
 describe('Storybook Dependencies', () => {
 	it('should be using latest versions from registry', async () => {
@@ -25,8 +26,8 @@ describe('Storybook Dependencies', () => {
 			});
 			const latestVersion = viewResult.stdout.trim();
 
-			// Compare versions
-			if (currentVersion !== latestVersion && !STORYBOOK_PR_CANARY_VERSION.test(currentVersion)) {
+			// Compare only the semver core (major.minor.patch), ignoring prerelease/build suffixes
+			if (stripPrerelease(currentVersion) !== stripPrerelease(latestVersion)) {
 				outdated.push({ pkg, current: currentVersion, latest: latestVersion });
 			}
 		}

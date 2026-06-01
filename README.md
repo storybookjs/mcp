@@ -151,7 +151,7 @@ You can start Storybook with:
 pnpm storybook
 ```
 
-This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` and try it out.
+This will build everything and start up Storybook with addon-mcp, and you can then connect your coding agent to it at `http://localhost:6006/mcp` (or your configured addon endpoint) and try it out.
 
 ### Working with the MCP App
 

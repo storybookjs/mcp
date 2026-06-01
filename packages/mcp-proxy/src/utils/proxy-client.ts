@@ -4,6 +4,9 @@ import type {
 	StorybookInstanceRecordV1,
 } from '../types/index.ts';
 
+const STORYBOOK_MCP_PROXY_HEADER = 'X-Storybook-MCP-Proxy';
+const STORYBOOK_MCP_PROXY_HEADER_VALUE = 'true';
+
 /**
  * Forward an MCP `tools/call` JSON-RPC request to a local Storybook MCP server.
  *
@@ -23,11 +26,14 @@ export async function proxyToolCall(
 		throw new Error(`Storybook MCP record for ${record.cwd} is missing mcp.endpoint`);
 	}
 
-	const response = await fetchImpl(endpoint, {
+	const target = new URL(endpoint, record.url).href;
+
+	const response = await fetchImpl(target, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 			Accept: 'application/json, text/event-stream',
+			[STORYBOOK_MCP_PROXY_HEADER]: STORYBOOK_MCP_PROXY_HEADER_VALUE,
 		},
 		body: JSON.stringify({
 			jsonrpc: '2.0',
@@ -39,11 +45,11 @@ export async function proxyToolCall(
 
 	if (!response.ok) {
 		throw new Error(
-			`Storybook MCP at ${endpoint} responded with ${response.status} ${response.statusText}`,
+			`Storybook MCP at ${target} responded with ${response.status} ${response.statusText}`,
 		);
 	}
 
-	const payload = (await readJsonRpcResponse(response, endpoint)) as {
+	const payload = (await readJsonRpcResponse(response, target)) as {
 		result?: ProxyToolCallResult;
 		error?: { code: number; message: string };
 	};
