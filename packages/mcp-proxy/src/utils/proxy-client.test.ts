@@ -9,7 +9,7 @@ const record: StorybookInstanceRecordV1 = {
 	cwd: '/tmp',
 	url: 'http://localhost:6006',
 	port: 6006,
-	mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+	mcp: { status: 'ready', endpoint: '/mcp' },
 };
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -58,6 +58,25 @@ describe('proxyToolCall', () => {
 			},
 		});
 		expect(typeof body.id).toBe('string');
+	});
+
+	it('resolves the endpoint path against the instance url without mangling the scheme', async () => {
+		const fetchImpl = vi.fn(async () =>
+			jsonResponse({
+				jsonrpc: '2.0',
+				id: 'whatever',
+				result: { content: [] },
+			}),
+		) as unknown as typeof fetch;
+
+		await proxyToolCall(
+			{ ...record, url: 'http://127.0.0.1:6007', mcp: { status: 'ready', endpoint: '/mcp' } },
+			{ name: 'list-all-documentation' },
+			fetchImpl,
+		);
+
+		const call = (fetchImpl as ReturnType<typeof vi.fn>).mock.calls[0]!;
+		expect(call[0]).toBe('http://127.0.0.1:6007/mcp');
 	});
 
 	it('parses a single-event SSE response (text/event-stream)', async () => {
