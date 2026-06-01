@@ -17,12 +17,12 @@ function formatMultiInstanceWarning(
 		const marker = r === chosen ? ' (proxied)' : '';
 		return `> - pid \`${r.pid}\` at ${r.url} (mcp: \`${r.mcp.status}\`)${marker}`;
 	});
-	return `> Note: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`${chosen.pid}\`.
+	return `> Warning: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`${chosen.pid}\`.
 >
 > Instances at \`${chosen.cwd}\`:
 ${lines.join('\n')}
 >
-> No action required from you. If the user wants only one Storybook running, they can stop the unwanted process(es) by pid.`;
+> If results look unexpected, ask the user whether they want to stop the other instance(s).`;
 }
 
 function prependMultiInstanceWarning(
