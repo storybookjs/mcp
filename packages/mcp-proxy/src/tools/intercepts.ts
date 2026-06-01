@@ -24,9 +24,8 @@ until Storybook is started.
 You CANNOT ignore this error! DO NOT ATTEMPT A FIX ON YOUR OWN, IT WILL NOT WORK! You MUST do these healing steps before continuing with writing a story, OTHERWISE IT WON'T WORK ANYWAY.
 Recover now, without asking the user:
 
- 	1. Start the preview to run Storybook dev server.
-		- If launch.json needs repair. Repair it with the skill storybook-setup-claude-launch
-		- start the preview
+	1. Start the preview to run the Storybook dev server.
+		- If `.claude/launch.json` needs repair, invoke the `storybook-setup-claude-launch` skill.
 	2. Retry this MCP tool call.
 	Do NOT fall back to writing stories from existing patterns —
 	unverified stories are not a deliverable. If step 1 reports an
