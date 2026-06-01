@@ -254,6 +254,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 			  },
 			]
 		`);
+	});
 
 	it('does not inject the multi-instance warning when only one record matches the cwd', async () => {
 		const server = await buildServer();
