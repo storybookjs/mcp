@@ -1,9 +1,12 @@
 import * as v from 'valibot';
 import type { McpServer } from 'tmcp';
+import { registerClearVersionCacheTool } from './clear-version-cache.ts';
 import { registerProxyTool } from './proxy-tool.ts';
 import { StoryInputArray, StorybookIdField } from './shared.ts';
 
 export function registerProxiedTools(server: McpServer<any>, registryDir: string) {
+	registerClearVersionCacheTool(server);
+
 	registerProxyTool(server, registryDir, {
 		name: 'list-all-documentation',
 		title: 'List All Documentation',

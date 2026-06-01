@@ -30,7 +30,7 @@ const record: StorybookInstanceRecordV1 = {
 	cwd: '/projects/foo',
 	url: 'http://localhost:6006',
 	port: 6006,
-	mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+	mcp: { status: 'ready', endpoint: '/mcp' },
 };
 
 beforeEach(() => {
@@ -93,12 +93,13 @@ function firstText(result: ProxyToolCallResult): string {
 }
 
 describe('registerProxyTool / list-all-documentation', () => {
-	it('exposes all 7 proxied tools, each with cwd as a required field', async () => {
+	it('exposes all proxied tools plus the cache-clear control tool, each with cwd as a required field', async () => {
 		const server = await buildServer();
 		const response = await listTools(server);
 		const names = response.result.tools.map((t) => t.name).sort();
 		expect(names).toEqual(
 			[
+				'clear-storybook-version-cache',
 				'get-changed-stories',
 				'get-documentation',
 				'get-documentation-for-story',
@@ -171,7 +172,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 
 	it('dispatches mcp.status=error to the mcp-error intercept', async () => {
 		vi.mocked(readRegistry).mockResolvedValue({
-			records: [{ ...record, mcp: { status: 'error', endpoint: 'http://localhost:6006/mcp' } }],
+			records: [{ ...record, mcp: { status: 'error', endpoint: '/mcp' } }],
 			errors: [],
 		});
 		const server = await buildServer();

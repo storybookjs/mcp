@@ -1,10 +1,10 @@
 import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { tmpdir } from 'node:os';
 import * as v from 'valibot';
 import { StorybookInstanceRecordV1Schema, type StorybookInstanceRecordV1 } from '../types/index.ts';
 
-export const DEFAULT_REGISTRY_DIR = join(homedir(), '.storybook', 'instances');
+export const DEFAULT_REGISTRY_DIR = join(tmpdir(), '.storybook', 'instances');
 
 /**
  * Errno codes for which we degrade to "no instance" rather than throwing.
