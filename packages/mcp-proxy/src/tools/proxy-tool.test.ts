@@ -239,13 +239,13 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(response.result.content).toMatchInlineSnapshot(`
 			[
 			  {
-			    "text": "> Note: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`100\`.
+			    "text": "> Warning: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`100\`.
 			>
 			> Instances at \`/projects/foo\`:
 			> - pid \`100\` at http://localhost:6007 (mcp: \`ready\`) (proxied)
 			> - pid \`200\` at http://localhost:6006 (mcp: \`ready\`)
 			>
-			> No action required from you. If the user wants only one Storybook running, they can stop the unwanted process(es) by pid.",
+			> If results look unexpected, ask the user whether they want to stop the other instance(s).",
 			    "type": "text",
 			  },
 			  {
@@ -254,7 +254,6 @@ describe('registerProxyTool / list-all-documentation', () => {
 			  },
 			]
 		`);
-	});
 
 	it('does not inject the multi-instance warning when only one record matches the cwd', async () => {
 		const server = await buildServer();
