@@ -106,8 +106,9 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 					name: tool.name,
 					arguments: upstreamArgs,
 				});
-				if (resolution.siblings && resolution.siblings.length > 0) {
-					return prependMultiInstanceWarning(result, resolution.record, resolution.siblings);
+				const siblings = resolution.matches.filter((r) => r !== resolution.record);
+				if (siblings.length > 0) {
+					return prependMultiInstanceWarning(result, resolution.record, siblings);
 				}
 				return result;
 			} catch (error) {

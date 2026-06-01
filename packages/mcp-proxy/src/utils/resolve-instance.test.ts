@@ -31,7 +31,7 @@ function record(
 describe('resolveInstance', () => {
 	it('returns no-instance with empty candidates when registry is empty', () => {
 		const result = resolveInstance([], '/Users/x/projects/foo');
-		expect(result).toEqual({ kind: 'intercept', reason: 'no-instance', records: [] });
+		expect(result).toEqual({ kind: 'intercept', reason: 'no-instance', records: [], matches: [] });
 	});
 
 	it('returns no-instance with candidates when no record cwd matches', () => {
@@ -48,13 +48,13 @@ describe('resolveInstance', () => {
 	it('matches a record by exact normalized cwd', () => {
 		const r = record('/Users/x/projects/foo');
 		const result = resolveInstance([r], '/Users/x/projects/foo');
-		expect(result).toEqual({ kind: 'instance', record: r });
+		expect(result).toEqual({ kind: 'instance', record: r, matches: [r] });
 	});
 
 	it('normalizes trailing slashes and dot segments before matching', () => {
 		const r = record('/Users/x/projects/foo');
 		const result = resolveInstance([r], '/Users/x/projects/foo/./');
-		expect(result).toEqual({ kind: 'instance', record: r });
+		expect(result).toEqual({ kind: 'instance', record: r, matches: [r] });
 	});
 
 	it('does NOT match a child path of a record cwd (exact only)', () => {
@@ -75,14 +75,14 @@ describe('resolveInstance', () => {
 		}
 	});
 
-	it('returns the lowest-pid ready instance plus siblings when 2+ records share the same exact cwd', () => {
+	it('returns the lowest-pid ready instance plus all matches when 2+ records share the same exact cwd', () => {
 		const a = record('/Users/x/projects/foo', 'ready', { pid: 200 });
 		const b = record('/Users/x/projects/foo', 'ready', { pid: 100 });
 		const result = resolveInstance([a, b], '/Users/x/projects/foo');
 		expect(result.kind).toBe('instance');
 		if (result.kind === 'instance') {
 			expect(result.record).toBe(b);
-			expect(result.siblings).toEqual([a]);
+			expect(result.matches).toEqual([b, a]);
 		}
 	});
 
@@ -93,7 +93,7 @@ describe('resolveInstance', () => {
 		expect(result.kind).toBe('instance');
 		if (result.kind === 'instance') {
 			expect(result.record).toBe(ready);
-			expect(result.siblings).toEqual([starting]);
+			expect(result.matches).toEqual([starting, ready]);
 		}
 	});
 
@@ -101,24 +101,24 @@ describe('resolveInstance', () => {
 		const a = record('/Users/x/projects/foo', 'starting', { pid: 200 });
 		const b = record('/Users/x/projects/foo', 'error', { pid: 100 });
 		const result = resolveInstance([a, b], '/Users/x/projects/foo');
-		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error' });
+		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error', matches: [b, a] });
 	});
 
 	it('dispatches mcp.status=starting as mcp-starting intercept', () => {
 		const r = record('/p', 'starting');
 		const result = resolveInstance([r], '/p');
-		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-starting' });
+		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-starting', matches: [r] });
 	});
 
 	it('dispatches mcp.status=not-installed as addon-missing intercept', () => {
 		const r = record('/p', 'not-installed');
 		const result = resolveInstance([r], '/p');
-		expect(result).toEqual({ kind: 'intercept', reason: 'addon-missing' });
+		expect(result).toEqual({ kind: 'intercept', reason: 'addon-missing', matches: [r] });
 	});
 
 	it('dispatches mcp.status=error as mcp-error intercept', () => {
 		const r = record('/p', 'error');
 		const result = resolveInstance([r], '/p');
-		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error' });
+		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error', matches: [r] });
 	});
 });
