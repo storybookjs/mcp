@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { readRegistry } from './registry.ts';
 
 describe('readRegistry', () => {
 	let dir: string;
 
 	beforeEach(async () => {
-		dir = await fs.mkdtemp(join(tmpdir(), 'sb-mcp-proxy-registry-'));
+		dir = await fs.mkdtemp(join(homedir(), '.storybook', 'instances', 'sb-mcp-proxy-registry-'));
 	});
 
 	afterEach(async () => {
