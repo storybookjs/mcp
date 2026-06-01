@@ -8,7 +8,6 @@ export type InterceptReason =
 	| 'addon-missing'
 	| 'mcp-starting'
 	| 'mcp-error'
-	| 'multiple-matches'
 	| 'invalid-cwd'
 	| 'storybook-too-old';
 

@@ -45,34 +45,6 @@ describe('intercepts', () => {
 		expect(md).toContain('http://localhost:6006');
 	});
 
-	it('multiple-matches lists conflicting pids', () => {
-		const md = getInterceptMarkdown('multiple-matches', {
-			records: [
-				{
-					schemaVersion: 1,
-					instanceId: 'a',
-					pid: 111,
-					cwd: '/same',
-					url: 'http://localhost:6006',
-					port: 6006,
-					mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-				},
-				{
-					schemaVersion: 1,
-					instanceId: 'b',
-					pid: 222,
-					cwd: '/same',
-					url: 'http://localhost:6007',
-					port: 6007,
-					mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
-				},
-			],
-		});
-		expect(md).toContain('111');
-		expect(md).toContain('222');
-		expect(md).toContain('/same');
-	});
-
 	it('intercept() returns a tool result with isError and namespaced reason metadata', () => {
 		const result = intercept('no-instance');
 		expect(result.isError).toBe(true);
