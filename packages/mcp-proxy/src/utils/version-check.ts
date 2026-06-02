@@ -5,7 +5,7 @@ import { lt } from 'semver';
 /**
  * Minimum Storybook version that addon-mcp supports.
  */
-export const STORYBOOK_MIN_VERSION = '9.1.16';
+export const STORYBOOK_MIN_VERSION = '10.5.0-alpha.2';
 
 function readStorybookVersion(cwd: string): string | null {
 	try {
