@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	getInterceptMarkdown,
-	intercept,
-	isClaudeClient,
-	META_INTERCEPT_REASON,
-} from './intercepts.ts';
+import { getInterceptMarkdown, intercept, META_INTERCEPT_REASON } from './intercepts.ts';
 
 describe('intercepts', () => {
 	it.each([
@@ -18,18 +13,11 @@ describe('intercepts', () => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
 	});
 
-	it('no-instance omits Claude launch repair guidance for generic clients', () => {
+	it('no-instance stays client-agnostic and never names a client-specific repair skill', () => {
 		const md = getInterceptMarkdown('no-instance');
 		expect(md).toContain('Storybook is not running');
 		expect(md).not.toContain('storybook-setup-claude-launch');
-	});
-
-	it('no-instance includes Claude launch repair guidance for Claude clients', () => {
-		const md = getInterceptMarkdown('no-instance', undefined, {
-			clientInfo: { name: 'claude-code', version: '2.1.145' },
-		});
-		expect(md).toContain('storybook-setup-claude-launch');
-		expect(md).toContain('.claude/launch.json');
+		expect(md).not.toContain('.claude/launch.json');
 	});
 
 	it('storybook-too-old reports the detected version, the required version, and points to the upgrade skill', () => {
@@ -62,13 +50,6 @@ describe('intercepts', () => {
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
 		expect(md).not.toContain('storybook-setup-claude-launch');
-
-		const claudeMd = getInterceptMarkdown(
-			'no-instance',
-			{ records },
-			{ clientInfo: { name: 'Claude Code', version: '2.1.145' } },
-		);
-		expect(claudeMd).toContain('storybook-setup-claude-launch');
 	});
 
 	it('intercept() returns a tool result with isError and namespaced reason metadata', () => {
@@ -77,12 +58,5 @@ describe('intercepts', () => {
 		expect(result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
 		expect(META_INTERCEPT_REASON).toBe('storybook.dev/interceptReason');
 		expect(result.content[0]?.type).toBe('text');
-	});
-
-	it('detects Claude from MCP client metadata', () => {
-		expect(isClaudeClient({ name: 'claude-code' })).toBe(true);
-		expect(isClaudeClient({ title: 'Claude Code' })).toBe(true);
-		expect(isClaudeClient({ name: 'test-client' })).toBe(false);
-		expect(isClaudeClient(undefined)).toBe(false);
 	});
 });
