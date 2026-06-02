@@ -4,6 +4,7 @@ import { getInterceptMarkdown, intercept, META_INTERCEPT_REASON } from './interc
 describe('intercepts', () => {
 	it.each([
 		['no-instance', 'Storybook is not running'],
+		['storybook-not-installed', 'storybook-init'],
 		['addon-missing', '@storybook/addon-mcp'],
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
