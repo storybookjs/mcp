@@ -98,6 +98,13 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 			const resolution = resolveInstance(records, cwd);
 
 			if (resolution.kind === 'intercept') {
+				if (
+					resolution.reason === 'no-instance' &&
+					versionStatus.status === 'not-installed' &&
+					(resolution.records?.length ?? 0) === 0
+				) {
+					return intercept('storybook-not-installed');
+				}
 				return intercept(resolution.reason, { records: resolution.records });
 			}
 
