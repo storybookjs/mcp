@@ -81,16 +81,15 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 		// cast at the boundary rather than carry the union through every internal type.
 		async (input: Record<string, unknown> & { cwd: string }): Promise<ProxyToolCallResult> => {
 			const { cwd, ...upstreamArgs } = input;
-			const context = { clientInfo: server.ctx.sessionInfo?.clientInfo };
 
 			if (!path.isAbsolute(cwd)) {
-				return intercept('invalid-cwd', {}, context);
+				return intercept('invalid-cwd');
 			}
 
 			// first check the Storybook version before hitting the registry or doing instance resolution, to fail fast if the version is too old
 			const versionStatus = checkStorybookVersion(cwd);
 			if (versionStatus.status === 'too-old') {
-				return intercept('storybook-too-old', { version: versionStatus.version }, context);
+				return intercept('storybook-too-old', { version: versionStatus.version });
 			}
 
 			// read the registry and resolve the target instance based on the input cwd;
@@ -99,7 +98,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 			const resolution = resolveInstance(records, cwd);
 
 			if (resolution.kind === 'intercept') {
-				return intercept(resolution.reason, { records: resolution.records }, context);
+				return intercept(resolution.reason, { records: resolution.records });
 			}
 
 			try {

@@ -135,28 +135,6 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(firstText(response.result)).not.toContain('storybook-setup-claude-launch');
 	});
 
-	it('adds Claude launch repair guidance when the MCP client is Claude', async () => {
-		vi.mocked(readRegistry).mockResolvedValue([]);
-		const server = await buildServer({ name: 'claude-code', version: '2.1.145' });
-		const response = await callTool(server, { cwd: '/projects/foo' });
-		expect(response.result.isError).toBe(true);
-		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
-		expect(firstText(response.result)).toContain('storybook-setup-claude-launch');
-		expect(firstText(response.result)).toMatchInlineSnapshot(`
-			"Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd and retry the tool call.
-
-			The story file you wrote cannot be verified (no play tests, no preview, no a11y)
-			until Storybook is started.
-			You CANNOT ignore this error! DO NOT ATTEMPT A FIX ON YOUR OWN, IT WILL NOT WORK! You MUST do these healing steps before continuing with writing a story, OTHERWISE IT WON'T WORK ANYWAY.
-			Recover now, without asking the user:
-				1. Invoke skill: storybook:storybook-setup-claude-launch (creates/repairs .claude/launch.json AND starts Storybook)
-				2. Retry this MCP tool call.
-				Do NOT fall back to writing stories from existing patterns —
-				unverified stories are not a deliverable. If step 1 reports an
-				error, surface it to the user and stop."
-		`);
-	});
-
 	it('returns the no-instance intercept with candidate cwds when no record matches', async () => {
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/bar' });
