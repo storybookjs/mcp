@@ -8,10 +8,10 @@ import { STORYBOOK_MIN_VERSION } from '../utils/version-check.ts';
  */
 export const META_INTERCEPT_REASON = 'storybook.dev/interceptReason';
 
-const NO_INSTANCE_EMPTY = `Storybook is not running. Start \`storybook dev\` in the project root and retry the tool call.`;
+const NO_INSTANCE_EMPTY = `Storybook is not running at this cwd. Start Storybook from the exact Storybook cwd in the preview and retry the tool call.`;
 
 const buildNoInstanceWithCandidates = (records: StorybookInstanceRecordV1[]) =>
-	`No Storybook is running at this cwd. Either start \`storybook dev\` from the project's cwd, or retry with one of the running cwds below.
+	`No Storybook is running at this cwd. Either start Storybook from the project's cwd, or retry with one of the running cwds below.
 
 Running Storybooks:
 ${records.map((r) => `- \`${r.cwd}\` (${r.url})`).join('\n')}`;
@@ -40,12 +40,6 @@ const MCP_ERROR = `Storybook is running but its MCP server reported an error. In
 
 const INVALID_CWD = `\`cwd\` must be an absolute path matching the cwd from which \`storybook dev\` was started. Resolve the path on the client side (e.g. with \`path.resolve\`) and retry the tool call.`;
 
-const buildMultipleMatches = (records: StorybookInstanceRecordV1[]) =>
-	`Multiple Storybook processes are registered at the same cwd. Stop all but one and retry.
-
-Conflicting instances:
-${records.map((r) => `- pid \`${r.pid}\` at \`${r.cwd}\` (${r.url})`).join('\n')}`;
-
 export type InterceptExtras = {
 	records?: StorybookInstanceRecordV1[];
 	version?: string;
@@ -67,8 +61,6 @@ export function getInterceptMarkdown(
 			return MCP_STARTING;
 		case 'mcp-error':
 			return MCP_ERROR;
-		case 'multiple-matches':
-			return buildMultipleMatches(records ?? []);
 		case 'invalid-cwd':
 			return INVALID_CWD;
 		case 'storybook-too-old':
