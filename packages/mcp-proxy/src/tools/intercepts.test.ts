@@ -23,7 +23,7 @@ describe('intercepts', () => {
 	it('storybook-too-old reports the detected version, the required version, and points to the upgrade skill', () => {
 		const md = getInterceptMarkdown('storybook-too-old', { version: '9.0.5' });
 		expect(md).toMatchInlineSnapshot(`
-			"The Storybook installed at this cwd is version \`9.0.5\`, but this plugin requires \`10.5.0-alpha.2\` or newer.
+			"The Storybook installed at this cwd is version \`9.0.5\`, but this plugin requires \`10.5.0\` or newer.
 
 			Ask the user whether they want to upgrade Storybook. If they agree, invoke the \`storybook-upgrade\` skill to perform the upgrade, then run:
 			\`\`\`

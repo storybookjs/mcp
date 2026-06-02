@@ -45,9 +45,14 @@ describe('checkStorybookVersion caching', () => {
 		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.1.16' });
 	});
 
-	it('treats an earlier prerelease of the minimum as too-old', () => {
+	it('accepts a prerelease of the minimum (alpha/beta/rc)', () => {
 		mockStorybookVersion('10.5.0-alpha.1');
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '10.5.0-alpha.1' });
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	});
+
+	it('treats a prerelease of an earlier version as too-old', () => {
+		mockStorybookVersion('10.4.0-rc.1');
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '10.4.0-rc.1' });
 	});
 
 	it('returns ok for a stable release at or above the minimum', () => {
