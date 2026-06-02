@@ -1,7 +1,6 @@
 import type { McpServer } from 'tmcp';
 import { logger } from 'storybook/internal/node-logger';
 import * as v from 'valibot';
-import { getStoryIndex } from '../utils/get-story-index.ts';
 import { findStoryIds, type FoundStory, type NotFoundStory } from '../utils/find-story-ids.ts';
 import { errorToMCPContent } from '../utils/errors.ts';
 import { collectTelemetry } from '../telemetry.ts';
@@ -126,7 +125,7 @@ For visual/design accessibility violations (for example color contrast), ask the
 				done = await testRunQueue.wait();
 				const runA11y = input.a11y ?? true;
 
-				const { origin, options, disableTelemetry } = server.ctx.custom ?? {};
+				const { origin, options, getStoryIndex, disableTelemetry } = server.ctx.custom ?? {};
 
 				if (!origin) {
 					throw new Error('Origin is required in addon context');
@@ -134,6 +133,10 @@ For visual/design accessibility violations (for example color contrast), ask the
 
 				if (!options) {
 					throw new Error('Options are required in addon context');
+				}
+
+				if (!getStoryIndex) {
+					throw new Error('Story index resolver is required in addon context');
 				}
 
 				// Access channel from options (available at runtime even though types don't declare it)
@@ -146,7 +149,7 @@ For visual/design accessibility violations (for example color contrast), ask the
 				let inputStoryCount = 0;
 
 				if (input.stories) {
-					const index = await getStoryIndex(options);
+					const index = await getStoryIndex();
 					const resolvedStories = findStoryIds(index, input.stories);
 
 					storyIds = resolvedStories

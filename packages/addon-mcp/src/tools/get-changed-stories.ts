@@ -3,7 +3,6 @@ import { experimental_getStatusStore } from 'storybook/internal/core-server';
 import { collectTelemetry } from '../telemetry.ts';
 import type { AddonContext } from '../types.ts';
 import { errorToMCPContent } from '../utils/errors.ts';
-import { getStoryIndex } from '../utils/get-story-index.ts';
 import { GET_CHANGED_STORIES_TOOL_NAME } from './tool-names.ts';
 
 const CHANGE_DETECTION_TYPE = 'storybook/change-detection';
@@ -59,9 +58,9 @@ export async function addGetChangedStoriesTool(server: McpServer<any, AddonConte
 		},
 		async () => {
 			try {
-				const { options, disableTelemetry } = server.ctx.custom ?? {};
-				if (!options) {
-					throw new Error('Storybook options are required in addon context');
+				const { getStoryIndex, disableTelemetry } = server.ctx.custom ?? {};
+				if (!getStoryIndex) {
+					throw new Error('Story index resolver is required in addon context');
 				}
 
 				const statusStore = experimental_getStatusStore(CHANGE_DETECTION_TYPE);
@@ -94,7 +93,7 @@ export async function addGetChangedStoriesTool(server: McpServer<any, AddonConte
 					};
 				}
 
-				const index = await getStoryIndex(options);
+				const index = await getStoryIndex();
 				const stories = changedStoriesFromStatusStore.flatMap<ChangedStory>(
 					({ storyId, value }) => {
 						const entry = index.entries[storyId];

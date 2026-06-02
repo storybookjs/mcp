@@ -5,7 +5,6 @@ import { addPreviewStoriesTool } from './preview-stories.ts';
 import type { AddonContext } from '../types.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import monorepoStoryIndexFixture from '../../fixtures/monorepo-story-index.fixture.json' with { type: 'json' };
-import * as getStoryIndexModule from '../utils/get-story-index.ts';
 import { PREVIEW_STORIES_TOOL_NAME } from './tool-names.ts';
 
 vi.mock('storybook/internal/csf', () => ({
@@ -14,10 +13,11 @@ vi.mock('storybook/internal/csf', () => ({
 
 describe('previewStoriesTool', () => {
 	let server: McpServer<any, AddonContext>;
-	let getStoryIndexSpy: any;
+	const getStoryIndexSpy = vi.fn();
 	const testContext: AddonContext = {
 		origin: 'http://localhost:6006',
 		options: {} as any,
+		getStoryIndex: getStoryIndexSpy,
 		disableTelemetry: true,
 	};
 
@@ -56,8 +56,8 @@ describe('previewStoriesTool', () => {
 
 		await addPreviewStoriesTool(server);
 
-		// Mock getStoryIndex to return the fixture
-		getStoryIndexSpy = vi.spyOn(getStoryIndexModule, 'getStoryIndex');
+		// Provide the in-process story index via the addon context.
+		getStoryIndexSpy.mockReset();
 		getStoryIndexSpy.mockResolvedValue(smallStoryIndexFixture);
 	});
 
@@ -101,7 +101,7 @@ describe('previewStoriesTool', () => {
 				],
 			},
 		});
-		expect(getStoryIndexSpy).toHaveBeenCalledWith(testContext.options);
+		expect(getStoryIndexSpy).toHaveBeenCalled();
 	});
 
 	it('should return story URL when input uses storyId', async () => {
@@ -365,6 +365,7 @@ describe('previewStoriesTool', () => {
 		const telemetryContext = {
 			origin: 'http://localhost:6006',
 			options: {} as any,
+			getStoryIndex: getStoryIndexSpy,
 			disableTelemetry: false,
 		};
 
@@ -710,7 +711,7 @@ describe('previewStoriesTool', () => {
 					],
 				},
 			});
-			expect(getStoryIndexSpy).toHaveBeenCalledWith(testContext.options);
+			expect(getStoryIndexSpy).toHaveBeenCalled();
 		});
 
 		it('should return error message for story not found with Windows path', async () => {

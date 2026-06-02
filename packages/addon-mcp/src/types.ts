@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { Options } from 'storybook/internal/types';
+import type { Options, StoryIndex } from 'storybook/internal/types';
 import { GET_TOOL_NAME, LIST_TOOL_NAME, type StorybookContext } from '@storybook/mcp';
 import { GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME } from './tools/tool-names.ts';
 
@@ -58,6 +58,13 @@ export type AddonContext = StorybookContext & {
 	 * Typically http://localhost:{port}
 	 */
 	origin: string;
+
+	/**
+	 * Resolves the live Storybook story index in-process, backed by the dev
+	 * server's memoised `StoryIndexGenerator`. Provided by the addon so tools
+	 * never have to fetch `/index.json` over loopback HTTP.
+	 */
+	getStoryIndex: () => Promise<StoryIndex>;
 
 	/**
 	 * Whether telemetry collection is disabled.
