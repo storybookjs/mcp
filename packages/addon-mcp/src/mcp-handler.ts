@@ -12,7 +12,8 @@ import {
 	addGetStoryDocumentationTool,
 	type Source,
 } from '@storybook/mcp';
-import type { Options } from 'storybook/internal/types';
+import type { Options, StoryIndex } from 'storybook/internal/types';
+import type { StoryIndexGenerator } from 'storybook/internal/core-server';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { buffer } from 'node:stream/consumers';
 import { collectTelemetry } from './telemetry.ts';
@@ -33,12 +34,30 @@ let origin: string | undefined;
 let initialize: Promise<McpServer<any, AddonContext>> | undefined;
 let disableTelemetry: boolean | undefined;
 let a11yEnabled: boolean | undefined;
+// Resolves the live story index in-process via the dev server's memoised
+// StoryIndexGenerator. Set once during initialization and shared with every tool
+// through the addon context, so tools never fetch `/index.json` over HTTP.
+let getStoryIndex: (() => Promise<StoryIndex>) | undefined;
 
 const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	const core = await options.presets.apply('core', {});
 	const features = await options.presets.apply('features', {});
 	const changeDetectionEnabled = features?.changeDetection ?? false;
 	disableTelemetry = core?.disableTelemetry ?? false;
+
+	// Resolve the dev server's StoryIndexGenerator once (the preset memoises a single
+	// instance) and expose a thin getIndex() through the context. Requires Storybook
+	// >= 10.2.0, which the addon declares as a peer dependency.
+	const storyIndexGenerator =
+		await options.presets.apply<StoryIndexGenerator | undefined>('storyIndexGenerator');
+	getStoryIndex = async () => {
+		if (!storyIndexGenerator) {
+			throw new Error(
+				'Storybook story index generator is unavailable. These MCP tools require a running Storybook dev server (Storybook >= 10.2.0).',
+			);
+		}
+		return storyIndexGenerator.getIndex();
+	};
 
 	// Determine tool availability before creating server so instructions can be tailored.
 	// Reuse the already-resolved `features` so getReviewStatus doesn't re-call
@@ -168,6 +187,7 @@ export const mcpServerHandler = async ({
 		endpoint,
 		toolsets: getToolsets(webRequest, addonOptions),
 		origin: origin!,
+		getStoryIndex: getStoryIndex!,
 		disableTelemetry: disableTelemetry!,
 		a11yEnabled,
 		request: webRequest,

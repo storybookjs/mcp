@@ -4,7 +4,7 @@ import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { addRunStoryTestsTool, getAddonVitestConstants } from './run-story-tests.ts';
 import type { AddonContext } from '../types.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
-import * as fetchStoryIndex from '../utils/fetch-story-index.ts';
+import type { StoryIndex } from 'storybook/internal/types';
 import type { TriggerTestRunResponsePayload } from '@storybook/addon-vitest/constants';
 import { RUN_STORY_TESTS_TOOL_NAME } from './tool-names.ts';
 
@@ -34,6 +34,7 @@ describe('getAddonVitestConstants', () => {
 
 describe('runStoryTestsTool', () => {
 	let server: McpServer<any, AddonContext>;
+	const getStoryIndexMock = vi.fn<() => Promise<StoryIndex>>();
 	let mockChannel: {
 		on: Mock;
 		off: Mock;
@@ -54,6 +55,7 @@ describe('runStoryTestsTool', () => {
 			options: {
 				channel: mockChannel,
 			} as any,
+			getStoryIndex: getStoryIndexMock,
 			disableTelemetry: true,
 			toolsets: {
 				dev: true,
@@ -156,8 +158,9 @@ describe('runStoryTestsTool', () => {
 
 		await addRunStoryTestsTool(server, { a11yEnabled: true });
 
-		// Mock fetchStoryIndex to return the fixture
-		vi.spyOn(fetchStoryIndex, 'fetchStoryIndex').mockResolvedValue(smallStoryIndexFixture as any);
+		// Provide the in-process story index via the addon context.
+		getStoryIndexMock.mockReset();
+		getStoryIndexMock.mockResolvedValue(smallStoryIndexFixture as any);
 	});
 
 	it('should include visual a11y handling guidance in tool description', async () => {

@@ -5,7 +5,6 @@ import { addPreviewStoriesTool } from './preview-stories.ts';
 import type { AddonContext } from '../types.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import monorepoStoryIndexFixture from '../../fixtures/monorepo-story-index.fixture.json' with { type: 'json' };
-import * as fetchStoryIndex from '../utils/fetch-story-index.ts';
 import { PREVIEW_STORIES_TOOL_NAME } from './tool-names.ts';
 
 vi.mock('storybook/internal/csf', () => ({
@@ -14,10 +13,11 @@ vi.mock('storybook/internal/csf', () => ({
 
 describe('previewStoriesTool', () => {
 	let server: McpServer<any, AddonContext>;
-	let fetchStoryIndexSpy: any;
+	const getStoryIndexSpy = vi.fn();
 	const testContext: AddonContext = {
 		origin: 'http://localhost:6006',
 		options: {} as any,
+		getStoryIndex: getStoryIndexSpy,
 		disableTelemetry: true,
 	};
 
@@ -56,9 +56,9 @@ describe('previewStoriesTool', () => {
 
 		await addPreviewStoriesTool(server);
 
-		// Mock fetchStoryIndex to return the fixture
-		fetchStoryIndexSpy = vi.spyOn(fetchStoryIndex, 'fetchStoryIndex');
-		fetchStoryIndexSpy.mockResolvedValue(smallStoryIndexFixture);
+		// Provide the in-process story index via the addon context.
+		getStoryIndexSpy.mockReset();
+		getStoryIndexSpy.mockResolvedValue(smallStoryIndexFixture);
 	});
 
 	it('should return story URL for a valid story', async () => {
@@ -101,7 +101,7 @@ describe('previewStoriesTool', () => {
 				],
 			},
 		});
-		expect(fetchStoryIndexSpy).toHaveBeenCalledWith('http://localhost:6006');
+		expect(getStoryIndexSpy).toHaveBeenCalled();
 	});
 
 	it('should return story URL when input uses storyId', async () => {
@@ -365,6 +365,7 @@ describe('previewStoriesTool', () => {
 		const telemetryContext = {
 			origin: 'http://localhost:6006',
 			options: {} as any,
+			getStoryIndex: getStoryIndexSpy,
 			disableTelemetry: false,
 		};
 
@@ -440,7 +441,7 @@ describe('previewStoriesTool', () => {
 	});
 
 	it('should handle fetch errors gracefully', async () => {
-		fetchStoryIndexSpy.mockRejectedValue(new Error('Network timeout'));
+		getStoryIndexSpy.mockRejectedValue(new Error('Network timeout'));
 
 		const request = {
 			jsonrpc: '2.0' as const,
@@ -710,7 +711,7 @@ describe('previewStoriesTool', () => {
 					],
 				},
 			});
-			expect(fetchStoryIndexSpy).toHaveBeenCalledWith('http://localhost:6006');
+			expect(getStoryIndexSpy).toHaveBeenCalled();
 		});
 
 		it('should return error message for story not found with Windows path', async () => {
@@ -791,7 +792,7 @@ describe('previewStoriesTool', () => {
 		it('should match stories when index.json importPath has no leading ./', async () => {
 			// Simulate monorepo setup where Storybook runs from apps/storybook
 			// but stories live in packages/ — index.json uses ../../packages/...
-			fetchStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
+			getStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
 
 			const request = {
 				jsonrpc: '2.0' as const,
@@ -838,7 +839,7 @@ describe('previewStoriesTool', () => {
 		it('should match stories when both index.json importPath and computed path have leading ./ and normalization still works', async () => {
 			// Simulate running Storybook from root where index.json uses ./stories/...
 			// The computed relative path also starts with ./stories/... and normalization preserves the match
-			fetchStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
+			getStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
 
 			const request = {
 				jsonrpc: '2.0' as const,
@@ -884,7 +885,7 @@ describe('previewStoriesTool', () => {
 		it('should match stories when index.json importPath has no ./ and computed path has ./', async () => {
 			// index.json stores "stories/Utils/Helpers.stories.tsx" (no ./ prefix)
 			// computed relative path would be "./stories/Utils/Helpers.stories.tsx"
-			fetchStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
+			getStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
 
 			const request = {
 				jsonrpc: '2.0' as const,
@@ -929,7 +930,7 @@ describe('previewStoriesTool', () => {
 
 		it('should match stories when path has dot-segments like ./stories/../stories/', async () => {
 			// dot-segments should be canonicalized: ./stories/../stories/Button.stories.tsx -> ./stories/Button.stories.tsx
-			fetchStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
+			getStoryIndexSpy.mockResolvedValue(monorepoStoryIndexFixture);
 
 			const request = {
 				jsonrpc: '2.0' as const,

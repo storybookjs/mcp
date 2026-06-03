@@ -3,7 +3,6 @@ import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { addGetChangedStoriesTool } from './get-changed-stories.ts';
 import type { AddonContext } from '../types.ts';
-import * as fetchStoryIndex from '../utils/fetch-story-index.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import { GET_CHANGED_STORIES_TOOL_NAME } from './tool-names.ts';
 import type { StoryIndex } from 'storybook/internal/types';
@@ -18,9 +17,11 @@ vi.mock('storybook/internal/core-server', () => ({
 
 describe('getChangedStoriesTool', () => {
 	let server: McpServer<any, AddonContext>;
+	const getStoryIndexMock = vi.fn<() => Promise<StoryIndex>>();
 	const testContext: AddonContext = {
 		origin: 'http://localhost:6006',
 		options: {} as AddonContext['options'],
+		getStoryIndex: getStoryIndexMock,
 		disableTelemetry: true,
 	};
 
@@ -58,9 +59,8 @@ describe('getChangedStoriesTool', () => {
 		);
 
 		await addGetChangedStoriesTool(server);
-		vi.spyOn(fetchStoryIndex, 'fetchStoryIndex').mockResolvedValue(
-			smallStoryIndexFixture as unknown as StoryIndex,
-		);
+		getStoryIndexMock.mockReset();
+		getStoryIndexMock.mockResolvedValue(smallStoryIndexFixture as unknown as StoryIndex);
 	});
 
 	async function callTool() {
@@ -114,7 +114,7 @@ describe('getChangedStoriesTool', () => {
 		const response = await callTool();
 		const text = getResultText(response);
 
-		expect(fetchStoryIndex.fetchStoryIndex).toHaveBeenCalledWith('http://localhost:6006');
+		expect(getStoryIndexMock).toHaveBeenCalled();
 		expect(text).toMatchInlineSnapshot(`
 			"Detected 3 changed stories (1 new, 1 modified, 1 related).
 
@@ -293,11 +293,11 @@ describe('getChangedStoriesTool', () => {
 			}),
 		});
 
-		const callCountBefore = vi.mocked(fetchStoryIndex.fetchStoryIndex).mock.calls.length;
+		const callCountBefore = getStoryIndexMock.mock.calls.length;
 		const response = await callTool();
 		const text = getResultText(response);
 
 		expect(text).toBe('No new, modified, or related stories detected.');
-		expect(vi.mocked(fetchStoryIndex.fetchStoryIndex).mock.calls.length).toBe(callCountBefore);
+		expect(getStoryIndexMock.mock.calls.length).toBe(callCountBefore);
 	});
 });
