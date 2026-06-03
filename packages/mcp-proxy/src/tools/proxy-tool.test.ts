@@ -204,6 +204,30 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(firstText(response.result)).toContain('storybook-upgrade');
 	});
 
+	it('returns the storybook-not-installed intercept when Storybook is unresolvable and nothing is running at the cwd', async () => {
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'not-installed' });
+		vi.mocked(readRegistry).mockResolvedValue([]);
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'storybook-not-installed' });
+		expect(firstText(response.result)).toContain('storybook-init');
+	});
+
+	it('still proxies to a running instance even when the version check reports not-installed (avoids monorepo false negatives)', async () => {
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'not-installed' });
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'COMPONENTS' }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo', withStoryIds: true });
+		expect(proxyToolCall).toHaveBeenCalledWith(record, {
+			name: 'list-all-documentation',
+			arguments: { withStoryIds: true },
+		});
+		expect(firstText(response.result)).toBe('COMPONENTS');
+	});
+
 	it('proxies the call and prepends a multi-instance warning when 2+ ready instances share the cwd', async () => {
 		const a: StorybookInstanceRecordV1 = {
 			...record,

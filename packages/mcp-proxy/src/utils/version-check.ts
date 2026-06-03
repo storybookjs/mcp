@@ -3,9 +3,16 @@ import * as path from 'node:path';
 import { lt } from 'semver';
 
 /**
- * Minimum Storybook version that addon-mcp supports.
+ * Minimum Storybook version that addon-mcp supports (user-facing).
  */
-export const STORYBOOK_MIN_VERSION = '9.1.16';
+export const STORYBOOK_MIN_VERSION = '10.5.0';
+
+/**
+ * Comparison floor for the minimum version. The `-0` prerelease suffix is the
+ * lowest possible 10.5.0 build, so every 10.5.0 prerelease (alpha/beta/rc) is
+ * accepted alongside the stable release, while anything below 10.5.0 is rejected.
+ */
+const STORYBOOK_MIN_VERSION_FLOOR = '10.5.0-0';
 
 function readStorybookVersion(cwd: string): string | null {
 	try {
@@ -31,7 +38,7 @@ export function checkStorybookVersion(cwd: string): StorybookVersionStatus {
 	const status: StorybookVersionStatus =
 		version === null
 			? { status: 'not-installed' }
-			: lt(version, STORYBOOK_MIN_VERSION)
+			: lt(version, STORYBOOK_MIN_VERSION_FLOOR)
 				? { status: 'too-old', version }
 				: { status: 'ok' };
 	versionCache.set(cwd, status);
