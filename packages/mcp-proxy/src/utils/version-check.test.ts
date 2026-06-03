@@ -1,183 +1,178 @@
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
 	checkStorybookVersion,
+	classifyStorybookVersion,
 	clearStorybookVersionCache,
 	STORYBOOK_MIN_VERSION,
 } from './version-check.ts';
 
-vi.mock('node:module', () => ({
-	createRequire: vi.fn(),
-}));
-
-vi.mock('node:fs', () => ({
-	readFileSync: vi.fn(),
-}));
-
-/**
- * Mutable map of cwd -> installed Storybook version (null = not installed).
- *
- * The implementation anchors resolution at `<cwd>/package.json` via
- * `createRequire`, resolves `storybook/package.json` from there, then reads that
- * file with `readFileSync`. The mocks below model that: `createRequire(cwd)`
- * resolves to `<cwd>/node_modules/storybook/package.json` (or throws when the
- * cwd has no Storybook), and `readFileSync` serves the version from this map.
- * Reassigning a cwd's version between calls simulates an in-session upgrade —
- * exactly the scenario that used to leave the proxy pinned to a stale version.
- */
-let versions: Record<string, string | null> = {};
-
-function moduleNotFound(): NodeJS.ErrnoException {
-	return Object.assign(new Error("Cannot find module 'storybook/package.json'"), {
-		code: 'MODULE_NOT_FOUND',
-	});
-}
-
-function pkgPathFor(cwd: string): string {
-	return `${cwd}/node_modules/storybook/package.json`;
-}
-
-beforeEach(() => {
-	versions = {};
-	clearStorybookVersionCache();
-
-	vi.mocked(createRequire).mockReset();
-	vi.mocked(createRequire).mockImplementation((filename) => {
-		const cwd = String(filename).replace(/[/\\]package\.json$/, '');
-		const require = (() => {
-			throw new Error('unexpected require() call');
-		}) as unknown as NodeJS.Require;
-		require.resolve = ((id: string) => {
-			if (id !== 'storybook/package.json' || versions[cwd] == null) throw moduleNotFound();
-			return pkgPathFor(cwd);
-		}) as NodeJS.RequireResolve;
-		return require;
+describe('classifyStorybookVersion (pure)', () => {
+	it('returns ok for the minimum version', () => {
+		expect(classifyStorybookVersion(STORYBOOK_MIN_VERSION)).toEqual({ status: 'ok' });
 	});
 
-	vi.mocked(readFileSync).mockReset();
-	vi.mocked(readFileSync).mockImplementation((file: Parameters<typeof readFileSync>[0]) => {
-		const match = String(file).match(/^(.*)[/\\]node_modules[/\\]storybook[/\\]package\.json$/);
-		const cwd = match?.[1];
-		if (cwd === undefined || versions[cwd] == null) throw moduleNotFound();
-		return JSON.stringify({ version: versions[cwd] });
-	});
-});
-
-afterEach(() => {
-	clearStorybookVersionCache();
-});
-
-describe('checkStorybookVersion classification', () => {
-	it('returns ok for a current version', () => {
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	it('returns ok for a stable release above the minimum', () => {
+		expect(classifyStorybookVersion('10.6.2')).toEqual({ status: 'ok' });
 	});
 
-	it('returns too-old with the detected version for older Storybooks', () => {
-		versions['/a'] = '9.1.16';
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.1.16' });
+	it('accepts any prerelease of the minimum (alpha/beta/rc)', () => {
+		expect(classifyStorybookVersion('10.5.0-alpha.3')).toEqual({ status: 'ok' });
 	});
 
-	it('accepts a prerelease of the minimum (alpha/beta/rc)', () => {
-		versions['/a'] = '10.5.0-alpha.1';
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	it('returns too-old for a version below the floor', () => {
+		expect(classifyStorybookVersion('9.1.16')).toEqual({ status: 'too-old', version: '9.1.16' });
 	});
 
 	it('treats a prerelease of an earlier version as too-old', () => {
-		versions['/a'] = '10.4.0-rc.1';
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '10.4.0-rc.1' });
+		expect(classifyStorybookVersion('10.4.0-rc.1')).toEqual({
+			status: 'too-old',
+			version: '10.4.0-rc.1',
+		});
 	});
 
-	it('returns ok for a stable release at or above the minimum', () => {
-		versions['/a'] = '10.5.0';
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	it('returns not-installed for undefined', () => {
+		expect(classifyStorybookVersion(undefined)).toEqual({ status: 'not-installed' });
+	});
+});
+
+describe('checkStorybookVersion (disk fallback)', () => {
+	let root: string;
+
+	/** Create a fake Storybook install dir holding the given version. */
+	function makeStore(name: string, version: string): string {
+		const dir = join(root, 'store', name, 'node_modules', 'storybook');
+		mkdirSync(dir, { recursive: true });
+		writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'storybook', version }));
+		return dir;
+	}
+
+	/** Point `<cwd>/node_modules/storybook` at the given install dir (symlink). */
+	function linkStorybook(cwd: string, target: string): void {
+		const nm = join(cwd, 'node_modules');
+		mkdirSync(nm, { recursive: true });
+		const link = join(nm, 'storybook');
+		try {
+			unlinkSync(link);
+		} catch {
+			/* no existing link */
+		}
+		symlinkSync(target, link, 'dir');
+	}
+
+	beforeEach(() => {
+		root = mkdtempSync(join(tmpdir(), 'sb-version-check-'));
+		clearStorybookVersionCache();
 	});
 
-	it('returns not-installed when storybook is unresolvable', () => {
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'not-installed' });
+	afterEach(() => {
+		clearStorybookVersionCache();
+		rmSync(root, { recursive: true, force: true });
 	});
 
-	it('anchors resolution at the cwd, so each cwd sees its own install', () => {
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		versions['/b'] = '9.1.16';
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
-		expect(checkStorybookVersion('/b')).toEqual({ status: 'too-old', version: '9.1.16' });
-		expect(createRequire).toHaveBeenCalledWith('/a/package.json');
-		expect(createRequire).toHaveBeenCalledWith('/b/package.json');
+	it('returns not-installed when Storybook is absent', () => {
+		const cwd = join(root, 'proj');
+		mkdirSync(cwd, { recursive: true });
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'not-installed' });
+	});
+
+	it('reads the installed version (ok / too-old) from disk', () => {
+		const cwd = join(root, 'proj');
+		mkdirSync(cwd, { recursive: true });
+		linkStorybook(cwd, makeStore('sb10', '10.5.0-alpha.4'));
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
+
+		clearStorybookVersionCache(cwd);
+		linkStorybook(cwd, makeStore('sb9', '9.1.20'));
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '9.1.20' });
+	});
+
+	// The regression that defeated the require.resolve()+readFileSync approach:
+	// resolving once while on the old version pins Node's Module._pathCache to the
+	// old realpath, so later reads stay stale after a pnpm upgrade. A direct read of
+	// node_modules/storybook/package.json follows the live symlink and recovers.
+	it('recovers after an in-session symlink swap (the upgrade scenario), no manual clear', () => {
+		const cwd = join(root, 'proj');
+		mkdirSync(cwd, { recursive: true });
+		const sb8 = makeStore('sb8', '8.6.18');
+		const sb10 = makeStore('sb10', '10.5.0-alpha.4'); // old dir lingers on disk, like pnpm
+
+		linkStorybook(cwd, sb8);
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '8.6.18' }); // seeds the trap
+
+		// pnpm upgrade repoints the symlink; the sb8 dir is still present.
+		linkStorybook(cwd, sb10);
+		// No clearStorybookVersionCache() call -- must recover on its own (too-old is never cached).
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
 	});
 });
 
 describe('checkStorybookVersion caching', () => {
-	it('caches the ok result so repeated calls do not re-read the filesystem', () => {
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		checkStorybookVersion('/a');
-		checkStorybookVersion('/a');
-		checkStorybookVersion('/a');
-		expect(createRequire).toHaveBeenCalledTimes(1);
-		expect(readFileSync).toHaveBeenCalledTimes(1);
+	let root: string;
+	let cwd: string;
+	function setVersion(version: string) {
+		const dir = join(cwd, 'node_modules', 'storybook');
+		mkdirSync(dir, { recursive: true });
+		writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'storybook', version }));
+	}
+
+	beforeEach(() => {
+		root = mkdtempSync(join(tmpdir(), 'sb-version-cache-'));
+		cwd = join(root, 'proj');
+		mkdirSync(cwd, { recursive: true });
+		clearStorybookVersionCache();
 	});
 
-	it('does NOT cache too-old, and recovers after an upgrade without a manual clear', () => {
-		// First call while Storybook is too old.
-		versions['/a'] = '9.1.16';
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.1.16' });
-
-		// Simulate an in-session upgrade (pnpm repoints the symlink). NO
-		// clearStorybookVersionCache() call — the proxy must re-read on its own.
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	afterEach(() => {
+		clearStorybookVersionCache();
+		rmSync(root, { recursive: true, force: true });
 	});
 
-	it('does NOT cache not-installed, and recovers once Storybook is installed', () => {
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'not-installed' });
-		versions['/a'] = STORYBOOK_MIN_VERSION; // user just ran `storybook init`
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	it('caches ok (a later on-disk change is not seen until cleared)', () => {
+		setVersion('10.5.0');
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
+		setVersion('9.1.16'); // change on disk
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' }); // served from cache
+		clearStorybookVersionCache(cwd);
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '9.1.16' });
 	});
 
-	it('re-reads disk on every call while too-old (no stale memoization)', () => {
-		versions['/a'] = '9.1.16';
-		checkStorybookVersion('/a');
-		checkStorybookVersion('/a');
-		// At least one resolution per call — the too-old verdict is never cached.
-		expect(vi.mocked(createRequire).mock.calls.length).toBeGreaterThanOrEqual(2);
+	it('does NOT cache too-old (re-reads disk every call)', () => {
+		setVersion('9.1.16');
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '9.1.16' });
+		setVersion('10.5.0'); // upgrade on disk
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' }); // no clear needed
 	});
 
-	it('keeps separate cache entries per cwd', () => {
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		versions['/b'] = STORYBOOK_MIN_VERSION;
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
-		expect(checkStorybookVersion('/b')).toEqual({ status: 'ok' });
-		vi.mocked(createRequire).mockClear();
-		// Both served from cache now.
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
-		expect(checkStorybookVersion('/b')).toEqual({ status: 'ok' });
-		expect(createRequire).not.toHaveBeenCalled();
-	});
-
-	it('clearStorybookVersionCache(cwd) forces a re-read of only that cwd', () => {
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		versions['/b'] = STORYBOOK_MIN_VERSION;
-		checkStorybookVersion('/a');
-		checkStorybookVersion('/b');
-		vi.mocked(createRequire).mockClear();
-
-		clearStorybookVersionCache('/a');
-		checkStorybookVersion('/a'); // re-reads
-		checkStorybookVersion('/b'); // still cached
-		expect(createRequire).toHaveBeenCalledTimes(1);
+	it('does NOT cache not-installed (recovers once installed)', () => {
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'not-installed' });
+		setVersion('10.5.0');
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
 	});
 
 	it('clearStorybookVersionCache() with no argument clears every entry', () => {
-		versions['/a'] = STORYBOOK_MIN_VERSION;
-		versions['/b'] = STORYBOOK_MIN_VERSION;
-		checkStorybookVersion('/a');
-		checkStorybookVersion('/b');
-		vi.mocked(createRequire).mockClear();
-
+		const other = join(root, 'other');
+		mkdirSync(join(other, 'node_modules', 'storybook'), { recursive: true });
+		writeFileSync(
+			join(other, 'node_modules', 'storybook', 'package.json'),
+			JSON.stringify({ name: 'storybook', version: '10.5.0' }),
+		);
+		setVersion('10.5.0');
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
+		expect(checkStorybookVersion(other)).toEqual({ status: 'ok' });
 		clearStorybookVersionCache();
-		checkStorybookVersion('/a'); // re-reads
-		checkStorybookVersion('/b'); // re-reads
-		expect(createRequire).toHaveBeenCalledTimes(2);
+		// Downgrade both on disk; after a full clear both are re-read.
+		writeFileSync(
+			join(cwd, 'node_modules', 'storybook', 'package.json'),
+			JSON.stringify({ name: 'storybook', version: '9.1.16' }),
+		);
+		writeFileSync(
+			join(other, 'node_modules', 'storybook', 'package.json'),
+			JSON.stringify({ name: 'storybook', version: '9.1.16' }),
+		);
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '9.1.16' });
+		expect(checkStorybookVersion(other)).toEqual({ status: 'too-old', version: '9.1.16' });
 	});
 });
