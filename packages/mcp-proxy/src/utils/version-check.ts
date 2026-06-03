@@ -19,7 +19,6 @@ export type StorybookVersionStatus =
 	| { status: 'too-old'; version: string }
 	| { status: 'not-installed' };
 
-
 export function classifyStorybookVersion(version: string | undefined): StorybookVersionStatus {
 	if (version === undefined) return { status: 'not-installed' };
 	return lt(version, STORYBOOK_MIN_VERSION_FLOOR)
@@ -47,10 +46,7 @@ export function clearStorybookVersionCache(cwd?: string): void {
 
 function readStorybookVersion(cwd: string): string | undefined {
 	try {
-		const raw = readFileSync(
-			path.join(cwd, 'node_modules', 'storybook', 'package.json'),
-			'utf8',
-		);
+		const raw = readFileSync(path.join(cwd, 'node_modules', 'storybook', 'package.json'), 'utf8');
 		const { version } = JSON.parse(raw) as { version?: unknown };
 		return typeof version === 'string' ? version : undefined;
 	} catch {
