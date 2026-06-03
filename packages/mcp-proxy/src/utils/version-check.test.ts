@@ -41,8 +41,23 @@ describe('checkStorybookVersion caching', () => {
 	});
 
 	it('returns too-old with the detected version for older Storybooks', () => {
-		mockStorybookVersion('9.0.5');
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.0.5' });
+		mockStorybookVersion('9.1.16');
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.1.16' });
+	});
+
+	it('accepts a prerelease of the minimum (alpha/beta/rc)', () => {
+		mockStorybookVersion('10.5.0-alpha.1');
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	});
+
+	it('treats a prerelease of an earlier version as too-old', () => {
+		mockStorybookVersion('10.4.0-rc.1');
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '10.4.0-rc.1' });
+	});
+
+	it('returns ok for a stable release at or above the minimum', () => {
+		mockStorybookVersion('10.5.0');
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
 	});
 
 	it('returns not-installed when storybook is unresolvable', () => {
@@ -51,7 +66,7 @@ describe('checkStorybookVersion caching', () => {
 	});
 
 	it('caches the result for a given cwd so repeated calls do not hit the filesystem', () => {
-		mockStorybookVersion('9.0.5');
+		mockStorybookVersion('9.1.16');
 		checkStorybookVersion('/a');
 		checkStorybookVersion('/a');
 		checkStorybookVersion('/a');
@@ -59,7 +74,7 @@ describe('checkStorybookVersion caching', () => {
 	});
 
 	it('keeps separate cache entries per cwd', () => {
-		const versions: Record<string, string> = { '/a': '9.0.5', '/b': STORYBOOK_MIN_VERSION };
+		const versions: Record<string, string> = { '/a': '9.1.16', '/b': STORYBOOK_MIN_VERSION };
 		vi.mocked(createRequire).mockImplementation((cwdPkg) => {
 			const cwd = String(cwdPkg).replace(/\/package\.json$/, '');
 			const version = versions[cwd];
@@ -70,17 +85,17 @@ describe('checkStorybookVersion caching', () => {
 			}) as RequireFn;
 			return req as unknown as ReturnType<typeof createRequire>;
 		});
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.0.5' });
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.1.16' });
 		expect(checkStorybookVersion('/b')).toEqual({ status: 'ok' });
 		// Second round: both served from cache.
 		vi.mocked(createRequire).mockClear();
-		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.0.5' });
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'too-old', version: '9.1.16' });
 		expect(checkStorybookVersion('/b')).toEqual({ status: 'ok' });
 		expect(createRequire).not.toHaveBeenCalled();
 	});
 
 	it('clearStorybookVersionCache(cwd) re-reads only that cwd on the next call', () => {
-		mockStorybookVersion('9.0.5');
+		mockStorybookVersion('9.1.16');
 		checkStorybookVersion('/a');
 		checkStorybookVersion('/b');
 		expect(createRequire).toHaveBeenCalledTimes(2);
@@ -90,12 +105,12 @@ describe('checkStorybookVersion caching', () => {
 
 		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
 		// /b is still cached as too-old.
-		expect(checkStorybookVersion('/b')).toEqual({ status: 'too-old', version: '9.0.5' });
+		expect(checkStorybookVersion('/b')).toEqual({ status: 'too-old', version: '9.1.16' });
 		expect(createRequire).toHaveBeenCalledTimes(3);
 	});
 
 	it('clearStorybookVersionCache() with no argument clears every entry', () => {
-		mockStorybookVersion('9.0.5');
+		mockStorybookVersion('9.1.16');
 		checkStorybookVersion('/a');
 		checkStorybookVersion('/b');
 		clearStorybookVersionCache();
