@@ -11,7 +11,7 @@ export function registerClearVersionCacheTool(server: McpServer<any>) {
 			name: 'clear-storybook-version-cache',
 			title: 'Clear Storybook Version Cache',
 			description:
-				'Clear the in-memory cached Storybook version detection for a project. Call this after upgrading Storybook (e.g. via the `storybook-upgrade` skill) so the proxy re-reads `storybook/package.json` on the next tool call instead of returning the stale `too-old` result.',
+				'Manually clear the in-memory cached Storybook version detection for a project. Rarely needed: the proxy already re-reads `storybook/package.json` from disk on every call for `too-old`/`not-installed` projects (only an `ok` result is cached), so an upgrade or fresh install is picked up automatically. Use this as an escape hatch if a tool call still reports a stale version after an in-session change.',
 			schema: v.object({
 				cwd: v.pipe(
 					v.string(),

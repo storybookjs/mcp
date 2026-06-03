@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { lt } from 'semver';
@@ -14,13 +15,13 @@ export const STORYBOOK_MIN_VERSION = '10.5.0';
  */
 const STORYBOOK_MIN_VERSION_FLOOR = '10.5.0-0';
 
-function readStorybookVersion(cwd: string): string | null {
+function readStorybookVersion(cwd: string): string | void {
 	try {
-		const requireFromCwd = createRequire(path.join(cwd, 'package.json'));
-		const { version } = requireFromCwd('storybook/package.json') as { version: string };
-		return version;
+		const require = createRequire(path.join(cwd, 'package.json'));
+		const pkgPath = require.resolve('storybook/package.json');
+		return JSON.parse(readFileSync(pkgPath, 'utf8')).version;
 	} catch {
-		return null;
+		// Storybook is not installed / not resolvable from this cwd.
 	}
 }
 
@@ -36,20 +37,16 @@ export function checkStorybookVersion(cwd: string): StorybookVersionStatus {
 	if (cached) return cached;
 	const version = readStorybookVersion(cwd);
 	const status: StorybookVersionStatus =
-		version === null
+		version === undefined
 			? { status: 'not-installed' }
 			: lt(version, STORYBOOK_MIN_VERSION_FLOOR)
 				? { status: 'too-old', version }
 				: { status: 'ok' };
-	versionCache.set(cwd, status);
+
+	if (status.status === 'ok') versionCache.set(cwd, status);
 	return status;
 }
 
-/**
- * Drop the cached Storybook version detection. With no argument, clears every
- * entry; with a cwd, only that project's entry. The next `checkStorybookVersion`
- * for a cleared cwd will re-read `storybook/package.json` from disk.
- */
 export function clearStorybookVersionCache(cwd?: string): void {
 	if (cwd === undefined) {
 		versionCache.clear();
