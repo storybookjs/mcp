@@ -25,15 +25,10 @@ ${lines.join('\n')}
 > If results look unexpected, ask the user whether they want to stop the other instance(s).`;
 }
 
-function prependMultiInstanceWarning(
-	result: ProxyToolCallResult,
-	chosen: StorybookInstanceRecordV1,
-	siblings: StorybookInstanceRecordV1[],
-): ProxyToolCallResult {
-	const warning = formatMultiInstanceWarning(chosen, siblings);
+function prependWarning(result: ProxyToolCallResult, text: string): ProxyToolCallResult {
 	return {
 		...result,
-		content: [{ type: 'text', text: warning }, ...(result.content ?? [])],
+		content: [{ type: 'text', text }, ...(result.content ?? [])],
 	};
 }
 
@@ -101,7 +96,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 
 			const withWarning = (result: ProxyToolCallResult): ProxyToolCallResult =>
 				localAnomalies.length > 0
-					? prependIncompatibleRegistryWarning(result, cwd, localAnomalies)
+					? prependWarning(result, formatIncompatibleRegistryWarning(cwd, localAnomalies))
 					: result;
 
 			if (resolution.kind === 'intercept') {
@@ -123,7 +118,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				const siblings = resolution.matches.filter((r) => r !== resolution.record);
 				const withSiblings =
 					siblings.length > 0
-						? prependMultiInstanceWarning(result, resolution.record, siblings)
+						? prependWarning(result, formatMultiInstanceWarning(resolution.record, siblings))
 						: result;
 				return withWarning(withSiblings);
 			} catch (error) {
@@ -178,18 +173,4 @@ function formatIncompatibleRegistryWarning(targetCwd: string, anomalies: Registr
 		parts.push(`${unparseableCount} ${plural} this proxy could not parse`);
 	}
 	return `> Note: The Storybook instance registry has record(s) at \`${targetCwd}\` that this MCP proxy cannot interpret: ${parts.join(' and ')}. The user's Storybook at that cwd is likely newer than the proxy or writing a format the proxy does not yet recognise. Upgrade \`@storybook/mcp-proxy\` you are running. The current call was handled using only the records this proxy could parse.`;
-}
-
-function prependIncompatibleRegistryWarning(
-	result: ProxyToolCallResult,
-	targetCwd: string,
-	anomalies: RegistryError[],
-): ProxyToolCallResult {
-	return {
-		...result,
-		content: [
-			{ type: 'text', text: formatIncompatibleRegistryWarning(targetCwd, anomalies) },
-			...(result.content ?? []),
-		],
-	};
 }
