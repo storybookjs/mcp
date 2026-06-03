@@ -25,6 +25,16 @@ npx storybook add @storybook/addon-mcp
 \`\`\`
 to install the MCP addon. After the upgrade, call the \`clear-storybook-version-cache\` tool with the same \`cwd\` so the proxy re-detects the new version. Restart Storybook, then retry the tool call.`;
 
+const STORYBOOK_NOT_INSTALLED = `No Storybook is running at this cwd, and Storybook does not appear to be installed here (\`storybook\` could not be resolved from this project).
+
+Ask the user whether they want to add Storybook. If they agree, invoke the \`storybook-init\` skill to set it up, then install the MCP addon:
+\`\`\`
+npx storybook add @storybook/addon-mcp
+\`\`\`
+Start Storybook, then retry the tool call.
+
+If you believe Storybook is in fact installed (e.g. a monorepo where \`storybook\` resolves from a different location), start \`storybook dev\` from this exact cwd and retry — a running instance is always proxied regardless of this check.`;
+
 const ADDON_MISSING = `Storybook is running but does not expose an MCP server. The \`@storybook/addon-mcp\` addon is missing.
 
 Install it:
@@ -55,6 +65,8 @@ export function getInterceptMarkdown(
 			return records && records.length > 0
 				? buildNoInstanceWithCandidates(records)
 				: NO_INSTANCE_EMPTY;
+		case 'storybook-not-installed':
+			return STORYBOOK_NOT_INSTALLED;
 		case 'addon-missing':
 			return ADDON_MISSING;
 		case 'mcp-starting':
