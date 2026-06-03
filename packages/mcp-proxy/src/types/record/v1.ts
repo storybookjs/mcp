@@ -11,10 +11,10 @@ export type McpStatusV1 = v.InferOutput<typeof McpStatusV1Schema>;
 export const StorybookInstanceRecordV1Schema = v.object({
 	schemaVersion: v.literal(1),
 	instanceId: v.string(),
-	pid: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	pid: v.pipe(v.number(), v.minValue(1), v.integer()),
 	cwd: v.string(),
 	url: v.string(),
-	port: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(65535)),
+	port: v.pipe(v.number(), v.minValue(1), v.maxValue(65535), v.integer()),
 	storybookVersion: v.optional(v.string()),
 	startedAt: v.optional(v.string()),
 	updatedAt: v.optional(v.string()),
