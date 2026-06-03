@@ -6,7 +6,36 @@ import { proxyToolCall } from '../utils/proxy-client.ts';
 import { resolveInstance } from '../utils/resolve-instance.ts';
 import { checkStorybookVersion } from '../utils/version-check.ts';
 import { intercept } from './intercepts.ts';
-import type { ProxyToolCallResult } from '../types/index.ts';
+import type { ProxyToolCallResult, StorybookInstanceRecordV1 } from '../types/index.ts';
+
+function formatMultiInstanceWarning(
+	chosen: StorybookInstanceRecordV1,
+	siblings: StorybookInstanceRecordV1[],
+): string {
+	const all = [chosen, ...siblings];
+	const lines = all.map((r) => {
+		const marker = r === chosen ? ' (proxied)' : '';
+		return `> - pid \`${r.pid}\` at ${r.url} (mcp: \`${r.mcp.status}\`)${marker}`;
+	});
+	return `> Warning: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`${chosen.pid}\`.
+>
+> Instances at \`${chosen.cwd}\`:
+${lines.join('\n')}
+>
+> If results look unexpected, ask the user whether they want to stop the other instance(s).`;
+}
+
+function prependMultiInstanceWarning(
+	result: ProxyToolCallResult,
+	chosen: StorybookInstanceRecordV1,
+	siblings: StorybookInstanceRecordV1[],
+): ProxyToolCallResult {
+	const warning = formatMultiInstanceWarning(chosen, siblings);
+	return {
+		...result,
+		content: [{ type: 'text', text: warning }, ...(result.content ?? [])],
+	};
+}
 
 const CwdField = {
 	cwd: v.pipe(
@@ -76,16 +105,27 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 					: result;
 
 			if (resolution.kind === 'intercept') {
+				if (
+					resolution.reason === 'no-instance' &&
+					versionStatus.status === 'not-installed' &&
+					(resolution.records?.length ?? 0) === 0
+				) {
+					return intercept('storybook-not-installed');
+				}
 				return withWarning(intercept(resolution.reason, { records: resolution.records }));
 			}
 
 			try {
-				return withWarning(
-					await proxyToolCall(resolution.record, {
-						name: tool.name,
-						arguments: upstreamArgs,
-					}),
-				);
+				const result = await proxyToolCall(resolution.record, {
+					name: tool.name,
+					arguments: upstreamArgs,
+				});
+				const siblings = resolution.matches.filter((r) => r !== resolution.record);
+				const withSiblings =
+					siblings.length > 0
+						? prependMultiInstanceWarning(result, resolution.record, siblings)
+						: result;
+				return withWarning(withSiblings);
 			} catch (error) {
 				return withWarning({
 					content: [

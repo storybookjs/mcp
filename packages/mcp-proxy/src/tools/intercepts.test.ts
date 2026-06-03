@@ -4,6 +4,7 @@ import { getInterceptMarkdown, intercept, META_INTERCEPT_REASON } from './interc
 describe('intercepts', () => {
 	it.each([
 		['no-instance', 'Storybook is not running'],
+		['storybook-not-installed', 'storybook-init'],
 		['addon-missing', '@storybook/addon-mcp'],
 		['mcp-starting', 'starting up'],
 		['mcp-error', 'reported an error'],
@@ -11,6 +12,13 @@ describe('intercepts', () => {
 		['storybook-too-old', 'storybook-upgrade'],
 	] as const)('%s contains an actionable hint', (reason, needle) => {
 		expect(getInterceptMarkdown(reason)).toContain(needle);
+	});
+
+	it('no-instance stays client-agnostic and never names a client-specific repair skill', () => {
+		const md = getInterceptMarkdown('no-instance');
+		expect(md).toContain('Storybook is not running');
+		expect(md).not.toContain('storybook-setup-claude-launch');
+		expect(md).not.toContain('.claude/launch.json');
 	});
 
 	it('storybook-too-old reports the detected version, the required version, and points to the upgrade skill', () => {
@@ -27,50 +35,22 @@ describe('intercepts', () => {
 	});
 
 	it('no-instance lists running candidates when any are provided', () => {
-		const md = getInterceptMarkdown('no-instance', {
-			records: [
-				{
-					schemaVersion: 1,
-					instanceId: 'a',
-					pid: 1,
-					cwd: '/a',
-					url: 'http://localhost:6006',
-					port: 6006,
-					mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-				},
-			],
-		});
+		const records = [
+			{
+				schemaVersion: 1 as const,
+				instanceId: 'a',
+				pid: 1,
+				cwd: '/a',
+				url: 'http://localhost:6006',
+				port: 6006,
+				mcp: { status: 'ready' as const, endpoint: 'http://localhost:6006/mcp' },
+			},
+		];
+		const md = getInterceptMarkdown('no-instance', { records });
 		expect(md).toContain('Running Storybooks');
 		expect(md).toContain('/a');
 		expect(md).toContain('http://localhost:6006');
-	});
-
-	it('multiple-matches lists conflicting pids', () => {
-		const md = getInterceptMarkdown('multiple-matches', {
-			records: [
-				{
-					schemaVersion: 1,
-					instanceId: 'a',
-					pid: 111,
-					cwd: '/same',
-					url: 'http://localhost:6006',
-					port: 6006,
-					mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
-				},
-				{
-					schemaVersion: 1,
-					instanceId: 'b',
-					pid: 222,
-					cwd: '/same',
-					url: 'http://localhost:6007',
-					port: 6007,
-					mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
-				},
-			],
-		});
-		expect(md).toContain('111');
-		expect(md).toContain('222');
-		expect(md).toContain('/same');
+		expect(md).not.toContain('storybook-setup-claude-launch');
 	});
 
 	it('intercept() returns a tool result with isError and namespaced reason metadata', () => {

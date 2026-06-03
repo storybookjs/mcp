@@ -22,6 +22,7 @@ vi.mock('../utils/version-check.ts', async (importOriginal) => {
 });
 
 const REGISTRY_DIR = '/tmp/test-registry';
+const serverClientInfo = new WeakMap<McpServer<any>, { name: string; version: string }>();
 
 const record: StorybookInstanceRecordV1 = {
 	schemaVersion: 1,
@@ -44,7 +45,7 @@ beforeEach(() => {
 	vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'ok' });
 });
 
-async function buildServer() {
+async function buildServer(clientInfo = { name: 't', version: '0' }) {
 	const server = new McpServer(
 		{ name: 'test', version: '0.0.0', description: 'test' },
 		{
@@ -53,6 +54,7 @@ async function buildServer() {
 		},
 	);
 	registerProxiedTools(server, REGISTRY_DIR);
+	serverClientInfo.set(server, clientInfo);
 	await server.receive({
 		jsonrpc: '2.0',
 		id: 1,
@@ -60,7 +62,7 @@ async function buildServer() {
 		params: {
 			protocolVersion: '2025-06-18',
 			capabilities: {},
-			clientInfo: { name: 't', version: '0' },
+			clientInfo,
 		},
 	} as never);
 	return server;
@@ -76,12 +78,18 @@ async function listTools(server: McpServer<any>) {
 }
 
 async function callTool(server: McpServer<any>, args: Record<string, unknown>) {
-	return (await server.receive({
-		jsonrpc: '2.0',
-		id: 3,
-		method: 'tools/call',
-		params: { name: 'list-all-documentation', arguments: args },
-	} as never)) as { result: ProxyToolCallResult };
+	const clientInfo = serverClientInfo.get(server);
+	return (await server.receive(
+		{
+			jsonrpc: '2.0',
+			id: 3,
+			method: 'tools/call',
+			params: { name: 'list-all-documentation', arguments: args },
+		} as never,
+		{
+			sessionInfo: { clientInfo },
+		} as never,
+	)) as { result: ProxyToolCallResult };
 }
 
 function firstText(result: ProxyToolCallResult): string {
@@ -124,6 +132,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(response.result.isError).toBe(true);
 		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
 		expect(firstText(response.result)).toContain('Storybook is not running');
+		expect(firstText(response.result)).not.toContain('storybook-setup-claude-launch');
 	});
 
 	it('returns the no-instance intercept with candidate cwds when no record matches', async () => {
@@ -330,6 +339,101 @@ describe('registerProxyTool / list-all-documentation', () => {
 		const warning = items[0];
 		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
 		expect(warning.text).toContain('`v2`');
+	});
+
+	it('returns the storybook-not-installed intercept when Storybook is unresolvable and nothing is running at the cwd', async () => {
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'not-installed' });
+		vi.mocked(readRegistry).mockResolvedValue({ records: [], errors: [] });
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'storybook-not-installed' });
+		expect(firstText(response.result)).toContain('storybook-init');
+	});
+
+	it('still proxies to a running instance even when the version check reports not-installed (avoids monorepo false negatives)', async () => {
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'not-installed' });
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'COMPONENTS' }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo', withStoryIds: true });
+		expect(proxyToolCall).toHaveBeenCalledWith(record, {
+			name: 'list-all-documentation',
+			arguments: { withStoryIds: true },
+		});
+		expect(firstText(response.result)).toBe('COMPONENTS');
+	});
+
+	it('proxies the call and prepends a multi-instance warning when 2+ ready instances share the cwd', async () => {
+		const a: StorybookInstanceRecordV1 = {
+			...record,
+			instanceId: 'inst-a',
+			pid: 200,
+			port: 6006,
+			url: 'http://localhost:6006',
+			mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+		};
+		const b: StorybookInstanceRecordV1 = {
+			...record,
+			instanceId: 'inst-b',
+			pid: 100,
+			port: 6007,
+			url: 'http://localhost:6007',
+			mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
+		};
+		vi.mocked(readRegistry).mockResolvedValue({ records: [a, b], errors: [] });
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		// Lowest pid (b) is chosen.
+		expect(proxyToolCall).toHaveBeenCalledWith(b, expect.anything());
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(2);
+		const warning = items[0];
+		const primary = items[1];
+		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
+		if (!primary || primary.type !== 'text') throw new Error('expected primary text');
+		expect(warning.text).toContain('Multiple Storybook instances');
+		expect(warning.text).toContain('pid `100`');
+		expect(warning.text).toContain('pid `200`');
+		expect(warning.text).toContain('(proxied)');
+		expect(primary.text).toBe('PRIMARY');
+		expect(response.result.isError).toBeFalsy();
+
+		expect(response.result.content).toMatchInlineSnapshot(`
+			[
+			  {
+			    "text": "> Warning: Multiple Storybook instances are running at this cwd. This call was proxied to pid \`100\`.
+			>
+			> Instances at \`/projects/foo\`:
+			> - pid \`100\` at http://localhost:6007 (mcp: \`ready\`) (proxied)
+			> - pid \`200\` at http://localhost:6006 (mcp: \`ready\`)
+			>
+			> If results look unexpected, ask the user whether they want to stop the other instance(s).",
+			    "type": "text",
+			  },
+			  {
+			    "text": "PRIMARY",
+			    "type": "text",
+			  },
+			]
+		`);
+	});
+
+	it('does not inject the multi-instance warning when only one record matches the cwd', async () => {
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(1);
+		const only = items[0];
+		if (!only || only.type !== 'text') throw new Error('expected text content');
+		expect(only.text).not.toContain('Multiple Storybook instances');
 	});
 
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
