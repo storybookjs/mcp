@@ -47,6 +47,13 @@ importers:
       valibot:
         specifier: 'catalog:'
         version: 1.2.0
+    devDependencies:
+      '@storybook/addon-mcp':
+        specifier: workspace:*
+        version: link:../addon-mcp
+      '@storybook/mcp':
+        specifier: workspace:*
+        version: link:../mcp
 
 packages:
 
