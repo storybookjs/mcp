@@ -70,6 +70,28 @@ export function registerProxiedTools(server: McpServer<any>, registryDir: string
 	});
 
 	registerProxyTool(server, registryDir, {
+		name: 'get-stories-by-component',
+		title: 'Get stories for component files',
+		description:
+			'Map component source files to the stories that render them, returning grounded storyId values from the live Storybook index — hand these to preview-stories instead of guessing. Reach for this to map specific file paths to stories: when the user names a feature/area, or when get-changed-stories returned nothing or too much. Backed by Storybook\'s reverse dependency graph; available only when the dev server runs a builder that supports change detection (otherwise returns a typed error).',
+		schema: v.object({
+			componentPaths: v.pipe(
+				v.array(v.string()),
+				v.minLength(1),
+				v.description(
+					'Absolute paths to component source files (e.g. "/repo/src/Button.tsx"). Pass the components you actually want stories for — typically files you just read, edited, or that the user mentioned. Relative paths are resolved against the Storybook working directory. Story files (*.stories.*) are accepted too and appear at distance 0 as self-matches.',
+				),
+			),
+			maxDistance: v.pipe(
+				v.optional(v.pipe(v.number(), v.minValue(1), v.integer())),
+				v.description(
+					'Ceiling on the import depth to include. Must be a positive integer. 1: only stories that directly import the component; 2+: also stories reaching it through N hops. Defaults to 3; raise to widen recall, lower to tighten precision.',
+				),
+			),
+		}),
+	});
+
+	registerProxyTool(server, registryDir, {
 		name: 'get-storybook-story-instructions',
 		title: 'Storybook Story Development Instructions',
 		description:

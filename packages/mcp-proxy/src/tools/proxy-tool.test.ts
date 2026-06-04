@@ -111,6 +111,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 				'get-changed-stories',
 				'get-documentation',
 				'get-documentation-for-story',
+				'get-stories-by-component',
 				'get-storybook-story-instructions',
 				'list-all-documentation',
 				'preview-stories',
