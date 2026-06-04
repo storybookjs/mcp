@@ -123,4 +123,47 @@ export function registerProxiedTools(server: McpServer<any>, registryDir: string
 			),
 		}),
 	});
+
+	registerProxyTool(server, registryDir, {
+		name: 'display-review',
+		title: 'Display Storybook review',
+		description:
+			"Push a curated review of the current change to Storybook's review page so the user can spot-check it. Call this after finishing a UI code change. Group stories into collections that cover the full visual cascade of the change — the changed component, its direct importers, and the pages that render them — not just where the code lives. Always include the returned reviewUrl in your final user-facing response so the user can open it. Each call replaces the previously published review.",
+		schema: v.object({
+			title: v.pipe(
+				v.string(),
+				v.description(
+					'PR-style title for the change — short and specific, e.g. "Recolour the primary button".',
+				),
+			),
+			description: v.pipe(
+				v.string(),
+				v.description('One-line summary of what changed and where to start reviewing.'),
+			),
+			collections: v.array(
+				v.object({
+					title: v.pipe(
+						v.string(),
+						v.description(
+							'Short, PR-dense title for this collection, e.g. "Direct Button importers".',
+						),
+					),
+					rationale: v.pipe(
+						v.string(),
+						v.description('One sentence explaining why these stories are grouped together.'),
+					),
+					storyIds: v.pipe(
+						v.array(v.string()),
+						v.description(
+							'Story IDs that represent this collection (e.g. "button--primary"). The page renders exactly these.',
+						),
+					),
+				}),
+			),
+			changedFiles: v.pipe(
+				v.optional(v.array(v.string())),
+				v.description('Paths of the files you changed, most central first.'),
+			),
+		}),
+	});
 }
