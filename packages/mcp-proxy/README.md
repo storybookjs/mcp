@@ -67,15 +67,17 @@ The proxy never silently fails. When it can't forward a call, it returns an `isE
 
 ## Proxied tools
 
-The proxy registers the seven Storybook tools exposed by `@storybook/addon-mcp`, each with `cwd` added as a required input. See [`src/instructions.md`](./src/instructions.md) for the agent-facing routing guide.
+The proxy registers the nine Storybook tools exposed by `@storybook/addon-mcp`, each with `cwd` added as a required input. See [`src/instructions.md`](./src/instructions.md) for the agent-facing routing guide.
 
 - `list-all-documentation`
 - `get-documentation`
 - `get-documentation-for-story`
 - `preview-stories`
 - `get-changed-stories`
+- `get-stories-by-component`
 - `get-storybook-story-instructions`
 - `run-story-tests`
+- `display-review`
 
 ## Programmatic use
 
