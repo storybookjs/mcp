@@ -89,6 +89,18 @@ describe('checkStorybookVersion (disk fallback)', () => {
 		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '9.1.20' });
 	});
 
+	it('finds Storybook hoisted to a parent node_modules (workspace layout)', () => {
+		// cwd is a workspace package with its own node_modules, but `storybook` is
+		// installed only at the workspace root one level up. A hand-built
+		// `<cwd>/node_modules/storybook` path would miss it; Node's lookup chain walks up.
+		const workspaceRoot = join(root, 'repo');
+		const cwd = join(workspaceRoot, 'packages', 'app');
+		mkdirSync(join(cwd, 'node_modules'), { recursive: true }); // local node_modules, no storybook
+		linkStorybook(workspaceRoot, makeStore('sbRoot', '10.6.0'));
+
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
+	});
+
 	// The regression that defeated the require.resolve()+readFileSync approach:
 	// resolving once while on the old version pins Node's Module._pathCache to the
 	// old realpath, so later reads stay stale after a pnpm upgrade. A direct read of

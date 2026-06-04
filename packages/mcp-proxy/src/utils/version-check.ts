@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { lt } from 'semver';
 
@@ -45,11 +46,18 @@ export function clearStorybookVersionCache(cwd?: string): void {
 }
 
 function readStorybookVersion(cwd: string): string | undefined {
-	try {
-		const raw = readFileSync(path.join(cwd, 'node_modules', 'storybook', 'package.json'), 'utf8');
-		const { version } = JSON.parse(raw) as { version?: unknown };
-		return typeof version === 'string' ? version : undefined;
-	} catch {
-		return undefined;
+	const require = createRequire(path.join(cwd, 'package.json'));
+	// require.resolve.paths is the only way to get actual path
+	// without nodeJS resolution cache
+	const searchPaths = require.resolve.paths('storybook') ?? [];
+	for (const base of searchPaths) {
+		try {
+			const raw = readFileSync(path.join(base, 'storybook', 'package.json'), 'utf8');
+			const { version } = JSON.parse(raw) as { version?: unknown };
+			return typeof version === 'string' ? version : undefined;
+		} catch {
+			// parse error or file not found.
+		}
 	}
+	return undefined;
 }
