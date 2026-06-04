@@ -73,7 +73,7 @@ export function registerProxiedTools(server: McpServer<any>, registryDir: string
 		name: 'get-stories-by-component',
 		title: 'Get stories for component files',
 		description:
-			'Map component source files to the stories that render them, returning grounded storyId values from the live Storybook index — hand these to preview-stories instead of guessing. Reach for this to map specific file paths to stories: when the user names a feature/area, or when get-changed-stories returned nothing or too much. Backed by Storybook\'s reverse dependency graph; available only when the dev server runs a builder that supports change detection (otherwise returns a typed error).',
+			"Map component source files to the stories that render them, returning grounded storyId values from the live Storybook index — hand these to preview-stories instead of guessing. Reach for this to map specific file paths to stories: when the user names a feature/area, or when get-changed-stories returned nothing or too much. Backed by Storybook's reverse dependency graph; available only when the dev server runs a builder that supports change detection (otherwise returns a typed error).",
 		schema: v.object({
 			componentPaths: v.pipe(
 				v.array(v.string()),
