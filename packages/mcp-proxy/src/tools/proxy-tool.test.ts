@@ -108,9 +108,11 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(names).toEqual(
 			[
 				'clear-storybook-version-cache',
+				'display-review',
 				'get-changed-stories',
 				'get-documentation',
 				'get-documentation-for-story',
+				'get-stories-by-component',
 				'get-storybook-story-instructions',
 				'list-all-documentation',
 				'preview-stories',
