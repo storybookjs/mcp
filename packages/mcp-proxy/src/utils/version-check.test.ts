@@ -118,4 +118,9 @@ describe('checkStorybookVersion caching', () => {
 		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
 		expect(checkStorybookVersion('/b')).toEqual({ status: 'ok' });
 	});
+
+	it('treats 0.0.0-... versions as ok (canary)', () => {
+		mockStorybookVersion('0.0.0-canary.1234');
+		expect(checkStorybookVersion('/a')).toEqual({ status: 'ok' });
+	});
 });

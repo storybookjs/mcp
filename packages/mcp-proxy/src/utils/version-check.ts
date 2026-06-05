@@ -35,6 +35,12 @@ export function checkStorybookVersion(cwd: string): StorybookVersionStatus {
 	const cached = versionCache.get(cwd);
 	if (cached) return cached;
 	const version = readStorybookVersion(cwd);
+	// Storybook canary releases are published as `0.0.0-*`; semver considers these < any stable version, but we still want to treat them as supported.
+	if (version && version.startsWith('0.0.0-')) {
+		const status: StorybookVersionStatus = { status: 'ok' };
+		versionCache.set(cwd, status);
+		return status;
+	}
 	const status: StorybookVersionStatus =
 		version === null
 			? { status: 'not-installed' }
