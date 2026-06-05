@@ -35,6 +35,12 @@ export function checkStorybookVersion(cwd: string): StorybookVersionStatus {
 	const cached = versionCache.get(cwd);
 	if (cached) return cached;
 	const version = readStorybookVersion(cwd);
+	// if 0.0.0-.... , it's a canary version and should be treated as "ok" (since it's newer than any stable release)
+	if (version && version.startsWith('0.0.0-')) {
+		const status: StorybookVersionStatus = { status: 'ok' };
+		versionCache.set(cwd, status);
+		return status;
+	}
 	const status: StorybookVersionStatus =
 		version === null
 			? { status: 'not-installed' }
