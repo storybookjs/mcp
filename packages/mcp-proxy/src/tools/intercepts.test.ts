@@ -53,6 +53,24 @@ describe('intercepts', () => {
 		expect(md).not.toContain('storybook-setup-claude-launch');
 	});
 
+	it('port-mismatch names the requested port and lists the running ports at the cwd', () => {
+		const records = [
+			{
+				schemaVersion: 1 as const,
+				instanceId: 'a',
+				pid: 1,
+				cwd: '/a',
+				url: 'http://localhost:6006',
+				port: 6006,
+				mcp: { status: 'ready' as const, endpoint: 'http://localhost:6006/mcp' },
+			},
+		];
+		const md = getInterceptMarkdown('port-mismatch', { records, port: 9999 });
+		expect(md).toContain('not on port `9999`');
+		expect(md).toContain('port `6006`');
+		expect(md).toContain('http://localhost:6006');
+	});
+
 	it('intercept() returns a tool result with isError and namespaced reason metadata', () => {
 		const result = intercept('no-instance');
 		expect(result.isError).toBe(true);

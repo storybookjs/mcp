@@ -301,6 +301,66 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(only.text).not.toContain('Multiple Storybook instances');
 	});
 
+	it('exposes port as an optional (not required) field on every proxied tool (but not the local control tool)', async () => {
+		const server = await buildServer();
+		const response = await listTools(server);
+		// `clear-storybook-version-cache` is a local control op, not a proxied call,
+		// so it has no routing port — only the proxied tools carry `port`.
+		const proxied = response.result.tools.filter(
+			(t) => t.name !== 'clear-storybook-version-cache',
+		);
+		for (const tool of proxied) {
+			const props = Object.keys(tool.inputSchema.properties ?? {});
+			expect(props, `tool ${tool.name} should expose port`).toContain('port');
+			const required = tool.inputSchema.required ?? [];
+			expect(required, `tool ${tool.name} should NOT require port`).not.toContain('port');
+		}
+	});
+
+	it('routes to the instance matching both cwd and port, and does not forward port downstream', async () => {
+		const a: StorybookInstanceRecordV1 = {
+			...record,
+			instanceId: 'inst-a',
+			pid: 100,
+			port: 6006,
+			url: 'http://localhost:6006',
+			mcp: { status: 'ready', endpoint: 'http://localhost:6006/mcp' },
+		};
+		const b: StorybookInstanceRecordV1 = {
+			...record,
+			instanceId: 'inst-b',
+			pid: 200,
+			port: 6007,
+			url: 'http://localhost:6007',
+			mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
+		};
+		vi.mocked(readRegistry).mockResolvedValue([a, b]);
+		vi.mocked(proxyToolCall).mockResolvedValue({ content: [{ type: 'text', text: 'B' }] });
+
+		const server = await buildServer();
+		const response = await callTool(server, {
+			cwd: '/projects/foo',
+			port: 6007,
+			withStoryIds: true,
+		});
+
+		// Selected the port-6007 instance, and `port` was stripped from upstream args.
+		expect(proxyToolCall).toHaveBeenCalledWith(b, {
+			name: 'list-all-documentation',
+			arguments: { withStoryIds: true },
+		});
+		expect(firstText(response.result)).toBe('B');
+	});
+
+	it('returns the port-mismatch intercept when the cwd matches but no instance is on that port', async () => {
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo', port: 9999 });
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'port-mismatch' });
+		expect(firstText(response.result)).toContain('not on port `9999`');
+		expect(firstText(response.result)).toContain('port `6006`');
+	});
+
 	it('surfaces a friendly error when proxyToolCall throws', async () => {
 		vi.mocked(proxyToolCall).mockRejectedValue(new Error('connection refused'));
 		const server = await buildServer();
