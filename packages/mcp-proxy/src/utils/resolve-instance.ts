@@ -117,10 +117,7 @@ function startedAtMs(r: StorybookInstanceRecordV1): number {
  * Sort comparator: most recently started first, tie-breaking on lowest pid so
  * ordering stays deterministic when timestamps are equal or missing.
  */
-function byMostRecentlyStarted(
-	a: StorybookInstanceRecordV1,
-	b: StorybookInstanceRecordV1,
-): number {
+function byMostRecentlyStarted(a: StorybookInstanceRecordV1, b: StorybookInstanceRecordV1): number {
 	const ta = startedAtMs(a);
 	const tb = startedAtMs(b);
 	if (ta !== tb) return tb > ta ? 1 : -1;
