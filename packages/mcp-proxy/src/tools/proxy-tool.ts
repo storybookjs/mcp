@@ -44,6 +44,17 @@ const CwdField = {
 			'Absolute path of the Storybook project this call targets. Required — must exactly match the cwd from which `storybook dev` was started.',
 		),
 	),
+	port: v.optional(
+		v.pipe(
+			v.number(),
+			v.integer(),
+			v.minValue(1),
+			v.maxValue(65535),
+			v.description(
+				'Optional. The port the target Storybook is running on. Supply it to address one specific instance when several share the same `cwd`, or when an ADE (e.g. Claude Desktop) launched Storybook on a port it knows. When set, the instance must match BOTH `cwd` and this port; omit it to route by `cwd` alone — when several instances share that `cwd`, the most recently started one is used.',
+			),
+		),
+	),
 };
 
 type ProxyToolDefinition<Schema extends v.ObjectEntries> = {
@@ -79,8 +90,10 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 		// union (`text` / `image` / `audio` / `resource` / `resource_link`). We forward
 		// it as-is; tmcp's generic CallToolResult type narrows to a strict union, so we
 		// cast at the boundary rather than carry the union through every internal type.
-		async (input: Record<string, unknown> & { cwd: string }): Promise<ProxyToolCallResult> => {
-			const { cwd, ...upstreamArgs } = input;
+		async (
+			input: Record<string, unknown> & { cwd: string; port?: number },
+		): Promise<ProxyToolCallResult> => {
+			const { cwd, port, ...upstreamArgs } = input;
 
 			if (!path.isAbsolute(cwd)) {
 				return intercept('invalid-cwd');
@@ -88,7 +101,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 
 			// Read the registry and resolve the target instance for this cwd.
 			const records = await readRegistry(registryDir);
-			const resolution = resolveInstance(records, cwd);
+			const resolution = resolveInstance(records, cwd, port);
 
 			const matchedRecord =
 				resolution.kind === 'instance' ? resolution.record : resolution.matches[0];
@@ -110,7 +123,7 @@ export function registerProxyTool<Schema extends v.ObjectEntries>(
 				) {
 					return intercept('storybook-not-installed');
 				}
-				return intercept(resolution.reason, { records: resolution.records });
+				return intercept(resolution.reason, { records: resolution.records, port });
 			}
 
 			try {

@@ -187,4 +187,9 @@ describe('checkStorybookVersion caching', () => {
 		expect(checkStorybookVersion(cwd)).toEqual({ status: 'too-old', version: '9.1.16' });
 		expect(checkStorybookVersion(other)).toEqual({ status: 'too-old', version: '9.1.16' });
 	});
+
+	it('treats 0.0.0-... versions as ok (canary)', () => {
+		setVersion('0.0.0-canary.1234');
+		expect(checkStorybookVersion(cwd)).toEqual({ status: 'ok' });
+	});
 });

@@ -21,13 +21,15 @@ Use `withStoryIds: true` on **list-all-documentation** when you also need story 
 
 - Call **get-storybook-story-instructions** before creating, updating, or editing any story file (`.stories.tsx`, `.stories.ts`, `.stories.jsx`, `.stories.js`, `.stories.svelte`, `.stories.vue`). It returns framework-specific imports, naming conventions, play functions, mocking, and test/a11y guidance.
 - Call **get-changed-stories** to retrieve metadata for stories marked as new, modified, or related. It returns metadata only — pair it with **preview-stories** when URLs are needed.
+- Call **get-stories-by-component** to map component source files to the stories that render them, returning grounded story IDs from the live Storybook index. Use it when you need stories for specific files (e.g. files you just edited), or when **get-changed-stories** returned nothing or too much; pair the returned IDs with **preview-stories**.
 - Call **run-story-tests** to execute story tests. Pass a focused `stories` list while iterating for faster feedback, or omit it to run the full suite for comprehensive verification. Accessibility checks run by default when the Storybook has addon-a11y enabled; disable with `a11y: false` if you only need component test results.
+- Call **display-review** after finishing a UI change to push a curated review to Storybook's review page so the user can spot-check it. Group stories into collections covering the change's visual cascade (the changed component, its importers, and the pages that render them). Always include the returned review URL in your final user-facing response so the user can open it.
 
 ## Verification Rules
 
 - Never assume component props, variants, or API shape. Retrieve documentation before using a component.
 - If a component or prop is not documented, do not invent it. Report that it was not found.
-- Only reference IDs returned by **list-all-documentation**. Do not guess IDs.
+- Only reference story IDs returned by **list-all-documentation**, **get-changed-stories**, or **get-stories-by-component**. Do not guess IDs.
 
 ## Multi-Source Requests
 

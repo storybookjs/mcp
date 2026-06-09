@@ -22,6 +22,9 @@ export type StorybookVersionStatus =
 
 export function classifyStorybookVersion(version: string | undefined): StorybookVersionStatus {
 	if (version === undefined) return { status: 'not-installed' };
+	// Storybook canary releases are published as `0.0.0-*`; semver considers these < any
+	// stable version, but we still want to treat them as supported.
+	if (version.startsWith('0.0.0-')) return { status: 'ok' };
 	return lt(version, STORYBOOK_MIN_VERSION_FLOOR)
 		? { status: 'too-old', version }
 		: { status: 'ok' };
