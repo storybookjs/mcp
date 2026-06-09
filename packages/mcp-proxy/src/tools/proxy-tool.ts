@@ -51,7 +51,7 @@ const CwdField = {
 			v.minValue(1),
 			v.maxValue(65535),
 			v.description(
-				'Optional. The port the target Storybook is running on. Supply it to address one specific instance when several share the same `cwd`, or when an ADE (e.g. Claude Desktop) launched Storybook on a port it knows. When set, the instance must match BOTH `cwd` and this port; omit it to route by `cwd` alone.',
+				'Optional. The port the target Storybook is running on. Supply it to address one specific instance when several share the same `cwd`, or when an ADE (e.g. Claude Desktop) launched Storybook on a port it knows. When set, the instance must match BOTH `cwd` and this port; omit it to route by `cwd` alone — when several instances share that `cwd`, the most recently started one is used.',
 			),
 		),
 	),
