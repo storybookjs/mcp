@@ -5,6 +5,7 @@ export { McpStatusV1Schema, StorybookInstanceRecordV1Schema } from './record/v1.
 
 export type InterceptReason =
 	| 'no-instance'
+	| 'port-mismatch'
 	| 'storybook-not-installed'
 	| 'addon-missing'
 	| 'mcp-starting'

@@ -19,6 +19,13 @@ export type ResolveResult =
  * normalisation. Per milestone 2 of storybookjs/storybook#34826: matching is
  * exact-normalized, with no longest-prefix or fallback behaviour.
  *
+ * When `targetPort` is supplied (e.g. an ADE that launched Storybook on a
+ * known port and wants to address that exact instance), it further constrains
+ * the cwd matches: an instance must match BOTH cwd and port. If the cwd matches
+ * but no instance there is on `targetPort`, a `port-mismatch` intercept is
+ * returned with the cwd's instances as candidates so callers can surface the
+ * running ports.
+ *
  * If at least one record matches, dispatch based on the selected instance's
  * `mcp.status`:
  *   - ready          → proxy
@@ -34,11 +41,23 @@ export type ResolveResult =
 export function resolveInstance(
 	records: StorybookInstanceRecordV1[],
 	targetCwd: string,
+	targetPort?: number,
 ): ResolveResult {
 	const normalisedTarget = resolve(targetCwd);
-	const matches = records.filter((r) => resolve(r.cwd) === normalisedTarget);
+	const cwdMatches = records.filter((r) => resolve(r.cwd) === normalisedTarget);
+	const matches = targetPort == null ? cwdMatches : cwdMatches.filter((r) => r.port === targetPort);
 
 	if (matches.length === 0) {
+		// cwd matched, but no instance there is on the requested port: a distinct,
+		// more actionable failure than "nothing is running here".
+		if (targetPort != null && cwdMatches.length > 0) {
+			return {
+				kind: 'intercept',
+				reason: 'port-mismatch',
+				records: cwdMatches,
+				matches: [],
+			};
+		}
 		return {
 			kind: 'intercept',
 			reason: 'no-instance',
