@@ -45,8 +45,7 @@ export function resolveInstance(
 ): ResolveResult {
 	const normalisedTarget = resolve(targetCwd);
 	const cwdMatches = records.filter((r) => resolve(r.cwd) === normalisedTarget);
-	const matches =
-		targetPort == null ? cwdMatches : cwdMatches.filter((r) => r.port === targetPort);
+	const matches = targetPort == null ? cwdMatches : cwdMatches.filter((r) => r.port === targetPort);
 
 	if (matches.length === 0) {
 		// cwd matched, but no instance there is on the requested port: a distinct,

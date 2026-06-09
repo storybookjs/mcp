@@ -306,9 +306,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 		const response = await listTools(server);
 		// `clear-storybook-version-cache` is a local control op, not a proxied call,
 		// so it has no routing port — only the proxied tools carry `port`.
-		const proxied = response.result.tools.filter(
-			(t) => t.name !== 'clear-storybook-version-cache',
-		);
+		const proxied = response.result.tools.filter((t) => t.name !== 'clear-storybook-version-cache');
 		for (const tool of proxied) {
 			const props = Object.keys(tool.inputSchema.properties ?? {});
 			expect(props, `tool ${tool.name} should expose port`).toContain('port');
