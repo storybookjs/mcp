@@ -121,4 +121,47 @@ describe('resolveInstance', () => {
 		const result = resolveInstance([r], '/p');
 		expect(result).toEqual({ kind: 'intercept', reason: 'mcp-error', matches: [r] });
 	});
+
+	it('selects the instance matching BOTH cwd and port when a port is supplied', () => {
+		const a = record('/Users/x/projects/foo', 'ready', { pid: 100, port: 6006 });
+		const b = record('/Users/x/projects/foo', 'ready', { pid: 200, port: 6007 });
+		const result = resolveInstance([a, b], '/Users/x/projects/foo', 6007);
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(b);
+			expect(result.matches).toEqual([b]);
+		}
+	});
+
+	it('ignores port when it is not supplied (routes by cwd alone)', () => {
+		const a = record('/Users/x/projects/foo', 'ready', { pid: 100, port: 6006 });
+		const b = record('/Users/x/projects/foo', 'ready', { pid: 200, port: 6007 });
+		const result = resolveInstance([a, b], '/Users/x/projects/foo');
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(a);
+			expect(result.matches).toEqual([a, b]);
+		}
+	});
+
+	it('returns port-mismatch with the cwd instances as candidates when cwd matches but no instance is on the port', () => {
+		const a = record('/Users/x/projects/foo', 'ready', { pid: 100, port: 6006 });
+		const b = record('/Users/x/projects/foo', 'ready', { pid: 200, port: 6007 });
+		const result = resolveInstance([a, b], '/Users/x/projects/foo', 9999);
+		expect(result.kind).toBe('intercept');
+		if (result.kind === 'intercept') {
+			expect(result.reason).toBe('port-mismatch');
+			expect(result.records).toEqual([a, b]);
+			expect(result.matches).toEqual([]);
+		}
+	});
+
+	it('returns no-instance (not port-mismatch) when the cwd itself does not match', () => {
+		const a = record('/Users/x/projects/foo', 'ready', { port: 6006 });
+		const result = resolveInstance([a], '/Users/x/projects/bar', 6006);
+		expect(result.kind).toBe('intercept');
+		if (result.kind === 'intercept') {
+			expect(result.reason).toBe('no-instance');
+		}
+	});
 });
