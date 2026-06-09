@@ -75,7 +75,7 @@ describe('resolveInstance', () => {
 		}
 	});
 
-	it('returns the lowest-pid ready instance plus all matches when 2+ records share the same exact cwd', () => {
+	it('tie-breaks on lowest pid when 2+ records share the cwd and none carry a startedAt', () => {
 		const a = record('/Users/x/projects/foo', 'ready', { pid: 200 });
 		const b = record('/Users/x/projects/foo', 'ready', { pid: 100 });
 		const result = resolveInstance([a, b], '/Users/x/projects/foo');
@@ -83,6 +83,68 @@ describe('resolveInstance', () => {
 		if (result.kind === 'instance') {
 			expect(result.record).toBe(b);
 			expect(result.matches).toEqual([b, a]);
+		}
+	});
+
+	it('picks the most recently started ready instance when 2+ records share the cwd', () => {
+		const older = record('/Users/x/projects/foo', 'ready', {
+			pid: 100,
+			startedAt: '2026-06-09T10:00:00.000Z',
+		});
+		const newer = record('/Users/x/projects/foo', 'ready', {
+			pid: 200,
+			startedAt: '2026-06-09T11:00:00.000Z',
+		});
+		const result = resolveInstance([older, newer], '/Users/x/projects/foo');
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(newer);
+			expect(result.matches).toEqual([newer, older]);
+		}
+	});
+
+	it('treats a record without startedAt as older than one with a startedAt', () => {
+		const noStamp = record('/Users/x/projects/foo', 'ready', { pid: 100 });
+		const stamped = record('/Users/x/projects/foo', 'ready', {
+			pid: 200,
+			startedAt: '2026-06-09T11:00:00.000Z',
+		});
+		const result = resolveInstance([noStamp, stamped], '/Users/x/projects/foo');
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(stamped);
+		}
+	});
+
+	it('prefers a ready record over a more recently started non-ready one', () => {
+		const ready = record('/Users/x/projects/foo', 'ready', {
+			pid: 100,
+			startedAt: '2026-06-09T10:00:00.000Z',
+		});
+		const newerStarting = record('/Users/x/projects/foo', 'starting', {
+			pid: 200,
+			startedAt: '2026-06-09T11:00:00.000Z',
+		});
+		const result = resolveInstance([ready, newerStarting], '/Users/x/projects/foo');
+		expect(result.kind).toBe('instance');
+		if (result.kind === 'instance') {
+			expect(result.record).toBe(ready);
+		}
+	});
+
+	it('dispatches the most recently started instance status when none are ready', () => {
+		const olderError = record('/Users/x/projects/foo', 'error', {
+			pid: 100,
+			startedAt: '2026-06-09T10:00:00.000Z',
+		});
+		const newerStarting = record('/Users/x/projects/foo', 'starting', {
+			pid: 200,
+			startedAt: '2026-06-09T11:00:00.000Z',
+		});
+		const result = resolveInstance([olderError, newerStarting], '/Users/x/projects/foo');
+		expect(result.kind).toBe('intercept');
+		if (result.kind === 'intercept') {
+			expect(result.reason).toBe('mcp-starting');
 		}
 	});
 
