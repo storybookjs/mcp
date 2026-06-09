@@ -38,7 +38,7 @@ beforeEach(() => {
 	vi.mocked(readRegistry).mockReset();
 	vi.mocked(proxyToolCall).mockReset();
 	vi.mocked(checkStorybookVersion).mockReset();
-	vi.mocked(readRegistry).mockResolvedValue([record]);
+	vi.mocked(readRegistry).mockResolvedValue({ records: [record], errors: [] });
 	vi.mocked(proxyToolCall).mockResolvedValue({
 		content: [{ type: 'text', text: 'upstream result' }],
 	});
@@ -128,7 +128,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('returns the no-instance intercept (empty) when the registry is empty', async () => {
-		vi.mocked(readRegistry).mockResolvedValue([]);
+		vi.mocked(readRegistry).mockResolvedValue({ records: [], errors: [] });
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
@@ -160,7 +160,10 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=starting to the mcp-starting intercept', async () => {
-		vi.mocked(readRegistry).mockResolvedValue([{ ...record, mcp: { status: 'starting' } }]);
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [{ ...record, mcp: { status: 'starting' } }],
+			errors: [],
+		});
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
@@ -168,7 +171,10 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=not-installed to the addon-missing intercept', async () => {
-		vi.mocked(readRegistry).mockResolvedValue([{ ...record, mcp: { status: 'not-installed' } }]);
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [{ ...record, mcp: { status: 'not-installed' } }],
+			errors: [],
+		});
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
@@ -176,9 +182,10 @@ describe('registerProxyTool / list-all-documentation', () => {
 	});
 
 	it('dispatches mcp.status=error to the mcp-error intercept', async () => {
-		vi.mocked(readRegistry).mockResolvedValue([
-			{ ...record, mcp: { status: 'error', endpoint: '/mcp' } },
-		]);
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [{ ...record, mcp: { status: 'error', endpoint: '/mcp' } }],
+			errors: [],
+		});
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
@@ -206,9 +213,139 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(firstText(response.result)).toContain('storybook-upgrade');
 	});
 
+	it('prepends a schema-upgrade warning when anomalies at the target cwd exist, but still proxies the call', async () => {
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [record],
+			errors: [
+				{ kind: 'unsupported-schema', cwd: '/projects/foo', schemaVersion: 2 },
+				{ kind: 'unsupported-schema', cwd: '/projects/foo', schemaVersion: 3 },
+			],
+		});
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(2);
+		const warning = items[0];
+		const primary = items[1];
+		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
+		if (!primary || primary.type !== 'text') throw new Error('expected primary text');
+		expect(warning.text).toContain('@storybook/mcp-proxy');
+		expect(warning.text).toContain('/projects/foo');
+		expect(warning.text).toContain('`v2`');
+		expect(warning.text).toContain('`v3`');
+		expect(primary.text).toBe('PRIMARY');
+		expect(response.result.isError).toBeFalsy();
+	});
+
+	it('still prepends the schema-upgrade warning on top of an intercept response when anomalies match the target cwd', async () => {
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [],
+			errors: [{ kind: 'unsupported-schema', cwd: '/projects/foo', schemaVersion: 2 }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'no-instance' });
+		const items = response.result.content ?? [];
+		const first = items[0];
+		if (!first || first.type !== 'text') throw new Error('expected warning text');
+		expect(first.text).toContain('@storybook/mcp-proxy');
+		expect(first.text).toContain('`v2`');
+	});
+
+	it('prepends the warning for unparseable anomalies tied to the target cwd', async () => {
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [record],
+			errors: [
+				{ kind: 'unparseable', cwd: '/projects/foo' },
+				{ kind: 'unparseable', cwd: '/projects/foo' },
+			],
+		});
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(2);
+		const warning = items[0];
+		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
+		expect(warning.text).toContain('@storybook/mcp-proxy');
+		expect(warning.text).toContain('2 record files');
+		expect(warning.text).not.toContain('schema version');
+	});
+
+	it('combines both anomaly kinds in one warning when both fire at the target cwd', async () => {
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [record],
+			errors: [
+				{ kind: 'unsupported-schema', cwd: '/projects/foo', schemaVersion: 2 },
+				{ kind: 'unparseable', cwd: '/projects/foo' },
+			],
+		});
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(2);
+		const warning = items[0];
+		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
+		expect(warning.text).toContain('@storybook/mcp-proxy');
+		expect(warning.text).toContain('`v2`');
+		expect(warning.text).toContain('1 record file');
+		expect(warning.text).toContain(' and ');
+	});
+
+	it('does NOT emit a warning when registry anomalies all belong to other cwds', async () => {
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [record],
+			errors: [
+				{ kind: 'unsupported-schema', cwd: '/projects/bar', schemaVersion: 2 },
+				{ kind: 'unparseable', cwd: '/projects/baz' },
+			],
+		});
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(1);
+		expect(firstText(response.result)).toBe('PRIMARY');
+	});
+
+	it('matches anomalies whose cwd is non-normalized (trailing slash / dot segments)', async () => {
+		vi.mocked(readRegistry).mockResolvedValue({
+			records: [record],
+			errors: [{ kind: 'unsupported-schema', cwd: '/projects/foo/./', schemaVersion: 2 }],
+		});
+		vi.mocked(proxyToolCall).mockResolvedValue({
+			content: [{ type: 'text', text: 'PRIMARY' }],
+		});
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+
+		const items = response.result.content ?? [];
+		expect(items).toHaveLength(2);
+		const warning = items[0];
+		if (!warning || warning.type !== 'text') throw new Error('expected warning text');
+		expect(warning.text).toContain('`v2`');
+	});
+
 	it('returns the storybook-not-installed intercept when Storybook is unresolvable and nothing is running at the cwd', async () => {
 		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'not-installed' });
-		vi.mocked(readRegistry).mockResolvedValue([]);
+		vi.mocked(readRegistry).mockResolvedValue({ records: [], errors: [] });
 		const server = await buildServer();
 		const response = await callTool(server, { cwd: '/projects/foo' });
 		expect(response.result.isError).toBe(true);
@@ -247,7 +384,7 @@ describe('registerProxyTool / list-all-documentation', () => {
 			url: 'http://localhost:6007',
 			mcp: { status: 'ready', endpoint: 'http://localhost:6007/mcp' },
 		};
-		vi.mocked(readRegistry).mockResolvedValue([a, b]);
+		vi.mocked(readRegistry).mockResolvedValue({ records: [a, b], errors: [] });
 		vi.mocked(proxyToolCall).mockResolvedValue({
 			content: [{ type: 'text', text: 'PRIMARY' }],
 		});
