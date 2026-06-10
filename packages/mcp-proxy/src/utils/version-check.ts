@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { lt } from 'semver';
@@ -14,52 +15,52 @@ export const STORYBOOK_MIN_VERSION = '10.5.0';
  */
 const STORYBOOK_MIN_VERSION_FLOOR = '10.5.0-0';
 
-function readStorybookVersion(cwd: string): string | null {
-	try {
-		const requireFromCwd = createRequire(path.join(cwd, 'package.json'));
-		const { version } = requireFromCwd('storybook/package.json') as { version: string };
-		return version;
-	} catch {
-		return null;
-	}
-}
-
 export type StorybookVersionStatus =
 	| { status: 'ok' }
 	| { status: 'too-old'; version: string }
 	| { status: 'not-installed' };
+
+export function classifyStorybookVersion(version: string | undefined): StorybookVersionStatus {
+	if (version === undefined) return { status: 'not-installed' };
+	// Storybook canary releases are published as `0.0.0-*`; semver considers these < any
+	// stable version, but we still want to treat them as supported.
+	if (version.startsWith('0.0.0-')) return { status: 'ok' };
+	return lt(version, STORYBOOK_MIN_VERSION_FLOOR)
+		? { status: 'too-old', version }
+		: { status: 'ok' };
+}
 
 const versionCache = new Map<string, StorybookVersionStatus>();
 
 export function checkStorybookVersion(cwd: string): StorybookVersionStatus {
 	const cached = versionCache.get(cwd);
 	if (cached) return cached;
-	const version = readStorybookVersion(cwd);
-	// Storybook canary releases are published as `0.0.0-*`; semver considers these < any stable version, but we still want to treat them as supported.
-	if (version && version.startsWith('0.0.0-')) {
-		const status: StorybookVersionStatus = { status: 'ok' };
-		versionCache.set(cwd, status);
-		return status;
-	}
-	const status: StorybookVersionStatus =
-		version === null
-			? { status: 'not-installed' }
-			: lt(version, STORYBOOK_MIN_VERSION_FLOOR)
-				? { status: 'too-old', version }
-				: { status: 'ok' };
-	versionCache.set(cwd, status);
+	const status = classifyStorybookVersion(readStorybookVersion(cwd));
+	if (status.status === 'ok') versionCache.set(cwd, status);
 	return status;
 }
 
-/**
- * Drop the cached Storybook version detection. With no argument, clears every
- * entry; with a cwd, only that project's entry. The next `checkStorybookVersion`
- * for a cleared cwd will re-read `storybook/package.json` from disk.
- */
 export function clearStorybookVersionCache(cwd?: string): void {
 	if (cwd === undefined) {
 		versionCache.clear();
 		return;
 	}
 	versionCache.delete(cwd);
+}
+
+function readStorybookVersion(cwd: string): string | undefined {
+	const require = createRequire(path.join(cwd, 'package.json'));
+	// require.resolve.paths is the only way to get actual path
+	// without nodeJS resolution cache
+	const searchPaths = require.resolve.paths('storybook') ?? [];
+	for (const base of searchPaths) {
+		try {
+			const raw = readFileSync(path.join(base, 'storybook', 'package.json'), 'utf8');
+			const { version } = JSON.parse(raw) as { version?: unknown };
+			return typeof version === 'string' ? version : undefined;
+		} catch {
+			// parse error or file not found.
+		}
+	}
+	return undefined;
 }

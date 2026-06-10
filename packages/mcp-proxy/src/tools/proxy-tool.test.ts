@@ -206,6 +206,37 @@ describe('registerProxyTool / list-all-documentation', () => {
 		expect(firstText(response.result)).toContain('storybook-upgrade');
 	});
 
+	it('prefers the runtime record version over the disk check: record too-old → too-old intercept even if disk says ok', async () => {
+		vi.mocked(readRegistry).mockResolvedValue([{ ...record, storybookVersion: '9.1.20' }]);
+		// Disk would say ok; the record's self-reported version must win.
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'ok' });
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		expect(response.result.isError).toBe(true);
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'storybook-too-old' });
+		expect(firstText(response.result)).toContain('9.1.20');
+		expect(checkStorybookVersion).not.toHaveBeenCalled();
+	});
+
+	it('prefers the runtime record version over the disk check: record ok → proxies even if disk says too-old', async () => {
+		vi.mocked(readRegistry).mockResolvedValue([{ ...record, storybookVersion: '10.5.0-alpha.4' }]);
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'too-old', version: '8.6.18' });
+		vi.mocked(proxyToolCall).mockResolvedValue({ content: [{ type: 'text', text: 'COMPONENTS' }] });
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		expect(firstText(response.result)).toBe('COMPONENTS');
+		expect(checkStorybookVersion).not.toHaveBeenCalled();
+	});
+
+	it('falls back to the disk check only when the matched record has no storybookVersion', async () => {
+		// base `record` omits storybookVersion → the disk check is consulted
+		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'too-old', version: '9.0.0' });
+		const server = await buildServer();
+		const response = await callTool(server, { cwd: '/projects/foo' });
+		expect(response.result._meta).toEqual({ [META_INTERCEPT_REASON]: 'storybook-too-old' });
+		expect(checkStorybookVersion).toHaveBeenCalledWith('/projects/foo');
+	});
+
 	it('returns the storybook-not-installed intercept when Storybook is unresolvable and nothing is running at the cwd', async () => {
 		vi.mocked(checkStorybookVersion).mockReturnValue({ status: 'not-installed' });
 		vi.mocked(readRegistry).mockResolvedValue([]);
