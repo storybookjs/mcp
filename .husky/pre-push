@@ -1,0 +1,1 @@
+pnpm exec taze next --include "@storybook/*,storybook,eslint-plugin-storybook" --include-locked --fail-on-outdated
