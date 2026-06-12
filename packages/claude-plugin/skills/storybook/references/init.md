@@ -1,11 +1,7 @@
----
-name: storybook-init
-description: Use when adding Storybook to a project that does not have Storybook configured yet, especially before enabling Storybook MCP workflows.
----
-
 # Storybook Init
 
-Use this skill when a project does not already have Storybook configured.
+> Read this when a project does not already have Storybook configured and the
+> user wants to add it.
 
 ## Workflow
 
@@ -26,7 +22,7 @@ Use the matching package-manager command when appropriate, such as `pnpm create 
 npx storybook add @storybook/addon-mcp
 ```
 
-6. Use `/storybook-setup-claude-launch` to configure `.claude/launch.json` and start Storybook through that launch entry.
+6. Read [`references/claude-launch.md`](claude-launch.md) and follow it to configure `.claude/launch.json`, then start Storybook through that launch entry.
 7. Note the Storybook invocation directory (where `storybook dev` runs) as `cwd` when using Storybook MCP proxy tools.
 
 ## Guardrails

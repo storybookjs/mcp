@@ -1,11 +1,7 @@
----
-name: init
-description: Use when adding Storybook to a project that does not have Storybook configured yet, especially before enabling Storybook MCP workflows.
----
-
 # Storybook Init
 
-Use this skill when a project does not already have Storybook configured.
+> Read this when a project does not already have Storybook configured and the
+> user wants to add it.
 
 ## Workflow
 

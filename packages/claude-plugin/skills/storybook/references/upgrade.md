@@ -1,11 +1,7 @@
----
-name: storybook-upgrade
-description: Use when a project has an older Storybook version or proxy repair instructions that require upgrading Storybook.
----
-
 # Storybook Upgrade
 
-Use this skill when Storybook exists but needs an upgrade or MCP repair.
+> Read this when Storybook exists but needs an upgrade or MCP repair —
+> including when proxy repair instructions mention upgrading Storybook.
 
 ## Workflow
 
@@ -36,7 +32,7 @@ npx storybook add @storybook/addon-mcp
 npx storybook doctor
 ```
 
-8. Use `/storybook-setup-claude-launch` to configure or repair `.claude/launch.json`, then start Storybook through that launch entry. Use `/storybook-setup` if the user still needs configuration or stories.
+8. Read [`references/claude-launch.md`](claude-launch.md) and follow it to configure or repair `.claude/launch.json`, then start Storybook through that launch entry. If the user still needs configuration or stories, read [`references/setup.md`](setup.md).
 
 ## Guardrails
 
