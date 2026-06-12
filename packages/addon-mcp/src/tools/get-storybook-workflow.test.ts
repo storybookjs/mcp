@@ -137,7 +137,13 @@ describe('getStorybookWorkflowTool', () => {
 	});
 
 	it('should explain why no workflows are available when everything is disabled', async () => {
-		await setupServer({ ...fullAvailability, testSupported: false, docsEnabled: false });
+		// feature flag on but no manifests found → docsEnabled is false
+		await setupServer({
+			...fullAvailability,
+			testSupported: false,
+			docsEnabled: false,
+			docsHasManifests: false,
+		});
 
 		const text = await callTool({ toolsets: { dev: false, docs: true, test: true } });
 
@@ -145,6 +151,21 @@ describe('getStorybookWorkflowTool', () => {
 		expect(text).toContain('the `dev` toolset is disabled');
 		expect(text).toContain('`@storybook/addon-vitest` is not installed');
 		expect(text).toContain('no component manifest is available');
+	});
+
+	it('should explain when the component manifest feature flag is off', async () => {
+		await setupServer({
+			...fullAvailability,
+			testSupported: false,
+			docsEnabled: false,
+			docsHasManifests: false,
+			docsFeatureEnabled: false,
+		});
+
+		const text = await callTool({ toolsets: { dev: false, docs: true, test: true } });
+
+		expect(text).toContain('the component manifest feature is not enabled');
+		expect(text).not.toContain('no component manifest is available');
 	});
 
 	it('should explain disabled toolsets in the empty case', async () => {

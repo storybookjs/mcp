@@ -72,7 +72,11 @@ function buildNoWorkflowsMessage(
 	if (!(toolsets?.docs ?? true)) {
 		reasons.push('the `docs` toolset is disabled');
 	} else if (!availability.docsEnabled) {
-		reasons.push('no component manifest is available (disables the `docs` workflow)');
+		reasons.push(
+			availability.docsFeatureEnabled
+				? 'no component manifest is available (disables the `docs` workflow)'
+				: 'the component manifest feature is not enabled (disables the `docs` workflow)',
+		);
 	}
 
 	return `No Storybook workflows are currently available because ${reasons.join(', and ')}. Enable the relevant toolsets or features to get workflow instructions.`;
