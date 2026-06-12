@@ -8,3 +8,4 @@ export const GET_STORIES_BY_COMPONENT_TOOL_NAME = 'get-stories-by-component';
 export const GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME = 'get-storybook-story-instructions';
 export const RUN_STORY_TESTS_TOOL_NAME = 'run-story-tests';
 export const DISPLAY_REVIEW_TOOL_NAME = 'display-review';
+export const GET_STORYBOOK_WORKFLOW_TOOL_NAME = 'get-storybook-workflow';

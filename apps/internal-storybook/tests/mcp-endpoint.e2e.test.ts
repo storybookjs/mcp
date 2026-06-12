@@ -100,10 +100,23 @@ describe('MCP Endpoint E2E Tests', () => {
 
 			expect(response.result).toHaveProperty('tools');
 			// Dev, docs, and test tools should be present
-			expect(response.result.tools).toHaveLength(8);
+			expect(response.result.tools).toHaveLength(9);
 
 			expect(response.result.tools).toMatchInlineSnapshot(`
 				[
+				  {
+				    "description": "Get the recommended Storybook workflow: which Storybook MCP tools to call, when, and in what order.
+
+				Call this tool at the start of a session, or before doing any work that touches UI components or Storybook, to learn the workflows this server expects you to follow (developing UI, running story tests, looking up component documentation — depending on which toolsets are enabled).
+
+				This returns the high-level workflow (which tools to call when), not story-writing guidance — the workflow itself directs you to other tools such as get-storybook-story-instructions for that.",
+				    "inputSchema": {
+				      "properties": {},
+				      "type": "object",
+				    },
+				    "name": "get-storybook-workflow",
+				    "title": "Storybook Workflow",
+				  },
 				  {
 				    "_meta": {
 				      "ui": {
@@ -1015,6 +1028,7 @@ describe('MCP Endpoint E2E Tests', () => {
 
 			expect(toolNames).toMatchInlineSnapshot(`
 				[
+				  "get-storybook-workflow",
 				  "preview-stories",
 				  "get-storybook-story-instructions",
 				  "get-changed-stories",
@@ -1038,6 +1052,7 @@ describe('MCP Endpoint E2E Tests', () => {
 
 			expect(toolNames).toMatchInlineSnapshot(`
 				[
+				  "get-storybook-workflow",
 				  "list-all-documentation",
 				  "get-documentation",
 				  "get-documentation-for-story",

@@ -23,7 +23,8 @@ import { getToolAvailability } from './utils/get-tool-availability.ts';
 import { addRunStoryTestsTool } from './tools/run-story-tests.ts';
 import { estimateTokens } from './utils/estimate-tokens.ts';
 import type { CompositionAuth } from './auth/index.ts';
-import { buildServerInstructions } from './instructions/build-server-instructions.ts';
+import { getLiveServerInstructions } from './instructions/get-live-server-instructions.ts';
+import { addGetStorybookWorkflowTool } from './tools/get-storybook-workflow.ts';
 import { DEFAULT_MCP_ENDPOINT } from './constants.ts';
 
 let transport: HttpTransport<AddonContext> | undefined;
@@ -50,14 +51,7 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	const serverOptions = {
 		adapter: new ValibotJsonSchemaAdapter(),
 		get instructions() {
-			return buildServerInstructions({
-				devEnabled: server?.ctx.custom?.toolsets?.dev ?? true,
-				testEnabled: (server?.ctx.custom?.toolsets?.test ?? true) && availability.testSupported,
-				docsEnabled: (server?.ctx.custom?.toolsets?.docs ?? true) && availability.docsEnabled,
-				changeDetectionEnabled: availability.changeDetectionEnabled,
-				moduleGraphSupported: availability.moduleGraphSupported,
-				reviewEnabled: availability.reviewEnabled,
-			});
+			return getLiveServerInstructions(server, availability);
 		},
 		capabilities: {
 			tools: { listChanged: true },
@@ -79,6 +73,10 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 			await collectTelemetry({ event: 'session:initialized', server });
 		});
 	}
+
+	// Available regardless of toolset configuration — exposes the same workflow
+	// instructions as the `initialize` result for clients that ignore that field.
+	await addGetStorybookWorkflowTool(server, availability);
 
 	// Register dev addon tools
 	await addPreviewStoriesTool(server);
