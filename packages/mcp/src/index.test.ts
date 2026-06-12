@@ -109,8 +109,9 @@ describe('createStorybookMcpHandler', () => {
 			"## Documentation Workflow
 
 			1. Call **list-all-documentation** once at the start of the task to discover available component and docs IDs.
-			2. Call **get-documentation** with an \`id\` from that list to retrieve full component docs, props, usage examples, and stories.
-			3. Call **get-documentation-for-story** when you need additional docs from a specific story variant that was not included in the initial component documentation.
+			2. If **get-setup-instructions** is available and you need installation, providers, theming, bootstrap, or other project wiring guidance, call it before using the library.
+			3. Call **get-documentation** with an \`id\` from that list to retrieve full component docs, props, usage examples, and stories.
+			4. Call **get-documentation-for-story** when you need additional docs from a specific story variant that was not included in the initial component documentation.
 
 			Use \`withStoryIds: true\` on **list-all-documentation** when you also need story IDs for inputs to other tools.
 
@@ -363,6 +364,64 @@ describe('createStorybookMcpHandler', () => {
 	});
 
 	describe('with docs manifest', () => {
+		it('should expose get-setup-instructions when a tagged docs entry exists', async () => {
+			const manifestProvider = createManifestProviderMockWithDocs();
+
+			const handler = await createStorybookMcpHandler({
+				manifestProvider,
+			});
+			await setupClient(handler);
+
+			const tools = await client.listTools();
+
+			expect(tools.tools).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						name: 'get-setup-instructions',
+						title: 'Get Setup Instructions',
+					}),
+				]),
+			);
+		});
+
+		it('should hide get-setup-instructions when no docs entry is tagged for setup', async () => {
+			const manifestProvider = vi.fn().mockImplementation((_request: Request, path: string) => {
+				if (path.includes('components.json')) {
+					return Promise.resolve(JSON.stringify(smallManifestFixture));
+				}
+				if (path.includes('docs.json')) {
+					return Promise.resolve(
+						JSON.stringify({
+							v: 1,
+							docs: {
+								'getting-started': {
+									...smallDocsManifestFixture.docs['getting-started'],
+									tags: [],
+								},
+								theming: smallDocsManifestFixture.docs.theming,
+							},
+						}),
+					);
+				}
+				return Promise.reject(new Error('Not found'));
+			});
+
+			const handler = await createStorybookMcpHandler({
+				manifestProvider,
+			});
+			await setupClient(handler);
+
+			const tools = await client.listTools();
+
+			expect(tools.tools).not.toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						name: 'get-setup-instructions',
+					}),
+				]),
+			);
+		});
+
 		it('should return docs entries in list-all-documentation when docs manifest is available', async () => {
 			const manifestProvider = createManifestProviderMockWithDocs();
 
@@ -456,6 +515,26 @@ describe('createStorybookMcpHandler', () => {
 			expect((result.content as any)[0]).toMatchObject({
 				type: 'text',
 				text: expect.stringContaining('Getting Started'),
+			});
+		});
+
+		it('should return setup instructions from the tagged docs entry', async () => {
+			const manifestProvider = createManifestProviderMockWithDocs();
+
+			const handler = await createStorybookMcpHandler({
+				manifestProvider,
+			});
+			await setupClient(handler);
+
+			const result = await client.callTool({
+				name: 'get-setup-instructions',
+				arguments: {},
+			});
+
+			expect(result.content).toHaveLength(1);
+			expect((result.content as any)[0]).toMatchObject({
+				type: 'text',
+				text: expect.stringContaining('## Installation'),
 			});
 		});
 	});

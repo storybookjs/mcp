@@ -1,0 +1,15 @@
+{
+	"expectedMcpTools": {
+		"get-setup-instructions": {
+			"minCalls": 1
+		},
+		"get-documentation": {
+			"minCalls": 1,
+			"expectedCalls": [
+				{
+					"id": "launch-button"
+				}
+			]
+		}
+	}
+}

@@ -1,8 +1,9 @@
 ## Documentation Workflow
 
 1. Call **list-all-documentation** once at the start of the task to discover available component and docs IDs.
-2. Call **get-documentation** with an `id` from that list to retrieve full component docs, props, usage examples, and stories.
-3. Call **get-documentation-for-story** when you need additional docs from a specific story variant that was not included in the initial component documentation.
+2. If **get-setup-instructions** is available and you need installation, providers, theming, bootstrap, or other project wiring guidance, call it before using the library.
+3. Call **get-documentation** with an `id` from that list to retrieve full component docs, props, usage examples, and stories.
+4. Call **get-documentation-for-story** when you need additional docs from a specific story variant that was not included in the initial component documentation.
 
 Use `withStoryIds: true` on **list-all-documentation** when you also need story IDs for inputs to other tools.
 
