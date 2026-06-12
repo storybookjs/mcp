@@ -147,7 +147,14 @@ The `@main` ref tracks the latest preview build from the `main` branch.
 
 ## Included Skills
 
-- `storybook-init`: Add Storybook to a project that does not have it yet.
-- `storybook-setup`: Run `storybook ai setup` and follow its output.
-- `storybook-setup-claude-launch`: Create or repair `.claude/launch.json` for starting Storybook from Claude.
-- `storybook-upgrade`: Upgrade older Storybook projects when repair or version checks require it.
+The plugin ships a single `storybook` skill that dispatches to command-specific
+reference files (`skills/storybook/references/*.md`), in the style of
+[impeccable](https://github.com/pbakaus/impeccable). The skill auto-triggers on
+frontend component changes and story work, and routes explicit requests to one
+of these commands:
+
+- `stories` (default): Strict, gated workflow for writing and verifying stories on every component change.
+- `init`: Add Storybook to a project that does not have it yet.
+- `setup`: Run `storybook ai setup` and follow its output.
+- `upgrade`: Upgrade older Storybook projects when repair or version checks require it.
+- `launch`: Create or repair `.claude/launch.json` for starting Storybook from Claude.

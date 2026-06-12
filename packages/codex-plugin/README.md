@@ -1,6 +1,6 @@
 # Storybook Codex Plugin
 
-Private workspace package for the Storybook Codex plugin. It bundles Storybook setup, init, and upgrade skills with MCP configuration for UI component workflows.
+Private workspace package for the Storybook Codex plugin. It bundles a single `storybook` skill — which dispatches to stories, init, setup, and upgrade reference workflows — with MCP configuration for UI component workflows.
 
 This package is intentionally shaped like a Codex plugin while living under `packages/` so it can be tested from this repository and later submitted to the official Codex marketplace. Codex does not install plugins from npm directly; it discovers plugin folders through a marketplace catalog. The repository root contains the GitHub-installable marketplace, and this package includes `.agents/plugins/marketplace.json` for package-local development.
 
@@ -152,6 +152,13 @@ The config should include a `[marketplaces.storybook]` entry whose `source` poin
 
 ## Included Skills
 
+The plugin ships a single `storybook` skill that dispatches to command-specific
+reference files (`skills/storybook/references/*.md`), in the style of
+[impeccable](https://github.com/pbakaus/impeccable). The skill auto-triggers on
+frontend component changes and story work, and routes explicit requests to one
+of these commands:
+
+- `stories` (default): Strict, gated workflow for writing and verifying stories on every component change.
 - `init`: Add Storybook to a project that does not have it yet.
 - `setup`: Run `storybook ai setup` and follow its output.
 - `upgrade`: Upgrade older Storybook projects when repair or version checks require it.
