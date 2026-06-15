@@ -385,10 +385,7 @@ function serializeResult(result: unknown): string {
  * Codex supports stdio servers (command/args/env) and streamable HTTP servers (url/headers).
  * See https://github.com/openai/codex/blob/main/docs/config.md.
  */
-async function writeCodexMcpConfig(
-	configDir: string,
-	mcpServers: McpServerConfig,
-): Promise<void> {
+async function writeCodexMcpConfig(configDir: string, mcpServers: McpServerConfig): Promise<void> {
 	await fs.mkdir(configDir, { recursive: true });
 	const configPath = path.join(configDir, 'config.toml');
 
