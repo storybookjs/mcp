@@ -22,6 +22,7 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 - Playwright (`npx playwright install`)
 - Claude Code CLI (`npm install -g @anthropic-ai/claude-code`) - for `claude-code` agent
 - GitHub Copilot CLI (`gh extension install github/gh-copilot`) - for `copilot-cli` agent
+- OpenAI Codex CLI (`npm install -g @openai/codex`) - for `codex` agent
 
 ## Quick Start
 
@@ -42,7 +43,7 @@ The following options apply to `advanced-eval.ts`:
 
 | Option           | Short | Type    | Description                                                                                               |
 | ---------------- | ----- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `--agent`        | `-a`  | string  | Which agent to use (`claude-code` or `copilot-cli`)                                                       |
+| `--agent`        | `-a`  | string  | Which agent to use (`claude-code`, `copilot-cli`, or `codex`)                                             |
 | `--model`        | `-m`  | string  | Which model to use (see [Model Selection](#model-selection) below)                                        |
 | `--context`      | `-c`  | string  | Context type: `false`, `storybook-dev`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
 | `--verbose`      | `-v`  | boolean | Show detailed logs during execution                                                                       |
@@ -58,16 +59,18 @@ The following options apply to `advanced-eval.ts`:
 
 Different agents support different models:
 
-| Model                  | Claude Code CLI | Copilot CLI |
-| ---------------------- | :-------------: | :---------: |
-| `claude-opus-4.6`      |       ✅        |     ✅      |
-| `claude-opus-4.5`      |       ❌        |     ✅      |
-| `claude-sonnet-4.6`    |       ✅        |     ✅      |
-| `claude-haiku-4.5`     |       ✅        |     ✅      |
-| `gpt-5.2`              |       ❌        |     ✅      |
-| `gpt-5.2-codex`        |       ❌        |     ✅      |
-| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
-| `gemini-3-pro-preview` |       ❌        |     ✅      |
+| Model                  | Claude Code CLI | Copilot CLI | Codex CLI |
+| ---------------------- | :-------------: | :---------: | :-------: |
+| `claude-opus-4.6`      |       ✅        |     ✅      |    ❌     |
+| `claude-opus-4.5`      |       ❌        |     ✅      |    ❌     |
+| `claude-sonnet-4.6`    |       ✅        |     ✅      |    ❌     |
+| `claude-haiku-4.5`     |       ✅        |     ✅      |    ❌     |
+| `gpt-5.5-codex`        |       ❌        |     ✅      |    ✅     |
+| `gpt-5.5-codex-max`    |       ❌        |     ✅      |    ✅     |
+| `gpt-5.2`              |       ❌        |     ✅      |    ✅     |
+| `gpt-5.2-codex`        |       ❌        |     ✅      |    ✅     |
+| `gpt-5.1-codex-max`    |       ❌        |     ✅      |    ✅     |
+| `gemini-3-pro-preview` |       ❌        |     ✅      |    ❌     |
 
 **Example usage:**
 
@@ -77,7 +80,21 @@ node advanced-eval.ts --agent claude-code --model claude-opus-4.5 100-flight-boo
 
 # Copilot CLI with GPT-5.2 (advanced-eval)
 node advanced-eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
+
+# Codex CLI with GPT-5.2 Codex (advanced-eval)
+node advanced-eval.ts --agent codex --model gpt-5.2-codex 100-flight-booking-plain
 ```
+
+> [!NOTE]
+> **Codex CLI agent**
+>
+> The `codex` agent runs `codex exec --json` non-interactively. It points `CODEX_HOME` at
+> the trial's `<project>/.codex` directory so codex discovers project-scoped skills (installed
+> by the `plugin-skills:codex` context into `.codex/skills`) and any MCP servers, which are
+> written to `.codex/config.toml` under `[mcp_servers.<name>]`. Because `CODEX_HOME` is
+> overridden, you must be logged in via that home (or have `OPENAI_API_KEY` set) for the run
+> to authenticate. The run uses `--dangerously-bypass-approvals-and-sandbox`, relying on the
+> harness's own per-trial isolation.
 
 > [!IMPORTANT]
 > **GitHub Copilot CLI Model Configuration**

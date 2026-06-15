@@ -9,6 +9,8 @@ export const SUPPORTED_MODELS = [
 	'claude-opus-4.5',
 	'claude-sonnet-4.6',
 	'claude-haiku-4.5',
+	'gpt-5.5-codex',
+	'gpt-5.5-codex-max',
 	'gpt-5.2-codex',
 	'gpt-5.2',
 	'gpt-5.1-codex-max',
@@ -45,6 +47,8 @@ export const COPILOT_MODELS = [
 	'claude-opus-4.5',
 	'claude-sonnet-4.6',
 	'claude-haiku-4.5',
+	'gpt-5.5-codex',
+	'gpt-5.5-codex-max',
 	'gpt-5.2-codex',
 	'gpt-5.2',
 	'gpt-5.1-codex-max',
@@ -52,6 +56,31 @@ export const COPILOT_MODELS = [
 ] as const satisfies readonly SupportedModel[];
 
 export type CopilotModel = (typeof COPILOT_MODELS)[number];
+
+/**
+ * Models that are supported by the Codex CLI.
+ */
+export const CODEX_MODELS = [
+	'gpt-5.5-codex',
+	'gpt-5.5-codex-max',
+	'gpt-5.2-codex',
+	'gpt-5.2',
+	'gpt-5.1-codex-max',
+] as const satisfies readonly SupportedModel[];
+
+/**
+ * Mapping from our standard model names to Codex CLI --model flag values.
+ * The Codex CLI accepts the underlying model identifiers directly.
+ */
+export const CODEX_MODEL_MAP: Record<(typeof CODEX_MODELS)[number], string> = {
+	'gpt-5.5-codex': 'gpt-5.5-codex',
+	'gpt-5.5-codex-max': 'gpt-5.5-codex-max',
+	'gpt-5.2-codex': 'gpt-5.2-codex',
+	'gpt-5.2': 'gpt-5.2',
+	'gpt-5.1-codex-max': 'gpt-5.1-codex-max',
+};
+
+export type CodexModel = (typeof CODEX_MODELS)[number];
 
 export type TrialArgs = {
 	trialPath: string;
