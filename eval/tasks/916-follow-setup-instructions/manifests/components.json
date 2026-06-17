@@ -1,0 +1,20 @@
+{
+	"v": 1,
+	"components": {
+		"launch-button": {
+			"id": "launch-button",
+			"name": "LaunchButton",
+			"path": "src/components/LaunchButton.tsx",
+			"summary": "Primary Acme UI call-to-action button for launch and navigation flows.",
+			"import": "import { LaunchButton } from \"@acme/ui\";",
+			"stories": [
+				{
+					"id": "launch-button--primary",
+					"name": "Primary",
+					"summary": "Primary button for launch-oriented actions.",
+					"snippet": "import { LaunchButton } from \"@acme/ui\";\n\n<LaunchButton tone=\"primary\">Open dashboard</LaunchButton>"
+				}
+			]
+		}
+	}
+}

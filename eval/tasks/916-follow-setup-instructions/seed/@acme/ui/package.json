@@ -1,0 +1,10 @@
+{
+	"name": "@acme/ui",
+	"version": "0.0.0-eval",
+	"type": "module",
+	"types": "./index.d.ts",
+	"exports": {
+		".": "./index.js",
+		"./styles.css": "./styles.css"
+	}
+}
