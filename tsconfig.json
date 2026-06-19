@@ -28,7 +28,8 @@
 
 		// Enable live types
 		"paths": {
-			"@storybook/mcp": ["./packages/mcp/src/index.ts"]
+			"@storybook/mcp": ["./packages/mcp/src/index.ts"],
+			"@storybook/addon-mcp/tool-names": ["./packages/addon-mcp/src/tools/tool-names.ts"]
 		}
 	},
 	"include": ["*.ts"]

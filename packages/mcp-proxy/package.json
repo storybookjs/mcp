@@ -47,5 +47,9 @@
 		"semver": "catalog:",
 		"tmcp": "catalog:",
 		"valibot": "catalog:"
+	},
+	"devDependencies": {
+		"@storybook/addon-mcp": "workspace:*",
+		"@storybook/mcp": "workspace:*"
 	}
 }
