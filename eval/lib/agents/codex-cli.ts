@@ -17,6 +17,34 @@ import type {
 const USAGE_0 = { input_tokens: 0, output_tokens: 0 } as const;
 
 /**
+ * Per-token USD pricing for Codex models. The Codex CLI does not report a USD cost
+ * (its `--json` stream only includes token counts), so we estimate it from the reported
+ * usage. All current GPT-5 codex tiers share the same public pricing
+ * (input $1.25/1M, cached input $0.125/1M, output $10/1M); the estimate is approximate
+ * and N/A for ChatGPT-subscription billing.
+ *
+ * @see https://platform.openai.com/docs/pricing
+ */
+const CODEX_PRICING = {
+	input: 1.25e-6,
+	cachedInput: 1.25e-7,
+	output: 1e-5,
+} as const;
+
+/**
+ * Estimates USD cost from Codex token usage. `input_tokens` is inclusive of
+ * `cached_input_tokens`, which are billed at the cheaper cache-read rate.
+ */
+function estimateCodexCost(usage: { input: number; cached: number; output: number }): number {
+	const uncachedInput = Math.max(0, usage.input - usage.cached);
+	return (
+		uncachedInput * CODEX_PRICING.input +
+		usage.cached * CODEX_PRICING.cachedInput +
+		usage.output * CODEX_PRICING.output
+	);
+}
+
+/**
  * Shapes of the `codex exec --json` (experimental) event stream.
  * Each stdout line is one JSON object. We only model the fields we consume.
  */
@@ -180,7 +208,7 @@ export const codexCli: Agent = {
 
 		const t0 = Date.now();
 		let stderr = '';
-		let turnUsage: { input?: number; output?: number } | undefined;
+		let turnUsage: { input: number; cached: number; output: number } | undefined;
 		let assistantCount = 0;
 		let toolCount = 0;
 		let turnFailedError: string | undefined;
@@ -289,9 +317,11 @@ export const codexCli: Agent = {
 						handleItem(event.item);
 						log.message(`Agent is working, ${assistantCount} messages, ${toolCount} tool calls`);
 					} else if (event.type === 'turn.completed') {
+						// codex exec emits a single turn.completed with the session's total usage.
 						turnUsage = {
-							input: event.usage?.input_tokens,
-							output: event.usage?.output_tokens,
+							input: event.usage?.input_tokens ?? 0,
+							cached: event.usage?.cached_input_tokens ?? 0,
+							output: event.usage?.output_tokens ?? 0,
 						};
 					} else if (event.type === 'turn.failed') {
 						turnFailedError = event.error?.message ?? 'turn failed';
@@ -309,10 +339,9 @@ export const codexCli: Agent = {
 		const elapsedMs = Date.now() - t0;
 		const isError =
 			turnFailedError !== undefined || (stderr.trim().length > 0 && assistantCount === 0);
-		const totalTokens =
-			turnUsage && (turnUsage.input !== undefined || turnUsage.output !== undefined)
-				? (turnUsage.input ?? 0) + (turnUsage.output ?? 0)
-				: undefined;
+		const totalTokens = turnUsage ? turnUsage.input + turnUsage.output : undefined;
+		// Codex does not report a USD cost; estimate it from the reported token usage.
+		const estimatedCost = turnUsage ? Number(estimateCodexCost(turnUsage).toFixed(4)) : undefined;
 
 		const numTurns = Math.max(assistantCount, 1) + toolCount * 2;
 		const resultMessage: ResultMessage = {
@@ -321,7 +350,7 @@ export const codexCli: Agent = {
 			duration_ms: elapsedMs,
 			duration_api_ms: elapsedMs,
 			num_turns: numTurns,
-			total_cost_usd: 0,
+			total_cost_usd: estimatedCost ?? 0,
 			ms: elapsedMs,
 			...(totalTokens !== undefined && { tokenCount: totalTokens }),
 		};
@@ -338,6 +367,7 @@ export const codexCli: Agent = {
 		return {
 			agent: 'Codex CLI',
 			model: codexModel,
+			...(estimatedCost !== undefined && { cost: estimatedCost }),
 			duration: Math.round(elapsedMs / 1000),
 			durationApi: Math.round(elapsedMs / 1000),
 			turns: numTurns,
