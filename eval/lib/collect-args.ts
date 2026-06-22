@@ -9,6 +9,7 @@ import {
 	SUPPORTED_MODELS,
 	CLAUDE_MODELS,
 	COPILOT_MODELS,
+	CODEX_MODELS,
 	type Context,
 	type McpServerConfig,
 	type SupportedModel,
@@ -355,6 +356,7 @@ export async function collectArgs(): Promise<CollectedArgs> {
 					options: [
 						{ value: 'claude-code', label: 'Claude Code CLI' },
 						{ value: 'copilot-cli', label: 'GitHub Copilot CLI' },
+						{ value: 'codex-cli', label: 'Codex CLI' },
 					],
 				});
 
@@ -369,7 +371,11 @@ export async function collectArgs(): Promise<CollectedArgs> {
 				// Determine available models based on selected agent
 				const selectedAgent = results.agent;
 				const availableModels: readonly SupportedModel[] =
-					selectedAgent === 'claude-code' ? CLAUDE_MODELS : COPILOT_MODELS;
+					selectedAgent === 'claude-code'
+						? CLAUDE_MODELS
+						: selectedAgent === 'codex-cli'
+							? CODEX_MODELS
+							: COPILOT_MODELS;
 
 				if (opts.model) {
 					// Validate that the provided model is valid for the selected agent

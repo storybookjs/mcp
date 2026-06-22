@@ -13,6 +13,10 @@ export const SUPPORTED_MODELS = [
 	'gpt-5.2',
 	'gpt-5.1-codex-max',
 	'gemini-3-pro-preview',
+	// Codex CLI account-default model: the agent omits `--model` and lets Codex pick the
+	// model the account is entitled to. Required for ChatGPT-account Codex auth, which
+	// rejects explicit codex model names (those need API-key auth).
+	'codex-default',
 ] as const;
 
 export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
@@ -52,6 +56,28 @@ export const COPILOT_MODELS = [
 ] as const satisfies readonly SupportedModel[];
 
 export type CopilotModel = (typeof COPILOT_MODELS)[number];
+
+/**
+ * Models that are supported by the Codex CLI.
+ */
+export const CODEX_MODELS = [
+	'codex-default',
+	'gpt-5.2-codex',
+	'gpt-5.1-codex-max',
+] as const satisfies readonly SupportedModel[];
+
+/**
+ * Mapping from our standard model names to Codex CLI `--model` flag values.
+ * The Codex CLI accepts these slugs directly. An empty string means "omit `--model`"
+ * so Codex uses the account-default model (the only option for ChatGPT-account auth).
+ */
+export const CODEX_MODEL_MAP: Record<(typeof CODEX_MODELS)[number], string> = {
+	'codex-default': '',
+	'gpt-5.2-codex': 'gpt-5.2-codex',
+	'gpt-5.1-codex-max': 'gpt-5.1-codex-max',
+};
+
+export type CodexModel = (typeof CODEX_MODELS)[number];
 
 export type TrialArgs = {
 	trialPath: string;
