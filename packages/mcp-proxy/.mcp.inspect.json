@@ -1,9 +1,0 @@
-{
-	"mcpServers": {
-		"storybook-mcp-proxy": {
-			"type": "stdio",
-			"command": "node",
-			"args": ["dist/bin.js"]
-		}
-	}
-}
