@@ -4,7 +4,7 @@ A CLI-based eval harness for testing AI coding agents' ability to build UI compo
 
 ## What is this?
 
-This eval harness runs automated trials where AI coding agents (Claude Code CLI or GitHub Copilot CLI) are given prompts to build UI components. Each trial:
+This eval harness runs automated trials where AI coding agents (Claude Code CLI, GitHub Copilot CLI, or Codex CLI) are given prompts to build UI components. Each trial:
 
 1. **Prepares** a fresh Vite + React + Storybook project
 2. **Executes** the agent with a prompt and optional context (MCP servers, component manifests, or extra prompts)
@@ -22,6 +22,7 @@ The goal is to measure how well agents can use Storybook's MCP tools to build pr
 - Playwright (`npx playwright install`)
 - Claude Code CLI (`npm install -g @anthropic-ai/claude-code`) - for `claude-code` agent
 - GitHub Copilot CLI (`gh extension install github/gh-copilot`) - for `copilot-cli` agent
+- Codex CLI (`npm install -g @openai/codex`, then `codex login`) - for `codex-cli` agent
 
 ## Quick Start
 
@@ -42,7 +43,7 @@ The following options apply to `advanced-eval.ts`:
 
 | Option           | Short | Type    | Description                                                                                               |
 | ---------------- | ----- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `--agent`        | `-a`  | string  | Which agent to use (`claude-code` or `copilot-cli`)                                                       |
+| `--agent`        | `-a`  | string  | Which agent to use (`claude-code`, `copilot-cli`, or `codex-cli`)                                         |
 | `--model`        | `-m`  | string  | Which model to use (see [Model Selection](#model-selection) below)                                        |
 | `--context`      | `-c`  | string  | Context type: `false`, `storybook-dev`, `*.json` (manifest), `mcp.config.json`, or `*.md` (extra prompts) |
 | `--verbose`      | `-v`  | boolean | Show detailed logs during execution                                                                       |
@@ -58,16 +59,21 @@ The following options apply to `advanced-eval.ts`:
 
 Different agents support different models:
 
-| Model                  | Claude Code CLI | Copilot CLI |
-| ---------------------- | :-------------: | :---------: |
-| `claude-opus-4.6`      |       ✅        |     ✅      |
-| `claude-opus-4.5`      |       ❌        |     ✅      |
-| `claude-sonnet-4.6`    |       ✅        |     ✅      |
-| `claude-haiku-4.5`     |       ✅        |     ✅      |
-| `gpt-5.2`              |       ❌        |     ✅      |
-| `gpt-5.2-codex`        |       ❌        |     ✅      |
-| `gpt-5.1-codex-max`    |       ❌        |     ✅      |
-| `gemini-3-pro-preview` |       ❌        |     ✅      |
+| Model                  | Claude Code CLI | Copilot CLI | Codex CLI |
+| ---------------------- | :-------------: | :---------: | :-------: |
+| `claude-opus-4.6`      |       ✅        |     ✅      |    ❌     |
+| `claude-opus-4.5`      |       ❌        |     ✅      |    ❌     |
+| `claude-sonnet-4.6`    |       ✅        |     ✅      |    ❌     |
+| `claude-haiku-4.5`     |       ✅        |     ✅      |    ❌     |
+| `gpt-5.5`              |       ❌        |     ✅      |    ❌     |
+| `gpt-5.4`              |       ❌        |     ✅      |    ❌     |
+| `gpt-5.4-mini`         |       ❌        |     ✅      |    ❌     |
+| `gemini-3-pro-preview` |       ❌        |     ✅      |    ❌     |
+| `codex-default`        |       ❌        |     ❌      |    ✅     |
+
+For Codex CLI, use `codex-default`, which omits `--model` and lets Codex pick the
+account's entitled model. This avoids stale or account-specific explicit Codex model
+aliases.
 
 **Example usage:**
 
@@ -75,8 +81,11 @@ Different agents support different models:
 # Claude Code with Opus (advanced-eval)
 node advanced-eval.ts --agent claude-code --model claude-opus-4.5 100-flight-booking-plain
 
-# Copilot CLI with GPT-5.2 (advanced-eval)
-node advanced-eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
+# Copilot CLI with GPT-5.5 (advanced-eval)
+node advanced-eval.ts --agent copilot-cli --model gpt-5.5 100-flight-booking-plain
+
+# Codex CLI with the account-default model (works with ChatGPT login)
+node advanced-eval.ts --agent codex-cli --model codex-default 100-flight-booking-plain
 ```
 
 > [!IMPORTANT]
@@ -85,7 +94,7 @@ node advanced-eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-pla
 > To use models other than `claude-sonnet-4.6` with the Copilot CLI, you must first enable them in your GitHub account settings:
 >
 > 1. Go to [GitHub Copilot Features Settings](https://github.com/settings/copilot/features)
-> 2. Enable the models you want to use (e.g., GPT-5.1 Codex Max, GPT-5.2, Claude Opus 4.5)
+> 2. Enable the models you want to use (e.g., GPT-5.5, GPT-5.4, Claude Opus 4.5)
 > 3. Save your settings
 > 4. Wait up to 30 minutes
 >
