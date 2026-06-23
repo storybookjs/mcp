@@ -340,8 +340,7 @@ export const codexCli: Agent = {
 		}
 
 		const elapsedMs = Date.now() - t0;
-		const isError =
-			turnFailedError !== undefined || (stderr.trim().length > 0 && assistantCount === 0);
+		const isError = turnFailedError !== undefined || stderr.trim().length > 0;
 		const totalTokens = turnUsage ? turnUsage.input + turnUsage.output : undefined;
 		// Codex does not report a USD cost; estimate it from the reported token usage.
 		const estimatedCost = turnUsage ? Number(estimateCodexCost(turnUsage).toFixed(4)) : undefined;
