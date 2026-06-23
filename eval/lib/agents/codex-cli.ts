@@ -117,13 +117,16 @@ function buildMcpConfigArgs(mcpServers: McpServerConfig): string[] {
 	for (const name of Object.keys(mcpServers)) {
 		const server = mcpServers[name];
 		if (!server) continue;
-		const base = `mcp_servers.${name}`;
+		const base = `mcp_servers.${JSON.stringify(name)}`;
 
 		switch (server.type) {
 			case 'http': {
 				add(`${base}.url`, JSON.stringify(server.url));
 				if (server.headers && Object.keys(server.headers).length > 0) {
-					add(`${base}.http_headers`, JSON.stringify(server.headers));
+					const headersToml = `{ ${Object.entries(server.headers)
+						.map(([k, v]) => `${JSON.stringify(k)} = ${JSON.stringify(v)}`)
+						.join(', ')} }`;
+					add(`${base}.http_headers`, headersToml);
 				}
 				break;
 			}
