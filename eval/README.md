@@ -65,15 +65,15 @@ Different agents support different models:
 | `claude-opus-4.5`      |       ❌        |     ✅      |    ❌     |
 | `claude-sonnet-4.6`    |       ✅        |     ✅      |    ❌     |
 | `claude-haiku-4.5`     |       ✅        |     ✅      |    ❌     |
-| `gpt-5.2`              |       ❌        |     ✅      |    ❌     |
-| `gpt-5.2-codex`        |       ❌        |     ✅      |    ✅¹    |
-| `gpt-5.1-codex-max`    |       ❌        |     ✅      |    ✅¹    |
+| `gpt-5.5`              |       ❌        |     ✅      |    ❌     |
+| `gpt-5.4`              |       ❌        |     ✅      |    ❌     |
+| `gpt-5.4-mini`         |       ❌        |     ✅      |    ❌     |
 | `gemini-3-pro-preview` |       ❌        |     ✅      |    ❌     |
 | `codex-default`        |       ❌        |     ❌      |    ✅     |
 
-> ¹ Explicit Codex model names require **API-key** Codex auth. With a **ChatGPT-account**
-> login, Codex rejects explicit `--model` values — use `codex-default`, which omits
-> `--model` and lets Codex pick the account's entitled model.
+For Codex CLI, use `codex-default`, which omits `--model` and lets Codex pick the
+account's entitled model. This avoids stale or account-specific explicit Codex model
+aliases.
 
 **Example usage:**
 
@@ -81,8 +81,8 @@ Different agents support different models:
 # Claude Code with Opus (advanced-eval)
 node advanced-eval.ts --agent claude-code --model claude-opus-4.5 100-flight-booking-plain
 
-# Copilot CLI with GPT-5.2 (advanced-eval)
-node advanced-eval.ts --agent copilot-cli --model gpt-5.2 100-flight-booking-plain
+# Copilot CLI with GPT-5.5 (advanced-eval)
+node advanced-eval.ts --agent copilot-cli --model gpt-5.5 100-flight-booking-plain
 
 # Codex CLI with the account-default model (works with ChatGPT login)
 node advanced-eval.ts --agent codex-cli --model codex-default 100-flight-booking-plain
@@ -94,7 +94,7 @@ node advanced-eval.ts --agent codex-cli --model codex-default 100-flight-booking
 > To use models other than `claude-sonnet-4.6` with the Copilot CLI, you must first enable them in your GitHub account settings:
 >
 > 1. Go to [GitHub Copilot Features Settings](https://github.com/settings/copilot/features)
-> 2. Enable the models you want to use (e.g., GPT-5.1 Codex Max, GPT-5.2, Claude Opus 4.5)
+> 2. Enable the models you want to use (e.g., GPT-5.5, GPT-5.4, Claude Opus 4.5)
 > 3. Save your settings
 > 4. Wait up to 30 minutes
 >

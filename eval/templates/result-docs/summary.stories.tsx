@@ -163,7 +163,7 @@ export const SomeTestsFailed: Story = {
 export const AccessibilityViolations: Story = {
 	args: {
 		agent: 'Copilot CLI',
-		model: 'gpt-5.1-codex-max',
+		model: 'gpt-5.5',
 		cost: 0.3298,
 		duration: 298,
 		durationApi: 234,
@@ -378,7 +378,7 @@ export const WithMcpToolsExpectationsFailed: Story = {
 export const WithMcpToolsManyInvocations: Story = {
 	args: {
 		agent: 'Copilot CLI',
-		model: 'gpt-5.1-codex-max',
+		model: 'gpt-5.5',
 		cost: 0.5234,
 		duration: 423,
 		durationApi: 378,
