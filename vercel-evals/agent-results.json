@@ -1,136 +1,136 @@
 {
-  "metadata": {
-    "exportedAt": "2026-06-25T14:10:17.950Z",
-    "experiments": [
-      {
-        "name": "claude",
-        "agentHarness": "Claude Code",
-        "avgDuration": 0.006
-      },
-      {
-        "name": "codex",
-        "agentHarness": "Codex",
-        "avgDuration": 0.01
-      }
-    ]
-  },
-  "results": {
-    "claude": [
-      {
-        "evalPath": "922-skill-storybook-setup-claude-launch",
-        "result": {
-          "success": false,
-          "duration": 5,
-          "evalPath": "922-skill-storybook-setup-claude-launch",
-          "timestamp": "2026-06-25T14:03:18.021Z",
-          "score": 0,
-          "scoring": {
-            "score": 0,
-            "maxScore": 1,
-            "percent": 0,
-            "items": [
-              {
-                "id": "storybook-launch-auto-port",
-                "description": "Storybook launch entry exists with autoPort: true",
-                "weight": 1,
-                "score": 0
-              }
-            ]
-          }
-        }
-      },
-      {
-        "evalPath": "923-skill-stories",
-        "result": {
-          "success": false,
-          "duration": 7,
-          "evalPath": "923-skill-stories",
-          "timestamp": "2026-06-25T14:03:18.021Z",
-          "score": 0,
-          "scoring": {
-            "score": 0,
-            "maxScore": 1,
-            "percent": 0,
-            "items": [
-              {
-                "id": "loaded-story-rules",
-                "description": "Loaded story rules via the `storybook ai` CLI",
-                "weight": 0.3,
-                "score": 0
-              },
-              {
-                "id": "stories-skill",
-                "description": "Invoked the `stories` skill",
-                "weight": 0.2,
-                "score": 0,
-                "details": {
-                  "invokedStoriesSkill": false,
-                  "codexFollowedWorkflow": false
-                }
-              },
-              {
-                "id": "wrote-story-file",
-                "description": "Wrote a `*.stories.*` file",
-                "weight": 0.2,
-                "score": 0
-              },
-              {
-                "id": "opened-preview",
-                "description": "Opened a preview via `preview-stories`",
-                "weight": 0.3,
-                "score": 0
-              }
-            ]
-          }
-        }
-      }
-    ],
-    "codex": [
-      {
-        "evalPath": "923-skill-stories",
-        "result": {
-          "success": false,
-          "duration": 10,
-          "evalPath": "923-skill-stories",
-          "timestamp": "2026-06-25T14:06:43.697Z",
-          "score": 0,
-          "scoring": {
-            "score": 0,
-            "maxScore": 1,
-            "percent": 0,
-            "items": [
-              {
-                "id": "loaded-story-rules",
-                "description": "Loaded story rules via the `storybook ai` CLI",
-                "weight": 0.3,
-                "score": 0
-              },
-              {
-                "id": "stories-skill",
-                "description": "Invoked the `stories` skill",
-                "weight": 0.2,
-                "score": 0,
-                "details": {
-                  "invokedStoriesSkill": false,
-                  "codexFollowedWorkflow": false
-                }
-              },
-              {
-                "id": "wrote-story-file",
-                "description": "Wrote a `*.stories.*` file",
-                "weight": 0.2,
-                "score": 0
-              },
-              {
-                "id": "opened-preview",
-                "description": "Opened a preview via `preview-stories`",
-                "weight": 0.3,
-                "score": 0
-              }
-            ]
-          }
-        }
-      }
-    ]
-  }
+	"metadata": {
+		"exportedAt": "2026-06-25T14:10:17.950Z",
+		"experiments": [
+			{
+				"name": "claude",
+				"agentHarness": "Claude Code",
+				"avgDuration": 0.006
+			},
+			{
+				"name": "codex",
+				"agentHarness": "Codex",
+				"avgDuration": 0.01
+			}
+		]
+	},
+	"results": {
+		"claude": [
+			{
+				"evalPath": "922-skill-storybook-setup-claude-launch",
+				"result": {
+					"success": false,
+					"duration": 5,
+					"evalPath": "922-skill-storybook-setup-claude-launch",
+					"timestamp": "2026-06-25T14:03:18.021Z",
+					"score": 0,
+					"scoring": {
+						"score": 0,
+						"maxScore": 1,
+						"percent": 0,
+						"items": [
+							{
+								"id": "storybook-launch-auto-port",
+								"description": "Storybook launch entry exists with autoPort: true",
+								"weight": 1,
+								"score": 0
+							}
+						]
+					}
+				}
+			},
+			{
+				"evalPath": "923-skill-stories",
+				"result": {
+					"success": false,
+					"duration": 7,
+					"evalPath": "923-skill-stories",
+					"timestamp": "2026-06-25T14:03:18.021Z",
+					"score": 0,
+					"scoring": {
+						"score": 0,
+						"maxScore": 1,
+						"percent": 0,
+						"items": [
+							{
+								"id": "loaded-story-rules",
+								"description": "Loaded story rules via the `storybook ai` CLI",
+								"weight": 0.3,
+								"score": 0
+							},
+							{
+								"id": "stories-skill",
+								"description": "Invoked the `stories` skill",
+								"weight": 0.2,
+								"score": 0,
+								"details": {
+									"invokedStoriesSkill": false,
+									"codexFollowedWorkflow": false
+								}
+							},
+							{
+								"id": "wrote-story-file",
+								"description": "Wrote a `*.stories.*` file",
+								"weight": 0.2,
+								"score": 0
+							},
+							{
+								"id": "opened-preview",
+								"description": "Opened a preview via `preview-stories`",
+								"weight": 0.3,
+								"score": 0
+							}
+						]
+					}
+				}
+			}
+		],
+		"codex": [
+			{
+				"evalPath": "923-skill-stories",
+				"result": {
+					"success": false,
+					"duration": 10,
+					"evalPath": "923-skill-stories",
+					"timestamp": "2026-06-25T14:06:43.697Z",
+					"score": 0,
+					"scoring": {
+						"score": 0,
+						"maxScore": 1,
+						"percent": 0,
+						"items": [
+							{
+								"id": "loaded-story-rules",
+								"description": "Loaded story rules via the `storybook ai` CLI",
+								"weight": 0.3,
+								"score": 0
+							},
+							{
+								"id": "stories-skill",
+								"description": "Invoked the `stories` skill",
+								"weight": 0.2,
+								"score": 0,
+								"details": {
+									"invokedStoriesSkill": false,
+									"codexFollowedWorkflow": false
+								}
+							},
+							{
+								"id": "wrote-story-file",
+								"description": "Wrote a `*.stories.*` file",
+								"weight": 0.2,
+								"score": 0
+							},
+							{
+								"id": "opened-preview",
+								"description": "Opened a preview via `preview-stories`",
+								"weight": 0.3,
+								"score": 0
+							}
+						]
+					}
+				}
+			}
+		]
+	}
 }
