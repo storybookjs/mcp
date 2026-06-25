@@ -7,7 +7,6 @@ function analysis(overrides: Partial<AgentRunAnalysis> = {}): AgentRunAnalysis {
   return {
     skillInvocations: [],
     workflow: {
-      storybookAiCommands: [],
       shellCommands: [],
     },
     transcript: {
@@ -93,10 +92,6 @@ describe('scoreEvaluation', () => {
       analysis({
         skillInvocations: ['stories'],
         workflow: {
-          storybookAiCommands: [
-            'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
-            'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',
-          ],
           shellCommands: [
             'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
             'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',

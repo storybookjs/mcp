@@ -4,7 +4,6 @@ import { parseJsonl } from './utils';
 export type AgentRunAnalysis = {
   skillInvocations: string[];
   workflow: {
-    storybookAiCommands: string[];
     shellCommands: string[];
   };
   transcript: {
@@ -15,12 +14,11 @@ export type AgentRunAnalysis = {
   };
 };
 
-export function hasSkillInvocation(
-  analysis: Pick<AgentRunAnalysis, 'skillInvocations'>,
-  skill: string,
-): boolean {
-  return analysis.skillInvocations.includes(skill);
-} 
+const SKILL_MARKER_PATTERNS = [
+  /^\.agent-eval\/skills\/([^/]+)\.json$/,
+  /^\.agent-eval\/skill-([a-z0-9-]+)-invoked\.json$/i,
+];
+
 function commandFromEvent(event: unknown): string | undefined {
   if (!event || typeof event !== 'object') return undefined;
 
@@ -56,13 +54,14 @@ function skillFromMarker(path: string, marker: unknown): string | undefined {
     }
   }
 
-  const genericMatch = path.match(/^\.agent-eval\/skills\/([^/]+)\.json$/);
-  if (genericMatch?.[1]) {
-    return genericMatch[1];
+  for (const pattern of SKILL_MARKER_PATTERNS) {
+    const match = path.match(pattern);
+    if (match?.[1]) {
+      return match[1];
+    }
   }
 
-  const legacyMatch = path.match(/^\.agent-eval\/skill-([a-z0-9-]+)-invoked\.json$/i);
-  return legacyMatch?.[1];
+  return undefined;
 }
 
 export function analyzeAgentRun(runData: EvalRunData, agent: string): AgentRunAnalysis {
@@ -74,22 +73,18 @@ export function analyzeAgentRun(runData: EvalRunData, agent: string): AgentRunAn
   ];
   const uniqueCommands = [...new Set(shellCommands)];
   const generatedFiles = runData.generatedFiles ?? {};
-  const skillInvocations = Object.keys(generatedFiles)
-    .filter((path) =>
-      /^\.agent-eval\/skills\/[^/]+\.json$/.test(path) ||
-      /^\.agent-eval\/skill-[a-z0-9-]+-invoked\.json$/i.test(path),
-    )
-    .map((path) => skillFromMarker(path, parseGeneratedJson(generatedFiles, path)))
-    .filter((skill): skill is string => Boolean(skill))
-    .filter((skill, index, skills) => skills.indexOf(skill) === index)
-    .sort();
+  const skillInvocations = [
+    ...new Set(
+      Object.keys(generatedFiles)
+        .filter((path) => SKILL_MARKER_PATTERNS.some((pattern) => pattern.test(path)))
+        .map((path) => skillFromMarker(path, parseGeneratedJson(generatedFiles, path)))
+        .filter((skill): skill is string => Boolean(skill)),
+    ),
+  ].sort();
 
   return {
     skillInvocations,
     workflow: {
-      storybookAiCommands: uniqueCommands.filter((command) =>
-        /storybook(?:@[\w.-]+)?\s+ai\b/i.test(command),
-      ),
       shellCommands: uniqueCommands,
     },
     transcript: {
