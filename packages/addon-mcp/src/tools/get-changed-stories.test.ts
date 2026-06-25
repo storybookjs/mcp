@@ -6,6 +6,7 @@ import type { AddonContext } from '../types.ts';
 import * as getStoryIndexModule from '../utils/get-story-index.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import { GET_CHANGED_STORIES_TOOL_NAME } from './tool-names.ts';
+import { estimateTokens } from '../utils/estimate-tokens.ts';
 import type { StoryIndex } from 'storybook/internal/types';
 
 const { mockGetStatusStore, mockGetService, mockExecSync } = vi.hoisted(() => ({
@@ -122,6 +123,11 @@ describe('getChangedStoriesTool', () => {
 		return result?.content?.[0]?.text ?? '';
 	}
 
+	function getStructured(response: unknown): any {
+		if (!response || typeof response !== 'object') return undefined;
+		return (response as { result?: { structuredContent?: unknown } }).result?.structuredContent;
+	}
+
 	it('returns grouped markdown text with changed story metadata', async () => {
 		mockGetStatusStore.mockReturnValue({
 			getAll: () => ({
@@ -159,7 +165,9 @@ describe('getChangedStoriesTool', () => {
 			Modified stories:
 			- \`button--secondary\`: Button / Secondary (\`./src/Button.stories.tsx\`)
 
-			Related stories:
+			Related stories (1):
+			By component: Input (×1)
+
 			- \`input--default\`: Input / Default (\`./src/Input.stories.tsx\`)"
 		`);
 	});
@@ -227,7 +235,9 @@ describe('getChangedStoriesTool', () => {
 			- \`button--primary\`: Button / Primary (\`./src/Button.stories.tsx\`)
 			- \`button--secondary\`: Button / Secondary (\`./src/Button.stories.tsx\`)
 
-			Related stories:
+			Related stories (1):
+			By component: Input (×1)
+
 			- \`input--default\`: Input / Default (\`./src/Input.stories.tsx\`)"
 		`);
 	});
@@ -412,5 +422,92 @@ describe('getChangedStoriesTool', () => {
 		expect(text).not.toContain('Coverage gap');
 		expect(text).not.toMatch(/coverage sanity check/i);
 		expect(text.startsWith('Detected')).toBe(true);
+	});
+
+	it('stays within tool-output limits on a Chakra/Carbon-scale change without dropping the new component (mcp#311)', async () => {
+		// Reproduce the real overflow: a new component (MetricTile) plus a
+		// changed shared primitive (Tag) whose 1047 consumers all show up as
+		// "affected". Pre-fix this serialized to ~126KB / ~56k tokens, exceeded
+		// the host tool-output cap, spilled to a file, and the agent dropped the
+		// new component from the review. The fix must keep the response bounded
+		// AND keep the new/modified stories intact.
+		const AFFECTED_COUNT = 1047;
+		const COMPONENT_COUNT = 20;
+
+		const getAll: Record<string, any> = {
+			'metrictile--default': {
+				'storybook/change-detection': {
+					value: 'status-value:new',
+					storyId: 'metrictile--default',
+				},
+			},
+			'tag--with-count': {
+				'storybook/change-detection': {
+					value: 'status-value:modified',
+					storyId: 'tag--with-count',
+				},
+			},
+		};
+		const entries: Record<string, any> = {
+			'metrictile--default': {
+				id: 'metrictile--default',
+				title: 'Components/MetricTile',
+				name: 'Default',
+				importPath: './packages/react/src/components/MetricTile/MetricTile.stories.tsx',
+				type: 'story',
+			},
+			'tag--with-count': {
+				id: 'tag--with-count',
+				title: 'Components/Tag',
+				name: 'With Count',
+				importPath: './packages/react/src/components/Tag/Tag.stories.tsx',
+				type: 'story',
+			},
+		};
+		for (let i = 0; i < AFFECTED_COUNT; i++) {
+			const comp = i % COMPONENT_COUNT;
+			const id = `affected-comp${comp}-${i}--default`;
+			const title = `Components/Comp${String(comp).padStart(2, '0')}`;
+			getAll[id] = {
+				'storybook/change-detection': { value: 'status-value:affected', storyId: id },
+			};
+			entries[id] = {
+				id,
+				title,
+				name: `Variant ${i}`,
+				importPath: `./packages/react/src/components/Comp${comp}/Comp${comp}.stories.tsx`,
+				type: 'story',
+			};
+		}
+
+		mockGetStatusStore.mockReturnValue({ getAll: () => getAll });
+		vi.spyOn(getStoryIndexModule, 'getStoryIndex').mockResolvedValue({
+			v: 5,
+			entries,
+		} as unknown as StoryIndex);
+
+		const response = await callTool();
+		const text = getResultText(response);
+		const structured = getStructured(response);
+
+		// Bounded: comfortably under the ~25k host cap (pre-fix was ~56k).
+		expect(estimateTokens(text)).toBeLessThan(12000);
+
+		// Truthful totals.
+		expect(text).toContain(
+			'Detected 1049 changed stories (1 new, 1 modified, 1047 related).',
+		);
+		expect(structured.counts.related).toBe(1047);
+
+		// The new + modified stories are intact — never dropped.
+		expect(text).toContain('`metrictile--default`');
+		expect(text).toContain('`tag--with-count`');
+		expect(structured.newTruncated).toBe(false);
+		expect(structured.modifiedTruncated).toBe(false);
+
+		// Related stories are sampled, with an explicit, actionable truncation note.
+		expect(structured.relatedTruncated).toBe(true);
+		expect(text).toMatch(/Showing \d+ of 1047 related stories/);
+		expect(text).toContain('get-stories-by-component');
 	});
 });
