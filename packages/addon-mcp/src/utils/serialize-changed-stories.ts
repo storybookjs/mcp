@@ -261,7 +261,8 @@ function formatBreakdown(
 
 interface DirectSection {
 	text: string;
-	shownCount: number;
+	/** The stories actually rendered — the single source of truth for the structured payload. */
+	shown: ChangedStory[];
 	truncated: boolean;
 }
 
@@ -276,7 +277,7 @@ function formatDirectBucket(
 	if (hidden > 0) {
 		text += `\n- …and ${hidden} more (omitted to stay within the response size limit; all ${stories.length} are in \`structuredContent.counts\`).`;
 	}
-	return { text, shownCount: shown.length, truncated: hidden > 0 };
+	return { text, shown, truncated: hidden > 0 };
 }
 
 interface RelatedSection {
@@ -312,7 +313,7 @@ function formatRelatedSection(
 
 	if (truncated) {
 		text +=
-			`\n\nShowing ${sample.length} of ${total} related stories (diverse sample across the components above). ` +
+			`\n\nShowing ${sample.length} of ${total} related stories — one representative per affected component (closest by import distance first, when known). ` +
 			`Related stories transitively render a changed component — they are lower priority than the new/modified stories, ` +
 			`which are listed in full. To enumerate every story for a specific component, call \`get-stories-by-component\` with that component's source path. ` +
 			`Do not assume the un-sampled stories are unaffected, and never invent story IDs.`;
@@ -396,10 +397,10 @@ export function serializeChangedStories(
 
 	const structured: ChangedStoriesStructured = {
 		counts: { new: counts.new, modified: counts.modified, related: counts.related, total },
-		new: buckets.new.slice(0, newSection?.shownCount ?? effectiveDirectLimit).map(toLite),
-		modified: buckets.modified
-			.slice(0, modifiedSection?.shownCount ?? effectiveDirectLimit)
-			.map(toLite),
+		// Derived straight from what each section rendered — no independent
+		// re-slicing, so the markdown and structured payload can't diverge.
+		new: (newSection?.shown ?? []).map(toLite),
+		modified: (modifiedSection?.shown ?? []).map(toLite),
 		relatedSample: (relatedSection?.sample ?? []).map(toLite),
 		relatedBreakdown: relatedSection?.breakdownShown ?? [],
 		relatedTruncated: relatedSection?.truncated ?? false,
