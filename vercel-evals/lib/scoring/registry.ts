@@ -1,8 +1,8 @@
 import type { EvalRunData } from '@vercel/agent-eval';
-import type { AgentRunAnalysis } from '../agent-analysis';
-import { storybookSetupClaudeLaunchScorer } from './scorers/storybook-setup-claude-launch';
-import { storiesScorer } from './scorers/stories';
-import type { EvaluationScore, EvaluationScorer, ScoringContext } from './types';
+import type { AgentRunAnalysis } from '../agent-analysis.ts';
+import { storybookSetupClaudeLaunchScorer } from './scorers/storybook-setup-claude-launch.ts';
+import { storiesScorer } from './scorers/stories.ts';
+import type { EvaluationScore, EvaluationScorer, ScoringContext } from './types.ts';
 
 export const scoringRegistry: EvaluationScorer[] = [
 	storybookSetupClaudeLaunchScorer,

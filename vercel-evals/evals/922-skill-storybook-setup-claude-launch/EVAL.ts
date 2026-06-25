@@ -46,7 +46,8 @@ describe('claude launch configuration', () => {
 
 		expect(storybook).toBeTruthy();
 		expect(storybook?.autoPort).toBe(true);
-		expect(String(storybook?.command ?? '')).toMatch(/storybook/i);
+		expect(storybook?.command).toEqual(expect.any(String));
+		expect(storybook?.command).toMatch(/storybook/i);
 	});
 
 	test('preserves the existing non-Storybook launch entry', () => {

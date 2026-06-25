@@ -1,5 +1,5 @@
 import { parseTranscript, type EvalRunData } from '@vercel/agent-eval';
-import { parseJsonl } from './utils';
+import { parseJsonl } from './utils.ts';
 
 export type AgentRunAnalysis = {
 	skillInvocations: string[];

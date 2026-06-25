@@ -1,6 +1,6 @@
 import type { EvalRunData, ExperimentConfig } from '@vercel/agent-eval';
-import { analyzeAgentRun } from './agent-analysis';
-import { scoreEvaluation } from './evaluation-scoring';
+import { analyzeAgentRun } from './agent-analysis.ts';
+import { scoreEvaluation } from './evaluation-scoring.ts';
 
 export const CLAUDE_STORYBOOK_PLUGIN_EVALS = [
 	'922-skill-storybook-setup-claude-launch',
@@ -39,13 +39,13 @@ export function withAgentAnalysis(config: ExperimentConfig): ExperimentConfig {
 				result: {
 					...runData.result,
 					analysis: {
-						...(runData.result.analysis ?? {}),
+						...runData.result.analysis,
 						agent,
 						evaluation,
 						skillInvocations: agent.skillInvocations,
 					},
 					metadata: {
-						...(runData.result.metadata ?? {}),
+						...runData.result.metadata,
 						evalFixture: context.fixture.name,
 					},
 				},

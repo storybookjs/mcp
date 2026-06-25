@@ -64,9 +64,15 @@ describe('stories workflow', () => {
 
 	test('agent used Storybook AI CLI workflow', () => {
 		const context = readTranscriptContext();
-		const commands = context.o11y?.shellCommands?.map(({ command }) => command).join('\n') ?? '';
+		const commands = context.o11y?.shellCommands?.map(({ command }) => command) ?? [];
+		const aiCliHelpIndex = commands.findIndex((command) =>
+			/(^|\s)STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+--help\b/i.test(command),
+		);
+		const previewStoriesIndex = commands.findIndex((command) =>
+			/(^|\s)STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+preview-stories\b/i.test(command),
+		);
 
-		expect(commands).toMatch(/storybook\s+ai\s+--help/i);
-		expect(commands).toMatch(/storybook\s+ai\s+preview-stories/i);
+		expect(aiCliHelpIndex).toBeGreaterThanOrEqual(0);
+		expect(previewStoriesIndex).toBeGreaterThan(aiCliHelpIndex);
 	});
 });

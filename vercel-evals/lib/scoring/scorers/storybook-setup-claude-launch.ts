@@ -1,5 +1,5 @@
-import { binaryItem, defineScorer, totalScore } from '../types';
-import { collectClaudeLaunchConfigs, parseGeneratedJson } from '../evidence';
+import { collectClaudeLaunchConfigs, parseGeneratedJson } from '../evidence.ts';
+import { binaryItem, defineScorer, totalScore } from '../types.ts';
 
 export const storybookSetupClaudeLaunchScorer = defineScorer({
 	fixtureName: '922-skill-storybook-setup-claude-launch',

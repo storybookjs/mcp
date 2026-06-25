@@ -1,8 +1,8 @@
-export { findScorer, scoreContext, scoreEvaluation, scoringRegistry } from './scoring/registry';
+export { findScorer, scoreContext, scoreEvaluation, scoringRegistry } from './scoring/registry.ts';
 export type {
 	EvaluationScore,
 	EvaluationScorer,
 	EvaluationScoreItem,
 	ScoringContext,
-} from './scoring/types';
-export { defineScorer } from './scoring/types';
+} from './scoring/types.ts';
+export { defineScorer } from './scoring/types.ts';

@@ -1,5 +1,5 @@
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d+Z$/;
 
@@ -14,7 +14,7 @@ function parseTimestamp(timestamp) {
 	const match = timestamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})\.(\d+)Z$/);
 
 	if (!match) {
-		return timestamp;
+		throw new Error(`Invalid result timestamp directory: ${timestamp}`);
 	}
 
 	return `${match[1]}T${match[2]}:${match[3]}:${match[4]}.${match[5]}Z`;
@@ -74,8 +74,8 @@ async function getExperimentAgent(experiment) {
 async function latestExperimentResults(experiment) {
 	const experimentDir = join('results', experiment);
 	const timestampDirs = (await findTimestampDirs(experimentDir)).sort((a, b) => {
-		const timeA = new Date(parseTimestamp(a.split('/').pop())).getTime();
-		const timeB = new Date(parseTimestamp(b.split('/').pop())).getTime();
+		const timeA = new Date(parseTimestamp(basename(a))).getTime();
+		const timeB = new Date(parseTimestamp(basename(b))).getTime();
 		return timeB - timeA;
 	});
 
@@ -83,7 +83,7 @@ async function latestExperimentResults(experiment) {
 	const results = [];
 
 	for (const timestampDir of timestampDirs) {
-		const timestamp = timestampDir.split('/').pop();
+		const timestamp = basename(timestampDir);
 		let evalDirs;
 
 		try {

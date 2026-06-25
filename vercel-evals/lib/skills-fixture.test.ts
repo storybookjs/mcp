@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { storybookSkillFiles } from './skills-fixture';
+import { storybookSkillFiles } from './skills-fixture.ts';
 
 const files = storybookSkillFiles();
 

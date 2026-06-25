@@ -7,7 +7,7 @@ Test AI coding agents to measure what actually works.
 1. **Install dependencies:**
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. **Configure environment variables:**
@@ -123,7 +123,7 @@ skill invocation markers, and Claude launch config parsing live in
 `lib/scoring/evidence.ts`.
 
 ```ts
-import { defineScorer, binaryItem, totalScore } from '../../lib/scoring/types';
+import { defineScorer, binaryItem, totalScore } from '../types.ts';
 
 export const myFixtureScorer = defineScorer({
 	fixtureName: 'my-fixture',

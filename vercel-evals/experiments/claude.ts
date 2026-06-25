@@ -1,6 +1,6 @@
 import type { ExperimentConfig } from '@vercel/agent-eval';
-import { CLAUDE_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments';
-import { storybookSkillFiles } from '../lib/skills-fixture';
+import { CLAUDE_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments.ts';
+import { storybookSkillFiles } from '../lib/skills-fixture.ts';
 
 const config: ExperimentConfig = withAgentAnalysis({
 	agent: 'vercel-ai-gateway/claude-code',

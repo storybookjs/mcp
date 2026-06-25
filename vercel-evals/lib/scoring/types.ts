@@ -1,5 +1,5 @@
 import type { EvalRunData } from '@vercel/agent-eval';
-import type { AgentRunAnalysis } from '../agent-analysis';
+import type { AgentRunAnalysis } from '../agent-analysis.ts';
 
 export type ScoringContext = {
 	fixtureName: string;

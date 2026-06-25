@@ -1,7 +1,12 @@
 import type { EvalRunData } from '@vercel/agent-eval';
 import { describe, expect, test } from 'vitest';
-import type { AgentRunAnalysis } from './agent-analysis';
-import { defineScorer, findScorer, scoreEvaluation, scoringRegistry } from './evaluation-scoring';
+import type { AgentRunAnalysis } from './agent-analysis.ts';
+import {
+	defineScorer,
+	findScorer,
+	scoreEvaluation,
+	scoringRegistry,
+} from './evaluation-scoring.ts';
 
 function analysis(overrides: Partial<AgentRunAnalysis> = {}): AgentRunAnalysis {
 	return {
@@ -108,5 +113,28 @@ describe('scoreEvaluation', () => {
 			{ id: 'wrote-story-file', weight: 0.2, score: 1 },
 			{ id: 'opened-preview', weight: 0.3, score: 1 },
 		]);
+	});
+
+	test('recognizes Codex when the harness agent id is namespaced', () => {
+		const score = scoreEvaluation(
+			'923-skill-stories',
+			runData({
+				'src/components/Badge.stories.tsx': 'export default {};',
+			}),
+			analysis({
+				workflow: {
+					shellCommands: [
+						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
+						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',
+					],
+				},
+			}),
+			'vercel-ai-gateway/codex',
+		);
+
+		expect(score?.items.find((item) => item.id === 'stories-skill')).toMatchObject({
+			description: 'Installed Codex stories skill and followed workflow',
+			score: 1,
+		});
 	});
 });
