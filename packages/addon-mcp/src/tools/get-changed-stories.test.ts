@@ -510,4 +510,53 @@ describe('getChangedStoriesTool', () => {
 		expect(text).toMatch(/Showing \d+ of 1047 related stories/);
 		expect(text).toContain('get-stories-by-component');
 	});
+
+	it('reads `data.distance` from the status store and ranks related stories by it (distance-aware path)', async () => {
+		// When Storybook persists the import-graph distance (newer builds), the
+		// tool surfaces it and ranks the related sample toward direct importers.
+		const getAll: Record<string, any> = {};
+		const entries: Record<string, any> = {};
+		// 300 related stories across 15 components, each with a known distance.
+		for (let i = 0; i < 300; i++) {
+			const comp = i % 15;
+			const id = `comp${comp}-${i}--default`;
+			const distance = (i % 4) + 1; // 1..4
+			getAll[id] = {
+				'storybook/change-detection': {
+					value: 'status-value:affected',
+					storyId: id,
+					data: { distance },
+				},
+			};
+			entries[id] = {
+				id,
+				title: `Components/Comp${comp}`,
+				name: `Variant ${i}`,
+				importPath: `./src/Comp${comp}/Comp${comp}.stories.tsx`,
+				type: 'story',
+			};
+		}
+
+		mockGetStatusStore.mockReturnValue({ getAll: () => getAll });
+		vi.spyOn(getStoryIndexModule, 'getStoryIndex').mockResolvedValue({
+			v: 5,
+			entries,
+		} as unknown as StoryIndex);
+
+		const response = await callTool();
+		const text = getResultText(response);
+		const structured = getStructured(response);
+
+		// Distance shows up in the markdown and structured payload.
+		expect(text).toMatch(/— distance \d/);
+		expect(text).toMatch(/nearest d\d/);
+		expect(structured.relatedSample[0]).toHaveProperty('distance');
+
+		// The sample is ranked closest-first (distances non-decreasing) and biased
+		// toward direct importers.
+		const distances = structured.relatedSample.map((s: any) => s.distance);
+		expect([...distances]).toEqual([...distances].sort((a, b) => a - b));
+		const avg = distances.reduce((a: number, b: number) => a + b, 0) / distances.length;
+		expect(avg).toBeLessThan(2);
+	});
 });

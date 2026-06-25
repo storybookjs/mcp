@@ -168,6 +168,65 @@ describe('serializeChangedStories', () => {
 		expect(body).toMatch(/and \d+ more/);
 	});
 
+	describe('distance-aware ranking (strategy F)', () => {
+		// Build affected stories across components, each with a realistic distance.
+		function affectedWithDistances(total: number, componentCount: number): ChangedStory[] {
+			const out: ChangedStory[] = [];
+			for (let i = 0; i < total; i++) {
+				const comp = i % componentCount;
+				const title = `Comp${String(comp).padStart(2, '0')}`;
+				// Deterministic skewed distribution: a few d1, more d2/d3/d4.
+				const r = (i * 2654435761) % 100;
+				const distance = r < 6 ? 1 : r < 26 ? 2 : r < 66 ? 3 : 4;
+				out.push({ ...story(`c${comp}-s${i}--d`, title, `V${i}`), distance });
+			}
+			return out;
+		}
+
+		it('represents every affected component AND prefers the closest story per component', () => {
+			const affected = affectedWithDistances(1047, 30);
+			const { structured } = serializeChangedStories(emptyBuckets({ affected }), {
+				relatedSampleLimit: 40,
+			});
+			const distinct = new Set(structured.relatedSample.map((s) => s.title));
+			// Max breadth: all 30 components surface in a 40-story sample.
+			expect(distinct.size).toBe(30);
+			// Relevance: average distance is near 1 (closest-per-component first),
+			// far better than the distance-blind ~3 of plain round-robin.
+			const avg =
+				structured.relatedSample.reduce((a, s) => a + (s.distance ?? 0), 0) /
+				structured.relatedSample.length;
+			expect(avg).toBeLessThan(1.5);
+		});
+
+		it('annotates related lines with their distance and the breakdown with nearest distance', () => {
+			const affected = affectedWithDistances(200, 10);
+			const { body, structured } = serializeChangedStories(emptyBuckets({ affected }));
+			expect(body).toMatch(/— distance \d/);
+			expect(body).toMatch(/nearest d\d/);
+			expect(structured.relatedBreakdown[0]).toHaveProperty('nearestDistance');
+			expect(structured.relatedSample[0]).toHaveProperty('distance');
+		});
+
+		it('orders the sample closest-first', () => {
+			const affected = affectedWithDistances(500, 15);
+			const { structured } = serializeChangedStories(emptyBuckets({ affected }));
+			const distances = structured.relatedSample.map((s) => s.distance ?? 0);
+			const sorted = [...distances].sort((a, b) => a - b);
+			expect(distances).toEqual(sorted);
+		});
+
+		it('degrades to component-diverse order when no distances are present', () => {
+			const affected = manyAffected(1047, 20); // no distance field
+			const { body, structured } = serializeChangedStories(emptyBuckets({ affected }));
+			// Still bounded + diverse, just no distance annotations.
+			expect(structured.relatedSample.length).toBe(40);
+			expect(new Set(structured.relatedSample.map((s) => s.title)).size).toBe(20);
+			expect(body).not.toMatch(/— distance/);
+			expect(structured.relatedSample[0]).not.toHaveProperty('distance');
+		});
+	});
+
 	it('produces an empty body when there are no changed stories', () => {
 		const { headline, body } = serializeChangedStories(emptyBuckets());
 		expect(headline).toBe('Detected 0 changed stories (0 new, 0 modified, 0 related).');

@@ -56,6 +56,20 @@ interface ChangedStory {
 	title: string;
 	name: string;
 	importPath: string;
+	distance?: number;
+}
+
+/**
+ * Reads the import-graph distance the change-detection store may persist in
+ * `status.data.distance`. Older Storybook builds don't set it; we treat that as
+ * "unknown" so the serializer falls back to component-diverse ordering.
+ */
+function readDistance(data: unknown): number | undefined {
+	if (data && typeof data === 'object' && 'distance' in data) {
+		const value = (data as { distance?: unknown }).distance;
+		if (typeof value === 'number' && Number.isFinite(value)) return value;
+	}
+	return undefined;
 }
 
 function statusPriority(statusValue: StatusValue): number {
@@ -69,6 +83,12 @@ const ChangedStoryLiteSchema = v.object({
 	title: v.string(),
 	name: v.string(),
 	importPath: v.string(),
+	distance: v.pipe(
+		v.optional(v.number()),
+		v.description(
+			'Import-graph distance from the changed source (1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.',
+		),
+	),
 });
 
 export const GetChangedStoriesOutput = v.object({
@@ -92,8 +112,16 @@ export const GetChangedStoriesOutput = v.object({
 		),
 	),
 	relatedBreakdown: v.pipe(
-		v.array(v.object({ title: v.string(), count: v.number() })),
-		v.description('Per-component story counts across ALL related stories (top components when many).'),
+		v.array(
+			v.object({
+				title: v.string(),
+				count: v.number(),
+				nearestDistance: v.optional(v.number()),
+			}),
+		),
+		v.description(
+			'Per-component story counts across ALL related stories (top components when many), with each component\'s nearest distance when known.',
+		),
 	),
 	relatedTruncated: v.boolean(),
 	relatedBreakdownTruncated: v.boolean(),
@@ -171,7 +199,7 @@ export async function addGetChangedStoriesTool(
 
 				const index = await getStoryIndex(options);
 				const stories = changedStoriesFromStatusStore.flatMap<ChangedStory>(
-					({ storyId, value }) => {
+					({ storyId, value, data }) => {
 						const entry = index.entries[storyId];
 						if (!entry) {
 							return [];
@@ -183,6 +211,7 @@ export async function addGetChangedStoriesTool(
 								title: entry.title,
 								name: entry.name,
 								importPath: entry.importPath,
+								distance: readDistance(data),
 							},
 						];
 					},

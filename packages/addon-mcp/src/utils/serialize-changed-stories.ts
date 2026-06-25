@@ -10,6 +10,14 @@ export interface ChangedStory {
 	title: string;
 	name: string;
 	importPath: string;
+	/**
+	 * Import-graph distance from the changed source to this story (0 = the story
+	 * file itself, 1 = direct importer, 2+ = transitive). Optional: only present
+	 * when the Storybook change-detection store persists it. When present it is
+	 * used to rank the related sample toward the consumers that actually render
+	 * the change; when absent the sample falls back to component-diverse order.
+	 */
+	distance?: number;
 }
 
 export interface ChangedStoryBuckets {
@@ -28,11 +36,15 @@ export interface ChangedStoryLite {
 	title: string;
 	name: string;
 	importPath: string;
+	/** See {@link ChangedStory.distance}. Omitted when unknown. */
+	distance?: number;
 }
 
 export interface ComponentBreakdownEntry {
 	title: string;
 	count: number;
+	/** Closest distance any of this component's related stories sits at. Omitted when unknown. */
+	nearestDistance?: number;
 }
 
 export interface ChangedStoriesStructured {
@@ -123,47 +135,93 @@ function toLite(story: ChangedStory): ChangedStoryLite {
 		title: story.title,
 		name: story.name,
 		importPath: story.importPath,
+		...(typeof story.distance === 'number' ? { distance: story.distance } : {}),
 	};
 }
 
-function serializeStory({ storyId, title, name, importPath }: ChangedStory): string {
-	return `- \`${storyId}\`: ${title} / ${name} (\`${importPath}\`)`;
+function serializeStory(
+	{ storyId, title, name, importPath, distance }: ChangedStory,
+	{ withDistance = false }: { withDistance?: boolean } = {},
+): string {
+	// Distance is a ranking aid for the related sample; the directly-changed
+	// new/modified buckets ARE the change, so they're serialized without it.
+	const suffix = withDistance && typeof distance === 'number' ? ` — distance ${distance}` : '';
+	return `- \`${storyId}\`: ${title} / ${name} (\`${importPath}\`)${suffix}`;
 }
 
 function pluralize(n: number, singular: string, plural = `${singular}s`): string {
 	return n === 1 ? singular : plural;
 }
 
-/**
- * Builds a per-component count over ALL related stories, preserving the
- * (already-sorted) first-seen order of components.
- */
-function buildBreakdown(affected: ChangedStory[]): ComponentBreakdownEntry[] {
-	const counts = new Map<string, number>();
-	for (const story of affected) {
-		counts.set(story.title, (counts.get(story.title) ?? 0) + 1);
-	}
-	return [...counts.entries()]
-		.map(([title, count]) => ({ title, count }))
-		.sort((a, b) => b.count - a.count || a.title.localeCompare(b.title));
+/** Distance used for ordering when a story carries none — sorts last. */
+const NO_DISTANCE = Number.POSITIVE_INFINITY;
+function distanceOf(story: ChangedStory): number {
+	return typeof story.distance === 'number' ? story.distance : NO_DISTANCE;
 }
 
 /**
- * Picks a component-diverse sample of related stories: round-robins across
- * components so a single high-fan-out component (e.g. one that appears in 900
- * stories) can't crowd out every other affected component from the sample.
+ * Builds a per-component count over ALL related stories, plus each component's
+ * nearest (smallest) distance when distances are known. Sorted nearest-first,
+ * then by story count, so the agent sees the most-directly-affected components
+ * at the head of the breakdown.
+ */
+function buildBreakdown(affected: ChangedStory[]): ComponentBreakdownEntry[] {
+	const counts = new Map<string, number>();
+	const nearest = new Map<string, number>();
+	for (const story of affected) {
+		counts.set(story.title, (counts.get(story.title) ?? 0) + 1);
+		const d = distanceOf(story);
+		nearest.set(story.title, Math.min(nearest.get(story.title) ?? NO_DISTANCE, d));
+	}
+	return [...counts.entries()]
+		.map(([title, count]) => {
+			const near = nearest.get(title)!;
+			return Number.isFinite(near)
+				? { title, count, nearestDistance: near }
+				: { title, count };
+		})
+		.sort(
+			(a, b) =>
+				(a.nearestDistance ?? NO_DISTANCE) - (b.nearestDistance ?? NO_DISTANCE) ||
+				b.count - a.count ||
+				a.title.localeCompare(b.title),
+		);
+}
+
+/**
+ * Picks a component-diverse, relevance-ranked sample of related stories.
+ *
+ * Round-robins across components so a single high-fan-out component (one that
+ * appears in 900 stories) can't crowd out every other affected component — and,
+ * when distances are known, takes the CLOSEST story within each component first
+ * and visits components in nearest-distance order. The net effect (strategy "F"
+ * in the overflow experiments): every affected component is represented by its
+ * most-likely-to-render story before any component gets a second slot. Without
+ * distances it degrades to plain component round-robin (still maximal breadth).
  */
 function sampleRelated(affected: ChangedStory[], limit: number): ChangedStory[] {
-	if (affected.length <= limit) return affected;
+	if (affected.length <= limit) {
+		return [...affected].sort((a, b) => distanceOf(a) - distanceOf(b));
+	}
 
+	const order = new Map(affected.map((s, i) => [s.storyId, i]));
 	const byTitle = new Map<string, ChangedStory[]>();
 	for (const story of affected) {
 		const bucket = byTitle.get(story.title) ?? [];
 		bucket.push(story);
 		byTitle.set(story.title, bucket);
 	}
+	// Closest-first within each component (stable on the original order for ties).
+	for (const bucket of byTitle.values()) {
+		bucket.sort(
+			(a, b) => distanceOf(a) - distanceOf(b) || (order.get(a.storyId)! - order.get(b.storyId)!),
+		);
+	}
+	// Visit components in nearest-distance order, then by descending fan-out.
+	const queues = [...byTitle.values()].sort(
+		(a, b) => distanceOf(a[0]!) - distanceOf(b[0]!) || b.length - a.length,
+	);
 
-	const queues = [...byTitle.values()];
 	const sample: ChangedStory[] = [];
 	let exhausted = false;
 	while (sample.length < limit && !exhausted) {
@@ -175,9 +233,8 @@ function sampleRelated(affected: ChangedStory[], limit: number): ChangedStory[] 
 			if (sample.length >= limit) break;
 		}
 	}
-	// Preserve the original global ordering for a stable, readable list.
-	const order = new Map(affected.map((s, i) => [s.storyId, i]));
-	sample.sort((a, b) => (order.get(a.storyId) ?? 0) - (order.get(b.storyId) ?? 0));
+	// Present the chosen sample closest-first for a readable, prioritized list.
+	sample.sort((a, b) => distanceOf(a) - distanceOf(b) || (order.get(a.storyId)! - order.get(b.storyId)!));
 	return sample;
 }
 
@@ -187,7 +244,11 @@ function formatBreakdown(
 ): { text: string; truncated: boolean; shown: ComponentBreakdownEntry[] } {
 	const shown = breakdown.slice(0, limit);
 	const hiddenComponents = breakdown.length - shown.length;
-	const parts = shown.map((entry) => `${entry.title} (×${entry.count})`);
+	const parts = shown.map((entry) =>
+		typeof entry.nearestDistance === 'number'
+			? `${entry.title} (×${entry.count}, nearest d${entry.nearestDistance})`
+			: `${entry.title} (×${entry.count})`,
+	);
 	let text = `By component: ${parts.join(', ')}`;
 	if (hiddenComponents > 0) {
 		const hiddenStories = breakdown
@@ -211,7 +272,7 @@ function formatDirectBucket(
 ): DirectSection {
 	const shown = stories.slice(0, displayLimit);
 	const hidden = stories.length - shown.length;
-	let text = `${heading}:\n${shown.map(serializeStory).join('\n')}`;
+	let text = `${heading}:\n${shown.map((s) => serializeStory(s)).join('\n')}`;
 	if (hidden > 0) {
 		text += `\n- …and ${hidden} more (omitted to stay within the response size limit; all ${stories.length} are in \`structuredContent.counts\`).`;
 	}
@@ -245,7 +306,9 @@ function formatRelatedSection(
 		? `Related stories (${total} total — showing a ${sample.length}-story sample across components):`
 		: `Related stories (${total}):`;
 
-	let text = `${headerCount}\n${breakdownText}\n\n${sample.map(serializeStory).join('\n')}`;
+	let text = `${headerCount}\n${breakdownText}\n\n${sample
+		.map((s) => serializeStory(s, { withDistance: true }))
+		.join('\n')}`;
 
 	if (truncated) {
 		text +=
