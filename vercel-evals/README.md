@@ -54,6 +54,27 @@ The Codex experiment uses the Vercel AI Gateway Codex adapter
 (`agent: 'vercel-ai-gateway/codex'`), so it uses the same gateway credential
 path as the Claude experiment.
 
+### Skill injection
+
+The Storybook plugin skills are **not** committed into the eval fixtures. Each
+experiment's `setup` hook injects them into the sandbox via `lib/skills-fixture.ts`,
+which reads the canonical skills from the plugin packages and applies two
+eval-only overlays:
+
+- the `.agent-eval/skills/<name>.json` invocation marker (so the harness can
+  detect a real skill invocation) — on the `init` and `stories` skills
+- a sandbox `require_escalated` note — on the `stories` skill
+
+| Sandbox dir      | Canonical source                              |
+| ---------------- | --------------------------------------------- |
+| `.claude/skills` | `packages/claude-plugin/skills`               |
+| `.agents/skills` | `packages/codex-plugin/plugins/storybook/skills` |
+
+The plugin packages stay the single source of truth for skill content — update a
+skill in `packages/`, not in a fixture. Because the content is read live at setup,
+refreshing a skill there changes what the eval exercises, so re-run the experiments
+after a skill change.
+
 ### Scoring
 
 Each run still has pass/fail validation, and also writes the former weighted scoring
