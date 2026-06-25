@@ -53,6 +53,34 @@ The Claude experiment runs both fixtures. The Codex experiment runs `923-skill-s
 The Codex experiment uses the native Codex adapter (`agent: 'codex'`) rather
 than the Vercel AI Gateway adapter, so it requires `OPENAI_API_KEY`.
 
+### Scoring
+
+Each run still has pass/fail validation, and also writes the former weighted scoring
+rubric to `result.json` at `analysis.evaluation`.
+
+`922-skill-storybook-setup-claude-launch`:
+
+| Metric                                              | Weight |
+| --------------------------------------------------- | ------ |
+| Storybook launch entry exists with `autoPort: true` | 100 %  |
+
+`923-skill-stories`:
+
+| Metric                                        | Weight |
+| --------------------------------------------- | ------ |
+| Loaded story rules via the `storybook ai` CLI | 30 %   |
+| Invoked/followed the `stories` skill workflow | 20 %   |
+| Wrote a `*.stories.*` file                    | 20 %   |
+| Opened a preview via `preview-stories`        | 30 %   |
+
+Export the latest results, including weighted scoring, with:
+
+```bash
+pnpm run export-results
+```
+
+This writes `agent-results.json`.
+
 ### View Results
 
 Launch the web-based results viewer:

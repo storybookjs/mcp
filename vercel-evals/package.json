@@ -3,6 +3,12 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "scripts": {
+    "eval": "agent-eval",
+    "eval:dry": "agent-eval --dry",
+    "eval:smoke": "agent-eval --smoke",
+    "export-results": "node scripts/export-results.js"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@vercel/agent-eval": "^1.1.1",
