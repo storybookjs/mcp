@@ -50,13 +50,19 @@ Each experiment is one agent. Each eval fixture owns one scenario:
 The Claude experiment runs both fixtures. The Codex experiment runs `923-skill-stories`;
 `922-skill-storybook-setup-claude-launch` is specific to Claude's launch config.
 
-The Codex experiment uses the native Codex adapter (`agent: 'codex'`) rather
-than the Vercel AI Gateway adapter, so it requires `OPENAI_API_KEY`.
+The Codex experiment uses the Vercel AI Gateway Codex adapter
+(`agent: 'vercel-ai-gateway/codex'`), so it uses the same gateway credential
+path as the Claude experiment.
 
 ### Scoring
 
 Each run still has pass/fail validation, and also writes the former weighted scoring
 rubric to `result.json` at `analysis.evaluation`.
+
+Scoring is intentionally separate from fixture pass/fail validation. `EVAL.ts` should
+keep checking hard correctness requirements, while `lib/scoring` captures weighted
+quality signals for comparison across agents and migrations from the former eval
+infrastructure.
 
 `922-skill-storybook-setup-claude-launch`:
 
@@ -80,6 +86,18 @@ pnpm run export-results
 ```
 
 This writes `agent-results.json`.
+
+To migrate scoring for another former eval:
+
+1. Add the fixture under `evals/<fixture-name>`.
+2. Add a scorer in `lib/scoring/scorers/<fixture-name>.ts`.
+3. Register it in `lib/scoring/registry.ts`.
+4. Add or update `lib/evaluation-scoring.test.ts`.
+
+Scorers receive `{ fixtureName, runData, analysis, agent }` and return itemized
+weighted metrics. Shared evidence helpers for generated files, shell commands,
+skill invocation markers, and Claude launch config parsing live in
+`lib/scoring/evidence.ts`.
 
 ### View Results
 

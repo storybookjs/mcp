@@ -1,5 +1,5 @@
 import type { ExperimentConfig } from '@vercel/agent-eval';
-import { CODEX_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments.js';
+import { CODEX_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments';
 
 const config: ExperimentConfig = withAgentAnalysis({
   agent: 'vercel-ai-gateway/codex',

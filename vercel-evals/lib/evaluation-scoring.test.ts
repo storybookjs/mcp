@@ -1,7 +1,7 @@
 import type { EvalRunData } from '@vercel/agent-eval';
 import { describe, expect, test } from 'vitest';
-import type { AgentRunAnalysis } from './agent-analysis.js';
-import { scoreEvaluation } from './evaluation-scoring.js';
+import type { AgentRunAnalysis } from './agent-analysis';
+import { findScorer, scoreEvaluation, scoringRegistry } from './evaluation-scoring';
 
 function analysis(overrides: Partial<AgentRunAnalysis> = {}): AgentRunAnalysis {
   return {
@@ -31,6 +31,19 @@ function runData(generatedFiles: Record<string, string>): EvalRunData {
 }
 
 describe('scoreEvaluation', () => {
+  test('registers one scorer per fixture name', () => {
+    const fixtureNames = scoringRegistry.map((scorer) => scorer.fixtureName);
+    expect(new Set(fixtureNames).size).toBe(fixtureNames.length);
+    expect(findScorer('922-skill-storybook-setup-claude-launch')).toBeDefined();
+    expect(findScorer('923-skill-stories')).toBeDefined();
+  });
+
+  test('does not score fixtures without an explicit scorer', () => {
+    const score = scoreEvaluation('unknown-fixture', runData({}), analysis(), 'codex');
+
+    expect(score).toBeUndefined();
+  });
+
   test('scores the former 922 launch-entry rubric', () => {
     const score = scoreEvaluation(
       '922-skill-storybook-setup-claude-launch',
@@ -53,6 +66,10 @@ describe('scoreEvaluation', () => {
         description: 'Storybook launch entry exists with autoPort: true',
         weight: 1,
         score: 1,
+        details: {
+          command: 'pnpm storybook --port $PORT',
+          autoPort: true,
+        },
       },
     ]);
   });
