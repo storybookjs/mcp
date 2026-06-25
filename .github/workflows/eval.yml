@@ -1,0 +1,120 @@
+name: Run evals and Update PR with Results
+
+on:
+  pull_request:
+    types:
+      - labeled
+
+jobs:
+  run-evals:
+    name: Run evals
+    if: >
+      github.event.label.name == 'ci:eval' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # V7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e #6,4,0
+        with:
+          node-version: 24
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v11,7,0
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Run evals
+        id: evals
+        continue-on-error: true
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set +e
+          status=0
+
+          while IFS= read -r experiment_file; do
+            experiment="$(basename "$experiment_file" .ts)"
+            echo "::group::agent-eval ${experiment}"
+            pnpm --dir vercel-evals run eval "$experiment"
+            experiment_status=$?
+            echo "::endgroup::"
+
+            if [ "$experiment_status" -ne 0 ]; then
+              status=1
+            fi
+          done < <(find vercel-evals/experiments -maxdepth 1 -name '*.ts' -print | sort)
+
+          pnpm --dir vercel-evals run export-results
+          export_status=$?
+
+          if [ "$export_status" -ne 0 ]; then
+            status=1
+          fi
+
+          exit "$status"
+
+      - name: Comment eval result diff
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -f vercel-evals/agent-results.json ]; then
+            body="No exported eval results found at vercel-evals/agent-results.json."
+          else
+            if git ls-files --error-unmatch vercel-evals/agent-results.json >/dev/null 2>&1; then
+              git diff -- vercel-evals/agent-results.json > /tmp/eval-results.diff
+            else
+              git diff --no-index -- /dev/null vercel-evals/agent-results.json > /tmp/eval-results.diff || true
+            fi
+
+            if [ ! -s /tmp/eval-results.diff ]; then
+              body="No changes in vercel-evals/agent-results.json."
+            else
+              {
+                echo "## Eval results diff"
+                echo
+                echo '```diff'
+                head -c 60000 /tmp/eval-results.diff
+                echo
+                echo '```'
+              } > /tmp/eval-results-comment.md
+              body="$(cat /tmp/eval-results-comment.md)"
+            fi
+          fi
+
+          gh pr comment "${{ github.event.pull_request.number }}" --body "$body"
+
+      - name: Commit eval results
+        if: always()
+        run: |
+          if [ ! -f vercel-evals/agent-results.json ]; then
+            echo "No exported eval results found."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vercel-evals/agent-results.json
+
+          if git diff --cached --quiet; then
+            echo "No eval result changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update eval results [skip ci]"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
+      - name: Check eval result
+        if: always() && steps.evals.outcome != 'success'
+        run: exit 1
