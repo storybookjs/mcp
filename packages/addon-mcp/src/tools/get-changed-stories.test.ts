@@ -494,9 +494,7 @@ describe('getChangedStoriesTool', () => {
 		expect(estimateTokens(text)).toBeLessThan(12000);
 
 		// Truthful totals.
-		expect(text).toContain(
-			'Detected 1049 changed stories (1 new, 1 modified, 1047 related).',
-		);
+		expect(text).toContain('Detected 1049 changed stories (1 new, 1 modified, 1047 related).');
 		expect(structured.counts.related).toBe(1047);
 
 		// The new + modified stories are intact — never dropped.

@@ -6,7 +6,12 @@ import {
 } from './serialize-changed-stories.ts';
 import { estimateTokens } from './estimate-tokens.ts';
 
-function story(id: string, title: string, name: string, importPath = `./src/${title}.stories.tsx`): ChangedStory {
+function story(
+	id: string,
+	title: string,
+	name: string,
+	importPath = `./src/${title}.stories.tsx`,
+): ChangedStory {
 	return { storyId: id, title, name, importPath };
 }
 
@@ -58,9 +63,7 @@ describe('serializeChangedStories', () => {
 	});
 
 	it('uses singular "story" in the headline for a single change', () => {
-		const { headline } = serializeChangedStories(
-			emptyBuckets({ new: [story('a--b', 'A', 'B')] }),
-		);
+		const { headline } = serializeChangedStories(emptyBuckets({ new: [story('a--b', 'A', 'B')] }));
 		expect(headline).toBe('Detected 1 changed story (1 new, 0 modified, 0 related).');
 	});
 
@@ -114,7 +117,12 @@ describe('serializeChangedStories', () => {
 		expect(body).toContain('`metrictile--default`');
 		expect(body).toContain('`tag--with-count`');
 		expect(structured.new).toEqual([
-			{ storyId: 'metrictile--default', title: 'MetricTile', name: 'Default', importPath: './src/MetricTile.stories.tsx' },
+			{
+				storyId: 'metrictile--default',
+				title: 'MetricTile',
+				name: 'Default',
+				importPath: './src/MetricTile.stories.tsx',
+			},
 		]);
 		expect(structured.newTruncated).toBe(false);
 		expect(structured.modifiedTruncated).toBe(false);

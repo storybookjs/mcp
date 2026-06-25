@@ -176,9 +176,7 @@ function buildBreakdown(affected: ChangedStory[]): ComponentBreakdownEntry[] {
 	return [...counts.entries()]
 		.map(([title, count]) => {
 			const near = nearest.get(title)!;
-			return Number.isFinite(near)
-				? { title, count, nearestDistance: near }
-				: { title, count };
+			return Number.isFinite(near) ? { title, count, nearestDistance: near } : { title, count };
 		})
 		.sort(
 			(a, b) =>
@@ -214,7 +212,7 @@ function sampleRelated(affected: ChangedStory[], limit: number): ChangedStory[] 
 	// Closest-first within each component (stable on the original order for ties).
 	for (const bucket of byTitle.values()) {
 		bucket.sort(
-			(a, b) => distanceOf(a) - distanceOf(b) || (order.get(a.storyId)! - order.get(b.storyId)!),
+			(a, b) => distanceOf(a) - distanceOf(b) || order.get(a.storyId)! - order.get(b.storyId)!,
 		);
 	}
 	// Visit components in nearest-distance order, then by descending fan-out.
@@ -234,7 +232,9 @@ function sampleRelated(affected: ChangedStory[], limit: number): ChangedStory[] 
 		}
 	}
 	// Present the chosen sample closest-first for a readable, prioritized list.
-	sample.sort((a, b) => distanceOf(a) - distanceOf(b) || (order.get(a.storyId)! - order.get(b.storyId)!));
+	sample.sort(
+		(a, b) => distanceOf(a) - distanceOf(b) || order.get(a.storyId)! - order.get(b.storyId)!,
+	);
 	return sample;
 }
 
@@ -251,9 +251,7 @@ function formatBreakdown(
 	);
 	let text = `By component: ${parts.join(', ')}`;
 	if (hiddenComponents > 0) {
-		const hiddenStories = breakdown
-			.slice(limit)
-			.reduce((sum, entry) => sum + entry.count, 0);
+		const hiddenStories = breakdown.slice(limit).reduce((sum, entry) => sum + entry.count, 0);
 		text += `, +${hiddenComponents} more ${pluralize(hiddenComponents, 'component')} (${hiddenStories} ${pluralize(hiddenStories, 'story', 'stories')})`;
 	}
 	return { text, truncated: hiddenComponents > 0, shown };

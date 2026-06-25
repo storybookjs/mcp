@@ -120,7 +120,7 @@ export const GetChangedStoriesOutput = v.object({
 			}),
 		),
 		v.description(
-			'Per-component story counts across ALL related stories (top components when many), with each component\'s nearest distance when known.',
+			"Per-component story counts across ALL related stories (top components when many), with each component's nearest distance when known.",
 		),
 	),
 	relatedTruncated: v.boolean(),

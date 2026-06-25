@@ -17,11 +17,11 @@ The first two are small (a contributor touches a handful of components). The
 every story that reaches it transitively is "affected". On real repos this hit
 **1,000+ entries**:
 
-| Project (QA campaign) | stories | `get-changed-stories` output |
-| --- | --- | --- |
-| Chakra UI | ~117 | **126 KB / 1,047 lines** |
-| Carbon | 138 | >50 KB — **dropped the new `MetricTile` from the review** |
-| Yamada UI | 205 | **157 KB** (largest seen) |
+| Project (QA campaign) | stories | `get-changed-stories` output                              |
+| --------------------- | ------- | --------------------------------------------------------- |
+| Chakra UI             | ~117    | **126 KB / 1,047 lines**                                  |
+| Carbon                | 138     | >50 KB — **dropped the new `MetricTile` from the review** |
+| Yamada UI             | 205     | **157 KB** (largest seen)                                 |
 
 The MCP/Claude default tool-output cap is ~25k tokens. Past it, the host
 **silently spills the response to a file**; the agent then head/tails the file
@@ -49,15 +49,15 @@ Metrics: **tokens** (full response), **overflow** (> 25k cap), **distinctComps**
 **avgDist** (mean import distance of sampled stories — _lower = more likely to
 actually render the change_), **d1** (number of direct importers in the sample).
 
-| # | Strategy | tokens | overflow | sampleN | distinctComps | avgDist | d1 | Verdict |
-| --- | --- | ---: | :---: | ---: | ---: | ---: | ---: | --- |
-| A | **Full dump** (status quo) | 60,817 | ❌ yes | 1047 | 30 | 3.02 | 63 | Fails — the bug. |
-| B | **Round-robin diversity** (v1 fix) | 2,415 | ✅ no | 40 | 30 | 2.98 | 4 | Solves overflow + max breadth, but distance-blind → picks mostly _far_, low-relevance stories. |
-| C | **Distance-only** (closest 40) | 2,415 | ✅ no | 40 | 30 | 1.00 | 40 | Great relevance, but breadth is data-dependent (here 30; if d1 clusters in few components it collapses). No page-level layer. |
-| D | **Distance + per-component cap (3)** | 2,418 | ✅ no | 40 | 21 | 1.00 | 40 | Cap _reduced_ breadth here; no clear win over F. |
-| E | **Counts only** (no related IDs) | 362 | ✅ no | 0 | 0 | — | 0 | Smallest, but zero representative IDs → forces extra round-trips and invites ID fabrication. |
-| F | **Per-component closest-first round-robin** ⭐ | 2,417 | ✅ no | 40 | **30** | **1.07** | 37 | **Winner.** Max breadth (every affected component) _and_ max relevance (closest story per component), robust regardless of distance distribution. |
-| G | **Distance-stratified (band-by-band)** | 2,413 | ✅ no | 40 | 23 | 1.00 | 40 | Good relevance, lower breadth than F. |
+| #   | Strategy                                       | tokens | overflow | sampleN | distinctComps |  avgDist |  d1 | Verdict                                                                                                                                           |
+| --- | ---------------------------------------------- | -----: | :------: | ------: | ------------: | -------: | --: | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | **Full dump** (status quo)                     | 60,817 |  ❌ yes  |    1047 |            30 |     3.02 |  63 | Fails — the bug.                                                                                                                                  |
+| B   | **Round-robin diversity** (v1 fix)             |  2,415 |  ✅ no   |      40 |            30 |     2.98 |   4 | Solves overflow + max breadth, but distance-blind → picks mostly _far_, low-relevance stories.                                                    |
+| C   | **Distance-only** (closest 40)                 |  2,415 |  ✅ no   |      40 |            30 |     1.00 |  40 | Great relevance, but breadth is data-dependent (here 30; if d1 clusters in few components it collapses). No page-level layer.                     |
+| D   | **Distance + per-component cap (3)**           |  2,418 |  ✅ no   |      40 |            21 |     1.00 |  40 | Cap _reduced_ breadth here; no clear win over F.                                                                                                  |
+| E   | **Counts only** (no related IDs)               |    362 |  ✅ no   |       0 |             0 |        — |   0 | Smallest, but zero representative IDs → forces extra round-trips and invites ID fabrication.                                                      |
+| F   | **Per-component closest-first round-robin** ⭐ |  2,417 |  ✅ no   |      40 |        **30** | **1.07** |  37 | **Winner.** Max breadth (every affected component) _and_ max relevance (closest story per component), robust regardless of distance distribution. |
+| G   | **Distance-stratified (band-by-band)**         |  2,413 |  ✅ no   |      40 |            23 |     1.00 |  40 | Good relevance, lower breadth than F.                                                                                                             |
 
 Distance-band distribution of the sample (where each chosen story sits):
 
