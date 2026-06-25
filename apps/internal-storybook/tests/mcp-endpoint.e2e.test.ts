@@ -372,7 +372,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				  {
 				    "description": "Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).
 
-				New and modified stories (the directly-changed ones) are always returned in full. Related stories — those that only transitively render a changed component — can number in the thousands when a shared primitive (e.g. Badge, Tag, Icon) changes, so they are returned as a component-diverse sample plus complete per-component counts, keeping the response within tool-output limits. To enumerate every related story for one component, call \`get-stories-by-component\` with its source path.",
+				New and modified stories (the directly-changed ones) are listed first and in full — capped only if the directly-changed set is itself enormous, in which case \`newTruncated\`/\`modifiedTruncated\` is set. Related stories — those that only transitively render a changed component — can number in the thousands when a shared primitive (e.g. Badge, Tag, Icon) changes, so they are returned as a component-diverse sample plus complete per-component counts, keeping the response within tool-output limits. To enumerate every related story for one component, call \`get-stories-by-component\` with its absolute source path.",
 				    "inputSchema": {
 				      "properties": {},
 				      "type": "object",
@@ -409,7 +409,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				          "items": {
 				            "properties": {
 				              "distance": {
-				                "description": "Import-graph distance from the changed source (1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
+				                "description": "Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
 				                "type": "number",
 				              },
 				              "importPath": {
@@ -442,7 +442,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				          "items": {
 				            "properties": {
 				              "distance": {
-				                "description": "Import-graph distance from the changed source (1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
+				                "description": "Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
 				                "type": "number",
 				              },
 				              "importPath": {
@@ -501,7 +501,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				          "items": {
 				            "properties": {
 				              "distance": {
-				                "description": "Import-graph distance from the changed source (1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
+				                "description": "Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
 				                "type": "number",
 				              },
 				              "importPath": {
