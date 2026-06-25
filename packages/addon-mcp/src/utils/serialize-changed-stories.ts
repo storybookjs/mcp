@@ -84,10 +84,12 @@ export interface SerializedChangedStories {
  * tool-output token caps (Claude/MCP default ≈ 25k tokens) while still being
  * lean enough that the agent isn't flooded with low-signal related stories.
  *
- * The directly-changed buckets (new/modified) are the point of the feature and
- * are kept in full up to a generous cap. The "related"/affected bucket — the
- * one that reaches thousands of lines when a shared primitive like `Tag` or
- * `Badge` changes — is reduced to a component-diverse sample plus a complete
+ * The directly-changed buckets (new/modified) are the point of the feature, so
+ * they are listed in full and capped only as a last resort — when the
+ * directly-changed set is itself so large it alone would blow the token budget
+ * (a codemod-scale refactor). The "related"/affected bucket — the one that
+ * reaches thousands of lines when a shared primitive like `Tag` or `Badge`
+ * changes — is always reduced to a component-diverse sample plus a complete
  * per-component count, so the agent learns the full breadth without paying for
  * every individual story.
  */
@@ -96,19 +98,24 @@ export interface SerializeOptions {
 	relatedSampleLimit?: number;
 	/** Max components listed in the per-component breakdown. */
 	breakdownLimit?: number;
-	/** Max directly-changed (new OR modified) stories listed individually, each. */
+	/**
+	 * Initial cap on directly-changed (new OR modified) stories listed
+	 * individually, each. Defaults to "no cap" (all of them); the token budget
+	 * below trims it only under genuine pressure.
+	 */
 	directDisplayLimit?: number;
 	/**
-	 * Hard ceiling on estimated tokens for `body`. A backstop for pathological
-	 * cases (e.g. a refactor touching hundreds of components directly); the
-	 * per-bucket limits above normally keep us well under it.
+	 * Soft ceiling on estimated tokens for `body`, set well below the host's hard
+	 * tool-output cap. Trimming walks the related sample down first, then the
+	 * directly-changed buckets, each to a floor; it does not drop below those
+	 * floors, so a truly pathological input can land marginally above the budget
+	 * while still far under the host cap.
 	 */
 	tokenBudget?: number;
 }
 
 const DEFAULT_RELATED_SAMPLE_LIMIT = 40;
 const DEFAULT_BREAKDOWN_LIMIT = 25;
-const DEFAULT_DIRECT_DISPLAY_LIMIT = 100;
 const DEFAULT_TOKEN_BUDGET = 12000;
 /** Floors so budget trimming never collapses a section to nothing useful. */
 const RELATED_SAMPLE_FLOOR = 10;
@@ -273,7 +280,7 @@ function formatDirectBucket(
 	const hidden = stories.length - shown.length;
 	let text = `${heading}:\n${shown.map((s) => serializeStory(s)).join('\n')}`;
 	if (hidden > 0) {
-		text += `\n- …and ${hidden} more (omitted to stay within the response size limit; all ${stories.length} are in \`structuredContent.counts\`).`;
+		text += `\n- …and ${hidden} more, omitted only because the directly-changed set itself exceeds the response size limit (\`structuredContent.counts\` has the total of ${stories.length}; the omitted story IDs are not included anywhere in this response).`;
 	}
 	return { text, shown, truncated: hidden > 0 };
 }
@@ -313,7 +320,8 @@ function formatRelatedSection(
 		text +=
 			`\n\nShowing ${sample.length} of ${total} related stories — one representative per affected component (closest by import distance first, when known). ` +
 			`Related stories transitively render a changed component — they are lower priority than the new/modified stories, ` +
-			`which are listed in full. To enumerate every story for a specific component, call \`get-stories-by-component\` with that component's source path. ` +
+			`which are listed first and in full (capped only if the directly-changed set is itself huge, in which case \`newTruncated\`/\`modifiedTruncated\` is set). ` +
+			`To enumerate every story for a specific component, call \`get-stories-by-component\` with that component's absolute source path. ` +
 			`Do not assume the un-sampled stories are unaffected, and never invent story IDs.`;
 	}
 
@@ -322,10 +330,11 @@ function formatRelatedSection(
 
 /**
  * Serializes the changed-story buckets into a bounded markdown body plus an
- * equally-bounded structured payload. Guarantees the body's estimated token
- * count stays at/under `tokenBudget` by trimming the related sample first, then
- * (only in pathological cases) the directly-changed buckets — always emitting
- * an explicit truncation note rather than silently dropping content.
+ * equally-bounded structured payload. Keeps the body within `tokenBudget` (a
+ * soft target set well below the host's hard cap) by trimming the related
+ * sample first, then — only when the directly-changed set alone is enormous —
+ * the new/modified buckets, each down to a floor. Truncation is always signalled
+ * by an explicit note plus the `*Truncated` flags, never a silent drop.
  */
 export function serializeChangedStories(
 	buckets: ChangedStoryBuckets,
@@ -333,7 +342,11 @@ export function serializeChangedStories(
 ): SerializedChangedStories {
 	const relatedSampleLimit = options.relatedSampleLimit ?? DEFAULT_RELATED_SAMPLE_LIMIT;
 	const breakdownLimit = options.breakdownLimit ?? DEFAULT_BREAKDOWN_LIMIT;
-	const directDisplayLimit = options.directDisplayLimit ?? DEFAULT_DIRECT_DISPLAY_LIMIT;
+	// Default: list every directly-changed story; the token budget is the only
+	// thing that may later cap them (and only under codemod-scale pressure).
+	const directDisplayLimit =
+		options.directDisplayLimit ??
+		Math.max(buckets.new.length, buckets.modified.length, DIRECT_DISPLAY_FLOOR);
 	const tokenBudget = options.tokenBudget ?? DEFAULT_TOKEN_BUDGET;
 
 	const counts = {
