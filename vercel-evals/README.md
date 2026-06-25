@@ -5,11 +5,13 @@ Test AI coding agents to measure what actually works.
 ## Setup
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Configure environment variables:**
+
    ```bash
    cp .env.example .env.local
    ```
@@ -65,9 +67,9 @@ eval-only overlays:
   detect a real skill invocation) — on the `init` and `stories` skills
 - a sandbox `require_escalated` note — on the `stories` skill
 
-| Sandbox dir      | Canonical source                              |
-| ---------------- | --------------------------------------------- |
-| `.claude/skills` | `packages/claude-plugin/skills`               |
+| Sandbox dir      | Canonical source                                 |
+| ---------------- | ------------------------------------------------ |
+| `.claude/skills` | `packages/claude-plugin/skills`                  |
 | `.agents/skills` | `packages/codex-plugin/plugins/storybook/skills` |
 
 The plugin packages stay the single source of truth for skill content — update a
@@ -124,12 +126,10 @@ skill invocation markers, and Claude launch config parsing live in
 import { defineScorer, binaryItem, totalScore } from '../../lib/scoring/types';
 
 export const myFixtureScorer = defineScorer({
-  fixtureName: 'my-fixture',
-  score({ runData, analysis, agent }) {
-    return totalScore([
-      binaryItem('did-work', 'Completed the expected workflow', 1, true),
-    ]);
-  },
+	fixtureName: 'my-fixture',
+	score({ runData, analysis, agent }) {
+		return totalScore([binaryItem('did-work', 'Completed the expected workflow', 1, true)]);
+	},
 });
 ```
 

@@ -5,23 +5,23 @@ import { storiesScorer } from './scorers/stories';
 import type { EvaluationScore, EvaluationScorer, ScoringContext } from './types';
 
 export const scoringRegistry: EvaluationScorer[] = [
-  storybookSetupClaudeLaunchScorer,
-  storiesScorer,
+	storybookSetupClaudeLaunchScorer,
+	storiesScorer,
 ];
 
 export function findScorer(fixtureName: string): EvaluationScorer | undefined {
-  return scoringRegistry.find((scorer) => scorer.fixtureName === fixtureName);
+	return scoringRegistry.find((scorer) => scorer.fixtureName === fixtureName);
 }
 
 export function scoreContext(context: ScoringContext): EvaluationScore | undefined {
-  return findScorer(context.fixtureName)?.score(context);
+	return findScorer(context.fixtureName)?.score(context);
 }
 
 export function scoreEvaluation(
-  fixtureName: string,
-  runData: EvalRunData,
-  analysis: AgentRunAnalysis,
-  agent: string,
+	fixtureName: string,
+	runData: EvalRunData,
+	analysis: AgentRunAnalysis,
+	agent: string,
 ): EvaluationScore | undefined {
-  return scoreContext({ fixtureName, runData, analysis, agent });
+	return scoreContext({ fixtureName, runData, analysis, agent });
 }
