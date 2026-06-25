@@ -2,7 +2,7 @@ import type { ExperimentConfig } from '@vercel/agent-eval';
 import { CLAUDE_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments.js';
 
 const config: ExperimentConfig = withAgentAnalysis({
-  agent: 'claude-code',
+  agent: 'vercel-ai-gateway/claude-code',
   evals: [...CLAUDE_STORYBOOK_PLUGIN_EVALS],
   runs: 1,
   earlyExit: true,
