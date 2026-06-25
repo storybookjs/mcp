@@ -28,6 +28,10 @@ export type EvaluationScorer = {
   score: (context: ScoringContext) => EvaluationScore | undefined;
 };
 
+export function defineScorer<const T extends EvaluationScorer>(scorer: T): T {
+  return scorer;
+}
+
 export function clampScore(score: number): number {
   return Math.max(0, Math.min(1, score));
 }

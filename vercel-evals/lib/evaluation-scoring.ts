@@ -5,3 +5,4 @@ export type {
   EvaluationScoreItem,
   ScoringContext,
 } from './scoring/types';
+export { defineScorer } from './scoring/types';

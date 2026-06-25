@@ -1,7 +1,7 @@
 import type { EvalRunData } from '@vercel/agent-eval';
 import { describe, expect, test } from 'vitest';
 import type { AgentRunAnalysis } from './agent-analysis';
-import { findScorer, scoreEvaluation, scoringRegistry } from './evaluation-scoring';
+import { defineScorer, findScorer, scoreEvaluation, scoringRegistry } from './evaluation-scoring';
 
 function analysis(overrides: Partial<AgentRunAnalysis> = {}): AgentRunAnalysis {
   return {
@@ -31,6 +31,15 @@ function runData(generatedFiles: Record<string, string>): EvalRunData {
 }
 
 describe('scoreEvaluation', () => {
+  test('defineScorer preserves scorer metadata', () => {
+    const scorer = defineScorer({
+      fixtureName: 'fixture-a',
+      score: () => undefined,
+    });
+
+    expect(scorer.fixtureName).toBe('fixture-a');
+  });
+
   test('registers one scorer per fixture name', () => {
     const fixtureNames = scoringRegistry.map((scorer) => scorer.fixtureName);
     expect(new Set(fixtureNames).size).toBe(fixtureNames.length);

@@ -1,7 +1,7 @@
-import { binaryItem, totalScore, type EvaluationScorer } from '../types';
+import { binaryItem, defineScorer, totalScore } from '../types';
 import { collectClaudeLaunchConfigs, parseGeneratedJson } from '../evidence';
 
-export const storybookSetupClaudeLaunchScorer: EvaluationScorer = {
+export const storybookSetupClaudeLaunchScorer = defineScorer({
   fixtureName: '922-skill-storybook-setup-claude-launch',
   score({ runData }) {
     const launchJson = parseGeneratedJson(runData, '.claude/launch.json');
@@ -18,4 +18,4 @@ export const storybookSetupClaudeLaunchScorer: EvaluationScorer = {
       ),
     ]);
   },
-};
+});

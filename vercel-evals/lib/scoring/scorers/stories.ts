@@ -1,7 +1,7 @@
-import { binaryItem, totalScore, type EvaluationScorer } from '../types';
+import { binaryItem, defineScorer, totalScore } from '../types';
 import { hasCommand, hasGeneratedFile, hasSkillInvocation } from '../evidence';
 
-export const storiesScorer: EvaluationScorer = {
+export const storiesScorer = defineScorer({
   fixtureName: '923-skill-stories',
   score({ runData, analysis, agent }) {
     const loadedStoryRules = hasCommand(analysis, /storybook(?:@[\w.-]+)?\s+ai\b/i);
@@ -34,4 +34,4 @@ export const storiesScorer: EvaluationScorer = {
       binaryItem('opened-preview', 'Opened a preview via `preview-stories`', 0.3, openedPreview),
     ]);
   },
-};
+});

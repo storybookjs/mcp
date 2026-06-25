@@ -90,7 +90,7 @@ This writes `agent-results.json`.
 To migrate scoring for another former eval:
 
 1. Add the fixture under `evals/<fixture-name>`.
-2. Add a scorer in `lib/scoring/scorers/<fixture-name>.ts`.
+2. Add a scorer in `lib/scoring/scorers/<fixture-name>.ts` with `defineScorer`.
 3. Register it in `lib/scoring/registry.ts`.
 4. Add or update `lib/evaluation-scoring.test.ts`.
 
@@ -98,6 +98,19 @@ Scorers receive `{ fixtureName, runData, analysis, agent }` and return itemized
 weighted metrics. Shared evidence helpers for generated files, shell commands,
 skill invocation markers, and Claude launch config parsing live in
 `lib/scoring/evidence.ts`.
+
+```ts
+import { defineScorer, binaryItem, totalScore } from '../../lib/scoring/types';
+
+export const myFixtureScorer = defineScorer({
+  fixtureName: 'my-fixture',
+  score({ runData, analysis, agent }) {
+    return totalScore([
+      binaryItem('did-work', 'Completed the expected workflow', 1, true),
+    ]);
+  },
+});
+```
 
 ### View Results
 
