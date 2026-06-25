@@ -1,11 +1,12 @@
 import type { EvalRunData, ExperimentConfig } from '@vercel/agent-eval';
 import { analyzeAgentRun } from './agent-analysis.js';
 
-export const STORYBOOK_PLUGIN_EVALS = [
-  'ade-plugins',
-  'ade-plugins-bare',
-  'ade-plugins-stories-only',
+export const CLAUDE_STORYBOOK_PLUGIN_EVALS = [
+  '922-skill-storybook-setup-claude-launch',
+  '923-skill-stories',
 ] as const;
+
+export const CODEX_STORYBOOK_PLUGIN_EVALS = ['923-skill-stories'] as const;
 
 export function withAgentAnalysis(config: ExperimentConfig): ExperimentConfig {
   return {

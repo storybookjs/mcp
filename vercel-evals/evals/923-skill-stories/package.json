@@ -1,5 +1,5 @@
 {
-  "name": "ade-plugins",
+  "name": "923-skill-stories",
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",

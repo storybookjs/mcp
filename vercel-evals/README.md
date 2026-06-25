@@ -30,13 +30,13 @@ npx @vercel/agent-eval claude --dry
 
 ### Run Experiments
 
-Run all Storybook plugin eval fixtures with Claude Code:
+Run the Claude Code Storybook plugin eval fixtures:
 
 ```bash
 npx @vercel/agent-eval claude
 ```
 
-Run all Storybook plugin eval fixtures with Codex:
+Run the Codex Storybook plugin eval fixtures:
 
 ```bash
 npx @vercel/agent-eval codex
@@ -44,9 +44,11 @@ npx @vercel/agent-eval codex
 
 Each experiment is one agent. Each eval fixture owns one scenario:
 
-- `ade-plugins-bare`: initialize Storybook and add the MCP addon
-- `ade-plugins`: change the Badge component and add stories
-- `ade-plugins-stories-only`: add stories without changing the component
+- `922-skill-storybook-setup-claude-launch`: configure `.claude/launch.json` for Storybook
+- `923-skill-stories`: change the Badge component, write stories, and preview them
+
+The Claude experiment runs both fixtures. The Codex experiment runs `923-skill-stories`;
+`922-skill-storybook-setup-claude-launch` is specific to Claude's launch config.
 
 The Codex experiment uses the native Codex adapter (`agent: 'codex'`) rather
 than the Vercel AI Gateway adapter, so it requires `OPENAI_API_KEY`.

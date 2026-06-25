@@ -35,11 +35,11 @@ describe('storybook plugin skills', () => {
   });
 });
 
-describe('stories-only case', () => {
-  test('badge component was not changed', () => {
+describe('component and stories case', () => {
+  test('badge component was changed into a pill', () => {
     const badge = read('src/components/Badge.tsx');
-    expect(badge).toContain('<span data-testid="badge" style={{ color: TONE_COLORS[tone] }}>');
-    expect(badge).not.toMatch(/borderRadius|rounded|pill|9999|999px/i);
+    expect(badge).toMatch(/borderRadius|rounded|pill|9999|999px/i);
+    expect(badge).toMatch(/padding|inline-flex|inlineBlock|inline-block/i);
   });
 });
 
@@ -64,7 +64,8 @@ describe('stories workflow', () => {
 
   test('agent used Storybook AI CLI workflow', () => {
     const context = readTranscriptContext();
-    const commands = context.o11y?.shellCommands?.map(({ command }) => command).join('\n') ?? '';
+    const commands =
+      context.o11y?.shellCommands?.map(({ command }) => command).join('\n') ?? '';
 
     expect(commands).toMatch(/storybook\s+ai\s+--help/i);
     expect(commands).toMatch(/storybook\s+ai\s+preview-stories/i);

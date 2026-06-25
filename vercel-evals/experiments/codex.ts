@@ -1,9 +1,9 @@
 import type { ExperimentConfig } from '@vercel/agent-eval';
-import { STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments.js';
+import { CODEX_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments.js';
 
 const config: ExperimentConfig = withAgentAnalysis({
   agent: 'codex',
-  evals: [...STORYBOOK_PLUGIN_EVALS],
+  evals: [...CODEX_STORYBOOK_PLUGIN_EVALS],
   runs: 1,
   earlyExit: true,
   scripts: ['build'],

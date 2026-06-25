@@ -1,5 +1,5 @@
 {
-  "name": "ade-plugins-stories-only",
+  "name": "922-skill-storybook-setup-claude-launch",
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
