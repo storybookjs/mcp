@@ -10,6 +10,11 @@ on:
         description: Optional PR number to run evals against. Leave empty to run on the selected branch.
         required: false
         type: string
+      runs:
+        description: Number of runs per eval fixture (defaults to 1).
+        required: false
+        default: '1'
+        type: string
 
 jobs:
   run-evals:
@@ -48,6 +53,7 @@ jobs:
         env:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          EVAL_RUNS: ${{ github.event.inputs.runs || '1' }}
         run: |
           set +e
           status=0
@@ -118,7 +124,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add vercel-evals/agent-results.json
+          git add vercel-evals/agent-results.json vercel-evals/README.md
 
           if git diff --cached --quiet; then
             echo "No eval result changes to commit."

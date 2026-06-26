@@ -9,6 +9,18 @@ export const CLAUDE_STORYBOOK_PLUGIN_EVALS = [
 
 export const CODEX_STORYBOOK_PLUGIN_EVALS = ['923-skill-stories'] as const;
 
+export function evalRuns(): number {
+	const raw = process.env.EVAL_RUNS;
+	if (raw === undefined || raw.trim() === '') return 1;
+
+	const parsed = Number(raw);
+	if (!Number.isInteger(parsed) || parsed < 1) {
+		throw new Error(`Invalid EVAL_RUNS: "${raw}" (expected a positive integer)`);
+	}
+
+	return parsed;
+}
+
 function logEvaluation(fixtureName: string, evaluation: ReturnType<typeof scoreEvaluation>): void {
 	if (!evaluation) return;
 

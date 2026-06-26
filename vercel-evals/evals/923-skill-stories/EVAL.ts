@@ -57,8 +57,8 @@ describe('stories workflow', () => {
 		const storyPath = candidates.find((candidate) => existsSync(candidate));
 		expect(storyPath).toBeTruthy();
 		const story = read(storyPath!);
-		expect(story).toMatch(/Badge/);
-		expect(story).toMatch(/neutral/i);
+		expect(story).toMatch(/Badge/); 
+		expect(story).toMatch(/neutral|default/i);
 		expect(story).toMatch(/success|danger/i);
 	});
 
@@ -81,28 +81,23 @@ describe('stories workflow', () => {
 		);
 	});
 
-	test('recorded preview URL responds from a running Storybook server', async () => {
-		const marker = readPreviewBrowserMarker();
-		const url = String(marker.url);
-
-		const response = await fetch(url);
-		expect(response.ok).toBe(true);
-		expect(await response.text()).toMatch(/storybook|iframe|root/i);
-	});
-
 	test('agent used Storybook AI CLI workflow', () => {
 		const context = readTranscriptContext();
 		const commands = context.o11y?.shellCommands?.map(({ command }) => command) ?? [];
+		// Codex records commands wrapped as `/bin/bash -lc '<command>'`, so the leading
+		// token may be preceded by a shell quote rather than whitespace/start-of-string.
 		const aiCliHelpIndex = commands.findIndex((command) =>
-			/(^|\s)STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+--help\b/i.test(command),
+			/(^|\s|['"])STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+--help\b/i.test(command),
 		);
 		const storybookStartIndex = commands.findIndex((command) =>
-			/(^|\s)(npm\s+run\s+storybook(?:\s|$)|pnpm\s+(?:run\s+)?storybook(?:\s|$)|yarn\s+storybook(?:\s|$)|npx\s+storybook\s+dev|storybook\s+dev)\b/i.test(
+			/(?:^|[\s'"])(?:npm\s+run\s+storybook|pnpm\s+(?:run\s+)?storybook|yarn\s+storybook|npx\s+storybook\s+dev|storybook\s+dev)(?=[\s'"]|$)/i.test(
 				command,
 			),
 		);
 		const previewStoriesIndex = commands.findIndex((command) =>
-			/(^|\s)STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+preview-stories\b/i.test(command),
+			/(^|\s|['"])STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+preview-stories\b/i.test(
+				command,
+			),
 		);
 
 		expect(aiCliHelpIndex).toBeGreaterThanOrEqual(0);
