@@ -1,0 +1,63 @@
+diff --git a/dist/lib/docker-sandbox.js b/dist/lib/docker-sandbox.js
+index 99df8fb3ab72003144926f19243baf6b2102f050..07482051b40b82d59b1be4607ef4fe1e4422891d 100644
+--- a/dist/lib/docker-sandbox.js
++++ b/dist/lib/docker-sandbox.js
+@@ -186,41 +186,36 @@ export class DockerSandboxManager {
+         return new Promise((resolve, reject) => {
+             let stdout = '';
+             let stderr = '';
+-            // Docker multiplexes stdout/stderr in the stream
+-            // We need to demux it
++            // Docker multiplexes stdout/stderr into a single framed stream
++            // ([stream_type, 0,0,0, size(4 BE)] + payload). Frames can be split
++            // across 'data' events, so carry incomplete trailing bytes over to
++            // the next chunk instead of mis-parsing them (which dropped bytes on
++            // chunk boundaries, e.g. corrupting large `cat` reads).
+             const stdoutChunks = [];
+             const stderrChunks = [];
++            let buffer = Buffer.alloc(0);
+             stream.on('data', (chunk) => {
+-                // Docker stream format: 8-byte header + payload
+-                // Header: [stream_type (1 byte), 0, 0, 0, size (4 bytes)]
+-                // stream_type: 1 = stdout, 2 = stderr
++                buffer = buffer.length > 0 ? Buffer.concat([buffer, chunk]) : chunk;
+                 let offset = 0;
+-                while (offset < chunk.length) {
+-                    if (offset + 8 > chunk.length) {
+-                        // Incomplete header, treat rest as stdout
+-                        stdoutChunks.push(chunk.slice(offset));
++                while (offset + 8 <= buffer.length) {
++                    const streamType = buffer[offset];
++                    const size = buffer.readUInt32BE(offset + 4);
++                    // Full payload not received yet; wait for the next chunk.
++                    if (offset + 8 + size > buffer.length) {
+                         break;
+                     }
+-                    const streamType = chunk[offset];
+-                    const size = chunk.readUInt32BE(offset + 4);
+-                    if (offset + 8 + size > chunk.length) {
+-                        // Incomplete payload, treat rest as stdout
+-                        stdoutChunks.push(chunk.slice(offset + 8));
+-                        break;
+-                    }
+-                    const payload = chunk.slice(offset + 8, offset + 8 + size);
+-                    if (streamType === 1) {
+-                        stdoutChunks.push(payload);
+-                    }
+-                    else if (streamType === 2) {
++                    // Copy the payload so it does not alias the retained buffer below.
++                    const payload = Buffer.from(buffer.subarray(offset + 8, offset + 8 + size));
++                    if (streamType === 2) {
+                         stderrChunks.push(payload);
+                     }
+                     else {
+-                        // Unknown type, assume stdout
+                         stdoutChunks.push(payload);
+                     }
+                     offset += 8 + size;
+                 }
++                // Retain unparsed bytes (partial header or payload) for the next chunk.
++                buffer = offset < buffer.length ? Buffer.from(buffer.subarray(offset)) : Buffer.alloc(0);
+             });
+             stream.on('end', async () => {
+                 stdout = Buffer.concat(stdoutChunks).toString('utf-8');

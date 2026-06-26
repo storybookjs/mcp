@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@vercel/agent-eval@1.1.1':
+    hash: 1384e41bd6d3e1de1089e5955f902559c7198ec3652d84f3b4cdbb7d96d188be
+    path: patches/@vercel__agent-eval@1.1.1.patch
+
 importers:
 
   .:
@@ -13,7 +18,7 @@ importers:
         version: 22.20.0
       '@vercel/agent-eval':
         specifier: ^1.1.1
-        version: 1.1.1
+        version: 1.1.1(patch_hash=1384e41bd6d3e1de1089e5955f902559c7198ec3652d84f3b4cdbb7d96d188be)
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -1394,7 +1399,7 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@vercel/agent-eval@1.1.1':
+  '@vercel/agent-eval@1.1.1(patch_hash=1384e41bd6d3e1de1089e5955f902559c7198ec3652d84f3b4cdbb7d96d188be)':
     dependencies:
       '@ai-sdk/anthropic': 1.2.12(zod@3.25.76)
       '@vercel/sandbox': 1.10.2
