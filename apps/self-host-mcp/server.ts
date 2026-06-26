@@ -1,6 +1,6 @@
 import { createStorybookMcpHandler } from '@storybook/mcp';
 import fs from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 
 /**
  * Maps a manifest provider path to its `{ base, rel }` location.
@@ -23,6 +23,15 @@ function resolveManifestTarget(
 	return { base: root, rel: normalized };
 }
 
+function resolveManifestFile(base: string, rel: string): string {
+	const resolvedBase = resolve(base);
+	const resolved = resolve(resolvedBase, rel);
+	if (resolved !== resolvedBase && !resolved.startsWith(resolvedBase + sep)) {
+		throw new Error(`Refusing to read manifest outside base: ${rel}`);
+	}
+	return resolved;
+}
+
 export function createMcpHandler(manifestsPath: string) {
 	return createStorybookMcpHandler({
 		manifestProvider: async (_request: Request | undefined, path: string) => {
@@ -40,7 +49,7 @@ export function createMcpHandler(manifestsPath: string) {
 				return await response.text();
 			}
 
-			return await fs.readFile(resolve(base, rel), 'utf-8');
+			return await fs.readFile(resolveManifestFile(base, rel), 'utf-8');
 		},
 	});
 }
