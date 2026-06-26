@@ -66,6 +66,8 @@ eval-only overlays:
 - the `.agent-eval/skills/<name>.json` invocation marker (so the harness can
   detect a real skill invocation) — on the `init` and `stories` skills
 - a sandbox `require_escalated` note — on the `stories` skill
+- an eval preview-browser mock — on the `stories` skill, because the Vercel
+  Agent Eval CLI harness does not expose the real Claude/Codex preview browser
 
 | Sandbox dir      | Canonical source                                 |
 | ---------------- | ------------------------------------------------ |
@@ -95,12 +97,25 @@ infrastructure.
 
 `923-skill-stories`:
 
-| Metric                                        | Weight |
-| --------------------------------------------- | ------ |
-| Loaded story rules via the `storybook ai` CLI | 30 %   |
-| Invoked/followed the `stories` skill workflow | 20 %   |
-| Wrote a `*.stories.*` file                    | 20 %   |
-| Opened a preview via `preview-stories`        | 30 %   |
+| Metric                                                     | Weight |
+| ---------------------------------------------------------- | ------ |
+| Loaded story rules via the `storybook ai` CLI              | 30 %   |
+| Invoked/followed the `stories` skill workflow              | 20 %   |
+| Wrote a `*.stories.*` file                                 | 20 %   |
+| Started Storybook and opened the eval preview-browser mock | 30 %   |
+
+The preview-browser metric is intentionally a test double. The injected stories
+skill asks agents to run:
+
+```bash
+npm run storybook -- --port 6006
+node .agent-eval/bin/open-preview-browser.mjs <storybook-preview-url>
+```
+
+That command writes `.agent-eval/preview-browser.json`, which is captured and
+scored. Validation also starts/reuses Storybook and fetches the recorded URL. This
+avoids giving credit for `preview-stories` alone while keeping the signal available
+in a headless eval harness.
 
 Export the latest results, including weighted scoring, with:
 

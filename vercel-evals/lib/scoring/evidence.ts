@@ -27,6 +27,10 @@ export function hasCommand(analysis: AgentRunAnalysis, pattern: RegExp): boolean
 	return analysis.workflow.shellCommands.some((command) => pattern.test(command));
 }
 
+export function hasBrowserUrl(analysis: AgentRunAnalysis, pattern: RegExp): boolean {
+	return analysis.workflow.browserUrls.some((url) => pattern.test(url));
+}
+
 export function hasSkillInvocation(analysis: AgentRunAnalysis, skill: string): boolean {
 	return analysis.skillInvocations.includes(skill);
 }

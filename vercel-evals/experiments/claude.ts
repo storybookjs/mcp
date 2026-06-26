@@ -1,6 +1,6 @@
 import type { ExperimentConfig } from '@vercel/agent-eval';
 import { CLAUDE_STORYBOOK_PLUGIN_EVALS, withAgentAnalysis } from '../lib/experiments.ts';
-import { storybookSkillFiles } from '../lib/skills-fixture.ts';
+import { storybookPreviewBrowserMockFiles, storybookSkillFiles } from '../lib/skills-fixture.ts';
 
 const config: ExperimentConfig = withAgentAnalysis({
 	agent: 'vercel-ai-gateway/claude-code',
@@ -11,7 +11,10 @@ const config: ExperimentConfig = withAgentAnalysis({
 	timeout: 900,
 	copyFiles: 'changed',
 	setup: async (sandbox) => {
-		await sandbox.writeFiles(storybookSkillFiles());
+		await sandbox.writeFiles({
+			...storybookSkillFiles(),
+			...storybookPreviewBrowserMockFiles(),
+		});
 	},
 });
 

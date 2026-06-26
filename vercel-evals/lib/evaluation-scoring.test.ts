@@ -12,6 +12,7 @@ function analysis(overrides: Partial<AgentRunAnalysis> = {}): AgentRunAnalysis {
 	return {
 		skillInvocations: [],
 		workflow: {
+			browserUrls: [],
 			shellCommands: [],
 		},
 		transcript: {
@@ -92,13 +93,20 @@ describe('scoreEvaluation', () => {
 			'923-skill-stories',
 			runData({
 				'src/components/Badge.stories.tsx': 'export default {};',
+				'.agent-eval/preview-browser.json': JSON.stringify({
+					source: 'eval-preview-browser-mock',
+					status: 'opened',
+					url: 'http://localhost:6006/?path=/story/components-badge--default',
+				}),
 				'.agent-eval/skills/stories.json': JSON.stringify({ skill: 'stories', status: 'invoked' }),
 			}),
 			analysis({
 				skillInvocations: ['stories'],
 				workflow: {
+					browserUrls: [],
 					shellCommands: [
 						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
+						'STORYBOOK_FEATURE_AI_CLI=1 npm run storybook -- --port 6006',
 						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',
 					],
 				},
@@ -115,6 +123,67 @@ describe('scoreEvaluation', () => {
 		]);
 	});
 
+	test('does not count preview-stories as opening the browser preview', () => {
+		const score = scoreEvaluation(
+			'923-skill-stories',
+			runData({
+				'src/components/Badge.stories.tsx': 'export default {};',
+				'.agent-eval/skills/stories.json': JSON.stringify({ skill: 'stories', status: 'invoked' }),
+			}),
+			analysis({
+				skillInvocations: ['stories'],
+				workflow: {
+					browserUrls: [],
+					shellCommands: [
+						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
+						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',
+					],
+				},
+			}),
+			'claude-code',
+		);
+
+		expect(score?.items.find((item) => item.id === 'opened-preview')).toMatchObject({
+			description: 'Opened the Storybook preview through the eval preview-browser mock',
+			score: 0,
+		});
+		expect(score?.percent).toBe(70);
+	});
+
+	test('does not count the preview-browser mock unless Storybook was started', () => {
+		const score = scoreEvaluation(
+			'923-skill-stories',
+			runData({
+				'src/components/Badge.stories.tsx': 'export default {};',
+				'.agent-eval/preview-browser.json': JSON.stringify({
+					source: 'eval-preview-browser-mock',
+					status: 'opened',
+					url: 'http://localhost:6006/?path=/story/components-badge--default',
+				}),
+				'.agent-eval/skills/stories.json': JSON.stringify({ skill: 'stories', status: 'invoked' }),
+			}),
+			analysis({
+				skillInvocations: ['stories'],
+				workflow: {
+					browserUrls: [],
+					shellCommands: [
+						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
+						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',
+					],
+				},
+			}),
+			'claude-code',
+		);
+
+		expect(score?.items.find((item) => item.id === 'opened-preview')).toMatchObject({
+			score: 0,
+			details: {
+				startedStorybook: false,
+			},
+		});
+		expect(score?.percent).toBe(70);
+	});
+
 	test('recognizes Codex when the harness agent id is namespaced', () => {
 		const score = scoreEvaluation(
 			'923-skill-stories',
@@ -123,8 +192,10 @@ describe('scoreEvaluation', () => {
 			}),
 			analysis({
 				workflow: {
+					browserUrls: ['http://localhost:6006/iframe.html?id=components-badge--default'],
 					shellCommands: [
 						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help',
+						'STORYBOOK_FEATURE_AI_CLI=1 npm run storybook -- --port 6006',
 						'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai preview-stories --port 6006',
 					],
 				},

@@ -24,6 +24,14 @@ function readSkillMarker(skill: string): { skill?: unknown; status?: unknown } {
 	};
 }
 
+function readPreviewBrowserMarker(): { source?: unknown; status?: unknown; url?: unknown } {
+	return JSON.parse(read('.agent-eval/preview-browser.json')) as {
+		source?: unknown;
+		status?: unknown;
+		url?: unknown;
+	};
+}
+
 const STORYBOOK_PLUGIN_SKILLS = ['init', 'setup', 'stories', 'upgrade'];
 
 describe('storybook plugin skills', () => {
@@ -62,17 +70,44 @@ describe('stories workflow', () => {
 		expect(marker.status).toBe('invoked');
 	});
 
+	test('preview browser mock was opened', () => {
+		expect(existsSync('.agent-eval/preview-browser.json')).toBe(true);
+		const marker = readPreviewBrowserMarker();
+
+		expect(marker.source).toBe('eval-preview-browser-mock');
+		expect(marker.status).toBe('opened');
+		expect(String(marker.url)).toMatch(
+			/http:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):6006(?:\/|$)/,
+		);
+	});
+
+	test('recorded preview URL responds from a running Storybook server', async () => {
+		const marker = readPreviewBrowserMarker();
+		const url = String(marker.url);
+
+		const response = await fetch(url);
+		expect(response.ok).toBe(true);
+		expect(await response.text()).toMatch(/storybook|iframe|root/i);
+	});
+
 	test('agent used Storybook AI CLI workflow', () => {
 		const context = readTranscriptContext();
 		const commands = context.o11y?.shellCommands?.map(({ command }) => command) ?? [];
 		const aiCliHelpIndex = commands.findIndex((command) =>
 			/(^|\s)STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+--help\b/i.test(command),
 		);
+		const storybookStartIndex = commands.findIndex((command) =>
+			/(^|\s)(npm\s+run\s+storybook(?:\s|$)|pnpm\s+(?:run\s+)?storybook(?:\s|$)|yarn\s+storybook(?:\s|$)|npx\s+storybook\s+dev|storybook\s+dev)\b/i.test(
+				command,
+			),
+		);
 		const previewStoriesIndex = commands.findIndex((command) =>
 			/(^|\s)STORYBOOK_FEATURE_AI_CLI=1\s+npx\s+storybook\s+ai\s+preview-stories\b/i.test(command),
 		);
 
 		expect(aiCliHelpIndex).toBeGreaterThanOrEqual(0);
+		expect(storybookStartIndex).toBeGreaterThan(aiCliHelpIndex);
 		expect(previewStoriesIndex).toBeGreaterThan(aiCliHelpIndex);
+		expect(previewStoriesIndex).toBeGreaterThan(storybookStartIndex);
 	});
 });

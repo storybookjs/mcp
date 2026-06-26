@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { storybookSkillFiles } from './skills-fixture.ts';
+import { storybookPreviewBrowserMockFiles, storybookSkillFiles } from './skills-fixture.ts';
 
 const files = storybookSkillFiles();
 
@@ -63,5 +63,29 @@ describe('storybookSkillFiles', () => {
 		expect(files['.claude/skills/stories/SKILL.md']).toContain('require_escalated');
 		expect(files['.agents/skills/stories/SKILL.md']).toContain('require_escalated');
 		expect(files['.claude/skills/setup/SKILL.md']).not.toContain('require_escalated');
+	});
+
+	test('adds the eval preview browser mock only to the stories skills', () => {
+		expect(files['.claude/skills/stories/SKILL.md']).toContain(
+			'start the project Storybook dev script first',
+		);
+		expect(files['.agents/skills/stories/SKILL.md']).toContain(
+			'node .agent-eval/bin/open-preview-browser.mjs <storybook-preview-url>',
+		);
+		expect(files['.claude/skills/setup/SKILL.md']).not.toContain('open-preview-browser');
+	});
+});
+
+describe('storybookPreviewBrowserMockFiles', () => {
+	test('emits the preview browser marker command', () => {
+		const mockFiles = storybookPreviewBrowserMockFiles();
+
+		expect(Object.keys(mockFiles)).toEqual(['.agent-eval/bin/open-preview-browser.mjs']);
+		expect(mockFiles['.agent-eval/bin/open-preview-browser.mjs']).toContain(
+			'.agent-eval/preview-browser.json',
+		);
+		expect(mockFiles['.agent-eval/bin/open-preview-browser.mjs']).toContain(
+			'eval-preview-browser-mock',
+		);
 	});
 });
