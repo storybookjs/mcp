@@ -6,6 +6,8 @@ packages:
   - '!eval/templates/project'
   - '!eval/tasks/*/trials/*/project'
 
+allowUnusedPatches: true
+
 catalog:
   '@storybook/addon-a11y': 10.5.0-alpha.7
   '@storybook/addon-docs': 10.5.0-alpha.7
@@ -57,7 +59,5 @@ onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
 
-# The @vercel/agent-eval patch (Docker stream demux fix) only applies to the
-# vercel-evals project; other workspace members don't depend on it. Allow the
-# patch to be "unused" elsewhere instead of failing the whole-workspace install.
-allowUnusedPatches: true
+patchedDependencies:
+  '@vercel/agent-eval@1.1.1': patches/@vercel__agent-eval@1.1.1.patch

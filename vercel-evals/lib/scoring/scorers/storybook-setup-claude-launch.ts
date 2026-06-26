@@ -3,6 +3,7 @@ import { binaryItem, defineScorer, totalScore } from '../types.ts';
 
 export const storybookSetupClaudeLaunchScorer = defineScorer({
 	fixtureName: '922-skill-storybook-setup-claude-launch',
+	threshold: 100,
 	score({ runData }) {
 		const launchJson = parseGeneratedJson(runData, '.claude/launch.json');
 		const configs = collectClaudeLaunchConfigs(launchJson);

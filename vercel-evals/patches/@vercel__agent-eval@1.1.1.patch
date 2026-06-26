@@ -1,3 +1,23 @@
+diff --git a/dist/cli.js b/dist/cli.js
+index 62513a2fa69ed14348fac25528074ad7415abae5..3be8fea2f3f2143fa8b35e9ab8fe88020f884e44 100644
+--- a/dist/cli.js
++++ b/dist/cli.js
+@@ -230,8 +230,13 @@ program
+     if (options.watch) {
+         playgroundArgs.push('--watch');
+     }
+-    // Try to run the playground package directly, fall back to npx
+-    const result = spawnSync('npx', ['@vercel/agent-eval-playground', ...playgroundArgs], { stdio: 'inherit', cwd: process.cwd() });
++    // Pin both the playground and its Next.js to a matched pair. The playground
++    // ships a prebuilt .next built with next@16.1.6 but floats `next: ^16.0.0`, so
++    // an unpinned `npx @vercel/agent-eval-playground` resolves a newer Next (e.g.
++    // 16.2.x) that cannot run the 16.1.6 build — it crashes on boot in setupFsCheck
++    // (`reading 'map'` on the missing routesManifest.onMatchHeaders) and 500s on
++    // every render (`reading 'forceStatic'`). Pinning keeps build and runtime in sync.
++    const result = spawnSync('npx', ['-y', '-p', '@vercel/agent-eval-playground@0.1.2', '-p', 'next@16.1.6', 'agent-eval-playground', ...playgroundArgs], { stdio: 'inherit', cwd: process.cwd() });
+     process.exit(result.status ?? 1);
+ });
+ /**
 diff --git a/dist/lib/docker-sandbox.js b/dist/lib/docker-sandbox.js
 index 99df8fb3ab72003144926f19243baf6b2102f050..07482051b40b82d59b1be4607ef4fe1e4422891d 100644
 --- a/dist/lib/docker-sandbox.js

@@ -1,8 +1,12 @@
-import type { EvalRunData } from '@vercel/agent-eval';
-import type { AgentRunAnalysis } from '../agent-analysis.ts';
 import { storybookSetupClaudeLaunchScorer } from './scorers/storybook-setup-claude-launch.ts';
 import { storiesScorer } from './scorers/stories.ts';
-import type { EvaluationScore, EvaluationScorer, ScoringContext } from './types.ts';
+import type {
+	EvaluationScore,
+	EvaluationScorer,
+	ScoringAnalysis,
+	ScoringContext,
+	ScoringRunData,
+} from './types.ts';
 
 export const scoringRegistry: EvaluationScorer[] = [
 	storybookSetupClaudeLaunchScorer,
@@ -19,9 +23,14 @@ export function scoreContext(context: ScoringContext): EvaluationScore | undefin
 
 export function scoreEvaluation(
 	fixtureName: string,
-	runData: EvalRunData,
-	analysis: AgentRunAnalysis,
+	runData: ScoringRunData,
+	analysis: ScoringAnalysis,
 	agent: string,
 ): EvaluationScore | undefined {
 	return scoreContext({ fixtureName, runData, analysis, agent });
+}
+
+/** Default pass bar (percent) for a fixture, from its scorer definition. */
+export function defaultThreshold(fixtureName: string): number | undefined {
+	return findScorer(fixtureName)?.threshold;
 }

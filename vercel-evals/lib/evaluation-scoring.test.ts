@@ -39,10 +39,19 @@ describe('scoreEvaluation', () => {
 	test('defineScorer preserves scorer metadata', () => {
 		const scorer = defineScorer({
 			fixtureName: 'fixture-a',
+			threshold: 80,
 			score: () => undefined,
 		});
 
 		expect(scorer.fixtureName).toBe('fixture-a');
+		expect(scorer.threshold).toBe(80);
+	});
+
+	test('registered scorers expose a pass-bar threshold', () => {
+		for (const scorer of scoringRegistry) {
+			expect(scorer.threshold).toBeGreaterThanOrEqual(0);
+			expect(scorer.threshold).toBeLessThanOrEqual(100);
+		}
 	});
 
 	test('registers one scorer per fixture name', () => {

@@ -1,5 +1,4 @@
-import type { EvalRunData } from '@vercel/agent-eval';
-import type { AgentRunAnalysis } from '../agent-analysis.ts';
+import type { ScoringAnalysis, ScoringRunData } from './types.ts';
 
 export function parseJson(content: string | undefined): unknown {
 	if (!content) return undefined;
@@ -11,27 +10,27 @@ export function parseJson(content: string | undefined): unknown {
 	}
 }
 
-export function parseGeneratedJson(runData: EvalRunData, path: string): unknown {
+export function parseGeneratedJson(runData: ScoringRunData, path: string): unknown {
 	return parseJson(runData.generatedFiles?.[path]);
 }
 
-export function generatedFilePaths(runData: EvalRunData): string[] {
+export function generatedFilePaths(runData: ScoringRunData): string[] {
 	return Object.keys(runData.generatedFiles ?? {});
 }
 
-export function hasGeneratedFile(runData: EvalRunData, pattern: RegExp): boolean {
+export function hasGeneratedFile(runData: ScoringRunData, pattern: RegExp): boolean {
 	return generatedFilePaths(runData).some((path) => pattern.test(path));
 }
 
-export function hasCommand(analysis: AgentRunAnalysis, pattern: RegExp): boolean {
+export function hasCommand(analysis: ScoringAnalysis, pattern: RegExp): boolean {
 	return analysis.workflow.shellCommands.some((command) => pattern.test(command));
 }
 
-export function hasBrowserUrl(analysis: AgentRunAnalysis, pattern: RegExp): boolean {
+export function hasBrowserUrl(analysis: ScoringAnalysis, pattern: RegExp): boolean {
 	return analysis.workflow.browserUrls.some((url) => pattern.test(url));
 }
 
-export function hasSkillInvocation(analysis: AgentRunAnalysis, skill: string): boolean {
+export function hasSkillInvocation(analysis: ScoringAnalysis, skill: string): boolean {
 	return analysis.skillInvocations.includes(skill);
 }
 

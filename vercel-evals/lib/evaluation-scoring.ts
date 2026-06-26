@@ -1,4 +1,10 @@
-export { findScorer, scoreContext, scoreEvaluation, scoringRegistry } from './scoring/registry.ts';
+export {
+	defaultThreshold,
+	findScorer,
+	scoreContext,
+	scoreEvaluation,
+	scoringRegistry,
+} from './scoring/registry.ts';
 export type {
 	EvaluationScore,
 	EvaluationScorer,

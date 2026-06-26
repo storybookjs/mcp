@@ -43,11 +43,12 @@ function previewBrowserMockUrl(marker: unknown): string | undefined {
 
 export const storiesScorer = defineScorer({
 	fixtureName: '923-skill-stories',
+	threshold: 70,
 	score({ runData, analysis, agent }) {
 		const loadedStoryRules = hasCommand(analysis, /storybook(?:@[\w.-]+)?\s+ai\b/i);
 		const startedStorybook = hasCommand(
 			analysis,
-			/(^|\s)(npm\s+run\s+storybook(?:\s|$)|pnpm\s+(?:run\s+)?storybook(?:\s|$)|yarn\s+storybook(?:\s|$)|npx\s+storybook\s+dev|storybook\s+dev)/i,
+			/(?:^|[\s'"])(?:npm\s+run\s+storybook|pnpm\s+(?:run\s+)?storybook|yarn\s+storybook|npx\s+storybook\s+dev|storybook\s+dev)(?=[\s'"]|$)/i,
 		);
 		const wroteStory = hasGeneratedFile(runData, /\.stories\.(t|j)sx?$/i);
 		const previewMockUrl = previewBrowserMockUrl(

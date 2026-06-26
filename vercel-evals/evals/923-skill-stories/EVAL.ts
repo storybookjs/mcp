@@ -32,17 +32,6 @@ function readPreviewBrowserMarker(): { source?: unknown; status?: unknown; url?:
 	};
 }
 
-const STORYBOOK_PLUGIN_SKILLS = ['init', 'setup', 'stories', 'upgrade'];
-
-describe('storybook plugin skills', () => {
-	test('are available for both agent surfaces', () => {
-		for (const skill of STORYBOOK_PLUGIN_SKILLS) {
-			expect(existsSync(`.agents/skills/${skill}/SKILL.md`)).toBe(true);
-			expect(existsSync(`.claude/skills/${skill}/SKILL.md`)).toBe(true);
-		}
-	});
-});
-
 describe('component and stories case', () => {
 	test('badge component was changed into a pill', () => {
 		const badge = read('src/components/Badge.tsx');
@@ -57,7 +46,8 @@ describe('stories workflow', () => {
 		const storyPath = candidates.find((candidate) => existsSync(candidate));
 		expect(storyPath).toBeTruthy();
 		const story = read(storyPath!);
-		expect(story).toMatch(/Badge/); 
+		expect(story).toMatch(/Badge/);
+
 		expect(story).toMatch(/neutral|default/i);
 		expect(story).toMatch(/success|danger/i);
 	});

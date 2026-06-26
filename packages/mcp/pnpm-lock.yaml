@@ -22,6 +22,11 @@ catalogs:
       specifier: 1.2.0
       version: 1.2.0
 
+patchedDependencies:
+  '@vercel/agent-eval@1.1.1':
+    hash: 146c0c1c59afe2314aa3860616b55920ce2b2ffe8d38fe0cfecaf1afc227feea
+    path: ../../vercel-evals/patches/@vercel__agent-eval@1.1.1.patch
+
 importers:
 
   .:
