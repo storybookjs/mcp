@@ -60,4 +60,4 @@ onlyBuiltDependencies:
   - esbuild
 
 patchedDependencies:
-  '@vercel/agent-eval@1.1.1': patches/@vercel__agent-eval@1.1.1.patch
+  '@vercel/agent-eval@1.1.1': vercel-evals/patches/@vercel__agent-eval@1.1.1.patch
