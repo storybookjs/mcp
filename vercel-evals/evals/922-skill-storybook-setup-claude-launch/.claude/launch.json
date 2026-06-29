@@ -2,7 +2,7 @@
 	"configurations": [
 		{
 			"name": "App dev server",
-			"command": "pnpm dev --port $PORT",
+			"command": "pnpm dev",
 			"autoPort": true
 		}
 	]
