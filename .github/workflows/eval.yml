@@ -79,37 +79,17 @@ jobs:
 
           exit "$status"
 
-      - name: Comment eval result diff
+      - name: Comment eval results
         if: always() && (github.event_name == 'pull_request' || github.event.inputs.pr_number != '')
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
-          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
-        run: |
-          if [ ! -f vercel-evals/agent-results.json ]; then
-            body="No exported eval results found at vercel-evals/agent-results.json."
-          else
-            if git ls-files --error-unmatch vercel-evals/agent-results.json >/dev/null 2>&1; then
-              git diff -- vercel-evals/agent-results.json > /tmp/eval-results.diff
-            else
-              git diff --no-index -- /dev/null vercel-evals/agent-results.json > /tmp/eval-results.diff || true
-            fi
-
-            if [ ! -s /tmp/eval-results.diff ]; then
-              body="No changes in vercel-evals/agent-results.json."
-            else
-              {
-                echo "## Eval results diff"
-                echo
-                echo '```diff'
-                head -c 60000 /tmp/eval-results.diff
-                echo
-                echo '```'
-              } > /tmp/eval-results-comment.md
-              body="$(cat /tmp/eval-results-comment.md)"
-            fi
-          fi
-
-          gh pr comment "$PR_NUMBER" --body "$body"
+        with:
+          script: |
+            const { default: commentEvalResults } = await import(
+              `${process.env.GITHUB_WORKSPACE}/.github/scripts/comment-eval-results.mjs`
+            );
+            await commentEvalResults({ github, context, core });
 
       - name: Commit eval results
         if: always()
