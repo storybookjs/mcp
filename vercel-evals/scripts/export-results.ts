@@ -280,7 +280,13 @@ async function main() {
 	let experiments = process.argv.slice(2);
 
 	if (experiments.length === 0) {
-		experiments = (await readdir(resultsDir)).filter((entry) => !entry.startsWith('.'));
+		try {
+			experiments = (await readdir(resultsDir)).filter((entry) => !entry.startsWith('.'));
+		} catch {
+			// No results/ yet (e.g. the eval step failed before producing any). Export an
+			// empty result set rather than crashing — the eval step already fails the build.
+			experiments = [];
+		}
 	}
 
 	const exported = {

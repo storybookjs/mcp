@@ -28,8 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # V7
@@ -79,17 +78,17 @@ jobs:
 
           exit "$status"
 
-      - name: Comment eval results
+      - name: Update PR description with eval results
         if: always() && (github.event_name == 'pull_request' || github.event.inputs.pr_number != '')
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
         with:
           script: |
-            const { default: commentEvalResults } = await import(
-              `${process.env.GITHUB_WORKSPACE}/.github/scripts/comment-eval-results.mjs`
+            const { default: updatePrDescription } = await import(
+              `${process.env.GITHUB_WORKSPACE}/.github/scripts/update-pr-description.mjs`
             );
-            await commentEvalResults({ github, context, core });
+            await updatePrDescription({ github, context, core });
 
       - name: Commit eval results
         if: always()
