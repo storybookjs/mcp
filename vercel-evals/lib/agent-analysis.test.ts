@@ -65,4 +65,42 @@ describe('analyzeAgentRun', () => {
 			'http://localhost:6006/iframe.html?id=components-badge--default',
 		]);
 	});
+
+	test('detects a Claude skill invocation from the Skill tool call', () => {
+		const analysis = analyzeAgentRun(
+			runData(
+				jsonl([
+					{
+						type: 'assistant',
+						message: {
+							content: [{ type: 'tool_use', name: 'Skill', input: { skill: 'stories' } }],
+						},
+					},
+				]),
+			),
+			'claude-code',
+		);
+
+		expect(analysis.skillInvocations).toEqual(['stories']);
+	});
+
+	test('detects a Codex skill consultation from the SKILL.md read command', () => {
+		const analysis = analyzeAgentRun(
+			runData(
+				jsonl([
+					{
+						type: 'item.completed',
+						item: {
+							type: 'command_execution',
+							command:
+								'/bin/bash -lc "sed -n \'1,240p\' /home/sandbox/workspace/.agents/skills/stories/SKILL.md"',
+						},
+					},
+				]),
+			),
+			'codex',
+		);
+
+		expect(analysis.skillInvocations).toEqual(['stories']);
+	});
 });

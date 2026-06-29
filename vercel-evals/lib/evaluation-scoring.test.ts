@@ -120,12 +120,10 @@ describe('scoreEvaluation', () => {
 
 		expect(score?.percent).toBe(100);
 		expect(score?.items.map(({ id, weight, score }) => ({ id, weight, score }))).toEqual([
-			{ id: 'badge-is-pill', weight: 0.25, score: 1 },
-			{ id: 'loaded-story-rules', weight: 0.2, score: 1 },
-			{ id: 'stories-skill', weight: 0.15, score: 1 },
-			{ id: 'wrote-story-file', weight: 0.1, score: 1 },
-			{ id: 'story-covers-tones', weight: 0.1, score: 1 },
-			{ id: 'opened-preview', weight: 0.2, score: 1 },
+			{ id: 'loaded-story-rules', weight: 0.3, score: 1 },
+			{ id: 'stories-skill', weight: 0.2, score: 1 },
+			{ id: 'wrote-story-file', weight: 0.2, score: 1 },
+			{ id: 'opened-preview', weight: 0.3, score: 1 },
 		]);
 	});
 
@@ -153,7 +151,7 @@ describe('scoreEvaluation', () => {
 			description: 'Opened the Storybook preview through the eval preview-browser mock',
 			score: 0,
 		});
-		expect(score?.percent).toBe(45);
+		expect(score?.percent).toBe(70);
 	});
 
 	test('does not count the preview-browser mock unless Storybook was started', () => {
@@ -187,16 +185,17 @@ describe('scoreEvaluation', () => {
 				startedStorybook: false,
 			},
 		});
-		expect(score?.percent).toBe(45);
+		expect(score?.percent).toBe(70);
 	});
 
-	test('recognizes Codex when the harness agent id is namespaced', () => {
+	test('scores stories-skill from the detected skill invocation', () => {
 		const score = scoreEvaluation(
 			'923-skill-stories',
 			runData({
 				'src/components/Badge.stories.tsx': 'export default {};',
 			}),
 			analysis({
+				skillInvocations: ['stories'],
 				workflow: {
 					browserUrls: ['http://localhost:6006/iframe.html?id=components-badge--default'],
 					shellCommands: [
@@ -210,7 +209,7 @@ describe('scoreEvaluation', () => {
 		);
 
 		expect(score?.items.find((item) => item.id === 'stories-skill')).toMatchObject({
-			description: 'Installed Codex stories skill and followed workflow',
+			description: 'Invoked the `stories` skill',
 			score: 1,
 		});
 	});

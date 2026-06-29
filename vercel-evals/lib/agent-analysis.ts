@@ -15,10 +15,9 @@ export type AgentRunAnalysis = {
 	};
 };
 
-const SKILL_MARKER_PATTERNS = [
-	/^\.agent-eval\/skills\/([^/]+)\.json$/,
-	/^\.agent-eval\/skill-([a-z0-9-]+)-invoked\.json$/i,
-];
+// Codex consults a skill by reading its SKILL.md; Claude invokes it via the
+// `Skill` tool. Both are observable without modifying the skill itself.
+const SKILL_DOC_PATTERN = /(?:\.claude|\.agents)\/skills\/([a-z0-9-]+)\/SKILL\.md/i;
 
 const BROWSER_TOOL_PATTERN = /browser|playwright|puppeteer|chrome/i;
 
@@ -170,33 +169,41 @@ function browserUrlFromRawEvent(event: unknown): string | undefined {
 	return undefined;
 }
 
-function parseGeneratedJson(files: Record<string, string> | undefined, path: string): unknown {
-	const content = files?.[path];
-	if (!content) return undefined;
-
-	try {
-		return JSON.parse(content);
-	} catch {
-		return content;
-	}
+function skillName(args: unknown): string | undefined {
+	const skill = parseArguments(args)?.skill ?? (args as { skill?: unknown })?.skill;
+	return typeof skill === 'string' && skill.trim() ? skill : undefined;
 }
 
-function skillFromMarker(path: string, marker: unknown): string | undefined {
-	if (marker && typeof marker === 'object') {
-		const skill = (marker as { skill?: unknown }).skill;
-		if (typeof skill === 'string' && skill.trim()) {
-			return skill;
-		}
-	}
+/** Claude invokes a skill via a `Skill` tool call in the parsed transcript. */
+function skillFromParsedEvent(event: unknown): string | undefined {
+	const tool = (event as { tool?: { name?: unknown; originalName?: unknown; args?: unknown } })
+		.tool;
+	if (!tool || (tool.originalName !== 'Skill' && tool.name !== 'Skill')) return undefined;
+	return skillName(tool.args);
+}
 
-	for (const pattern of SKILL_MARKER_PATTERNS) {
-		const match = path.match(pattern);
-		if (match?.[1]) {
-			return match[1];
+/** The same `Skill` tool call, read from the raw transcript events. */
+function skillFromRawEvent(event: unknown): string | undefined {
+	const content = (event as { message?: { content?: unknown } }).message?.content;
+	if (!Array.isArray(content)) return undefined;
+
+	for (const block of content) {
+		if (!block || typeof block !== 'object') continue;
+		const toolUse = block as { type?: unknown; name?: unknown; input?: unknown };
+		if (toolUse.type === 'tool_use' && toolUse.name === 'Skill') {
+			const skill = skillName(toolUse.input);
+			if (skill) return skill;
 		}
 	}
 
 	return undefined;
+}
+
+/** Codex has no skill primitive; it reads `.../skills/<name>/SKILL.md` via a shell command. */
+function skillsFromCommand(command: string): string[] {
+	return [...command.matchAll(new RegExp(SKILL_DOC_PATTERN, 'gi'))]
+		.map((match) => match[1])
+		.filter((skill): skill is string => Boolean(skill));
 }
 
 export function analyzeAgentRun(runData: EvalRunData, agent: string): AgentRunAnalysis {
@@ -214,14 +221,14 @@ export function analyzeAgentRun(runData: EvalRunData, agent: string): AgentRunAn
 	].map(unwrapShellCommand);
 	const uniqueBrowserUrls = [...new Set(browserUrls)];
 	const uniqueCommands = [...new Set(shellCommands)];
-	const generatedFiles = runData.generatedFiles ?? {};
 	const skillInvocations = [
-		...new Set(
-			Object.keys(generatedFiles)
-				.filter((path) => SKILL_MARKER_PATTERNS.some((pattern) => pattern.test(path)))
-				.map((path) => skillFromMarker(path, parseGeneratedJson(generatedFiles, path)))
-				.filter((skill): skill is string => Boolean(skill)),
-		),
+		...new Set([
+			...(parsed?.events
+				.map(skillFromParsedEvent)
+				.filter((skill): skill is string => Boolean(skill)) ?? []),
+			...rawEvents.map(skillFromRawEvent).filter((skill): skill is string => Boolean(skill)),
+			...uniqueCommands.flatMap(skillsFromCommand),
+		]),
 	].sort();
 
 	return {

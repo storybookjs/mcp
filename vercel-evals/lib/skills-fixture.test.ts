@@ -38,25 +38,11 @@ describe('storybookSkillFiles', () => {
 		expect(files['.claude/skills/stories/SKILL.md']).toMatch(/launch\.json/);
 	});
 
-	test.each([
-		['.claude/skills/init/SKILL.md', 'init', 'claude-skill'],
-		['.claude/skills/stories/SKILL.md', 'stories', 'claude-skill'],
-		['.agents/skills/init/SKILL.md', 'init', 'codex-skill'],
-		['.agents/skills/stories/SKILL.md', 'stories', 'codex-skill'],
-	])('injects an invocation marker into %s', (path, name, source) => {
-		const content = files[path];
-		expect(content).toContain(`{"skill":"${name}","source":"${source}","status":"invoked"}`);
-		expect(content).toContain(`.agent-eval/skills/${name}.json`);
-	});
-
-	test.each([
-		'.claude/skills/setup/SKILL.md',
-		'.claude/skills/upgrade/SKILL.md',
-		'.claude/skills/storybook-setup-claude-launch/SKILL.md',
-		'.agents/skills/setup/SKILL.md',
-		'.agents/skills/upgrade/SKILL.md',
-	])('does not add a marker to %s', (path) => {
-		expect(files[path]).not.toContain('## Eval marker');
+	test('never injects an eval marker — invocation is detected from the transcript', () => {
+		for (const content of Object.values(files)) {
+			expect(content).not.toContain('## Eval marker');
+			expect(content).not.toContain('.agent-eval/skills/');
+		}
 	});
 
 	test('adds the sandbox require_escalated note only to the stories skills', () => {

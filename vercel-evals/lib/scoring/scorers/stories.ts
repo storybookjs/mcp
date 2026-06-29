@@ -8,10 +8,6 @@ import { binaryItem, defineScorer, totalScore } from '../types.ts';
 
 const LOCAL_STORYBOOK_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 
-function isCodexAgent(agent: string): boolean {
-	return agent.toLowerCase().split('/').includes('codex');
-}
-
 function isStorybookPreviewUrl(value: string): boolean {
 	try {
 		const url = new URL(value);
@@ -44,7 +40,7 @@ function previewBrowserMockUrl(marker: unknown): string | undefined {
 export const storiesScorer = defineScorer({
 	fixtureName: '923-skill-stories',
 	threshold: 70,
-	score({ runData, analysis, agent }) {
+	score({ runData, analysis }) {
 		const loadedStoryRules = hasCommand(analysis, /storybook(?:@[\w.-]+)?\s+ai\b/i);
 		const startedStorybook = hasCommand(
 			analysis,
@@ -59,8 +55,6 @@ export const storiesScorer = defineScorer({
 			startedStorybook && previewMockUrl !== undefined && isStorybookPreviewUrl(previewMockUrl);
 		const openedPreview = openedRealBrowserPreview || openedMockPreview;
 		const invokedStoriesSkill = hasSkillInvocation(analysis, 'stories');
-		const isCodex = isCodexAgent(agent);
-		const codexFollowedWorkflow = isCodex && loadedStoryRules && wroteStory && openedPreview;
 
 		return totalScore([
 			binaryItem(
@@ -69,15 +63,7 @@ export const storiesScorer = defineScorer({
 				0.3,
 				loadedStoryRules,
 			),
-			binaryItem(
-				'stories-skill',
-				isCodex
-					? 'Installed Codex stories skill and followed workflow'
-					: 'Invoked the `stories` skill',
-				0.2,
-				invokedStoriesSkill || codexFollowedWorkflow,
-				{ invokedStoriesSkill, codexFollowedWorkflow },
-			),
+			binaryItem('stories-skill', 'Invoked the `stories` skill', 0.2, invokedStoriesSkill),
 			binaryItem('wrote-story-file', 'Wrote a `*.stories.*` file', 0.2, wroteStory),
 			binaryItem(
 				'opened-preview',

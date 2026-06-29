@@ -8,10 +8,10 @@ import { fileURLToPath } from 'node:url';
  *
  * The committed fixtures used to carry hand-edited copies of these skills, which
  * drifted from the shipped plugins. Instead we read the canonical SKILL.md, apply
- * the eval-only overlays (an invocation marker and a sandbox note) in code, and
- * `sandbox.writeFiles()` the result before the agent runs. The plugin packages
- * stay the single source of truth for skill *content*; only the eval
- * instrumentation lives here.
+ * the eval-only overlays (a preview-browser mock and a sandbox note) in code, and
+ * `sandbox.writeFiles()` the result before the agent runs. Skill *invocation* is
+ * detected from the transcript (see `agent-analysis.ts`), so the skill content is
+ * otherwise unmodified. The plugin packages stay the single source of truth.
  */
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -20,12 +20,10 @@ const CLAUDE_SKILLS_ROOT = 'packages/claude-plugin/skills';
 const CODEX_SKILLS_ROOT = 'packages/codex-plugin/plugins/storybook/skills';
 
 type SkillSource = {
-	/** Skill name as it appears in the sandbox and in the eval marker. */
+	/** Skill name as it appears in the sandbox. */
 	name: string;
 	/** Directory holding the canonical SKILL.md, relative to the repo root. */
 	from: string;
-	/** Inject the `.agent-eval/skills/<name>.json` invocation marker instruction. */
-	marker?: boolean;
 	/** Inject the eval-only preview browser mock instruction. */
 	previewBrowserMock?: boolean;
 	/** Inject the sandbox `require_escalated` note for Storybook CLI commands. */
@@ -35,23 +33,19 @@ type SkillSource = {
 type Surface = {
 	/** Sandbox skills directory for this agent surface. */
 	dir: string;
-	/** `source` field written into eval markers for this surface. */
-	markerSource: string;
 	skills: SkillSource[];
 };
 
 const SURFACES: Surface[] = [
 	{
 		dir: '.claude/skills',
-		markerSource: 'claude-skill',
 		skills: [
-			{ name: 'init', from: `${CLAUDE_SKILLS_ROOT}/storybook-init`, marker: true },
+			{ name: 'init', from: `${CLAUDE_SKILLS_ROOT}/storybook-init` },
 			{ name: 'setup', from: `${CLAUDE_SKILLS_ROOT}/storybook-setup` },
 			{ name: 'upgrade', from: `${CLAUDE_SKILLS_ROOT}/storybook-upgrade` },
 			{
 				name: 'stories',
 				from: `${CLAUDE_SKILLS_ROOT}/stories`,
-				marker: true,
 				previewBrowserMock: true,
 				sandboxNote: true,
 			},
@@ -63,15 +57,13 @@ const SURFACES: Surface[] = [
 	},
 	{
 		dir: '.agents/skills',
-		markerSource: 'codex-skill',
 		skills: [
-			{ name: 'init', from: `${CODEX_SKILLS_ROOT}/init`, marker: true },
+			{ name: 'init', from: `${CODEX_SKILLS_ROOT}/init` },
 			{ name: 'setup', from: `${CODEX_SKILLS_ROOT}/setup` },
 			{ name: 'upgrade', from: `${CODEX_SKILLS_ROOT}/upgrade` },
 			{
 				name: 'stories',
 				from: `${CODEX_SKILLS_ROOT}/stories`,
-				marker: true,
 				previewBrowserMock: true,
 				sandboxNote: true,
 			},
@@ -104,20 +96,6 @@ const PREVIEW_BROWSER_MOCK_SECTION = [
 	'This writes `.agent-eval/preview-browser.json`, which the eval harness scores as the preview browser signal.',
 ].join('\n');
 
-function markerSection(name: string, source: string): string {
-	return [
-		'## Eval marker',
-		'',
-		'Before doing any other work, write a JSON marker so the eval harness can confirm this skill was invoked:',
-		'',
-		'```json',
-		`{"skill":"${name}","source":"${source}","status":"invoked"}`,
-		'```',
-		'',
-		`Save it to \`.agent-eval/skills/${name}.json\` (create the \`.agent-eval/skills\` directory if needed).`,
-	].join('\n');
-}
-
 function splitFrontmatter(md: string): { frontmatter: string; body: string } {
 	const match = md.match(/^---\n[\s\S]*?\n---\n/);
 	return match
@@ -125,14 +103,13 @@ function splitFrontmatter(md: string): { frontmatter: string; body: string } {
 		: { frontmatter: '', body: md };
 }
 
-function renderSkill(skill: SkillSource, markerSource: string): string {
+function renderSkill(skill: SkillSource): string {
 	const raw = readFileSync(resolve(REPO_ROOT, skill.from, 'SKILL.md'), 'utf-8');
 	const { frontmatter, body } = splitFrontmatter(raw);
 	const renamed = frontmatter.replace(/^name:.*$/m, `name: ${skill.name}`);
 
 	const sections = [
 		renamed.trim(),
-		skill.marker ? markerSection(skill.name, markerSource) : '',
 		skill.previewBrowserMock ? PREVIEW_BROWSER_MOCK_SECTION : '',
 		skill.sandboxNote ? SANDBOX_SECTION : '',
 		body.trim(),
@@ -149,7 +126,7 @@ export function storybookSkillFiles(): Record<string, string> {
 	const files: Record<string, string> = {};
 	for (const surface of SURFACES) {
 		for (const skill of surface.skills) {
-			files[`${surface.dir}/${skill.name}/SKILL.md`] = renderSkill(skill, surface.markerSource);
+			files[`${surface.dir}/${skill.name}/SKILL.md`] = renderSkill(skill);
 		}
 	}
 	return files;
