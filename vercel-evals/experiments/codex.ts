@@ -5,7 +5,7 @@ import { storybookPreviewBrowserMockFiles, storybookSkillFiles } from '../lib/sk
 const config: ExperimentConfig = withAgentAnalysis({
 	agent: 'vercel-ai-gateway/codex',
 	evals: [...CODEX_STORYBOOK_PLUGIN_EVALS],
- 
+
 	scripts: ['build'],
 	timeout: 900,
 	copyFiles: 'changed',

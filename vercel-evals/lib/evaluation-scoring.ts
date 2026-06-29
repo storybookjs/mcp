@@ -3,6 +3,7 @@ export {
 	findScorer,
 	scoreContext,
 	scoreEvaluation,
+	scoreThreshold,
 	scoringRegistry,
 } from './scoring/registry.ts';
 export type {

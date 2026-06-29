@@ -34,3 +34,21 @@ export function scoreEvaluation(
 export function defaultThreshold(fixtureName: string): number | undefined {
 	return findScorer(fixtureName)?.threshold;
 }
+
+/**
+ * Pass bar (percent) the fixture's MEAN score must clear. Single source of truth
+ * for both `onRunComplete` (logging) and `export-results` (the gate):
+ * `EVAL_SCORE_THRESHOLD` overrides the scorer's default for a run.
+ */
+export function scoreThreshold(fixtureName: string): number {
+	const raw = process.env.EVAL_SCORE_THRESHOLD;
+	if (raw !== undefined && raw.trim() !== '') {
+		const value = Number(raw);
+		if (!Number.isFinite(value) || value < 0 || value > 100) {
+			throw new Error(`Invalid EVAL_SCORE_THRESHOLD: "${raw}" (expected a number 0–100)`);
+		}
+		return value;
+	}
+
+	return defaultThreshold(fixtureName) ?? 100;
+}

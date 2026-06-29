@@ -1,6 +1,6 @@
 import type { EvalRunData, ExperimentConfig } from '@vercel/agent-eval';
 import { analyzeAgentRun } from './agent-analysis.ts';
-import { defaultThreshold, scoreEvaluation } from './evaluation-scoring.ts';
+import { scoreEvaluation, scoreThreshold } from './evaluation-scoring.ts';
 
 export const CLAUDE_STORYBOOK_PLUGIN_EVALS = [
 	'922-skill-storybook-setup-claude-launch',
@@ -8,8 +8,6 @@ export const CLAUDE_STORYBOOK_PLUGIN_EVALS = [
 ] as const;
 
 export const CODEX_STORYBOOK_PLUGIN_EVALS = ['923-skill-stories'] as const;
-
-const isCI = Boolean(process.env.CI);
 
 export function evalRuns(): number {
 	const raw = process.env.EVAL_RUNS;
@@ -21,23 +19,6 @@ export function evalRuns(): number {
 	}
 
 	return parsed;
-}
-
-/**
- * Pass bar (percent) for a fixture. `EVAL_SCORE_THRESHOLD` overrides every
- * fixture's scorer default for a single run (e.g. CI tuning).
- */
-export function scoreThreshold(fixtureName: string): number {
-	const raw = process.env.EVAL_SCORE_THRESHOLD;
-	if (raw !== undefined && raw.trim() !== '') {
-		const value = Number(raw);
-		if (!Number.isFinite(value) || value < 0 || value > 100) {
-			throw new Error(`Invalid EVAL_SCORE_THRESHOLD: "${raw}" (expected a number 0–100)`);
-		}
-		return value;
-	}
-
-	return defaultThreshold(fixtureName) ?? 100;
 }
 
 function logEvaluation(
@@ -60,8 +41,8 @@ export function withAgentAnalysis(config: ExperimentConfig): ExperimentConfig {
 	return {
 		sandbox: 'docker',
 		earlyExit: false,
-		// run EVAL locally
-		validation: isCI ? 'none' : 'vitest',
+		// Correctness + quality is scored by lib/scoring; EVAL.ts is a stub, so skip it.
+		validation: 'none',
 		runs: evalRuns(),
 		...config,
 		async onRunComplete(context): Promise<EvalRunData> {

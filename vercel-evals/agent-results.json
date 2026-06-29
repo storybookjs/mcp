@@ -1,371 +1,353 @@
 {
-  "metadata": {
-    "exportedAt": "2026-06-26T14:11:54.861Z",
-    "experiments": [
-      {
-        "name": "claude",
-        "agentHarness": "Claude Code",
-        "avgDuration": 260.63110000000006
-      },
-      {
-        "name": "codex",
-        "agentHarness": "Codex",
-        "avgDuration": 277.0044
-      }
-    ]
-  },
-  "results": {
-    "claude": [
-      {
-        "evalPath": "922-skill-storybook-setup-claude-launch",
-        "result": {
-          "evalPath": "922-skill-storybook-setup-claude-launch",
-          "timestamp": "2026-06-26T13:57:14.628Z",
-          "runs": 5,
-          "scores": [
-            100,
-            100,
-            100,
-            100,
-            100
-          ],
-          "meanScore": 100,
-          "threshold": 100,
-          "passed": true,
-          "runDetails": [
-            {
-              "run": "run-1",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "storybook-launch-auto-port",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-2",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "storybook-launch-auto-port",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-3",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "storybook-launch-auto-port",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-4",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "storybook-launch-auto-port",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-5",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "storybook-launch-auto-port",
-                  "score": 1
-                }
-              ]
-            }
-          ],
-          "duration": 84637
-        }
-      },
-      {
-        "evalPath": "923-skill-stories",
-        "result": {
-          "evalPath": "923-skill-stories",
-          "timestamp": "2026-06-26T13:57:14.628Z",
-          "runs": 5,
-          "scores": [
-            30,
-            100,
-            30,
-            100,
-            100
-          ],
-          "meanScore": 72,
-          "threshold": 70,
-          "passed": true,
-          "runDetails": [
-            {
-              "run": "run-1",
-              "score": 30,
-              "status": "failed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 0
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 0
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 0
-                }
-              ]
-            },
-            {
-              "run": "run-2",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-3",
-              "score": 30,
-              "status": "failed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 0
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 0
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 0
-                }
-              ]
-            },
-            {
-              "run": "run-4",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-5",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            }
-          ],
-          "duration": 436625.20000000007
-        }
-      }
-    ],
-    "codex": [
-      {
-        "evalPath": "923-skill-stories",
-        "result": {
-          "evalPath": "923-skill-stories",
-          "timestamp": "2026-06-26T13:57:14.629Z",
-          "runs": 5,
-          "scores": [
-            100,
-            100,
-            100,
-            100,
-            100
-          ],
-          "meanScore": 100,
-          "threshold": 70,
-          "passed": true,
-          "runDetails": [
-            {
-              "run": "run-1",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-2",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-3",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-4",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            },
-            {
-              "run": "run-5",
-              "score": 100,
-              "status": "passed",
-              "items": [
-                {
-                  "id": "loaded-story-rules",
-                  "score": 1
-                },
-                {
-                  "id": "stories-skill",
-                  "score": 1
-                },
-                {
-                  "id": "wrote-story-file",
-                  "score": 1
-                },
-                {
-                  "id": "opened-preview",
-                  "score": 1
-                }
-              ]
-            }
-          ],
-          "duration": 277004.39999999997
-        }
-      }
-    ]
-  }
+	"metadata": {
+		"exportedAt": "2026-06-29T09:02:21.883Z",
+		"experiments": [
+			{
+				"name": "claude",
+				"agentHarness": "Claude Code",
+				"avgDuration": 260.63110000000006
+			},
+			{
+				"name": "codex",
+				"agentHarness": "Codex",
+				"avgDuration": 277.0044
+			}
+		]
+	},
+	"results": {
+		"claude": [
+			{
+				"evalPath": "922-skill-storybook-setup-claude-launch",
+				"result": {
+					"evalPath": "922-skill-storybook-setup-claude-launch",
+					"timestamp": "2026-06-26T13:57:14.628Z",
+					"runs": 5,
+					"scores": [100, 100, 100, 100, 100],
+					"meanScore": 100,
+					"threshold": 100,
+					"passed": true,
+					"runDetails": [
+						{
+							"run": "run-1",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "storybook-launch-auto-port",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-2",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "storybook-launch-auto-port",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-3",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "storybook-launch-auto-port",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-4",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "storybook-launch-auto-port",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-5",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "storybook-launch-auto-port",
+									"score": 1
+								}
+							]
+						}
+					],
+					"duration": 84637
+				}
+			},
+			{
+				"evalPath": "923-skill-stories",
+				"result": {
+					"evalPath": "923-skill-stories",
+					"timestamp": "2026-06-26T13:57:14.628Z",
+					"runs": 5,
+					"scores": [30, 100, 30, 100, 100],
+					"meanScore": 72,
+					"threshold": 70,
+					"passed": true,
+					"runDetails": [
+						{
+							"run": "run-1",
+							"score": 30,
+							"status": "failed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 0
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 0
+								},
+								{
+									"id": "opened-preview",
+									"score": 0
+								}
+							]
+						},
+						{
+							"run": "run-2",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-3",
+							"score": 30,
+							"status": "failed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 0
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 0
+								},
+								{
+									"id": "opened-preview",
+									"score": 0
+								}
+							]
+						},
+						{
+							"run": "run-4",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-5",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						}
+					],
+					"duration": 436625.20000000007
+				}
+			}
+		],
+		"codex": [
+			{
+				"evalPath": "923-skill-stories",
+				"result": {
+					"evalPath": "923-skill-stories",
+					"timestamp": "2026-06-26T13:57:14.629Z",
+					"runs": 5,
+					"scores": [100, 100, 100, 100, 100],
+					"meanScore": 100,
+					"threshold": 70,
+					"passed": true,
+					"runDetails": [
+						{
+							"run": "run-1",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-2",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-3",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-4",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						},
+						{
+							"run": "run-5",
+							"score": 100,
+							"status": "passed",
+							"items": [
+								{
+									"id": "loaded-story-rules",
+									"score": 1
+								},
+								{
+									"id": "stories-skill",
+									"score": 1
+								},
+								{
+									"id": "wrote-story-file",
+									"score": 1
+								},
+								{
+									"id": "opened-preview",
+									"score": 1
+								}
+							]
+						}
+					],
+					"duration": 277004.39999999997
+				}
+			}
+		]
+	}
 }

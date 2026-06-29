@@ -1,5 +1,6 @@
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { scoreThreshold } from '../lib/evaluation-scoring.ts';
 
 const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d+Z$/;
 const RUN_DIR_RE = /^run-(\d+)$/;
@@ -104,7 +105,6 @@ async function readEvalRuns(evalDir) {
 		runs.push({
 			run: runDir,
 			percent: typeof evaluation?.percent === 'number' ? evaluation.percent : undefined,
-			threshold: result.analysis?.threshold,
 			status: result.status,
 			items: Array.isArray(evaluation?.items)
 				? evaluation.items.map((item) => ({ id: item.id, score: item.score }))
@@ -117,7 +117,8 @@ async function readEvalRuns(evalDir) {
 
 /**
  * Aggregate the most recent run of each fixture into a mean weighted score (the
- * "success rate") and a pass/fail against the fixture's threshold.
+ * "success rate") and a pass/fail against the fixture's threshold. The threshold
+ * comes straight from the scorer registry (`scoreThreshold`), not from the runs.
  */
 async function latestExperimentResults(experiment) {
 	const experimentDir = join('results', experiment);
@@ -155,9 +156,8 @@ async function latestExperimentResults(experiment) {
 
 		const scores = runs.map((run) => run.percent).filter((percent) => typeof percent === 'number');
 		const meanScore = mean(scores);
-		const threshold = runs.find((run) => typeof run.threshold === 'number')?.threshold;
-		const passed =
-			meanScore !== undefined && threshold !== undefined ? meanScore >= threshold : undefined;
+		const threshold = scoreThreshold(evalName);
+		const passed = meanScore !== undefined ? meanScore >= threshold : undefined;
 
 		results.push({
 			evalPath: evalName,

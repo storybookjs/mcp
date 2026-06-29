@@ -38,6 +38,18 @@ function commandFromEvent(event: unknown): string | undefined {
 	return typeof command === 'string' ? command : undefined;
 }
 
+/**
+ * Agents often run commands through a shell wrapper (`/bin/bash -lc '<cmd>'`,
+ * `sh -c "..."`). Unwrap to the inner command so detectors match the real command
+ * instead of having to tolerate the wrapper's quoting.
+ */
+function unwrapShellCommand(command: string): string {
+	const match = command.match(
+		/^\s*(?:\/\S*\/)?(?:bash|sh|zsh|dash)\s+-\S*c\b\s*(['"])([\s\S]*)\1\s*$/i,
+	);
+	return match ? match[2] : command;
+}
+
 function parseArguments(value: unknown): Record<string, unknown> | undefined {
 	if (!value) return undefined;
 
@@ -199,7 +211,7 @@ export function analyzeAgentRun(runData: EvalRunData, agent: string): AgentRunAn
 	const shellCommands = [
 		...(parsed?.summary.shellCommands.map(({ command }) => command) ?? []),
 		...rawEvents.map(commandFromEvent).filter((command): command is string => Boolean(command)),
-	];
+	].map(unwrapShellCommand);
 	const uniqueBrowserUrls = [...new Set(browserUrls)];
 	const uniqueCommands = [...new Set(shellCommands)];
 	const generatedFiles = runData.generatedFiles ?? {};

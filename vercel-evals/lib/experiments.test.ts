@@ -1,6 +1,7 @@
 import type { EvalRunData } from '@vercel/agent-eval';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { evalRuns, scoreThreshold, withAgentAnalysis } from './experiments.ts';
+import { scoreThreshold } from './evaluation-scoring.ts';
+import { evalRuns, withAgentAnalysis } from './experiments.ts';
 
 async function runHook(
 	fixtureName: string,

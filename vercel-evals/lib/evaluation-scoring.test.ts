@@ -83,17 +83,9 @@ describe('scoreEvaluation', () => {
 		);
 
 		expect(score?.percent).toBe(100);
-		expect(score?.items).toEqual([
-			{
-				id: 'storybook-launch-auto-port',
-				description: 'Storybook launch entry exists with autoPort: true',
-				weight: 1,
-				score: 1,
-				details: {
-					command: 'pnpm storybook --port $PORT',
-					autoPort: true,
-				},
-			},
+		expect(score?.items.map(({ id, weight, score }) => ({ id, weight, score }))).toEqual([
+			{ id: 'storybook-launch-auto-port', weight: 0.7, score: 1 },
+			{ id: 'preserves-app-dev-server', weight: 0.3, score: 1 },
 		]);
 	});
 
@@ -101,7 +93,10 @@ describe('scoreEvaluation', () => {
 		const score = scoreEvaluation(
 			'923-skill-stories',
 			runData({
-				'src/components/Badge.stories.tsx': 'export default {};',
+				'src/components/Badge.tsx':
+					'export default () => <span style={{ borderRadius: "999px", display: "inline-flex", padding: "2px 8px" }} />;',
+				'src/components/Badge.stories.tsx':
+					"export const Default = {}; export const Success = { args: { tone: 'success' } };",
 				'.agent-eval/preview-browser.json': JSON.stringify({
 					source: 'eval-preview-browser-mock',
 					status: 'opened',
@@ -125,10 +120,12 @@ describe('scoreEvaluation', () => {
 
 		expect(score?.percent).toBe(100);
 		expect(score?.items.map(({ id, weight, score }) => ({ id, weight, score }))).toEqual([
-			{ id: 'loaded-story-rules', weight: 0.3, score: 1 },
-			{ id: 'stories-skill', weight: 0.2, score: 1 },
-			{ id: 'wrote-story-file', weight: 0.2, score: 1 },
-			{ id: 'opened-preview', weight: 0.3, score: 1 },
+			{ id: 'badge-is-pill', weight: 0.25, score: 1 },
+			{ id: 'loaded-story-rules', weight: 0.2, score: 1 },
+			{ id: 'stories-skill', weight: 0.15, score: 1 },
+			{ id: 'wrote-story-file', weight: 0.1, score: 1 },
+			{ id: 'story-covers-tones', weight: 0.1, score: 1 },
+			{ id: 'opened-preview', weight: 0.2, score: 1 },
 		]);
 	});
 
@@ -156,7 +153,7 @@ describe('scoreEvaluation', () => {
 			description: 'Opened the Storybook preview through the eval preview-browser mock',
 			score: 0,
 		});
-		expect(score?.percent).toBe(70);
+		expect(score?.percent).toBe(45);
 	});
 
 	test('does not count the preview-browser mock unless Storybook was started', () => {
@@ -190,7 +187,7 @@ describe('scoreEvaluation', () => {
 				startedStorybook: false,
 			},
 		});
-		expect(score?.percent).toBe(70);
+		expect(score?.percent).toBe(45);
 	});
 
 	test('recognizes Codex when the harness agent id is namespaced', () => {

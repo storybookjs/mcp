@@ -14,6 +14,18 @@ export function parseGeneratedJson(runData: ScoringRunData, path: string): unkno
 	return parseJson(runData.generatedFiles?.[path]);
 }
 
+export function generatedFileContent(runData: ScoringRunData, path: string): string | undefined {
+	return runData.generatedFiles?.[path];
+}
+
+export function findGeneratedFileContent(
+	runData: ScoringRunData,
+	pattern: RegExp,
+): string | undefined {
+	const match = Object.entries(runData.generatedFiles ?? {}).find(([path]) => pattern.test(path));
+	return match?.[1];
+}
+
 export function generatedFilePaths(runData: ScoringRunData): string[] {
 	return Object.keys(runData.generatedFiles ?? {});
 }

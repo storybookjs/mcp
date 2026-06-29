@@ -7,7 +7,7 @@
 		"eval": "agent-eval",
 		"eval:dry": "agent-eval --dry",
 		"eval:smoke": "agent-eval --smoke",
-		"export-results": "node scripts/export-results.js"
+		"export-results": "node scripts/export-results.ts"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",
