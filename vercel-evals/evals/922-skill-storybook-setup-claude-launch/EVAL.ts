@@ -21,6 +21,6 @@ test('adds a Storybook launch entry with autoPort: true', () => {
 test('preserves the existing App dev server launch entry', () => {
 	const appDevServer = launchConfigs().find((config) => config.name === 'App dev server');
 	expect(appDevServer, '.claude/launch.json must keep the "App dev server" entry').toBeDefined();
-	expect(appDevServer?.command).toBe('pnpm dev --port $PORT');
+	expect(appDevServer?.command).toBe('pnpm dev');
 	expect(appDevServer?.autoPort).toBe(true);
 });
