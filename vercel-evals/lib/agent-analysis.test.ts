@@ -66,6 +66,47 @@ describe('analyzeAgentRun', () => {
 		]);
 	});
 
+ 	test('finds no browser URL for the native preview_start tool call (Claude)', () => {
+		const analysis = analyzeAgentRun(
+			runData(
+				jsonl([
+					{
+						type: 'assistant',
+						message: {
+							content: [
+								{
+									type: 'tool_use',
+									name: 'mcp__preview-browser__preview_start',
+									input: { name: 'storybook' },
+								},
+							],
+						},
+					},
+				]),
+			),
+			'claude-code',
+		);
+
+		expect(analysis.workflow.browserUrls).toEqual([]);
+	});
+
+	test('finds no browser URL for the native preview_start tool call (Codex)', () => {
+		const analysis = analyzeAgentRun(
+			runData(
+				jsonl([
+					{
+						type: 'tool_call',
+						tool: 'preview-browser__preview_start',
+						input: { name: 'storybook' },
+					},
+				]),
+			),
+			'codex',
+		);
+
+		expect(analysis.workflow.browserUrls).toEqual([]);
+	});
+
 	test('detects a Claude skill invocation from the Skill tool call', () => {
 		const analysis = analyzeAgentRun(
 			runData(

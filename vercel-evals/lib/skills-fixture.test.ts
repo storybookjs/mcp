@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { storybookPreviewBrowserMockFiles, storybookSkillFiles } from './skills-fixture.ts';
+import {
+	claudeMcpConfigFiles,
+	storybookPreviewBrowserMockFiles,
+	storybookSkillFiles,
+} from './skills-fixture.ts';
 
 const files = storybookSkillFiles();
 
@@ -42,6 +46,8 @@ describe('storybookSkillFiles', () => {
 		for (const content of Object.values(files)) {
 			expect(content).not.toContain('## Eval marker');
 			expect(content).not.toContain('.agent-eval/skills/');
+			expect(content).not.toContain('open_preview_browser');
+			expect(content).not.toContain('preview-browser MCP');
 		}
 	});
 
@@ -50,28 +56,37 @@ describe('storybookSkillFiles', () => {
 		expect(files['.agents/skills/stories/SKILL.md']).toContain('require_escalated');
 		expect(files['.claude/skills/setup/SKILL.md']).not.toContain('require_escalated');
 	});
-
-	test('adds the eval preview browser mock only to the stories skills', () => {
-		expect(files['.claude/skills/stories/SKILL.md']).toContain(
-			'start the project Storybook dev script first',
-		);
-		expect(files['.agents/skills/stories/SKILL.md']).toContain(
-			'node .agent-eval/bin/open-preview-browser.mjs <storybook-preview-url>',
-		);
-		expect(files['.claude/skills/setup/SKILL.md']).not.toContain('open-preview-browser');
-	});
 });
 
 describe('storybookPreviewBrowserMockFiles', () => {
-	test('emits the preview browser marker command', () => {
-		const mockFiles = storybookPreviewBrowserMockFiles();
+	const serverFiles = storybookPreviewBrowserMockFiles();
 
-		expect(Object.keys(mockFiles)).toEqual(['.agent-eval/bin/open-preview-browser.mjs']);
-		expect(mockFiles['.agent-eval/bin/open-preview-browser.mjs']).toContain(
-			'.agent-eval/preview-browser.json',
-		);
-		expect(mockFiles['.agent-eval/bin/open-preview-browser.mjs']).toContain(
-			'eval-preview-browser-mock',
-		);
+	test('emits a single stdio MCP server file', () => {
+		expect(Object.keys(serverFiles)).toEqual(['.agent-eval/mcp/preview-browser-mock.mjs']);
+	});
+
+	test('exposes the preview tools and stays dependency-free', () => {
+		const src = serverFiles['.agent-eval/mcp/preview-browser-mock.mjs'];
+		for (const tool of ['preview_start', 'preview_screenshot', 'preview_snapshot', 'preview_inspect']) {
+			expect(src).toContain(tool);
+		}
+		expect(src).toContain('tools/call');
+		// Only node: built-ins — the sandbox project's node_modules may lack anything else.
+		const imports = [...src.matchAll(/from '([^']+)'/g)].map((match) => match[1]);
+		expect(imports.length).toBeGreaterThan(0);
+		expect(imports.every((mod) => mod.startsWith('node:'))).toBe(true);
+	});
+});
+
+describe('claudeMcpConfigFiles', () => {
+	test('registers the preview-browser server in a project .mcp.json', () => {
+		const config = claudeMcpConfigFiles();
+		expect(Object.keys(config)).toEqual(['.mcp.json']);
+
+		const parsed = JSON.parse(config['.mcp.json']);
+		expect(parsed.mcpServers['preview-browser']).toEqual({
+			command: 'node',
+			args: ['.agent-eval/mcp/preview-browser-mock.mjs'],
+		});
 	});
 });

@@ -78,8 +78,8 @@ describe('scoreThreshold', () => {
 		}
 	});
 
-	test('uses each scorer default', () => {
-		expect(scoreThreshold('923-skill-stories')).toBe(70);
+	test('falls back to 100 for the EVAL.ts skill fixtures (no registered scorer)', () => {
+		expect(scoreThreshold('923-skill-stories')).toBe(100);
 		expect(scoreThreshold('922-skill-storybook-setup-claude-launch')).toBe(100);
 	});
 
@@ -99,21 +99,23 @@ describe('scoreThreshold', () => {
 	});
 });
 
-describe('withAgentAnalysis score recording', () => {
-	test('does not change the run status (no per-run gate)', async () => {
-		// Empty run → 0% for 923, but success is the aggregate mean, not per-run.
+describe('withAgentAnalysis run recording', () => {
+	test('does not change the run status', async () => {
+		// onRunComplete records analysis but never gates; vitest (EVAL.ts) is the gate.
 		expect((await runHook('923-skill-stories', 'passed')).result.status).toBe('passed');
 		expect((await runHook('923-skill-stories', 'failed')).result.status).toBe('failed');
 	});
 
-	test('records the score and aggregate threshold on analysis', async () => {
+	test('records agent analysis; no evaluation without a registered scorer', async () => {
 		const out = await runHook('923-skill-stories', 'passed');
 		const analysis = out.result.analysis as {
 			threshold?: number;
-			evaluation?: { percent: number };
+			evaluation?: unknown;
+			skillInvocations?: string[];
 		};
 
-		expect(analysis.threshold).toBe(70);
-		expect(analysis.evaluation?.percent).toBe(0);
+		expect(analysis.threshold).toBe(100);
+		expect(analysis.evaluation).toBeUndefined();
+		expect(Array.isArray(analysis.skillInvocations)).toBe(true);
 	});
 });

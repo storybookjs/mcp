@@ -41,8 +41,6 @@ export function withAgentAnalysis(config: ExperimentConfig): ExperimentConfig {
 	return {
 		sandbox: 'docker',
 		earlyExit: false,
-		// Correctness + quality is scored by lib/scoring; EVAL.ts is a stub, so skip it.
-		validation: 'none',
 		runs: evalRuns(),
 		...config,
 		async onRunComplete(context): Promise<EvalRunData> {

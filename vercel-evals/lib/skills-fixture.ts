@@ -3,29 +3,33 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Builds the Storybook plugin skill files injected into each eval sandbox at
- * setup time, derived from the canonical plugin skills under `packages/`.
- *
- * The committed fixtures used to carry hand-edited copies of these skills, which
- * drifted from the shipped plugins. Instead we read the canonical SKILL.md, apply
- * the eval-only overlays (a preview-browser mock and a sandbox note) in code, and
- * `sandbox.writeFiles()` the result before the agent runs. Skill *invocation* is
- * detected from the transcript (see `agent-analysis.ts`), so the skill content is
- * otherwise unmodified. The plugin packages stay the single source of truth.
+ * Builds the Storybook plugin skill files injected into each eval sandbox, read live
+ * from the canonical skills under `packages/` with one eval-only overlay: a sandbox
+ * `require_escalated` note. Also ships a mock MCP server that simulates the preview
+ * browser — a native capability the sandbox lacks — so the agent can open the
+ * Storybook preview. The injected skills do not mention the mock.
  */
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(HERE, '../..');
 
 const CLAUDE_SKILLS_ROOT = 'packages/claude-plugin/skills';
 const CODEX_SKILLS_ROOT = 'packages/codex-plugin/plugins/storybook/skills';
+
+/** Sandbox-relative path the mock MCP server is written to. */
+export const PREVIEW_BROWSER_MOCK_PATH = '.agent-eval/mcp/preview-browser-mock.mjs';
+
+/** MCP server name; kept recognizable as a browser tool so scoring can detect its calls. */
+export const PREVIEW_BROWSER_MCP_SERVER_NAME = 'preview-browser';
+
+/** The real MCP server source (`lib/mcp/`), shipped verbatim into the sandbox. */
+const MCP_SERVER_SOURCE_FILE = resolve(HERE, 'mcp/preview-browser-mock.mjs');
 
 type SkillSource = {
 	/** Skill name as it appears in the sandbox. */
 	name: string;
 	/** Directory holding the canonical SKILL.md, relative to the repo root. */
 	from: string;
-	/** Inject the eval-only preview browser mock instruction. */
-	previewBrowserMock?: boolean;
 	/** Inject the sandbox `require_escalated` note for Storybook CLI commands. */
 	sandboxNote?: boolean;
 };
@@ -46,7 +50,6 @@ const SURFACES: Surface[] = [
 			{
 				name: 'stories',
 				from: `${CLAUDE_SKILLS_ROOT}/stories`,
-				previewBrowserMock: true,
 				sandboxNote: true,
 			},
 			{
@@ -64,7 +67,6 @@ const SURFACES: Surface[] = [
 			{
 				name: 'stories',
 				from: `${CODEX_SKILLS_ROOT}/stories`,
-				previewBrowserMock: true,
 				sandboxNote: true,
 			},
 		],
@@ -76,24 +78,6 @@ const SANDBOX_SECTION = [
 	'',
 	'In sandboxed environments, run any Storybook CLI command with `require_escalated` ' +
 		'(sandbox/network permissions may otherwise prevent localhost access).',
-].join('\n');
-
-const PREVIEW_BROWSER_MOCK_SECTION = [
-	'## Eval preview browser mock',
-	'',
-	'This Vercel Agent Eval sandbox does not expose the real Claude/Codex preview browser. ' +
-		'When Storybook AI commands require a running preview, start the project Storybook dev script first.',
-	'',
-	'After Storybook is running and you have a preview URL, record the browser-open intent by running:',
-	'',
-	'```bash',
-	'node .agent-eval/bin/open-preview-browser.mjs <storybook-preview-url>',
-	'```',
-	'',
-	'Use the real Storybook URL you would open in the preview browser, for example ' +
-		'`http://localhost:6006/?path=/story/components-badge--default`.',
-	'',
-	'This writes `.agent-eval/preview-browser.json`, which the eval harness scores as the preview browser signal.',
 ].join('\n');
 
 function splitFrontmatter(md: string): { frontmatter: string; body: string } {
@@ -108,12 +92,9 @@ function renderSkill(skill: SkillSource): string {
 	const { frontmatter, body } = splitFrontmatter(raw);
 	const renamed = frontmatter.replace(/^name:.*$/m, `name: ${skill.name}`);
 
-	const sections = [
-		renamed.trim(),
-		skill.previewBrowserMock ? PREVIEW_BROWSER_MOCK_SECTION : '',
-		skill.sandboxNote ? SANDBOX_SECTION : '',
-		body.trim(),
-	].filter(Boolean);
+	const sections = [renamed.trim(), skill.sandboxNote ? SANDBOX_SECTION : '', body.trim()].filter(
+		Boolean,
+	);
 
 	return `${sections.join('\n\n')}\n`;
 }
@@ -132,41 +113,31 @@ export function storybookSkillFiles(): Record<string, string> {
 	return files;
 }
 
+/** The mock preview-browser MCP server file, for both agent surfaces. */
 export function storybookPreviewBrowserMockFiles(): Record<string, string> {
 	return {
-		'.agent-eval/bin/open-preview-browser.mjs': `#!/usr/bin/env node
-import { mkdirSync, writeFileSync } from 'node:fs';
-
-const url = process.argv[2];
-
-if (!url) {
-	console.error('Usage: node .agent-eval/bin/open-preview-browser.mjs <url>');
-	process.exit(1);
+		[PREVIEW_BROWSER_MOCK_PATH]: readFileSync(MCP_SERVER_SOURCE_FILE, 'utf-8'),
+	};
 }
 
-try {
-	new URL(url);
-} catch {
-	console.error(\`Invalid preview URL: \${url}\`);
-	process.exit(1);
-}
-
-mkdirSync('.agent-eval', { recursive: true });
-writeFileSync(
-	'.agent-eval/preview-browser.json',
-	JSON.stringify(
-		{
-			source: 'eval-preview-browser-mock',
-			status: 'opened',
-			url,
-			openedAt: new Date().toISOString(),
-		},
-		null,
-		2,
-	),
-);
-
-console.log(\`Recorded preview browser open: \${url}\`);
-`,
+/**
+ * Project-scoped `.mcp.json` registering the mock server for Claude Code, which
+ * auto-loads it under `--dangerously-skip-permissions`. Avoids `claude mcp add`,
+ * which can't run in setup — the harness installs the CLI afterward.
+ */
+export function claudeMcpConfigFiles(): Record<string, string> {
+	return {
+		'.mcp.json': `${JSON.stringify(
+			{
+				mcpServers: {
+					[PREVIEW_BROWSER_MCP_SERVER_NAME]: {
+						command: 'node',
+						args: [PREVIEW_BROWSER_MOCK_PATH],
+					},
+				},
+			},
+			null,
+			2,
+		)}\n`,
 	};
 }
