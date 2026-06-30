@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@vercel/agent-eval@1.1.1':
-    hash: 146c0c1c59afe2314aa3860616b55920ce2b2ffe8d38fe0cfecaf1afc227feea
-    path: patches/@vercel__agent-eval@1.1.1.patch
+  '@vercel/agent-eval@1.2.0':
+    hash: ba79990031868e0add5e1fd25f7811c343d31acb96b0fa71f39810afb85e32cc
+    path: patches/@vercel__agent-eval@1.2.0.patch
 
 importers:
 
@@ -17,8 +17,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@vercel/agent-eval':
-        specifier: ^1.1.1
-        version: 1.1.1(patch_hash=146c0c1c59afe2314aa3860616b55920ce2b2ffe8d38fe0cfecaf1afc227feea)
+        specifier: ^1.2.0
+        version: 1.2.0(patch_hash=ba79990031868e0add5e1fd25f7811c343d31acb96b0fa71f39810afb85e32cc)
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -403,8 +403,8 @@ packages:
   '@types/node@22.20.0':
     resolution: {integrity: sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g==}
 
-  '@vercel/agent-eval@1.1.1':
-    resolution: {integrity: sha512-Kzn7iylj0fWkgD2jDDHBk9XS9ITs8+OdhcN97pBRU4+v/wfDjHzVkf/ocvtjS2jZz3G3KeOk9BU1+xxIcIDPkA==}
+  '@vercel/agent-eval@1.2.0':
+    resolution: {integrity: sha512-p0NdqaGp8jW4kN5r2t6gPQxRrHXrhJKY8nbQFVkAF0TzZ5z9tLFC/OPI5jUN2XgY8lFhABoM5748NDmPRR9HNA==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -1399,7 +1399,7 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@vercel/agent-eval@1.1.1(patch_hash=146c0c1c59afe2314aa3860616b55920ce2b2ffe8d38fe0cfecaf1afc227feea)':
+  '@vercel/agent-eval@1.2.0(patch_hash=ba79990031868e0add5e1fd25f7811c343d31acb96b0fa71f39810afb85e32cc)':
     dependencies:
       '@ai-sdk/anthropic': 1.2.12(zod@3.25.76)
       '@vercel/sandbox': 1.10.2

@@ -1,5 +1,5 @@
 diff --git a/dist/cli.js b/dist/cli.js
-index 62513a2fa69ed14348fac25528074ad7415abae5..3be8fea2f3f2143fa8b35e9ab8fe88020f884e44 100644
+index 62513a2..3be8fea 100644
 --- a/dist/cli.js
 +++ b/dist/cli.js
 @@ -230,8 +230,13 @@ program
@@ -19,40 +19,42 @@ index 62513a2fa69ed14348fac25528074ad7415abae5..3be8fea2f3f2143fa8b35e9ab8fe8802
  });
  /**
 diff --git a/dist/lib/docker-sandbox.js b/dist/lib/docker-sandbox.js
-index 99df8fb3ab72003144926f19243baf6b2102f050..07482051b40b82d59b1be4607ef4fe1e4422891d 100644
+index 99df8fb..369c403 100644
 --- a/dist/lib/docker-sandbox.js
 +++ b/dist/lib/docker-sandbox.js
-@@ -186,41 +186,36 @@ export class DockerSandboxManager {
+@@ -3,6 +3,7 @@
+  * Uses dockerode to manage Docker containers as sandboxes.
+  */
+ import Docker from 'dockerode';
++import { PassThrough } from 'node:stream';
+ import * as tar from 'tar-stream';
+ /**
+  * Docker images for each Node.js runtime.
+@@ -184,47 +185,22 @@ export class DockerSandboxManager {
+         });
+         const stream = await exec.start({ hijack: true, stdin: false });
          return new Promise((resolve, reject) => {
-             let stdout = '';
-             let stderr = '';
+-            let stdout = '';
+-            let stderr = '';
 -            // Docker multiplexes stdout/stderr in the stream
 -            // We need to demux it
-+            // Docker multiplexes stdout/stderr into a single framed stream
-+            // ([stream_type, 0,0,0, size(4 BE)] + payload). Frames can be split
-+            // across 'data' events, so carry incomplete trailing bytes over to
-+            // the next chunk instead of mis-parsing them (which dropped bytes on
-+            // chunk boundaries, e.g. corrupting large `cat` reads).
++            // Docker multiplexes stdout/stderr into a single stream; let dockerode's
++            // modem demux it. demuxStream reassembles frames split across chunk
++            // boundaries — the hand-rolled parser dropped bytes there, corrupting
++            // large reads (e.g. transcript `cat`s).
              const stdoutChunks = [];
              const stderrChunks = [];
-+            let buffer = Buffer.alloc(0);
-             stream.on('data', (chunk) => {
+-            stream.on('data', (chunk) => {
 -                // Docker stream format: 8-byte header + payload
 -                // Header: [stream_type (1 byte), 0, 0, 0, size (4 bytes)]
 -                // stream_type: 1 = stdout, 2 = stderr
-+                buffer = buffer.length > 0 ? Buffer.concat([buffer, chunk]) : chunk;
-                 let offset = 0;
+-                let offset = 0;
 -                while (offset < chunk.length) {
 -                    if (offset + 8 > chunk.length) {
 -                        // Incomplete header, treat rest as stdout
 -                        stdoutChunks.push(chunk.slice(offset));
-+                while (offset + 8 <= buffer.length) {
-+                    const streamType = buffer[offset];
-+                    const size = buffer.readUInt32BE(offset + 4);
-+                    // Full payload not received yet; wait for the next chunk.
-+                    if (offset + 8 + size > buffer.length) {
-                         break;
-                     }
+-                        break;
+-                    }
 -                    const streamType = chunk[offset];
 -                    const size = chunk.readUInt32BE(offset + 4);
 -                    if (offset + 8 + size > chunk.length) {
@@ -65,19 +67,27 @@ index 99df8fb3ab72003144926f19243baf6b2102f050..07482051b40b82d59b1be4607ef4fe1e
 -                        stdoutChunks.push(payload);
 -                    }
 -                    else if (streamType === 2) {
-+                    // Copy the payload so it does not alias the retained buffer below.
-+                    const payload = Buffer.from(buffer.subarray(offset + 8, offset + 8 + size));
-+                    if (streamType === 2) {
-                         stderrChunks.push(payload);
-                     }
-                     else {
+-                        stderrChunks.push(payload);
+-                    }
+-                    else {
 -                        // Unknown type, assume stdout
-                         stdoutChunks.push(payload);
-                     }
-                     offset += 8 + size;
-                 }
-+                // Retain unparsed bytes (partial header or payload) for the next chunk.
-+                buffer = offset < buffer.length ? Buffer.from(buffer.subarray(offset)) : Buffer.alloc(0);
-             });
+-                        stdoutChunks.push(payload);
+-                    }
+-                    offset += 8 + size;
+-                }
+-            });
++            const stdoutStream = new PassThrough();
++            const stderrStream = new PassThrough();
++            stdoutStream.on('data', (chunk) => stdoutChunks.push(chunk));
++            stderrStream.on('data', (chunk) => stderrChunks.push(chunk));
++            this.docker.modem.demuxStream(stream, stdoutStream, stderrStream);
              stream.on('end', async () => {
-                 stdout = Buffer.concat(stdoutChunks).toString('utf-8');
+-                stdout = Buffer.concat(stdoutChunks).toString('utf-8');
+-                stderr = Buffer.concat(stderrChunks).toString('utf-8');
++                stdoutStream.end();
++                stderrStream.end();
++                const stdout = Buffer.concat(stdoutChunks).toString('utf-8');
++                const stderr = Buffer.concat(stderrChunks).toString('utf-8');
+                 try {
+                     const inspection = await exec.inspect();
+                     resolve({

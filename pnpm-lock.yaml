@@ -11,9 +11,9 @@ catalogs:
       version: 7.2.2
 
 patchedDependencies:
-  '@vercel/agent-eval@1.1.1':
-    hash: 146c0c1c59afe2314aa3860616b55920ce2b2ffe8d38fe0cfecaf1afc227feea
-    path: vercel-evals/patches/@vercel__agent-eval@1.1.1.patch
+  '@vercel/agent-eval@1.2.0':
+    hash: ba79990031868e0add5e1fd25f7811c343d31acb96b0fa71f39810afb85e32cc
+    path: vercel-evals/patches/@vercel__agent-eval@1.2.0.patch
 
 importers:
 
