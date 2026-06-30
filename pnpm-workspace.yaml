@@ -2,6 +2,8 @@ packages:
   - packages/*
   - apps/*
   - eval
+  - agent-eval
+  - '!agent-eval/evals/*'
   - '!eval/templates/project'
   - '!eval/tasks/*/trials/*/project'
 
