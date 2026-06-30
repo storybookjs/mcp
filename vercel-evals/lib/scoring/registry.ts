@@ -1,5 +1,3 @@
-import { storybookSetupClaudeLaunchScorer } from './scorers/storybook-setup-claude-launch.ts';
-import { storiesScorer } from './scorers/stories.ts';
 import type {
 	EvaluationScore,
 	EvaluationScorer,
@@ -8,10 +6,7 @@ import type {
 	ScoringRunData,
 } from './types.ts';
 
-export const scoringRegistry: EvaluationScorer[] = [
-	storybookSetupClaudeLaunchScorer,
-	storiesScorer,
-];
+export const scoringRegistry: EvaluationScorer[] = [];
 
 export function findScorer(fixtureName: string): EvaluationScorer | undefined {
 	return scoringRegistry.find((scorer) => scorer.fixtureName === fixtureName);
