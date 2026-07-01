@@ -4,6 +4,7 @@ packages:
   - eval
   - agent-eval
   - '!agent-eval/evals/*'
+  - '!agent-eval/templates/*'
   - '!eval/templates/project'
   - '!eval/tasks/*/trials/*/project'
 
