@@ -38,19 +38,32 @@ jobs:
         run: pnpm --dir agent-eval run typecheck
 
       - name: Run all experiments
-        run: pnpm --dir agent-eval run eval
+        run: |
+          set +e
+          pnpm --dir agent-eval run eval
+          status=$?
+          mkdir -p agent-eval/results
+          echo "$status" > agent-eval/results/.agent-eval-exit-code
+          exit 0
         env:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Report eval results
+        run: pnpm --dir agent-eval run eval:report
+
+      - name: Archive eval results
+        if: always()
+        run: |
+          if [ -d agent-eval/results ]; then
+            tar -czf agent-eval-results.tgz -C agent-eval results
+          fi
 
       - name: Upload eval results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: agent-eval-results-${{ github.run_id }}-${{ github.run_attempt }}
-          path: agent-eval/results
+          path: agent-eval-results.tgz
           if-no-files-found: ignore
           retention-days: 14
