@@ -1,23 +1,55 @@
 import { createStorybookMcpHandler } from '@storybook/mcp';
 import fs from 'node:fs/promises';
-import { basename, resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
+
+/**
+ * Maps a manifest provider path to its `{ base, rel }` location.
+ *
+ * Top-level manifests (`./manifests/<name>.json`) live in `manifestsPath`; split/ref
+ * payloads (`./services/<service>/<id>.json`) live in a sibling `services/` directory,
+ * so they resolve against the Storybook build root (the parent of `manifestsPath`).
+ */
+function resolveManifestTarget(
+	manifestsPath: string,
+	path: string,
+	isRemote: boolean,
+): { base: string; rel: string } {
+	const normalized = path.replace(/^\.?\//, '');
+	if (normalized.startsWith('manifests/')) {
+		return { base: manifestsPath, rel: normalized.slice('manifests/'.length) };
+	}
+	// `services/...` is a sibling of the manifests directory (the build root).
+	const root = isRemote ? manifestsPath.replace(/\/[^/]+\/?$/, '') : dirname(manifestsPath);
+	return { base: root, rel: normalized };
+}
+
+function resolveManifestFile(base: string, rel: string): string {
+	const resolvedBase = resolve(base);
+	const resolved = resolve(resolvedBase, rel);
+	if (resolved !== resolvedBase && !resolved.startsWith(resolvedBase + sep)) {
+		throw new Error(`Refusing to read manifest outside base: ${rel}`);
+	}
+	return resolved;
+}
 
 export function createMcpHandler(manifestsPath: string) {
 	return createStorybookMcpHandler({
 		manifestProvider: async (_request: Request | undefined, path: string) => {
-			const fileName = basename(path);
+			const isRemote = manifestsPath.startsWith('http://') || manifestsPath.startsWith('https://');
+			const { base, rel } = resolveManifestTarget(manifestsPath, path, isRemote);
 
-			if (manifestsPath.startsWith('http://') || manifestsPath.startsWith('https://')) {
-				const response = await fetch(`${manifestsPath}/${fileName}`);
+			if (isRemote) {
+				const url = `${base.replace(/\/$/, '')}/${rel}`;
+				const response = await fetch(url);
 				if (!response.ok) {
 					throw new Error(
-						`Failed to fetch manifest from ${manifestsPath}/${fileName}: ${response.status} ${response.statusText}`,
+						`Failed to fetch manifest from ${url}: ${response.status} ${response.statusText}`,
 					);
 				}
 				return await response.text();
 			}
 
-			return await fs.readFile(resolve(manifestsPath, fileName), 'utf-8');
+			return await fs.readFile(resolveManifestFile(base, rel), 'utf-8');
 		},
 	});
 }
@@ -52,5 +84,7 @@ if (import.meta.main) {
 		},
 	});
 
-	console.log(`@storybook/mcp example server listening on http://localhost:${port}/mcp`);
+	console.log(
+		`@storybook/mcp example server listening on http://localhost:${args.values.port}/mcp`,
+	);
 }
