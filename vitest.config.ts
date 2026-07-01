@@ -25,7 +25,13 @@ export default defineConfig({
 		projects: ['packages/*', 'apps/*', 'eval'],
 		coverage: {
 			include: ['**/src/**/*.{ts,tsx}'],
-			exclude: ['*.d.ts', 'eval/templates/project/**', 'eval/evals/**'],
+			exclude: [
+				'*.d.ts',
+				'agent-eval/**',
+				'eval/evals/**',
+				'eval/tasks/**',
+				'eval/templates/project/**',
+			],
 			reporter: ['text', 'lcov', 'html'],
 		},
 	},
