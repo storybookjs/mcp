@@ -66,14 +66,7 @@ jobs:
 
       - name: Run all experiments
         id: run_evals
-        continue-on-error: true
-        run: |
-          set +e
-          pnpm --dir agent-eval run eval
-          status=$?
-          mkdir -p agent-eval/results
-          echo "$status" > agent-eval/results/.agent-eval-exit-code
-          exit "$status"
+        run: pnpm --dir agent-eval run eval
         env:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -82,30 +75,25 @@ jobs:
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-      - name: Report eval results
-        id: report_evals
-        continue-on-error: true
-        run: pnpm --dir agent-eval run eval:report
-
       - name: Check eval results
+        if: ${{ always() }}
         id: check_results
         shell: bash
         run: |
-          # The eval step creates this directory before writing the preserved exit code.
-          # Keep this guard for failures that happen before that shell body starts.
           if [[ ! -d agent-eval/results ]]; then
             echo "::error title=Missing eval results::Expected agent-eval/results to exist before deploying the playground."
             exit 1
           fi
 
-          if ! find agent-eval/results -type f ! -name '.agent-eval-exit-code' -print -quit | grep -q .; then
-            echo "::warning title=No eval result files::agent-eval/results only contains the preserved exit marker. The playground will still deploy, then the final status step will fail the workflow."
-            echo "has_result_files=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_result_files=true" >> "$GITHUB_OUTPUT"
+          if ! find agent-eval/results -type f -print -quit | grep -q .; then
+            echo "::error title=No eval result files::Expected agent-eval/results to contain files before deploying the playground."
+            exit 1
           fi
 
+          echo "has_result_files=true" >> "$GITHUB_OUTPUT"
+
       - name: Resolve Vercel target
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         id: vercel_target
         shell: bash
         run: |
@@ -117,6 +105,7 @@ jobs:
           fi
 
       - name: Link Vercel project
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         working-directory: agent-eval
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -124,6 +113,7 @@ jobs:
         run: pnpm exec vercel link --yes --team "$VERCEL_TEAM_ID" --project "$VERCEL_PROJECT_NAME" --token "$VERCEL_TOKEN"
 
       - name: Pull Vercel environment
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         working-directory: agent-eval
         shell: bash
         env:
@@ -137,12 +127,14 @@ jobs:
           fi
 
       - name: Build playground
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         working-directory: agent-eval
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: pnpm exec vercel build --yes --target=${{ steps.vercel_target.outputs.target }} --token "$VERCEL_TOKEN"
 
       - name: Deploy playground
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         id: deploy_playground
         working-directory: agent-eval
         shell: bash
@@ -165,6 +157,7 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Write deployment summary
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         run: |
           {
             echo "### Agent eval playground"
@@ -173,20 +166,3 @@ jobs:
             echo "- Project: \`$VERCEL_PROJECT_NAME\`"
             echo "- URL: ${{ steps.deploy_playground.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Fail if evals or report failed
-        if: ${{ steps.run_evals.outcome != 'success' || steps.report_evals.outcome != 'success' || steps.check_results.outputs.has_result_files != 'true' }}
-        run: |
-          if [[ "${{ steps.run_evals.outcome }}" != "success" ]]; then
-            echo "::error title=Agent eval failed::The playground was deployed with the produced results, but the eval step failed."
-          fi
-
-          if [[ "${{ steps.report_evals.outcome }}" != "success" ]]; then
-            echo "::error title=Agent eval report failed::The playground was deployed with the produced results, but the eval report step failed."
-          fi
-
-          if [[ "${{ steps.check_results.outputs.has_result_files }}" != "true" ]]; then
-            echo "::error title=No eval result files::The playground was deployed, but agent-eval/results did not contain analyzable result files."
-          fi
-
-          exit 1
