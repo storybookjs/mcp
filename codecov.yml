@@ -1,0 +1,5 @@
+ignore:
+  - 'agent-eval/app/**/*'
+  - 'agent-eval/next.config.ts'
+  - 'agent-eval/postcss.config.mjs'
+  - 'agent-eval/scripts/check-playground-routes.mjs'

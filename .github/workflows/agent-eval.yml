@@ -11,6 +11,7 @@ on:
 
 env:
   TURBO_ENV_MODE: loose
+  VERCEL_PROJECT_NAME: storybook-evals
 
 jobs:
   eval:
@@ -20,8 +21,14 @@ jobs:
       (!github.event.pull_request.head.repo.fork &&
         contains(github.event.pull_request.labels.*.name, 'ci:eval'))
     runs-on: ubuntu-latest
+    environment:
+      # Keep this rule in sync with the Resolve Vercel target step below.
+      # GitHub evaluates environment.name before step outputs exist.
+      name: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+      url: ${{ steps.deploy_playground.outputs.url }}
     permissions:
       contents: read
+      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -37,36 +44,149 @@ jobs:
       - name: Type check agent eval config
         run: pnpm --dir agent-eval run typecheck
 
+      - name: Check playground route shims
+        run: pnpm --dir agent-eval run playground:check-routes
+
+      - name: Validate Vercel credentials
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          missing=0
+
+          for name in VERCEL_TOKEN VERCEL_TEAM_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error title=Missing Vercel secret::$name is required to deploy the agent eval playground."
+              missing=1
+            fi
+          done
+
+          exit "$missing"
+
       - name: Run all experiments
+        id: run_evals
+        continue-on-error: true
         run: |
           set +e
           pnpm --dir agent-eval run eval
           status=$?
           mkdir -p agent-eval/results
           echo "$status" > agent-eval/results/.agent-eval-exit-code
-          exit 0
+          exit "$status"
         env:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
       - name: Report eval results
+        id: report_evals
+        continue-on-error: true
         run: pnpm --dir agent-eval run eval:report
 
-      - name: Archive eval results
-        if: always()
+      - name: Check eval results
+        id: check_results
+        shell: bash
         run: |
-          if [ -d agent-eval/results ]; then
-            tar -czf agent-eval-results.tgz -C agent-eval results
+          # The eval step creates this directory before writing the preserved exit code.
+          # Keep this guard for failures that happen before that shell body starts.
+          if [[ ! -d agent-eval/results ]]; then
+            echo "::error title=Missing eval results::Expected agent-eval/results to exist before deploying the playground."
+            exit 1
           fi
 
-      - name: Upload eval results
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: agent-eval-results-${{ github.run_id }}-${{ github.run_attempt }}
-          path: agent-eval-results.tgz
-          if-no-files-found: ignore
-          retention-days: 14
+          if ! find agent-eval/results -type f ! -name '.agent-eval-exit-code' -print -quit | grep -q .; then
+            echo "::warning title=No eval result files::agent-eval/results only contains the preserved exit marker. The playground will still deploy, then the final status step will fail the workflow."
+            echo "has_result_files=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_result_files=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve Vercel target
+        id: vercel_target
+        shell: bash
+        run: |
+          # Keep this rule in sync with jobs.eval.environment.name above.
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo "target=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=preview" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Link Vercel project
+        working-directory: agent-eval
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: pnpm exec vercel link --yes --team "$VERCEL_TEAM_ID" --project "$VERCEL_PROJECT_NAME" --token "$VERCEL_TOKEN"
+
+      - name: Pull Vercel environment
+        working-directory: agent-eval
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [[ "${{ steps.vercel_target.outputs.target }}" == "production" ]]; then
+            pnpm exec vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          else
+            branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+            pnpm exec vercel pull --yes --environment=preview --git-branch "$branch" --token "$VERCEL_TOKEN"
+          fi
+
+      - name: Build playground
+        working-directory: agent-eval
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm exec vercel build --yes --target=${{ steps.vercel_target.outputs.target }} --token "$VERCEL_TOKEN"
+
+      - name: Deploy playground
+        id: deploy_playground
+        working-directory: agent-eval
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          deploy_output="$(pnpm exec vercel deploy --prebuilt --yes --target=${{ steps.vercel_target.outputs.target }} --token "$VERCEL_TOKEN")"
+          printf '%s\n' "$deploy_output"
+
+          url="$(
+            printf '%s\n' "$deploy_output" |
+              awk '/https:\/\/[^[:space:]]+\.vercel\.app/ { match($0, /https:\/\/[^[:space:]]+\.vercel\.app[^[:space:]]*/); if (RSTART) found=substr($0,RSTART,RLENGTH) } END { print found }'
+          )"
+
+          if [[ -z "$url" ]]; then
+            echo "::error title=Missing deployment URL::Vercel deploy did not print a deployment URL."
+            exit 1
+          fi
+
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Write deployment summary
+        run: |
+          {
+            echo "### Agent eval playground"
+            echo
+            echo "- Target: \`${{ steps.vercel_target.outputs.target }}\`"
+            echo "- Project: \`$VERCEL_PROJECT_NAME\`"
+            echo "- URL: ${{ steps.deploy_playground.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if evals or report failed
+        if: ${{ steps.run_evals.outcome != 'success' || steps.report_evals.outcome != 'success' || steps.check_results.outputs.has_result_files != 'true' }}
+        run: |
+          if [[ "${{ steps.run_evals.outcome }}" != "success" ]]; then
+            echo "::error title=Agent eval failed::The playground was deployed with the produced results, but the eval step failed."
+          fi
+
+          if [[ "${{ steps.report_evals.outcome }}" != "success" ]]; then
+            echo "::error title=Agent eval report failed::The playground was deployed with the produced results, but the eval report step failed."
+          fi
+
+          if [[ "${{ steps.check_results.outputs.has_result_files }}" != "true" ]]; then
+            echo "::error title=No eval result files::The playground was deployed, but agent-eval/results did not contain analyzable result files."
+          fi
+
+          exit 1
