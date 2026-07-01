@@ -93,12 +93,18 @@ jobs:
 
           echo "has_result_files=true" >> "$GITHUB_OUTPUT"
 
+      - name: Archive eval results
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+        # Tar before upload: result files may contain characters (e.g. the colon
+        # in test:stories output names) that actions/upload-artifact rejects.
+        run: tar -czf agent-eval-results.tgz -C agent-eval results
+
       - name: Upload eval results
         if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: agent-eval-results
-          path: agent-eval/results
+          path: agent-eval-results.tgz
           retention-days: 30
 
       - name: Resolve Vercel target
