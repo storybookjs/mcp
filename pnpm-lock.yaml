@@ -10,6 +10,11 @@ catalogs:
       specifier: 7.2.2
       version: 7.2.2
 
+patchedDependencies:
+  '@vercel/agent-eval@1.2.0':
+    hash: 89ba52acefdb2e906edc466e8e2cdb2e61c7a028fea548eaaf5c7799dcc5bb68
+    path: agent-eval/patches/@vercel__agent-eval@1.2.0.patch
+
 importers:
 
   .:
