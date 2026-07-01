@@ -50,14 +50,15 @@ jobs:
       - name: Validate Vercel credentials
         shell: bash
         env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         run: |
           missing=0
 
-          for name in VERCEL_TOKEN VERCEL_TEAM_ID; do
+          for name in VERCEL_PROJECT_ID VERCEL_TOKEN VERCEL_TEAM_ID; do
             if [[ -z "${!name}" ]]; then
-              echo "::error title=Missing Vercel secret::$name is required to deploy the agent eval playground."
+              echo "::error title=Missing Vercel secret::$name is required for Vercel Sandbox evals and the preview playground deployment."
               missing=1
             fi
           done
@@ -128,13 +129,14 @@ jobs:
 
       - name: Build playground
         if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+        id: build_playground
         working-directory: agent-eval
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: pnpm exec vercel build --yes --target=${{ steps.vercel_target.outputs.target }} --token "$VERCEL_TOKEN"
 
       - name: Deploy playground
-        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' && steps.build_playground.outcome == 'success' }}
         id: deploy_playground
         working-directory: agent-eval
         shell: bash
@@ -157,7 +159,7 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Write deployment summary
-        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+        if: ${{ always() && steps.deploy_playground.outcome == 'success' }}
         run: |
           {
             echo "### Agent eval playground"
