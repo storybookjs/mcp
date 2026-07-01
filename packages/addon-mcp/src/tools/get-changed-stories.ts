@@ -1,4 +1,5 @@
 import type { McpServer } from 'tmcp';
+import * as v from 'valibot';
 import { experimental_getStatusStore } from 'storybook/internal/core-server';
 import { collectTelemetry } from '../telemetry.ts';
 import type { AddonContext } from '../types.ts';
@@ -10,9 +11,15 @@ import {
 	formatPartialCoverageHint,
 	formatUnreachableHint,
 } from '../utils/detect-unreachable-changes.ts';
-import { GET_CHANGED_STORIES_TOOL_NAME } from './tool-names.ts';
+import {
+	serializeChangedStories,
+	emptyChangedStoriesStructured,
+} from '../utils/serialize-changed-stories.ts';
+import { GET_CHANGED_STORIES_TOOL_NAME, GET_STORIES_BY_COMPONENT_TOOL_NAME } from './tool-names.ts';
 
-export const GET_CHANGED_STORIES_TOOL_DESCRIPTION = `Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).`;
+export const GET_CHANGED_STORIES_TOOL_DESCRIPTION = `Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).
+
+New and modified stories (the directly-changed ones) are listed first and in full — capped only if the directly-changed set is itself enormous, in which case \`newTruncated\`/\`modifiedTruncated\` is set. Related stories — those that only transitively render a changed component — can number in the thousands when a shared primitive (e.g. Badge, Tag, Icon) changes, so they are returned as a component-diverse sample plus complete per-component counts, keeping the response within tool-output limits. To enumerate every related story for one component, call \`${GET_STORIES_BY_COMPONENT_TOOL_NAME}\` with its absolute source path.`;
 
 const CHANGE_DETECTION_TYPE = 'storybook/change-detection';
 const INCLUDED_STATUS_VALUES = new Set<StatusValue>([
@@ -49,6 +56,20 @@ interface ChangedStory {
 	title: string;
 	name: string;
 	importPath: string;
+	distance?: number;
+}
+
+/**
+ * Reads the import-graph distance the change-detection store may persist in
+ * `status.data.distance`. Older Storybook builds don't set it; we treat that as
+ * "unknown" so the serializer falls back to component-diverse ordering.
+ */
+function readDistance(data: unknown): number | undefined {
+	if (data && typeof data === 'object' && 'distance' in data) {
+		const value = (data as { distance?: unknown }).distance;
+		if (typeof value === 'number' && Number.isFinite(value)) return value;
+	}
+	return undefined;
 }
 
 function statusPriority(statusValue: StatusValue): number {
@@ -57,11 +78,63 @@ function statusPriority(statusValue: StatusValue): number {
 	return 2;
 }
 
+const ChangedStoryLiteSchema = v.object({
+	storyId: v.string(),
+	title: v.string(),
+	name: v.string(),
+	importPath: v.string(),
+	distance: v.pipe(
+		v.optional(v.number()),
+		v.description(
+			'Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.',
+		),
+	),
+});
+
+export const GetChangedStoriesOutput = v.object({
+	counts: v.pipe(
+		v.object({
+			new: v.number(),
+			modified: v.number(),
+			related: v.number(),
+			total: v.number(),
+		}),
+		v.description(
+			'Total story counts per bucket. `related` is the FULL number of transitively-affected stories, even when only a sample is listed below.',
+		),
+	),
+	new: v.array(ChangedStoryLiteSchema),
+	modified: v.array(ChangedStoryLiteSchema),
+	relatedSample: v.pipe(
+		v.array(ChangedStoryLiteSchema),
+		v.description(
+			'A component-diverse sample of related stories. A subset of `counts.related` when `relatedTruncated` is true.',
+		),
+	),
+	relatedBreakdown: v.pipe(
+		v.array(
+			v.object({
+				title: v.string(),
+				count: v.number(),
+				nearestDistance: v.optional(v.number()),
+			}),
+		),
+		v.description(
+			"Per-component story counts across ALL related stories (top components when many), with each component's nearest distance when known.",
+		),
+	),
+	relatedTruncated: v.boolean(),
+	relatedBreakdownTruncated: v.boolean(),
+	newTruncated: v.boolean(),
+	modifiedTruncated: v.boolean(),
+});
+
 export function getChangedStoriesToolMetadata() {
 	return {
 		name: GET_CHANGED_STORIES_TOOL_NAME,
 		title: 'Get changed stories metadata',
 		description: GET_CHANGED_STORIES_TOOL_DESCRIPTION,
+		outputSchema: GetChangedStoriesOutput,
 	};
 }
 
@@ -120,12 +193,13 @@ export async function addGetChangedStoriesTool(
 								text: `No new, modified, or related stories detected.${hint}`,
 							},
 						],
+						structuredContent: emptyChangedStoriesStructured(),
 					};
 				}
 
 				const index = await getStoryIndex(options);
 				const stories = changedStoriesFromStatusStore.flatMap<ChangedStory>(
-					({ storyId, value }) => {
+					({ storyId, value, data }) => {
 						const entry = index.entries[storyId];
 						if (!entry) {
 							return [];
@@ -137,6 +211,7 @@ export async function addGetChangedStoriesTool(
 								title: entry.title,
 								name: entry.name,
 								importPath: entry.importPath,
+								distance: readDistance(data),
 							},
 						];
 					},
@@ -179,27 +254,22 @@ export async function addGetChangedStoriesTool(
 				const unreachable = await detectUnreachableChanges();
 				const banner = formatPartialCoverageBanner(unreachable);
 
-				let text = `${banner}Detected ${stories.length} changed stor${stories.length === 1 ? 'y' : 'ies'} (${counts.new} new, ${counts.modified} modified, ${counts.affected} related).`;
+				// Serialize within a token budget: new/modified are kept in full,
+				// the related/affected bucket is reduced to a component-diverse
+				// sample plus per-component counts. This is the fix for the
+				// overflow that silently spilled the response to a file and dropped
+				// review coverage on large repos (mcp#311).
+				const { headline, body, structured } = serializeChangedStories(buckets);
 
-				const serializeStory = ({ storyId, title, name, importPath }: ChangedStory) =>
-					`- \`${storyId}\`: ${title} / ${name} (\`${importPath}\`)`;
+				const text =
+					`${banner}${headline}` +
+					(body ? `\n\n${body}` : '') +
+					formatPartialCoverageHint(unreachable);
 
-				if (buckets.new.length > 0) {
-					text += `\n\nNew stories:\n`;
-					text += buckets.new.map(serializeStory).join('\n');
-				}
-				if (buckets.modified.length > 0) {
-					text += `\n\nModified stories:\n`;
-					text += buckets.modified.map(serializeStory).join('\n');
-				}
-				if (buckets.affected.length > 0) {
-					text += `\n\nRelated stories:\n`;
-					text += buckets.affected.map(serializeStory).join('\n');
-				}
-
-				text += formatPartialCoverageHint(unreachable);
-
-				return { content: [{ type: 'text' as const, text }] };
+				return {
+					content: [{ type: 'text' as const, text }],
+					structuredContent: structured,
+				};
 			} catch (error) {
 				return errorToMCPContent(error);
 			}

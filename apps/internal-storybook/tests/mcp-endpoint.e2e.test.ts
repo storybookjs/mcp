@@ -370,12 +370,180 @@ describe('MCP Endpoint E2E Tests', () => {
 				    "title": "Storybook Story Development Instructions",
 				  },
 				  {
-				    "description": "Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).",
+				    "description": "Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).
+
+				New and modified stories (the directly-changed ones) are listed first and in full — capped only if the directly-changed set is itself enormous, in which case \`newTruncated\`/\`modifiedTruncated\` is set. Related stories — those that only transitively render a changed component — can number in the thousands when a shared primitive (e.g. Badge, Tag, Icon) changes, so they are returned as a component-diverse sample plus complete per-component counts, keeping the response within tool-output limits. To enumerate every related story for one component, call \`get-stories-by-component\` with its absolute source path.",
 				    "inputSchema": {
 				      "properties": {},
 				      "type": "object",
 				    },
 				    "name": "get-changed-stories",
+				    "outputSchema": {
+				      "$schema": "http://json-schema.org/draft-07/schema#",
+				      "properties": {
+				        "counts": {
+				          "description": "Total story counts per bucket. \`related\` is the FULL number of transitively-affected stories, even when only a sample is listed below.",
+				          "properties": {
+				            "modified": {
+				              "type": "number",
+				            },
+				            "new": {
+				              "type": "number",
+				            },
+				            "related": {
+				              "type": "number",
+				            },
+				            "total": {
+				              "type": "number",
+				            },
+				          },
+				          "required": [
+				            "new",
+				            "modified",
+				            "related",
+				            "total",
+				          ],
+				          "type": "object",
+				        },
+				        "modified": {
+				          "items": {
+				            "properties": {
+				              "distance": {
+				                "description": "Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
+				                "type": "number",
+				              },
+				              "importPath": {
+				                "type": "string",
+				              },
+				              "name": {
+				                "type": "string",
+				              },
+				              "storyId": {
+				                "type": "string",
+				              },
+				              "title": {
+				                "type": "string",
+				              },
+				            },
+				            "required": [
+				              "storyId",
+				              "title",
+				              "name",
+				              "importPath",
+				            ],
+				            "type": "object",
+				          },
+				          "type": "array",
+				        },
+				        "modifiedTruncated": {
+				          "type": "boolean",
+				        },
+				        "new": {
+				          "items": {
+				            "properties": {
+				              "distance": {
+				                "description": "Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
+				                "type": "number",
+				              },
+				              "importPath": {
+				                "type": "string",
+				              },
+				              "name": {
+				                "type": "string",
+				              },
+				              "storyId": {
+				                "type": "string",
+				              },
+				              "title": {
+				                "type": "string",
+				              },
+				            },
+				            "required": [
+				              "storyId",
+				              "title",
+				              "name",
+				              "importPath",
+				            ],
+				            "type": "object",
+				          },
+				          "type": "array",
+				        },
+				        "newTruncated": {
+				          "type": "boolean",
+				        },
+				        "relatedBreakdown": {
+				          "description": "Per-component story counts across ALL related stories (top components when many), with each component's nearest distance when known.",
+				          "items": {
+				            "properties": {
+				              "count": {
+				                "type": "number",
+				              },
+				              "nearestDistance": {
+				                "type": "number",
+				              },
+				              "title": {
+				                "type": "string",
+				              },
+				            },
+				            "required": [
+				              "title",
+				              "count",
+				            ],
+				            "type": "object",
+				          },
+				          "type": "array",
+				        },
+				        "relatedBreakdownTruncated": {
+				          "type": "boolean",
+				        },
+				        "relatedSample": {
+				          "description": "A component-diverse sample of related stories. A subset of \`counts.related\` when \`relatedTruncated\` is true.",
+				          "items": {
+				            "properties": {
+				              "distance": {
+				                "description": "Import-graph distance from the changed source (0 = the story file itself, 1 = direct importer, 2+ = transitive). Lower = more likely to render the change. Omitted when the Storybook build does not report it.",
+				                "type": "number",
+				              },
+				              "importPath": {
+				                "type": "string",
+				              },
+				              "name": {
+				                "type": "string",
+				              },
+				              "storyId": {
+				                "type": "string",
+				              },
+				              "title": {
+				                "type": "string",
+				              },
+				            },
+				            "required": [
+				              "storyId",
+				              "title",
+				              "name",
+				              "importPath",
+				            ],
+				            "type": "object",
+				          },
+				          "type": "array",
+				        },
+				        "relatedTruncated": {
+				          "type": "boolean",
+				        },
+				      },
+				      "required": [
+				        "counts",
+				        "new",
+				        "modified",
+				        "relatedSample",
+				        "relatedBreakdown",
+				        "relatedTruncated",
+				        "relatedBreakdownTruncated",
+				        "newTruncated",
+				        "modifiedTruncated",
+				      ],
+				      "type": "object",
+				    },
 				    "title": "Get changed stories metadata",
 				  },
 				  {
