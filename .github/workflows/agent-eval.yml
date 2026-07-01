@@ -93,6 +93,14 @@ jobs:
 
           echo "has_result_files=true" >> "$GITHUB_OUTPUT"
 
+      - name: Upload eval results
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: agent-eval-results
+          path: agent-eval/results
+          retention-days: 30
+
       - name: Resolve Vercel target
         if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         id: vercel_target
