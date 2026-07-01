@@ -30,6 +30,9 @@ jobs:
       - name: Setup Node.js and Install Dependencies
         uses: ./.github/actions/setup-node-and-install
 
+      - name: Build local MCP packages
+        run: pnpm --filter @storybook/addon-mcp... run build
+
       - name: Type check agent eval config
         run: pnpm --dir agent-eval run typecheck
 
@@ -37,5 +40,6 @@ jobs:
         run: pnpm --dir agent-eval run eval
         env:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VERCEL_OIDC_TOKEN: ${{ secrets.VERCEL_OIDC_TOKEN }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
