@@ -22,7 +22,7 @@ export default defineConfig({
 		},
 	],
 	test: {
-		projects: ['packages/*', 'apps/*', 'eval'],
+		projects: ['packages/*', 'apps/*', 'eval', 'agent-eval'],
 		coverage: {
 			include: ['**/src/**/*.{ts,tsx}'],
 			exclude: [
