@@ -32,6 +32,21 @@ To try this server with your own component library, first build your Storybook s
 
 In practice, you want `components.json` (and `docs.json` if available) in `apps/self-host-mcp/manifests/` before running `pnpm start`.
 
+### Split/ref manifests (`experimentalDocgenServer`)
+
+Newer Storybooks (with `features.experimentalDocgenServer`) emit a _split_ manifest: `components.json`/`docs.json` are shallow indexes that reference per-component/per-doc payloads under a sibling `services/` directory (for example `services/core/docgen/<id>.json`). When your build uses this format, copy **both** directories preserving their layout — keep `services/` as a sibling of `manifests/`:
+
+```
+<root>/
+  manifests/components.json
+  manifests/docs.json
+  services/core/docgen/<id>.json
+  services/core/story-docs/<id>.json
+  services/addon-docs/mdx/<id>.json
+```
+
+Point `--manifestsPath` at the `manifests/` directory (or its remote URL); the server resolves the referenced `services/` files relative to its parent.
+
 ## Run on Netlify Functions
 
 This example also includes a Netlify function at `netlify/functions/mcp.ts` and routing in `netlify.toml`.
