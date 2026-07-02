@@ -2,8 +2,18 @@ packages:
   - packages/*
   - apps/*
   - eval
+  - agent-eval
+  - '!agent-eval/evals/*'
+  - '!agent-eval/templates/*'
   - '!eval/templates/project'
   - '!eval/tasks/*/trials/*/project'
+
+# @vercel/agent-eval is only a dependency of the agent-eval project, which keeps its
+# own lockfile (shared-workspace-lockfile=false). allowUnusedPatches stops sibling
+# projects that lack the dep from erroring on this root-level patch.
+allowUnusedPatches: true
+patchedDependencies:
+  '@vercel/agent-eval@1.2.0': agent-eval/patches/@vercel__agent-eval@1.2.0.patch
 
 catalog:
   '@storybook/addon-a11y': 10.5.0-alpha.9
