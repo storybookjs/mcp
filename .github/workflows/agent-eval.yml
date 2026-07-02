@@ -9,6 +9,10 @@ on:
       - labeled
   workflow_dispatch:
     inputs:
+      eval_only:
+        description: 'Comma-separated eval names to run (overrides extra_evals), e.g. 803-edit-component'
+        type: string
+        default: ''
       extra_evals:
         description: 'Run the full 8xx eval line instead of only the default eval'
         type: boolean
@@ -81,6 +85,7 @@ jobs:
         env:
           # PR labels (ci:extra-evals, ci:extra-models) and workflow_dispatch
           # inputs both opt in; unlabeled ci:eval runs stay minimal.
+          EVAL_ONLY: ${{ inputs.eval_only || '' }}
           EVAL_EXTRA_EVALS: ${{ (inputs.extra_evals || contains(github.event.pull_request.labels.*.name, 'ci:extra-evals')) && '1' || '' }}
           EVAL_EXTRA_MODELS: ${{ (inputs.extra_models || contains(github.event.pull_request.labels.*.name, 'ci:extra-models')) && '1' || '' }}
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
