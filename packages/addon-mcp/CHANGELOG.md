@@ -1,5 +1,46 @@
 # @storybook/addon-mcp
 
+## 0.7.0
+
+### Minor Changes
+
+- [#230](https://github.com/storybookjs/mcp/pull/230) [`3734bc5`](https://github.com/storybookjs/mcp/commit/3734bc5d2a84cfc4dbd156c314c66444250e9afb) Thanks [@yannbf](https://github.com/yannbf)! - Added the `display-review` tool. The agent pushes a curated review of current changes and returns the review-page URL. Pairs with the `@storybook/addon-review` Storybook addon.
+
+- [#249](https://github.com/storybookjs/mcp/pull/249) [`a01160d`](https://github.com/storybookjs/mcp/commit/a01160d038b0ddcae7c2ab36f873919695ff2f8b) Thanks [@yannbf](https://github.com/yannbf)! - Add the `get-stories-by-component` tool. Maps component source files to the stories that render them via Storybook's live reverse dependency graph, returning grounded story IDs ranked by import distance. Also hardens change detection: `get-changed-stories` now surfaces working-tree files that are unreachable from any story, and story-index resolution and reverse-graph lookups are normalized for cross-platform (Windows) path handling.
+
+- [#219](https://github.com/storybookjs/mcp/pull/219) [`6684af6`](https://github.com/storybookjs/mcp/commit/6684af67bf7c2a2b72051fa63c3f5e584eecbf76) Thanks [@ghengeveld](https://github.com/ghengeveld)! - Introduced the `get-changed-stories` tool to retrieve metadata for stories marked as new, modified, or affected.
+  Updated `dev-instructions.md` and `storybook-story-instructions.md` to reflect the new workflow for calling `get-changed-stories` before `preview-stories`.
+
+- [#233](https://github.com/storybookjs/mcp/pull/233) [`90e39fa`](https://github.com/storybookjs/mcp/commit/90e39fa55c9ac20e05dce2bed0bfa84eb003481c) Thanks [@kasperpeulen](https://github.com/kasperpeulen)! - Add an optional MCP endpoint setting for the addon dev server.
+
+- [#298](https://github.com/storybookjs/mcp/pull/298) [`ae6e9bb`](https://github.com/storybookjs/mcp/commit/ae6e9bbdb55f4262e697a68437a00d4cd4accc4d) Thanks [@kasperpeulen](https://github.com/kasperpeulen)! - Expose serverless Storybook AI metadata from addon-mcp presets. The new preset returns MCP-shaped instructions and tool descriptors, plus a local `get-storybook-story-instructions` runner that shares the same builders as the live MCP server.
+
+- [#308](https://github.com/storybookjs/mcp/pull/308) [`ff09619`](https://github.com/storybookjs/mcp/commit/ff09619079520ed238eff91bd385b7ba0cb7b102) Thanks [@JReinhold](https://github.com/JReinhold)! - Support v0 (inline) and v1 (split/ref) Storybook manifest formats. `@storybook/mcp` follows `$ref` pointers into sibling `services/` payloads for static and remote sources; `@storybook/addon-mcp` adds an in-process manifest provider for `experimentalDocgenServer` dev mode and fixes composition so local docgen-server and remote v0/v1 composed sources all work.
+
+### Patch Changes
+
+- [#268](https://github.com/storybookjs/mcp/pull/268) [`9a691c1`](https://github.com/storybookjs/mcp/commit/9a691c1d50812be9ea2dd82e217fac50ad8d5890) Thanks [@yannbf](https://github.com/yannbf)! - Refine the review/preview workflow so agents reuse the running Storybook and present a single set of links:
+
+  - **Reuse the running Storybook.** A successful tool call proves Storybook is already running, so the agent is instructed never to start another instance (no `storybook dev`, launcher, or new port) just to view a review — a busy port is the instance to reuse, not a conflict to route around.
+  - **`display-review` triggers on insight requests too.** Beyond post-change reviews, it now fires when the user wants to browse stories/components (e.g. "show me all badge components"), rendering exactly those stories with no diff (`changedFiles` omitted).
+  - **One set of links in the final response.** When `display-review` is available, the response links only the curated review page ("You can see a curated summary of stories in the Storybook review page"); otherwise it lists the individual preview URLs — never both.
+
+- [#242](https://github.com/storybookjs/mcp/pull/242) [`d142450`](https://github.com/storybookjs/mcp/commit/d142450ba94ce341d0a0ef869ddd057610d10fbd) Thanks [@kasperpeulen](https://github.com/kasperpeulen)! - Show private composed Storybooks as own-MCP guidance when accessed through the local MCP proxy.
+
+- [#314](https://github.com/storybookjs/mcp/pull/314) [`eef42a5`](https://github.com/storybookjs/mcp/commit/eef42a540dfed55a14d2353138b092e94c58fe03) Thanks [@kasperpeulen](https://github.com/kasperpeulen)! - Add Storybook 10.5 prerelease packages to the supported peer dependency range.
+
+  The `display-review` tool schema now requires `changedFiles`: pass the paths of
+  the files you changed (most central first), or an empty array `[]` for browse
+  requests where no code changed. Payloads that previously omitted the field will
+  fail validation.
+
+- [#301](https://github.com/storybookjs/mcp/pull/301) [`fe9528a`](https://github.com/storybookjs/mcp/commit/fe9528af9e210ead70f05a7d44e1f4871d791d25) Thanks [@yannbf](https://github.com/yannbf)! - Gate the `display-review` tool solely on the `changeDetection` feature flag. The previous `@storybook/addon-review` package-presence check is removed, since review is now built into Storybook core.
+
+- [#265](https://github.com/storybookjs/mcp/pull/265) [`7c96f50`](https://github.com/storybookjs/mcp/commit/7c96f50e707617a461b4f502300d2a0a663422ff) Thanks [@yannbf](https://github.com/yannbf)! - Surface the change-detection and review tools on the `/mcp` landing page. The "Available Toolsets" list now includes `get-stories-by-component`, `get-changed-stories`, and `display-review` under **dev** (each with an enabled/disabled badge reflecting its real runtime gate), and `get-documentation-for-story` under **docs**.
+
+- Updated dependencies [[`d142450`](https://github.com/storybookjs/mcp/commit/d142450ba94ce341d0a0ef869ddd057610d10fbd), [`ae6e9bb`](https://github.com/storybookjs/mcp/commit/ae6e9bbdb55f4262e697a68437a00d4cd4accc4d), [`ff09619`](https://github.com/storybookjs/mcp/commit/ff09619079520ed238eff91bd385b7ba0cb7b102), [`367ecc1`](https://github.com/storybookjs/mcp/commit/367ecc1eabdc92f3fa60e6159b2d79a2bb2f6f77)]:
+  - @storybook/mcp@0.8.0
+
 ## 0.6.0
 
 ### Minor Changes

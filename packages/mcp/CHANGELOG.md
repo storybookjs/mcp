@@ -1,5 +1,19 @@
 # @storybook/mcp
 
+## 0.8.0
+
+### Minor Changes
+
+- [#298](https://github.com/storybookjs/mcp/pull/298) [`ae6e9bb`](https://github.com/storybookjs/mcp/commit/ae6e9bbdb55f4262e697a68437a00d4cd4accc4d) Thanks [@kasperpeulen](https://github.com/kasperpeulen)! - Expose serverless Storybook AI metadata from addon-mcp presets. The new preset returns MCP-shaped instructions and tool descriptors, plus a local `get-storybook-story-instructions` runner that shares the same builders as the live MCP server.
+
+- [#308](https://github.com/storybookjs/mcp/pull/308) [`ff09619`](https://github.com/storybookjs/mcp/commit/ff09619079520ed238eff91bd385b7ba0cb7b102) Thanks [@JReinhold](https://github.com/JReinhold)! - Support v0 (inline) and v1 (split/ref) Storybook manifest formats. `@storybook/mcp` follows `$ref` pointers into sibling `services/` payloads for static and remote sources; `@storybook/addon-mcp` adds an in-process manifest provider for `experimentalDocgenServer` dev mode and fixes composition so local docgen-server and remote v0/v1 composed sources all work.
+
+### Patch Changes
+
+- [#242](https://github.com/storybookjs/mcp/pull/242) [`d142450`](https://github.com/storybookjs/mcp/commit/d142450ba94ce341d0a0ef869ddd057610d10fbd) Thanks [@kasperpeulen](https://github.com/kasperpeulen)! - Show private composed Storybooks as own-MCP guidance when accessed through the local MCP proxy.
+
+- [#279](https://github.com/storybookjs/mcp/pull/279) [`367ecc1`](https://github.com/storybookjs/mcp/commit/367ecc1eabdc92f3fa60e6159b2d79a2bb2f6f77) Thanks [@huang-julien](https://github.com/huang-julien)! - Support the externalized-docgen component manifest format. Newer Storybooks emit a `components.json` whose entries are lightweight stubs carrying a `docgen.$ref` pointer instead of inline `path`/docgen data, with the full component data served from a referenced file. `get-documentation` and `get-documentation-for-story` now resolve that reference (through the same auth-aware manifest provider) before formatting, so composition/multi-source documentation works against Storybooks using the new format. `path` and the top-level manifest `v` field are now optional to accommodate stubs and referenced docgen files.
+
 ## 0.7.0
 
 ### Minor Changes
