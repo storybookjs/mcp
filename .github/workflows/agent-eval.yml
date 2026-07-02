@@ -8,6 +8,11 @@ on:
       - synchronize
       - labeled
   workflow_dispatch:
+    inputs:
+      extra_models:
+        description: 'Also run evals for non-default model experiments (e.g. cc-plugin-sonnet-medium)'
+        type: boolean
+        default: false
 
 env:
   TURBO_ENV_MODE: loose
@@ -69,6 +74,7 @@ jobs:
         id: run_evals
         run: pnpm --dir agent-eval run eval
         env:
+          EVAL_EXTRA_MODELS: ${{ inputs.extra_models && '1' || '' }}
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
