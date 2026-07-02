@@ -12,7 +12,7 @@ catalogs:
 
 patchedDependencies:
   '@vercel/agent-eval@1.2.0':
-    hash: 89ba52acefdb2e906edc466e8e2cdb2e61c7a028fea548eaaf5c7799dcc5bb68
+    hash: d10a497bc5c244513d5d3d00aca32ee76678d0e760b01a5fe5bd993f4da02b8a
     path: agent-eval/patches/@vercel__agent-eval@1.2.0.patch
 
 importers:
