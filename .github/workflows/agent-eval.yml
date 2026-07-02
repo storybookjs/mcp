@@ -34,6 +34,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -177,6 +178,22 @@ jobs:
           fi
 
           echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Update PR description with eval results
+        if: ${{ always() && github.event_name == 'pull_request' && steps.check_results.outputs.has_result_files == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PLAYGROUND_URL: ${{ steps.deploy_playground.outputs.url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          summary="$(node agent-eval/scripts/render-results-summary.mjs)"
+          body="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""')"
+
+          printf '%s' "$body" |
+            SUMMARY="$summary" node agent-eval/scripts/upsert-pr-eval-results.mjs |
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --field body=@- --silent
 
       - name: Write deployment summary
         if: ${{ always() && steps.deploy_playground.outcome == 'success' }}
