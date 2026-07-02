@@ -9,6 +9,10 @@ on:
       - labeled
   workflow_dispatch:
     inputs:
+      extra_evals:
+        description: 'Run the full 8xx eval line instead of only the default eval'
+        type: boolean
+        default: false
       extra_models:
         description: 'Also run evals for non-default model experiments (e.g. cc-plugin-sonnet-medium)'
         type: boolean
@@ -75,7 +79,10 @@ jobs:
         id: run_evals
         run: pnpm --dir agent-eval run eval
         env:
-          EVAL_EXTRA_MODELS: ${{ inputs.extra_models && '1' || '' }}
+          # PR labels (ci:extra-evals, ci:extra-models) and workflow_dispatch
+          # inputs both opt in; unlabeled ci:eval runs stay minimal.
+          EVAL_EXTRA_EVALS: ${{ (inputs.extra_evals || contains(github.event.pull_request.labels.*.name, 'ci:extra-evals')) && '1' || '' }}
+          EVAL_EXTRA_MODELS: ${{ (inputs.extra_models || contains(github.event.pull_request.labels.*.name, 'ci:extra-models')) && '1' || '' }}
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
