@@ -46,7 +46,7 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
       '@vercel/agent-eval':
-        specifier: ^1.2.0
+        specifier: 1.2.0
         version: 1.2.0(patch_hash=89ba52acefdb2e906edc466e8e2cdb2e61c7a028fea548eaaf5c7799dcc5bb68)
       '@vercel/agent-eval-playground':
         specifier: 0.1.3
