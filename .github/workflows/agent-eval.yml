@@ -93,7 +93,6 @@ jobs:
           EVAL_EXTRA_EVALS: ${{ (inputs.extra_evals || contains(github.event.pull_request.labels.*.name, 'ci:extra-evals')) && '1' || '' }}
           EVAL_EXTRA_MODELS: ${{ (inputs.extra_models || contains(github.event.pull_request.labels.*.name, 'ci:extra-models')) && '1' || '' }}
           EVAL_STORYBOOK_LATEST: ${{ (inputs.storybook_latest || contains(github.event.pull_request.labels.*.name, 'ci:storybook-latest')) && '1' || '' }}
-          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
