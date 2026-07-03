@@ -1,5 +1,5 @@
 ---
-"@storybook/addon-mcp": minor
+'@storybook/addon-mcp': minor
 ---
 
 Introduced the `get-changed-stories` tool to retrieve metadata for stories marked as new, modified, or affected.

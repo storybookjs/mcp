@@ -1,5 +1,5 @@
 ---
-"@storybook/addon-mcp": patch
+'@storybook/addon-mcp': patch
 ---
 
 Refine the review/preview workflow so agents reuse the running Storybook and present a single set of links:
