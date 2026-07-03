@@ -1,3 +1,13 @@
+coverage:
+  status:
+    project:
+      default:
+        # A few covered lines in the package unit tests are timing-dependent,
+        # so identical source can report a couple of hits more or less between
+        # uploads (seen as a -0.10% "drop" on PRs that don't touch covered
+        # code at all). Allow that jitter; real regressions are far larger.
+        threshold: 0.5%
+
 ignore:
   - 'agent-eval/app/**/*'
   - 'agent-eval/next.config.ts'
