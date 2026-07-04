@@ -9,10 +9,8 @@ import {
 export default {
 	...DEFAULT_EXPERIMENT_CONFIG,
 	agent: 'claude-code', // direct Anthropic API, requires ANTHROPIC_API_KEY
-	// Pin what the CLI would pick by default (Opus 4.8 at high effort) so the
-	// experiment name stays accurate when the CLI defaults change.
 	model: 'opus',
-	agentOptions: { effort: 'high' },
+	agentOptions: { effort: 'low' },
 	// Runs zero evals unless EVAL_EXTRA_MODELS=1 is set, and none under
 	// EVAL_STORYBOOK_LATEST=1; see EXTRA_MODEL_PLUGIN_EVALS.
 	evals: EXTRA_MODEL_PLUGIN_EVALS,
