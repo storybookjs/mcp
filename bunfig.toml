@@ -1,0 +1,5 @@
+# Mirrors the .md/.html text loaders from tsdown-shared.config.ts and
+# vitest.config.ts so Bun can run scripts that import the instruction files.
+[loader]
+".md" = "text"
+".html" = "text"
