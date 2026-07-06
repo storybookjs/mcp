@@ -33,6 +33,7 @@ describe('getUIBuildingInstructionsTool', () => {
 
 		vi.mocked(getReviewStatus).mockResolvedValue({
 			available: false,
+			availableForCli: false,
 			hasFeatureFlag: false,
 		});
 
@@ -273,6 +274,7 @@ describe('getUIBuildingInstructionsTool', () => {
 	it('tells the agent to show only the review section when review is enabled', async () => {
 		vi.mocked(getReviewStatus).mockResolvedValue({
 			available: true,
+			availableForCli: true,
 			hasFeatureFlag: true,
 		});
 
@@ -325,6 +327,7 @@ describe('getUIBuildingInstructionsTool', () => {
 	it('tells the agent to include preview URLs when review is disabled', async () => {
 		vi.mocked(getReviewStatus).mockResolvedValue({
 			available: false,
+			availableForCli: false,
 			hasFeatureFlag: false,
 		});
 
