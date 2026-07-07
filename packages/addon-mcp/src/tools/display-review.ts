@@ -10,11 +10,13 @@ import { DEFAULT_MCP_ENDPOINT, PUSH_REVIEW_EVENT, REVIEW_PAGE_PATH } from '../co
 import { DISPLAY_REVIEW_TOOL_NAME } from './tool-names.ts';
 
 // The "not done until published" rule is stated here as well as in the server
-// instructions and the story-instructions output: those two channels are
-// fetch-gated or truncated on some harnesses, so an agent that skipped them
-// must still meet the terminal-step obligation in this always-visible
-// description rather than first learning it from this tool's result — which
-// it only sees after already deciding to call the tool.
+// instructions and the story-instructions output: some harnesses never put
+// server instructions in the agent's context (observed on Opencode; Codex
+// reduces them to a namespace description), and the story-instructions
+// output only reaches agents that already engaged. Such an agent must meet
+// the terminal-step obligation from this always-visible description rather
+// than first learning it from this tool's result — which it only sees after
+// already deciding to call the tool.
 export const DISPLAY_REVIEW_TOOL_DESCRIPTION = `Publish a curated review to Storybook's review page for spot-checking **visual impact**. Each call replaces the single active review — call it again whenever the user iterates on the changes.
 This is the required terminal step for visual work: a visually observable change is not done until its review is published — passing tests, typecheck, or preview links do not substitute for it.
 

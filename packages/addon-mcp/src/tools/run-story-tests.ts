@@ -58,12 +58,13 @@ Use { absoluteStoryPath + exportName } only when you're currently working in a s
 });
 
 // The completion obligation lives in this description, not only in the
-// server instructions or the story-instructions output: the description is
-// the one channel every harness surfaces untruncated, and an agent that
-// never fetched instructions has ranked this tool as optional "heavier
-// verification" that "would matter more if I'd touched an existing story"
-// and ended UI work with grep + typecheck (Opencode + Opus on mealdrop,
-// Slack #sb-release-10-5, 2026-07-06).
+// server instructions or the story-instructions output: some harnesses
+// never put server instructions in the agent's context, leaving tool
+// descriptions as the only guaranteed channel — and an agent on such a
+// harness (Opencode + Opus on mealdrop, Slack #sb-release-10-5, 2026-07-06)
+// read this description, ranked the tool as optional "heavier verification"
+// that "would matter more if I'd touched an existing story", and ended UI
+// work with grep + typecheck.
 export function getRunStoryTestsToolDescription(a11yEnabled: boolean) {
 	return (
 		`Run story tests.
