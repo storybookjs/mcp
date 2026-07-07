@@ -362,3 +362,29 @@ Type:
 ```
 
 Registers [story-level documentation lookup](https://storybook.js.org/docs/next/ai/mcp/overview/#get-documentation-for-story) for a specific story variant by `componentId` and `storyName`.
+
+## Debugging tool calls
+
+Similar to `STORYBOOK_TELEMETRY_DEBUG` for Storybook telemetry, two
+environment variables let you inspect every MCP tool call handled by this
+server (inputs, outputs, errors, timing, and session/client info):
+
+- `STORYBOOK_MCP_DEBUG` — when set to a truthy value, each record is written
+  to stderr as an NDJSON line prefixed with `[storybook-mcp-debug]`. Records
+  go to stderr so stdio-based servers keep a clean protocol channel on stdout.
+- `STORYBOOK_MCP_DEBUG_URL` — when set, each record is POSTed as JSON to this
+  URL, e.g. the `mcp-logger` dashboard from
+  [`@hipster/sb-utils`](https://github.com/yannbf/sb-utils):
+
+```sh
+# Terminal 1: start the collector + dashboard
+npx @hipster/sb-utils mcp-logger
+
+# Terminal 2: run your MCP server with debug logging pointed at it
+STORYBOOK_MCP_DEBUG_URL=http://localhost:6008/mcp-log node ./server.ts
+```
+
+The same instrumentation can be applied to your own `tmcp` server via the
+exported `instrumentMcpServerForDebug(server, { transport, serverInfo })`
+helper and inspected with `getMcpDebugConfig()`. Logging is fire-and-forget
+and never affects tool behavior.
