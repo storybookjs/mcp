@@ -340,20 +340,19 @@ describe('MCP Endpoint E2E Tests', () => {
 				    "title": "Get story preview URLs",
 				  },
 				  {
-				    "description": "Get comprehensive instructions for writing, testing, and fixing Storybook stories (.stories.tsx, .stories.ts, .stories.jsx, .stories.js, .stories.svelte, .stories.vue files).
+				    "description": "Get the required instructions for UI work in this project: creating or editing components, styles, or themes, and writing and testing the Storybook stories that cover them.
 
 				CRITICAL: You MUST call this tool before:
+				- Creating or editing any UI component — even when the task says nothing about Storybook or stories
+				- Editing anything else that changes how the UI looks — styles, CSS, themes, colors, or design tokens; a shared file with no stories of its own still changes its consumers' stories
 				- Creating new Storybook stories or story files
-				- Updating or modifying existing Storybook stories
-				- Adding new story variants or exports to story files
+				- Updating existing stories, or adding story variants or exports to story files
 				- Editing any file matching *.stories.* patterns
-				- Writing components that will need stories
-				- Editing anything that changes how the UI looks — components, styles, CSS, themes, colors, or design tokens; a shared file with no stories of its own still changes its consumers' stories
 				- Running story tests or fixing test failures
 				- Handling accessibility (a11y) violations in stories (fix semantic issues directly; ask before visual/design changes)
 
-				This tool provides essential Storybook-specific guidance including:
-				- How to structure stories correctly for Storybook 9
+				This tool provides essential guidance including:
+				- How to structure stories correctly for this Storybook setup
 				- Required imports (Meta, StoryObj from framework package)
 				- Test utility imports (from 'storybook/test')
 				- Story naming conventions and best practices
@@ -362,13 +361,13 @@ describe('MCP Endpoint E2E Tests', () => {
 				- Story variants and coverage requirements
 				- How to handle test failures and accessibility violations
 
-				Even if you're familiar with Storybook, call this tool to ensure you're following the correct patterns, import paths, and conventions for this specific Storybook setup.",
+				Even if you're familiar with Storybook, call this tool first — UI work done before reading these instructions will not follow this project's patterns, import paths, and conventions.",
 				    "inputSchema": {
 				      "properties": {},
 				      "type": "object",
 				    },
 				    "name": "get-storybook-story-instructions",
-				    "title": "Storybook Story Development Instructions",
+				    "title": "UI Development Instructions (Storybook)",
 				  },
 				  {
 				    "description": "Get Storybook stories marked as new, modified, or related. Returns story metadata only (no URLs).

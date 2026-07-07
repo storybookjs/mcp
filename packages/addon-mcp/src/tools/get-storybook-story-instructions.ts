@@ -54,7 +54,7 @@ export async function addGetUIBuildingInstructionsTool(
 	server.tool(
 		{
 			name: GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME,
-			title: 'Storybook Story Development Instructions',
+			title: 'UI Development Instructions (Storybook)',
 			get description() {
 				const testToolsetAvailable =
 					(server.ctx.custom?.toolsets?.test ?? true) && addonVitestAvailable;
@@ -121,18 +121,24 @@ export function getStorybookStoryInstructionsDescription({
 - How to handle test failures${a11yAvailable ? ' and accessibility violations' : ''}`
 		: '';
 
-	return `Get comprehensive instructions for writing, testing, and fixing Storybook stories (.stories.tsx, .stories.ts, .stories.jsx, .stories.js, .stories.svelte, .stories.vue files).
+	// The first sentence and the first CRITICAL bullets anchor on component
+	// work, not stories files: agents bind the trigger to whatever the headline
+	// emphasizes, and the previous stories-file-first wording made them defer
+	// the call until they started the stories file — after the component was
+	// already designed and edited without the project's conventions (field
+	// report in #sb-release-10-5 2026-07-06; 4 of 24 Opus MCP runs of
+	// 803-edit-component, 2026-07-02/03 batches).
+	return `Get the required instructions for UI work in this project: creating or editing components, styles, or themes, and writing and testing the Storybook stories that cover them.
 
 CRITICAL: You MUST call this tool before:
+- Creating or editing any UI component — even when the task says nothing about Storybook or stories
+- Editing anything else that changes how the UI looks — styles, CSS, themes, colors, or design tokens; a shared file with no stories of its own still changes its consumers' stories
 - Creating new Storybook stories or story files
-- Updating or modifying existing Storybook stories
-- Adding new story variants or exports to story files
-- Editing any file matching *.stories.* patterns
-- Writing components that will need stories
-- Editing anything that changes how the UI looks — components, styles, CSS, themes, colors, or design tokens; a shared file with no stories of its own still changes its consumers' stories${criticalTestBullets}${criticalA11yBullets}
+- Updating existing stories, or adding story variants or exports to story files
+- Editing any file matching *.stories.* patterns${criticalTestBullets}${criticalA11yBullets}
 
-This tool provides essential Storybook-specific guidance including:
-- How to structure stories correctly for Storybook 9
+This tool provides essential guidance including:
+- How to structure stories correctly for this Storybook setup
 - Required imports (Meta, StoryObj from framework package)
 - Test utility imports (from 'storybook/test')
 - Story naming conventions and best practices
@@ -140,7 +146,7 @@ This tool provides essential Storybook-specific guidance including:
 - Mocking strategies for external dependencies
 - Story variants and coverage requirements${testAndA11yGuidance}
 
-Even if you're familiar with Storybook, call this tool to ensure you're following the correct patterns, import paths, and conventions for this specific Storybook setup.`;
+Even if you're familiar with Storybook, call this tool first — UI work done before reading these instructions will not follow this project's patterns, import paths, and conventions.`;
 }
 
 export function getStorybookStoryInstructionsToolMetadata(options: {
@@ -149,7 +155,7 @@ export function getStorybookStoryInstructionsToolMetadata(options: {
 }) {
 	return {
 		name: GET_UI_BUILDING_INSTRUCTIONS_TOOL_NAME,
-		title: 'Storybook Story Development Instructions',
+		title: 'UI Development Instructions (Storybook)',
 		description: getStorybookStoryInstructionsDescription(options),
 	};
 }

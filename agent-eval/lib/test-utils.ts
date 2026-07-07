@@ -406,6 +406,169 @@ export function expectStoryDiscoveryBeforeReview(): void {
 	).toBeLessThan(lastReviewIndex);
 }
 
+// The instructions gate the component work itself, not just the stories file:
+// agents that fetch them only when they reach the stories file have already
+// designed and edited the component without the project's conventions (field
+// report in #sb-release-10-5 2026-07-06; 4 of 24 Opus MCP runs of
+// 803-edit-component in the 2026-07-02/03 batches deferred exactly this way).
+// Presence-only expectWorkflowCalls cannot see the deferral, so this asserts
+// the ordering: the first get-storybook-story-instructions call (MCP tool or
+// `storybook ai` CLI) must precede the first edit to the component under
+// test. `covering` follows the same substring convention as
+// expectStoryTestsRanAndPassed: an edit counts when its path contains one of
+// the substrings (stories files excluded — writing the story is the step the
+// instructions were designed for, editing the component is the step agents
+// skip ahead to).
+export function expectStoryInstructionsBeforeFirstComponentEdit(options: {
+	covering: string[];
+}): void {
+	const timeline = parseInstructionsAndEditTimeline(readFileSync(TRANSCRIPT_PATH, 'utf8'));
+
+	const coversComponent = (path: string) => {
+		const normalized = path.toLowerCase();
+		return (
+			!normalized.includes('.stories.') &&
+			options.covering.some((substring) => normalized.includes(substring.toLowerCase()))
+		);
+	};
+
+	const firstEditIndex = timeline.findIndex(
+		(entry) => entry.kind === 'file-edit' && coversComponent(entry.detail),
+	);
+	// Loud failure over a vacuous pass: the eval's other assertions prove the
+	// component was changed, so an invisible edit means the transcript parser
+	// has a gap that must be fixed, not ignored.
+	expect(
+		firstEditIndex,
+		`Expected the transcript to show an edit to a component file covering ${JSON.stringify(options.covering)}`,
+	).toBeGreaterThanOrEqual(0);
+
+	const firstInstructionsIndex = timeline.findIndex((entry) => entry.kind === 'instructions');
+	expect(
+		firstInstructionsIndex,
+		'Expected get-storybook-story-instructions to be called',
+	).toBeGreaterThanOrEqual(0);
+	expect(
+		firstInstructionsIndex,
+		`Expected get-storybook-story-instructions to be called before the first component edit (${timeline[firstEditIndex]?.detail})`,
+	).toBeLessThan(firstEditIndex);
+}
+
+export type InstructionsAndEditTimelineEntry = {
+	kind: 'instructions' | 'file-edit';
+	/** The tool name, shell command, or file path behind the entry, for failure messages. */
+	detail: string;
+};
+
+// Chronological get-storybook-story-instructions fetches and file edits,
+// across every path an agent can take: Claude tool_use blocks (MCP tools,
+// Write/Edit, `storybook ai` shell commands) and Codex item.completed events
+// (mcp_tool_call, file_change, command_execution). Deliberately policy-free —
+// every file edit is reported; deciding which edits matter is the caller's
+// job. Edits made through shell commands (heredocs, sed -i) are not visible
+// here.
+export function parseInstructionsAndEditTimeline(
+	rawTranscript: string,
+): InstructionsAndEditTimelineEntry[] {
+	const entries: InstructionsAndEditTimelineEntry[] = [];
+
+	for (const line of rawTranscript.split('\n')) {
+		const event = parseJson(line);
+		if (!isRecord(event)) {
+			continue;
+		}
+
+		collectClaudeTimelineEntries(event, entries);
+		collectCodexTimelineEntries(event, entries);
+	}
+
+	return entries;
+}
+
+const STORY_INSTRUCTIONS_WORKFLOW_NAME = 'get-storybook-story-instructions';
+
+// Claude edits files through these tools; a file_path on any other tool
+// (Read, Grep, ...) is not an edit.
+const CLAUDE_FILE_EDIT_TOOL_NAMES = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'];
+
+function collectClaudeTimelineEntries(
+	event: Record<string, unknown>,
+	entries: InstructionsAndEditTimelineEntry[],
+): void {
+	const message = event.message;
+	if (!isRecord(message) || !Array.isArray(message.content)) {
+		return;
+	}
+
+	for (const block of message.content) {
+		if (!isRecord(block) || block.type !== 'tool_use' || typeof block.name !== 'string') {
+			continue;
+		}
+
+		const input = isRecord(block.input) ? block.input : {};
+
+		if (normalizeStorybookWorkflowName(block.name) === STORY_INSTRUCTIONS_WORKFLOW_NAME) {
+			entries.push({ kind: 'instructions', detail: block.name });
+			continue;
+		}
+
+		const command = typeof input.command === 'string' ? input.command : undefined;
+		if (command !== undefined && shellCommandFetchesStoryInstructions(command)) {
+			entries.push({ kind: 'instructions', detail: command });
+			continue;
+		}
+
+		if (CLAUDE_FILE_EDIT_TOOL_NAMES.includes(block.name) && typeof input.file_path === 'string') {
+			entries.push({ kind: 'file-edit', detail: input.file_path });
+		}
+	}
+}
+
+function collectCodexTimelineEntries(
+	event: Record<string, unknown>,
+	entries: InstructionsAndEditTimelineEntry[],
+): void {
+	// item.completed only — Codex emits item.started for the same work too, and
+	// counting both would duplicate every entry.
+	if (event.type !== 'item.completed' || !isRecord(event.item)) {
+		return;
+	}
+
+	const item = event.item;
+
+	if (
+		item.type === 'mcp_tool_call' &&
+		typeof item.tool === 'string' &&
+		normalizeStorybookWorkflowName(item.tool) === STORY_INSTRUCTIONS_WORKFLOW_NAME
+	) {
+		entries.push({ kind: 'instructions', detail: item.tool });
+		return;
+	}
+
+	if (
+		item.type === 'command_execution' &&
+		typeof item.command === 'string' &&
+		shellCommandFetchesStoryInstructions(item.command)
+	) {
+		entries.push({ kind: 'instructions', detail: item.command });
+		return;
+	}
+
+	if (item.type === 'file_change' && Array.isArray(item.changes)) {
+		for (const change of item.changes) {
+			if (isRecord(change) && typeof change.path === 'string') {
+				entries.push({ kind: 'file-edit', detail: change.path });
+			}
+		}
+	}
+}
+
+function shellCommandFetchesStoryInstructions(command: string): boolean {
+	return parseStorybookWorkflowShellCommands([command]).some(
+		(call) => call.name === STORY_INSTRUCTIONS_WORKFLOW_NAME,
+	);
+}
+
 export type WorkflowToolResult = {
 	output: string;
 	isError: boolean;

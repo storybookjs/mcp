@@ -7,6 +7,7 @@ import {
 	getEvalContext,
 	expectStoryDiscoveryBeforeReview,
 	expectStoryIdsInDisplayReview,
+	expectStoryInstructionsBeforeFirstComponentEdit,
 	expectStoryTestsRanAndPassed,
 	expectValidStorybookLaunchConfig,
 	expectWorkflowCalls,
@@ -42,6 +43,10 @@ test.runIf(review)(
 		expectStoryDiscoveryBeforeReview();
 	},
 );
+
+test('fetches the story instructions before editing the component', () => {
+	expectStoryInstructionsBeforeFirstComponentEdit({ covering: ['reviewcard'] });
+});
 
 test('runs story tests after the change and finishes with them passing', () => {
 	expectStoryTestsRanAndPassed({ covering: ['reviewcard'] });

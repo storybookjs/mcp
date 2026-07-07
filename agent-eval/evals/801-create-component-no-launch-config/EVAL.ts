@@ -9,6 +9,7 @@ import {
 	expectSkillInvoked,
 	getEvalContext,
 	expectStoryDiscoveryBeforeReview,
+	expectStoryInstructionsBeforeFirstComponentEdit,
 	expectStoryTestsRanAndPassed,
 	expectValidStorybookLaunchConfig,
 	expectWorkflowCalls,
@@ -48,6 +49,10 @@ test.runIf(review)(
 		expectStoryDiscoveryBeforeReview();
 	},
 );
+
+test('fetches the story instructions before writing the component', () => {
+	expectStoryInstructionsBeforeFirstComponentEdit({ covering: ['toggleswitch'] });
+});
 
 test('runs story tests after the change and finishes with them passing', () => {
 	expectStoryTestsRanAndPassed({ covering: ['toggleswitch'] });

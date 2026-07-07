@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+	parseInstructionsAndEditTimeline,
 	parseStorybookWorkflowShellCommands,
 	parseWorkflowToolResults,
 	selectFinalRunStoryTestsReport,
@@ -263,6 +264,93 @@ describe('parseWorkflowToolResults', () => {
 		].join('\n');
 
 		expect(parseWorkflowToolResults(transcript, 'run-story-tests')).toHaveLength(0);
+	});
+});
+
+describe('parseInstructionsAndEditTimeline', () => {
+	function claudeToolUseLine(name: string, input: Record<string, unknown>): string {
+		return JSON.stringify({
+			type: 'assistant',
+			message: { content: [{ type: 'tool_use', id: 'toolu_1', name, input }] },
+		});
+	}
+
+	test('orders a late Claude MCP instructions call after the component edit', () => {
+		const transcript = [
+			claudeToolUseLine('Read', { file_path: '/workspace/src/components/ReviewCard.tsx' }),
+			claudeToolUseLine('Edit', { file_path: '/workspace/src/components/ReviewCard.tsx' }),
+			claudeToolUseLine('mcp__storybook-dev-mcp__get-storybook-story-instructions', {}),
+			claudeToolUseLine('Write', { file_path: '/workspace/stories/ReviewCard.stories.tsx' }),
+		].join('\n');
+
+		expect(parseInstructionsAndEditTimeline(transcript)).toEqual([
+			{ kind: 'file-edit', detail: '/workspace/src/components/ReviewCard.tsx' },
+			{ kind: 'instructions', detail: 'mcp__storybook-dev-mcp__get-storybook-story-instructions' },
+			{ kind: 'file-edit', detail: '/workspace/stories/ReviewCard.stories.tsx' },
+		]);
+	});
+
+	test('credits Claude plugin-path instructions fetched through storybook ai', () => {
+		const transcript = [
+			claudeToolUseLine('Bash', {
+				command: 'STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai get-storybook-story-instructions',
+			}),
+			claudeToolUseLine('Write', { file_path: '/workspace/src/components/ReviewCard.tsx' }),
+		].join('\n');
+
+		expect(parseInstructionsAndEditTimeline(transcript).map((entry) => entry.kind)).toEqual([
+			'instructions',
+			'file-edit',
+		]);
+	});
+
+	test('does not report reads or unrelated shell commands', () => {
+		const transcript = [
+			claudeToolUseLine('Read', { file_path: '/workspace/src/components/ReviewCard.tsx' }),
+			claudeToolUseLine('Bash', { command: 'npm run lint' }),
+		].join('\n');
+
+		expect(parseInstructionsAndEditTimeline(transcript)).toHaveLength(0);
+	});
+
+	test('orders Codex mcp_tool_call, file_change, and command_execution items', () => {
+		const transcript = [
+			JSON.stringify({
+				type: 'item.started',
+				item: { type: 'mcp_tool_call', tool: 'get-storybook-story-instructions' },
+			}),
+			JSON.stringify({
+				type: 'item.completed',
+				item: { type: 'mcp_tool_call', tool: 'get-storybook-story-instructions' },
+			}),
+			JSON.stringify({
+				type: 'item.completed',
+				item: {
+					type: 'file_change',
+					changes: [
+						{ path: '/workspace/src/components/ReviewCard.tsx', kind: 'update' },
+						{ path: '/workspace/stories/ReviewCard.stories.tsx', kind: 'update' },
+					],
+				},
+			}),
+			JSON.stringify({
+				type: 'item.completed',
+				item: {
+					type: 'command_execution',
+					command: "/bin/bash -lc 'npx storybook ai get-storybook-story-instructions'",
+				},
+			}),
+		].join('\n');
+
+		expect(parseInstructionsAndEditTimeline(transcript)).toEqual([
+			{ kind: 'instructions', detail: 'get-storybook-story-instructions' },
+			{ kind: 'file-edit', detail: '/workspace/src/components/ReviewCard.tsx' },
+			{ kind: 'file-edit', detail: '/workspace/stories/ReviewCard.stories.tsx' },
+			{
+				kind: 'instructions',
+				detail: "/bin/bash -lc 'npx storybook ai get-storybook-story-instructions'",
+			},
+		]);
 	});
 });
 
