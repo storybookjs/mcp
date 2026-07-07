@@ -5,10 +5,9 @@ description: Invoke FIRST, before creating, editing, or deleting components, sto
 
 Prerequisites:
 
-1. Storybook must be installed in the project. Invoke the `/storybook-init` skill to set up Storybook, but only if the user explicitly invoked this skill and approves a Storybook installation.
-2. Storybook must be >= 10.5 (or an alpha/canary version). Invoke the `/storybook-upgrade` skill to upgrade it, but only if the user
-   explicitly approved a Storybook upgrade.
-3. Ensure `@storybook/addon-mcp` is installed. If it is missing, install it with `npx storybook add @storybook/addon-mcp`.
+1. **Storybook is not installed** (no Storybook dependencies in `package.json`, no `.storybook/` directory): invoke the `/storybook-init` skill, but only if the user explicitly approves a Storybook installation.
+2. **Storybook is installed but outdated** (version < 10.5 and not an alpha/canary version): invoke the `/storybook-upgrade` skill, but only if the user explicitly approved a Storybook upgrade.
+3. **Storybook is installed and up to date**: proceed. Ensure `@storybook/addon-mcp` is installed; if it is missing, install it with `npx storybook add @storybook/addon-mcp`.
 
 Run `STORYBOOK_FEATURE_AI_CLI=1 npx storybook ai --help` and read the output in its **entirety** to get the **mandatory, ordered workflow** for working on UI changes, writing stories, and keeping stories in sync with every frontend component you create, modify, or delete. This workflow explains how to write stories, preview stories, and display a curated Storybook review.
 
