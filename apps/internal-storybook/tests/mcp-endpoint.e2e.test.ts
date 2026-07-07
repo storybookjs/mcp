@@ -502,6 +502,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				  },
 				  {
 				    "description": "Publish a curated review to Storybook's review page for spot-checking **visual impact**. Each call replaces the single active review — call it again whenever the user iterates on the changes.
+				This is the required terminal step for visual work: a visually observable change is not done until its review is published — passing tests, typecheck, or preview links do not substitute for it.
 
 				## When to call
 				- **Trigger 1 — visual change** (components, stories, CSS, themes, colors, design tokens, i18n — anything that changes how the UI looks): when the user should spot-check rendering. A shared file (token, style, util) has no stories of its own — review its consumers' stories. Skip non-visual refactors unless side-effects are plausible. Start from \`get-changed-stories\`; fall back to \`get-stories-by-component\` if change detection is unavailable. Include \`changedFiles\`.
@@ -595,6 +596,7 @@ describe('MCP Endpoint E2E Tests', () => {
 				  {
 				    "description": "Run story tests.
 				Run them after editing anything that changes how the UI looks — components, stories, styles, CSS, themes, colors, or design tokens — shell-level substitutes like typecheck, lint, or package.json test scripts do not replace this.
+				This is the baseline verification for UI work, not an optional extra: such work is not finished until these tests have run and pass, including for brand-new components and for changes that touched no existing story.
 				Provide stories for focused runs (faster while iterating),
 				or omit stories to run all tests for full-project verification.
 				Use this continuously to monitor test results as you work on your UI components and stories.
