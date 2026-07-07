@@ -6,9 +6,11 @@ description: Invoke FIRST, before creating, editing, or deleting components, sto
 Prerequisites:
 
 1. Storybook must be installed in the project. Invoke the `$storybook:init` skill to set up Storybook, but only if the user explicitly invoked this skill and approves a Storybook installation.
-2. Storybook must be >= 10.5 (or an alpha/canary version). Invoke the `$storybook:upgrade` skill to upgrade it, but only if the user
+2. Storybook must be at least 10.5 (or `next` while 10.5 is not yet released). Invoke the `$storybook:upgrade` skill to upgrade it, but only if the user
    explicitly approved a Storybook upgrade.
 3. Ensure `@storybook/addon-mcp` is installed. If it is missing, install it with `npx storybook add @storybook/addon-mcp`.
+
+In sandboxed Codex environments, run every Storybook CLI command with `require_escalated` — sandbox network/port restrictions can otherwise cause confusing failures (e.g. the dev server finds no free port to bind to).
 
 Run the Storybook dev server and every `storybook ai` command from the same working directory: the package where Storybook is installed (in a monorepo often a leaf package such as `packages/ui`).
 
