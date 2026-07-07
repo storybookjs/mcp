@@ -57,10 +57,18 @@ Use { absoluteStoryPath + exportName } only when you're currently working in a s
 	),
 });
 
+// The completion obligation lives in this description, not only in the
+// server instructions or the story-instructions output: the description is
+// the one channel every harness surfaces untruncated, and an agent that
+// never fetched instructions has ranked this tool as optional "heavier
+// verification" that "would matter more if I'd touched an existing story"
+// and ended UI work with grep + typecheck (Opencode + Opus on mealdrop,
+// Slack #sb-release-10-5, 2026-07-06).
 export function getRunStoryTestsToolDescription(a11yEnabled: boolean) {
 	return (
 		`Run story tests.
 Run them after editing anything that changes how the UI looks — components, stories, styles, CSS, themes, colors, or design tokens — shell-level substitutes like typecheck, lint, or package.json test scripts do not replace this.
+This is the baseline verification for UI work, not an optional extra: such work is not finished until these tests have run and pass, including for brand-new components and for changes that touched no existing story.
 Provide stories for focused runs (faster while iterating),
 or omit stories to run all tests for full-project verification.
 Use this continuously to monitor test results as you work on your UI components and stories.
@@ -224,6 +232,14 @@ ${errorMessages}`,
 					origin,
 				});
 
+				const nextStep = getVerificationNextStep({
+					failingStoryCount: summary.failingStoryCount,
+					unhandledErrorCount: summary.unhandledErrorCount,
+					devToolsetEnabled: server.ctx.custom?.toolsets?.dev ?? true,
+					reviewEnabled: server.ctx.custom?.reviewEnabled ?? false,
+				});
+				const textWithNextStep = nextStep ? `${text}\n\n${nextStep}` : text;
+
 				if (!disableTelemetry) {
 					await collectTelemetry({
 						event: 'tool:runStoryTests',
@@ -240,7 +256,7 @@ ${errorMessages}`,
 					content: [
 						{
 							type: 'text',
-							text,
+							text: textWithNextStep,
 						},
 					],
 				};
@@ -362,6 +378,36 @@ interface RunStoryTestsSummary {
 	failingStoryCount: number;
 	a11yViolationCount: number;
 	unhandledErrorCount: number;
+}
+
+/**
+ * Next-step reminder appended to a green test result. The tool result is the
+ * one channel every agent that ran tests demonstrably reads, so it must carry
+ * the rest of the verification loop: agents that skipped the server
+ * instructions and the story-instructions tool otherwise treat passing tests
+ * as the end of UI work and never publish the review or share preview links.
+ * Withheld while stories are failing or unhandled errors are present — the
+ * existing guidance already demands fixing those first, and pointing at the
+ * terminal step too early invites publishing a review over a broken state.
+ */
+export function getVerificationNextStep({
+	failingStoryCount,
+	unhandledErrorCount,
+	devToolsetEnabled,
+	reviewEnabled,
+}: {
+	failingStoryCount: number;
+	unhandledErrorCount: number;
+	devToolsetEnabled: boolean;
+	reviewEnabled: boolean;
+}): string | undefined {
+	if (failingStoryCount > 0 || unhandledErrorCount > 0 || !devToolsetEnabled) {
+		return undefined;
+	}
+
+	return reviewEnabled
+		? 'Next step: passing tests are not the end of visually observable work. Before reporting completion, publish (or refresh) the Storybook review — discover the affected stories with get-changed-stories or get-stories-by-component, then call display-review. If nothing visually changed, skip the review and say so.'
+		: 'Next step: passing tests are not the end of visually observable work. Before reporting completion, share the preview URLs of the affected stories via preview-stories in your final user-facing response. If nothing visually changed, say so.';
 }
 
 interface A11yViolationNode {

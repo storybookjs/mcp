@@ -27,7 +27,7 @@ export function getPreviewStoriesToolDescription({
 	if (!reviewEnabled) {
 		return `Use this tool to get one or more Storybook preview URLs.
 Call it after editing anything that changes how the UI looks — components, stories, styles, CSS, themes, colors, or design tokens — no exceptions. A shared file has no stories of its own: preview the stories of the components that consume it.
-Include each returned preview URL in your final user-facing response so users can open them directly.`;
+Include each returned preview URL in your final user-facing response so users can open them directly. Visual work is not done until those links are shared — do not report completion without them.`;
 	}
 
 	return `Use this tool to get Storybook preview URLs while iterating on a specific story, or when the user asks for a direct link to one.

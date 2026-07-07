@@ -9,7 +9,14 @@ import { withFriendlyErrors } from '../utils/format-validation-issues.ts';
 import { DEFAULT_MCP_ENDPOINT, PUSH_REVIEW_EVENT, REVIEW_PAGE_PATH } from '../constants.ts';
 import { DISPLAY_REVIEW_TOOL_NAME } from './tool-names.ts';
 
+// The "not done until published" rule is stated here as well as in the server
+// instructions and the story-instructions output: those two channels are
+// fetch-gated or truncated on some harnesses, so an agent that skipped them
+// must still meet the terminal-step obligation in this always-visible
+// description rather than first learning it from this tool's result — which
+// it only sees after already deciding to call the tool.
 export const DISPLAY_REVIEW_TOOL_DESCRIPTION = `Publish a curated review to Storybook's review page for spot-checking **visual impact**. Each call replaces the single active review — call it again whenever the user iterates on the changes.
+This is the required terminal step for visual work: a visually observable change is not done until its review is published — passing tests, typecheck, or preview links do not substitute for it.
 
 ## When to call
 - **Trigger 1 — visual change** (components, stories, CSS, themes, colors, design tokens, i18n — anything that changes how the UI looks): when the user should spot-check rendering. A shared file (token, style, util) has no stories of its own — review its consumers' stories. Skip non-visual refactors unless side-effects are plausible. Start from \`get-changed-stories\`; fall back to \`get-stories-by-component\` if change detection is unavailable. Include \`changedFiles\`.

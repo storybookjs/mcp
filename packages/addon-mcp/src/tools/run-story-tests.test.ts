@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
-import { addRunStoryTestsTool, getAddonVitestConstants } from './run-story-tests.ts';
+import {
+	addRunStoryTestsTool,
+	getAddonVitestConstants,
+	getVerificationNextStep,
+} from './run-story-tests.ts';
 import type { AddonContext } from '../types.ts';
 import smallStoryIndexFixture from '../../fixtures/small-story-index.fixture.json' with { type: 'json' };
 import * as getStoryIndexModule from '../utils/get-story-index.ts';
@@ -221,7 +225,9 @@ describe('runStoryTestsTool', () => {
 		expect(response.result?.content[0].text).toMatchInlineSnapshot(`
 			"## Passing Stories
 
-			- button--primary"
+			- button--primary
+
+			Next step: passing tests are not the end of visually observable work. Before reporting completion, share the preview URLs of the affected stories via preview-stories in your final user-facing response. If nothing visually changed, say so."
 		`);
 		expect(mockChannel.emit).toHaveBeenCalledWith(
 			'storybook/test/trigger-test-run-request',
@@ -382,7 +388,9 @@ describe('runStoryTestsTool', () => {
 		expect(response.result?.content[0].text).toMatchInlineSnapshot(`
 			"## Passing Stories
 
-			- button--primary"
+			- button--primary
+
+			Next step: passing tests are not the end of visually observable work. Before reporting completion, share the preview URLs of the affected stories via preview-stories in your final user-facing response. If nothing visually changed, say so."
 		`);
 		expect(mockChannel.emit).toHaveBeenCalledWith(
 			'storybook/test/trigger-test-run-request',
@@ -565,7 +573,9 @@ describe('runStoryTestsTool', () => {
 			- **Impact**: critical
 			  **Message**: 2.5:1 (required: 4.5:1)
 			  **Element**: <button style="color: #fff; background: #ccc;">Click me</button>
-			  **Inspect**: http://localhost:6006/inspect/button--primary?inspectPath=button.0"
+			  **Inspect**: http://localhost:6006/inspect/button--primary?inspectPath=button.0
+
+			Next step: passing tests are not the end of visually observable work. Before reporting completion, share the preview URLs of the affected stories via preview-stories in your final user-facing response. If nothing visually changed, say so."
 		`);
 	});
 
@@ -1163,5 +1173,36 @@ describe('runStoryTestsTool', () => {
 				'button--primary-2',
 			]);
 		});
+	});
+});
+
+describe('getVerificationNextStep', () => {
+	const green = {
+		failingStoryCount: 0,
+		unhandledErrorCount: 0,
+		devToolsetEnabled: true,
+		reviewEnabled: false,
+	};
+
+	it('chains to display-review on a green result when review is enabled', () => {
+		expect(getVerificationNextStep({ ...green, reviewEnabled: true })).toContain('display-review');
+	});
+
+	it('chains to preview-stories on a green result when review is disabled', () => {
+		const nextStep = getVerificationNextStep(green);
+		expect(nextStep).toContain('preview-stories');
+		expect(nextStep).not.toContain('display-review');
+	});
+
+	it('is withheld while stories are failing', () => {
+		expect(getVerificationNextStep({ ...green, failingStoryCount: 1 })).toBeUndefined();
+	});
+
+	it('is withheld while unhandled errors are present', () => {
+		expect(getVerificationNextStep({ ...green, unhandledErrorCount: 1 })).toBeUndefined();
+	});
+
+	it('is withheld when the dev toolset is disabled', () => {
+		expect(getVerificationNextStep({ ...green, devToolsetEnabled: false })).toBeUndefined();
 	});
 });
