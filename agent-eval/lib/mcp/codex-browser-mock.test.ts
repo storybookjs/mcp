@@ -1,5 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
@@ -237,34 +237,6 @@ describe.skipIf(!(await isChromiumInstalled()))(
 				expect(payload.url).toBe(fixtureUrl);
 				expect(payload.snapshot).toContain('heading "Fixture App"');
 				expect(payload.snapshot).toContain('button "click me"');
-			},
-			BROWSER_TEST_TIMEOUT_MS,
-		);
-
-		test(
-			'records successful navigations in the workspace navigation log',
-			async () => {
-				const navigatedUrl = `${fixtureUrl}?navigation-log`;
-				expectOk(
-					await client.js(`
-						var navigationLogTab = await browser.tabs.new();
-						await navigationLogTab.goto(${JSON.stringify(navigatedUrl)});
-						await navigationLogTab.close();
-					`),
-				);
-
-				const logPath = path.join(workspace, '__agent_eval__', 'codex-browser-log.jsonl');
-				expect(
-					existsSync(logPath),
-					`Expected the mock to write the navigation log at ${logPath}`,
-				).toBe(true);
-				const records = readFileSync(logPath, 'utf8')
-					.split('\n')
-					.filter((line) => line.trim().length > 0)
-					.map((line) => JSON.parse(line) as { type: string; url: string; timestamp: string });
-				expect(records).toContainEqual(
-					expect.objectContaining({ type: 'goto', url: navigatedUrl }),
-				);
 			},
 			BROWSER_TEST_TIMEOUT_MS,
 		);

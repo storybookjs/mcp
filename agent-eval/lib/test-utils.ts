@@ -365,22 +365,18 @@ export function expectValidStorybookLaunchConfig(): void {
 	).toBe('string');
 }
 
-// Written by the codex-browser mock (lib/mcp/codex-browser-client-mock.mjs,
-// NAVIGATION_LOG_PATH). The literal is duplicated on purpose: the mock ships
-// into the sandbox as a self-contained file and cannot share an import.
-const CODEX_BROWSER_LOG_PATH = '__agent_eval__/codex-browser-log.jsonl';
-
-// Preview-surface outcome check, per plugin surface:
+// Preview-surface outcome check, per plugin surface — both branches check
+// tool usage in the transcript:
 // - claude-code: the dev server must be started through the Claude preview
 //   tooling (the preview_start tool), which presents the app's preview browser.
 // - codex: the agent must open the Storybook URL in the in-app browser and
-//   leave the dev server running. The codex-browser mock records a tab.goto
-//   only after it succeeds, so a recorded navigation proves Storybook served
-//   that URL when the browser opened it; "left running" is asserted
-//   behaviorally, as the absence of any self-describing dev-server kill
-//   command (see findDevServerKillCommands — a kill routed through an
-//   unrelated variable, e.g. `PID=$(lsof -ti:6006)` then `kill $PID` in a
-//   later command, is beyond this heuristic).
+//   leave the dev server running. Codex drives the browser through the
+//   node_repl `js` tool (the control-in-app-browser skill), so the tool-usage
+//   evidence is a successful `js` call whose code navigates a tab to the
+//   Storybook URL; "left running" is asserted as the absence of any
+//   self-describing dev-server kill command (see findDevServerKillCommands —
+//   a kill routed through an unrelated variable, e.g. `PID=$(lsof -ti:6006)`
+//   then `kill $PID` in a later command, is beyond this heuristic).
 //   A liveness probe at eval time is deliberately NOT used: the sandbox
 //   Storybook can crash on its own after run-story-tests (the storybook/test
 //   vitest sub-runner dies on "Restarting Vitest due to config change" →
@@ -417,11 +413,11 @@ export function expectPreviewBrowserStarted(): void {
 		);
 	}
 
-	const navigatedUrls = parseCodexBrowserNavigations(readCodexBrowserLog());
+	const navigatedUrls = parseCodexBrowserNavigations(readFileSync(TRANSCRIPT_PATH, 'utf8'));
 	const storybookUrls = [...new Set(navigatedUrls.filter(isLocalStorybookPreviewUrl))];
 	expect(
 		storybookUrls.length,
-		`Expected the in-app browser to navigate to the local Storybook review or story preview URL (recorded in ${CODEX_BROWSER_LOG_PATH}). Recorded navigations: ${JSON.stringify(navigatedUrls)}`,
+		`Expected an in-app browser navigation to the local Storybook review or story preview URL (a node_repl js tool call whose code calls goto). Navigations found: ${JSON.stringify(navigatedUrls)}`,
 	).toBeGreaterThan(0);
 
 	const killCommands = findDevServerKillCommands(getShellCommands(), storybookUrls);
@@ -460,17 +456,39 @@ export function findDevServerKillCommands(commands: string[], navigatedUrls: str
 	return commands.filter((command) => KILL_COMMAND_PATTERN.test(command) && target.test(command));
 }
 
-export function parseCodexBrowserNavigations(rawLog: string): string[] {
-	return rawLog.split('\n').flatMap((line) => {
-		const record = parseJson(line);
-		return isRecord(record) && record.type === 'goto' && typeof record.url === 'string'
-			? [record.url]
-			: [];
-	});
-}
+// URLs the in-app browser navigated to, from the codex raw transcript: each
+// successful node_repl `js` tool call is scanned for `goto('<url>')` string
+// literals in its code argument. This mirrors how plugin workflow calls are
+// parsed out of `storybook ai` shell commands. A dynamically composed URL
+// (`goto(baseUrl + path)`) escapes the literal match and fails the assertion
+// loud rather than passing vacuously.
+export function parseCodexBrowserNavigations(rawTranscript: string): string[] {
+	return rawTranscript.split('\n').flatMap((line) => {
+		const event = parseJson(line);
+		if (!isRecord(event) || event.type !== 'item.completed' || !isRecord(event.item)) {
+			return [];
+		}
 
-function readCodexBrowserLog(): string {
-	return existsSync(CODEX_BROWSER_LOG_PATH) ? readFileSync(CODEX_BROWSER_LOG_PATH, 'utf8') : '';
+		const item = event.item;
+		if (
+			item.type !== 'mcp_tool_call' ||
+			item.server !== 'node_repl' ||
+			item.tool !== 'js' ||
+			item.status !== 'completed' ||
+			(item.error !== null && item.error !== undefined)
+		) {
+			return [];
+		}
+
+		const code = isRecord(item.arguments) ? item.arguments.code : undefined;
+		if (typeof code !== 'string') {
+			return [];
+		}
+
+		return [...code.matchAll(/\.goto\(\s*(['"`])([^'"`]+)\1/g)].flatMap((match) =>
+			match[2] === undefined ? [] : [match[2]],
+		);
+	});
 }
 
 export function isLocalDevServerUrl(value: string): boolean {

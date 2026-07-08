@@ -300,22 +300,47 @@ describe('selectFinalRunStoryTestsReport', () => {
 });
 
 describe('parseCodexBrowserNavigations', () => {
-	test('extracts goto URLs and ignores other records and malformed lines', () => {
-		const rawLog = [
-			JSON.stringify({ type: 'goto', url: 'http://localhost:6006/', timestamp: 't' }),
+	const jsToolCallLine = (code: string, itemOverrides: Record<string, unknown> = {}) =>
+		JSON.stringify({
+			type: 'item.completed',
+			item: {
+				type: 'mcp_tool_call',
+				server: 'node_repl',
+				tool: 'js',
+				status: 'completed',
+				error: null,
+				arguments: { code, title: 'test', timeout_ms: 30000 },
+				...itemOverrides,
+			},
+		});
+
+	test('extracts goto URL literals from successful node_repl js calls', () => {
+		const transcript = [
+			jsToolCallLine(
+				"var tab = (await browser.tabs.selected()) ?? (await browser.tabs.new());\nawait tab.goto('http://localhost:6006/?path=/review/');",
+			),
 			'not json',
-			JSON.stringify({ type: 'screenshot' }),
-			JSON.stringify({ type: 'goto', url: 'http://localhost:6006/?path=/review/change' }),
-			'',
+			jsToolCallLine('await tab.goto("http://localhost:6006/?path=/story/button--primary");'),
 		].join('\n');
 
-		expect(parseCodexBrowserNavigations(rawLog)).toEqual([
-			'http://localhost:6006/',
-			'http://localhost:6006/?path=/review/change',
+		expect(parseCodexBrowserNavigations(transcript)).toEqual([
+			'http://localhost:6006/?path=/review/',
+			'http://localhost:6006/?path=/story/button--primary',
 		]);
 	});
 
-	test('returns no navigations for an empty log', () => {
+	test('ignores failed js calls, other servers, and code without a goto', () => {
+		const transcript = [
+			jsToolCallLine("await tab.goto('http://localhost:6006/');", { status: 'failed' }),
+			jsToolCallLine("await tab.goto('http://localhost:6006/');", { error: 'timed out' }),
+			jsToolCallLine('nodeRepl.write(await browser.documentation());'),
+			jsToolCallLine("await tab.goto('http://localhost:6006/');", { server: 'other-server' }),
+		].join('\n');
+
+		expect(parseCodexBrowserNavigations(transcript)).toEqual([]);
+	});
+
+	test('returns no navigations for an empty transcript', () => {
 		expect(parseCodexBrowserNavigations('')).toEqual([]);
 	});
 });
