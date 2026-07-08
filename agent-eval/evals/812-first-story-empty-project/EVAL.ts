@@ -53,6 +53,6 @@ test('keeps the pre-existing Storybook launch config valid', () => {
 	expectValidStorybookLaunchConfig();
 });
 
-test('opens the preview browser when using the plugin', async () => {
-	await expectPreviewBrowserStarted();
+test('opens the preview browser when using the plugin', () => {
+	expectPreviewBrowserStarted();
 });

@@ -243,13 +243,24 @@ describe.skipIf(!(await isChromiumInstalled()))(
 
 		test(
 			'records successful navigations in the workspace navigation log',
-			() => {
+			async () => {
+				const navigatedUrl = `${fixtureUrl}?navigation-log`;
+				expectOk(
+					await client.js(`
+						var navigationLogTab = await browser.tabs.new();
+						await navigationLogTab.goto(${JSON.stringify(navigatedUrl)});
+						await navigationLogTab.close();
+					`),
+				);
+
 				const logPath = path.join(workspace, '__agent_eval__', 'codex-browser-log.jsonl');
 				const records = readFileSync(logPath, 'utf8')
 					.split('\n')
 					.filter((line) => line.trim().length > 0)
 					.map((line) => JSON.parse(line) as { type: string; url: string; timestamp: string });
-				expect(records).toContainEqual(expect.objectContaining({ type: 'goto', url: fixtureUrl }));
+				expect(records).toContainEqual(
+					expect.objectContaining({ type: 'goto', url: navigatedUrl }),
+				);
 			},
 			BROWSER_TEST_TIMEOUT_MS,
 		);

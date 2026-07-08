@@ -370,12 +370,22 @@ const CODEX_BROWSER_LOG_PATH = '__agent_eval__/codex-browser-log.jsonl';
 // Preview-surface outcome check, per plugin surface:
 // - claude-code: the dev server must be started through the Claude preview
 //   tooling (the preview_start tool), which presents the app's preview browser.
-// - codex: the agent must open the Storybook URL in the in-app browser (the
-//   codex-browser mock records every successful tab.goto), and that URL must
-//   still serve the Storybook index when the eval runs — the stories skill
-//   demands the dev server be left running for the user.
+// - codex: the agent must open the Storybook URL in the in-app browser and
+//   leave the dev server running. The codex-browser mock records a tab.goto
+//   only after it succeeds, so a recorded navigation proves Storybook served
+//   that URL when the browser opened it; "left running" is asserted
+//   behaviorally, as the absence of any dev-server-killing shell command.
+//   A liveness probe at eval time is deliberately NOT used: the sandbox
+//   Storybook can crash on its own after run-story-tests (the storybook/test
+//   vitest sub-runner dies on "Restarting Vitest due to config change" →
+//   "No projects matched the filter", taking the dev-server process with it;
+//   local runs 2026-07-08), so a probe would fail on that infra bug, not on
+//   agent behavior. The stories skill gates browser-opening on the
+//   control-in-app-browser skill being available; the assertion does not,
+//   because the codex plugin experiment always installs that skill and its
+//   browser mock (writeCodexInAppBrowserMock in lib/templates.ts).
 // MCP cells have no preview surface installed, so nothing is asserted there.
-export async function expectPreviewBrowserStarted(): Promise<void> {
+export function expectPreviewBrowserStarted(): void {
 	const { agent, integration } = getEvalContext();
 	if (integration !== 'plugin') {
 		return;
@@ -395,6 +405,12 @@ export async function expectPreviewBrowserStarted(): Promise<void> {
 		return;
 	}
 
+	if (agent !== 'codex') {
+		expect.fail(
+			`Unknown plugin agent "${agent}" — teach expectPreviewBrowserStarted its preview surface`,
+		);
+	}
+
 	const navigatedUrls = parseCodexBrowserNavigations(readCodexBrowserLog());
 	const localUrls = [...new Set(navigatedUrls.filter(isLocalDevServerUrl))];
 	expect(
@@ -402,14 +418,26 @@ export async function expectPreviewBrowserStarted(): Promise<void> {
 		`Expected the in-app browser to navigate to the local Storybook URL (recorded in ${CODEX_BROWSER_LOG_PATH}). Recorded navigations: ${JSON.stringify(navigatedUrls)}`,
 	).toBeGreaterThan(0);
 
-	for (const url of localUrls) {
-		if (await servesStorybookIndex(new URL(url).origin)) {
-			return;
-		}
-	}
-	expect.fail(
-		`Expected an in-app browser navigation to a Storybook dev server that is still running (GET <origin>/index.json). Navigated local URLs: ${JSON.stringify(localUrls)} — was the dev server killed after verification?`,
+	const killCommands = findDevServerKillCommands(getShellCommands(), localUrls);
+	expect(
+		killCommands,
+		'The dev server must be left running for the user — never kill it after verification',
+	).toEqual([]);
+}
+
+// Shell commands that kill the dev server the in-app browser navigated to: a
+// kill-style command that also references Storybook, a recorded pidfile, or
+// one of the navigated dev-server ports. Scoped that way so killing an
+// unrelated process (e.g. a stray test worker) does not count.
+const KILL_COMMAND_PATTERN = /\b(?:kill|pkill|killall|fuser\s+-k)\b/;
+
+export function findDevServerKillCommands(commands: string[], navigatedUrls: string[]): string[] {
+	const ports = [...new Set(navigatedUrls.map((url) => new URL(url).port).filter(Boolean))];
+	const target = new RegExp(
+		['storybook', String.raw`\.pid\b`, ...ports.map((port) => String.raw`\b${port}\b`)].join('|'),
+		'i',
 	);
+	return commands.filter((command) => KILL_COMMAND_PATTERN.test(command) && target.test(command));
 }
 
 export function parseCodexBrowserNavigations(rawLog: string): string[] {
@@ -432,21 +460,6 @@ export function isLocalDevServerUrl(value: string): boolean {
 			(protocol === 'http:' || protocol === 'https:') &&
 			['localhost', '127.0.0.1', '[::1]'].includes(hostname)
 		);
-	} catch {
-		return false;
-	}
-}
-
-// A running Storybook dev server serves its story index at /index.json (a
-// `{ v, entries }` object); a random dev server on the same port does not.
-async function servesStorybookIndex(origin: string): Promise<boolean> {
-	try {
-		const response = await fetch(`${origin}/index.json`, { signal: AbortSignal.timeout(5_000) });
-		if (!response.ok) {
-			return false;
-		}
-		const index = (await response.json()) as unknown;
-		return isRecord(index) && isRecord(index.entries);
 	} catch {
 		return false;
 	}

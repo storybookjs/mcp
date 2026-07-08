@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+	findDevServerKillCommands,
 	isLocalDevServerUrl,
 	parseCodexBrowserNavigations,
 	parseStorybookWorkflowShellCommands,
@@ -330,5 +331,29 @@ describe('isLocalDevServerUrl', () => {
 		expect(isLocalDevServerUrl('file:///tmp/index.html')).toBe(false);
 		expect(isLocalDevServerUrl('about:blank')).toBe(false);
 		expect(isLocalDevServerUrl('not a url')).toBe(false);
+	});
+});
+
+describe('findDevServerKillCommands', () => {
+	const navigated = ['http://localhost:6006/?path=/review/'];
+
+	test('flags kill commands targeting the dev server', () => {
+		expect(findDevServerKillCommands(['pkill -f storybook'], navigated)).toEqual([
+			'pkill -f storybook',
+		]);
+		expect(findDevServerKillCommands(['kill $(cat /tmp/storybook.pid)'], navigated)).toHaveLength(
+			1,
+		);
+		expect(findDevServerKillCommands(['fuser -k 6006/tcp'], navigated)).toHaveLength(1);
+	});
+
+	test('ignores unrelated kill commands and non-kill dev-server commands', () => {
+		expect(findDevServerKillCommands(['pkill -f chromium'], navigated)).toEqual([]);
+		expect(
+			findDevServerKillCommands(
+				['nohup npm run storybook >/tmp/storybook.log 2>&1 &', 'curl http://localhost:6006'],
+				navigated,
+			),
+		).toEqual([]);
 	});
 });
