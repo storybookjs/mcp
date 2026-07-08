@@ -365,6 +365,9 @@ export function expectValidStorybookLaunchConfig(): void {
 	).toBe('string');
 }
 
+// Written by the codex-browser mock (lib/mcp/codex-browser-client-mock.mjs,
+// NAVIGATION_LOG_PATH). The literal is duplicated on purpose: the mock ships
+// into the sandbox as a self-contained file and cannot share an import.
 const CODEX_BROWSER_LOG_PATH = '__agent_eval__/codex-browser-log.jsonl';
 
 // Preview-surface outcome check, per plugin surface:
@@ -399,7 +402,7 @@ export function expectPreviewBrowserStarted(): void {
 			(event) =>
 				event.type === 'tool_call' &&
 				typeof event.tool?.originalName === 'string' &&
-				/__preview_start$/.test(event.tool.originalName),
+				event.tool.originalName.endsWith('__preview_start'),
 		);
 		expect(
 			started,

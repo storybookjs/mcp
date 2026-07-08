@@ -254,6 +254,10 @@ describe.skipIf(!(await isChromiumInstalled()))(
 				);
 
 				const logPath = path.join(workspace, '__agent_eval__', 'codex-browser-log.jsonl');
+				expect(
+					existsSync(logPath),
+					`Expected the mock to write the navigation log at ${logPath}`,
+				).toBe(true);
 				const records = readFileSync(logPath, 'utf8')
 					.split('\n')
 					.filter((line) => line.trim().length > 0)
