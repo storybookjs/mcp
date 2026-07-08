@@ -418,13 +418,13 @@ export function expectPreviewBrowserStarted(): void {
 	}
 
 	const navigatedUrls = parseCodexBrowserNavigations(readCodexBrowserLog());
-	const localUrls = [...new Set(navigatedUrls.filter(isLocalDevServerUrl))];
+	const storybookUrls = [...new Set(navigatedUrls.filter(isLocalStorybookPreviewUrl))];
 	expect(
-		localUrls.length,
-		`Expected the in-app browser to navigate to the local Storybook URL (recorded in ${CODEX_BROWSER_LOG_PATH}). Recorded navigations: ${JSON.stringify(navigatedUrls)}`,
+		storybookUrls.length,
+		`Expected the in-app browser to navigate to the local Storybook review or story preview URL (recorded in ${CODEX_BROWSER_LOG_PATH}). Recorded navigations: ${JSON.stringify(navigatedUrls)}`,
 	).toBeGreaterThan(0);
 
-	const killCommands = findDevServerKillCommands(getShellCommands(), localUrls);
+	const killCommands = findDevServerKillCommands(getShellCommands(), storybookUrls);
 	expect(
 		killCommands,
 		'The dev server must be left running for the user — never kill it after verification',
@@ -483,6 +483,17 @@ export function isLocalDevServerUrl(value: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+// The URL shapes the Storybook workflow hands out: manager page links
+// (?path=/review/…, ?path=/story/…) and iframe preview links
+// (/iframe.html?id=…). A bare local origin does not count — navigating to
+// the app's own dev server (or just Storybook's root) is not opening the
+// Storybook result the skill demands.
+const STORYBOOK_PREVIEW_URL_PATTERN = /[?&]path=\/|\/iframe\.html\?/;
+
+export function isLocalStorybookPreviewUrl(value: string): boolean {
+	return isLocalDevServerUrl(value) && STORYBOOK_PREVIEW_URL_PATTERN.test(value);
 }
 
 // Story IDs must come from a discovery tool (get-changed-stories, or the

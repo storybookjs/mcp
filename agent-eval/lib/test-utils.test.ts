@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
 	findDevServerKillCommands,
 	isLocalDevServerUrl,
+	isLocalStorybookPreviewUrl,
 	parseCodexBrowserNavigations,
 	parseStorybookWorkflowShellCommands,
 	parseWorkflowToolResults,
@@ -348,6 +349,13 @@ describe('findDevServerKillCommands', () => {
 		expect(findDevServerKillCommands(['fuser -n tcp -k 6006'], navigated)).toHaveLength(1);
 	});
 
+	// Documents the heuristic's accepted blind spot: a kill routed through an
+	// unrelated variable in a later command carries no self-describing token,
+	// so it is NOT flagged (see the comment on findDevServerKillCommands).
+	test('does not flag a variable-indirected kill in a later command', () => {
+		expect(findDevServerKillCommands(['PID=$(lsof -ti:6006)', 'kill $PID'], navigated)).toEqual([]);
+	});
+
 	test('ignores unrelated kill commands and non-kill dev-server commands', () => {
 		expect(findDevServerKillCommands(['pkill -f chromium'], navigated)).toEqual([]);
 		expect(
@@ -356,5 +364,24 @@ describe('findDevServerKillCommands', () => {
 				navigated,
 			),
 		).toEqual([]);
+	});
+});
+
+describe('isLocalStorybookPreviewUrl', () => {
+	test('accepts local Storybook review, story, and iframe preview URLs', () => {
+		expect(isLocalStorybookPreviewUrl('http://localhost:6006/?path=/review/change')).toBe(true);
+		expect(isLocalStorybookPreviewUrl('http://localhost:6006/?path=/story/button--primary')).toBe(
+			true,
+		);
+		expect(isLocalStorybookPreviewUrl('http://127.0.0.1:4123/iframe.html?id=button--primary')).toBe(
+			true,
+		);
+	});
+
+	test('rejects non-Storybook local URLs and remote Storybook URLs', () => {
+		// The app's own dev server or a bare Storybook root is not the result link.
+		expect(isLocalStorybookPreviewUrl('http://localhost:5173/')).toBe(false);
+		expect(isLocalStorybookPreviewUrl('http://localhost:6006/')).toBe(false);
+		expect(isLocalStorybookPreviewUrl('https://storybook.js.org/?path=/story/button')).toBe(false);
 	});
 });
