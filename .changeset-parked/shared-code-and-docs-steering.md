@@ -1,6 +1,5 @@
 ---
 '@storybook/addon-mcp': patch
-'@storybook/mcp': patch
 ---
 
 Close the shared-code and docs-question gaps in the default (review-off) workflow steering, which eval runs showed agents falling through:

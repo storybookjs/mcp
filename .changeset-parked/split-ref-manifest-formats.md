@@ -1,5 +1,4 @@
 ---
-'@storybook/mcp': minor
 '@storybook/addon-mcp': minor
 ---
 
