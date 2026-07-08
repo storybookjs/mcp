@@ -345,6 +345,7 @@ describe('findDevServerKillCommands', () => {
 			1,
 		);
 		expect(findDevServerKillCommands(['fuser -k 6006/tcp'], navigated)).toHaveLength(1);
+		expect(findDevServerKillCommands(['fuser -n tcp -k 6006'], navigated)).toHaveLength(1);
 	});
 
 	test('ignores unrelated kill commands and non-kill dev-server commands', () => {

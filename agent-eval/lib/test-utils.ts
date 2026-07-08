@@ -374,7 +374,10 @@ const CODEX_BROWSER_LOG_PATH = '__agent_eval__/codex-browser-log.jsonl';
 //   leave the dev server running. The codex-browser mock records a tab.goto
 //   only after it succeeds, so a recorded navigation proves Storybook served
 //   that URL when the browser opened it; "left running" is asserted
-//   behaviorally, as the absence of any dev-server-killing shell command.
+//   behaviorally, as the absence of any self-describing dev-server kill
+//   command (see findDevServerKillCommands — a kill routed through an
+//   unrelated variable, e.g. `PID=$(lsof -ti:6006)` then `kill $PID` in a
+//   later command, is beyond this heuristic).
 //   A liveness probe at eval time is deliberately NOT used: the sandbox
 //   Storybook can crash on its own after run-story-tests (the storybook/test
 //   vitest sub-runner dies on "Restarting Vitest due to config change" →
@@ -391,7 +394,7 @@ export function expectPreviewBrowserStarted(): void {
 		return;
 	}
 
-	if (agent === 'claude-code') {
+	if (usesClaudePreviewTooling()) {
 		const started = getTranscript().events.some(
 			(event) =>
 				event.type === 'tool_call' &&
@@ -427,12 +430,26 @@ export function expectPreviewBrowserStarted(): void {
 
 // Shell commands that kill the dev server the in-app browser navigated to: a
 // kill-style command that also references Storybook, a recorded pidfile, or
-// one of the navigated dev-server ports. Scoped that way so killing an
-// unrelated process (e.g. a stray test worker) does not count.
-const KILL_COMMAND_PATTERN = /\b(?:kill|pkill|killall|fuser\s+-k)\b/;
+// one of the navigated dev-server ports in the same command string. Scoped
+// that way so killing an unrelated process (e.g. a stray test worker) does
+// not count; the flip side is that a kill routed through an unrelated
+// variable in a later command escapes this heuristic (accepted — the eval
+// fails loud on the missing navigation instead when the server dies early).
+const KILL_COMMAND_PATTERN = /\b(?:kill|pkill|killall)\b|\bfuser\b[^;&|]*\s-[a-z]*k/i;
 
 export function findDevServerKillCommands(commands: string[], navigatedUrls: string[]): string[] {
-	const ports = [...new Set(navigatedUrls.map((url) => new URL(url).port).filter(Boolean))];
+	const ports = [
+		...new Set(
+			navigatedUrls.flatMap((url) => {
+				try {
+					const { port } = new URL(url);
+					return port ? [port] : [];
+				} catch {
+					return [];
+				}
+			}),
+		),
+	];
 	const target = new RegExp(
 		['storybook', String.raw`\.pid\b`, ...ports.map((port) => String.raw`\b${port}\b`)].join('|'),
 		'i',
@@ -458,7 +475,7 @@ export function isLocalDevServerUrl(value: string): boolean {
 		const { protocol, hostname } = new URL(value);
 		return (
 			(protocol === 'http:' || protocol === 'https:') &&
-			['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+			['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(hostname)
 		);
 	} catch {
 		return false;
