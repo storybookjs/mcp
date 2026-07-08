@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
+	isLocalDevServerUrl,
+	parseCodexBrowserNavigations,
 	parseStorybookWorkflowShellCommands,
 	parseWorkflowToolResults,
 	selectFinalRunStoryTestsReport,
@@ -292,5 +294,41 @@ describe('selectFinalRunStoryTestsReport', () => {
 
 		expect(selectFinalRunStoryTestsReport([errorResult])).toBe(errorResult);
 		expect(selectFinalRunStoryTestsReport([])).toBeUndefined();
+	});
+});
+
+describe('parseCodexBrowserNavigations', () => {
+	test('extracts goto URLs and ignores other records and malformed lines', () => {
+		const rawLog = [
+			JSON.stringify({ type: 'goto', url: 'http://localhost:6006/', timestamp: 't' }),
+			'not json',
+			JSON.stringify({ type: 'screenshot' }),
+			JSON.stringify({ type: 'goto', url: 'http://localhost:6006/?path=/review/change' }),
+			'',
+		].join('\n');
+
+		expect(parseCodexBrowserNavigations(rawLog)).toEqual([
+			'http://localhost:6006/',
+			'http://localhost:6006/?path=/review/change',
+		]);
+	});
+
+	test('returns no navigations for an empty log', () => {
+		expect(parseCodexBrowserNavigations('')).toEqual([]);
+	});
+});
+
+describe('isLocalDevServerUrl', () => {
+	test('accepts http URLs on local hosts', () => {
+		expect(isLocalDevServerUrl('http://localhost:6006/?path=/story/button--primary')).toBe(true);
+		expect(isLocalDevServerUrl('http://127.0.0.1:4123/iframe.html?id=button--primary')).toBe(true);
+		expect(isLocalDevServerUrl('http://[::1]:6006/')).toBe(true);
+	});
+
+	test('rejects remote URLs, other protocols, and non-URLs', () => {
+		expect(isLocalDevServerUrl('https://storybook.js.org')).toBe(false);
+		expect(isLocalDevServerUrl('file:///tmp/index.html')).toBe(false);
+		expect(isLocalDevServerUrl('about:blank')).toBe(false);
+		expect(isLocalDevServerUrl('not a url')).toBe(false);
 	});
 });

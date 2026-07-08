@@ -80,6 +80,6 @@ test('writes a valid Storybook launch config for Claude preview tooling', () => 
 	expectValidStorybookLaunchConfig();
 });
 
-test('opens the preview browser when using the plugin', () => {
-	expectPreviewBrowserStarted();
+test('opens the preview browser when using the plugin', async () => {
+	await expectPreviewBrowserStarted();
 });

@@ -365,21 +365,91 @@ export function expectValidStorybookLaunchConfig(): void {
 	).toBe('string');
 }
 
-export function expectPreviewBrowserStarted(): void {
-	if (!usesClaudePreviewTooling()) {
+const CODEX_BROWSER_LOG_PATH = '__agent_eval__/codex-browser-log.jsonl';
+
+// Preview-surface outcome check, per plugin surface:
+// - claude-code: the dev server must be started through the Claude preview
+//   tooling (the preview_start tool), which presents the app's preview browser.
+// - codex: the agent must open the Storybook URL in the in-app browser (the
+//   codex-browser mock records every successful tab.goto), and that URL must
+//   still serve the Storybook index when the eval runs — the stories skill
+//   demands the dev server be left running for the user.
+// MCP cells have no preview surface installed, so nothing is asserted there.
+export async function expectPreviewBrowserStarted(): Promise<void> {
+	const { agent, integration } = getEvalContext();
+	if (integration !== 'plugin') {
 		return;
 	}
 
-	const started = getTranscript().events.some(
-		(event) =>
-			event.type === 'tool_call' &&
-			typeof event.tool?.originalName === 'string' &&
-			/__preview_start$/.test(event.tool.originalName),
-	);
+	if (agent === 'claude-code') {
+		const started = getTranscript().events.some(
+			(event) =>
+				event.type === 'tool_call' &&
+				typeof event.tool?.originalName === 'string' &&
+				/__preview_start$/.test(event.tool.originalName),
+		);
+		expect(
+			started,
+			'Expected the Claude preview browser to be opened via the preview_start tool',
+		).toBe(true);
+		return;
+	}
+
+	const navigatedUrls = parseCodexBrowserNavigations(readCodexBrowserLog());
+	const localUrls = [...new Set(navigatedUrls.filter(isLocalDevServerUrl))];
 	expect(
-		started,
-		'Expected the Claude preview browser to be opened via the preview_start tool',
-	).toBe(true);
+		localUrls.length,
+		`Expected the in-app browser to navigate to the local Storybook URL (recorded in ${CODEX_BROWSER_LOG_PATH}). Recorded navigations: ${JSON.stringify(navigatedUrls)}`,
+	).toBeGreaterThan(0);
+
+	for (const url of localUrls) {
+		if (await servesStorybookIndex(new URL(url).origin)) {
+			return;
+		}
+	}
+	expect.fail(
+		`Expected an in-app browser navigation to a Storybook dev server that is still running (GET <origin>/index.json). Navigated local URLs: ${JSON.stringify(localUrls)} — was the dev server killed after verification?`,
+	);
+}
+
+export function parseCodexBrowserNavigations(rawLog: string): string[] {
+	return rawLog.split('\n').flatMap((line) => {
+		const record = parseJson(line);
+		return isRecord(record) && record.type === 'goto' && typeof record.url === 'string'
+			? [record.url]
+			: [];
+	});
+}
+
+function readCodexBrowserLog(): string {
+	return existsSync(CODEX_BROWSER_LOG_PATH) ? readFileSync(CODEX_BROWSER_LOG_PATH, 'utf8') : '';
+}
+
+export function isLocalDevServerUrl(value: string): boolean {
+	try {
+		const { protocol, hostname } = new URL(value);
+		return (
+			(protocol === 'http:' || protocol === 'https:') &&
+			['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+		);
+	} catch {
+		return false;
+	}
+}
+
+// A running Storybook dev server serves its story index at /index.json (a
+// `{ v, entries }` object); a random dev server on the same port does not.
+async function servesStorybookIndex(origin: string): Promise<boolean> {
+	try {
+		const response = await fetch(`${origin}/index.json`, { signal: AbortSignal.timeout(5_000) });
+		if (!response.ok) {
+			return false;
+		}
+		const index = (await response.json()) as unknown;
+		return isRecord(index) && isRecord(index.entries);
+	} catch {
+		return false;
+	}
 }
 
 // Story IDs must come from a discovery tool (get-changed-stories, or the

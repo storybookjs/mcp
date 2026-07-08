@@ -24,7 +24,7 @@
  * - Console logs come from `tab.dev.logs()`; network inspection goes through
  *   the `cdp` tab capability, not a high-level API.
  */
-import { readFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
@@ -38,6 +38,12 @@ const API_JSON_PATH = path.join(
 	path.dirname(fileURLToPath(import.meta.url)),
 	'codex-browser-api.json',
 );
+// Successful tab navigations are appended here so eval assertions
+// (expectPreviewBrowserStarted in lib/test-utils.ts) can verify the agent
+// opened the Storybook URL in the in-app browser. process.cwd() is the
+// workspace root: the node_repl MCP server hosting this module is spawned
+// there, and the eval assertions run from the same directory.
+const NAVIGATION_LOG_PATH = path.join(process.cwd(), '__agent_eval__', 'codex-browser-log.jsonl');
 
 let playwrightBrowserPromise;
 let sharedContextPromise;
@@ -78,6 +84,19 @@ async function getContext() {
 
 function nowIso() {
 	return new Date().toISOString();
+}
+
+function recordNavigation(url) {
+	try {
+		mkdirSync(path.dirname(NAVIGATION_LOG_PATH), { recursive: true });
+		appendFileSync(
+			NAVIGATION_LOG_PATH,
+			`${JSON.stringify({ type: 'goto', url: String(url), timestamp: nowIso() })}\n`,
+		);
+	} catch {
+		// Recording must never break browsing; a missing log makes the eval
+		// assertion fail loud on its own.
+	}
 }
 
 /**
@@ -546,6 +565,7 @@ function createTab(page) {
 		goto: async (url) => {
 			selectedTab = tab;
 			await page.goto(url, { waitUntil: 'domcontentloaded' });
+			recordNavigation(url);
 		},
 		back: async () => {
 			await page.goBack({ waitUntil: 'domcontentloaded' });
