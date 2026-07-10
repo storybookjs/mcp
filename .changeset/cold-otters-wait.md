@@ -1,5 +1,0 @@
----
-'@storybook/addon-mcp': minor
----
-
-Added the `display-review` tool. The agent pushes a curated review of current changes and returns the review-page URL. Pairs with the `@storybook/addon-review` Storybook addon.
