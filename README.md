@@ -20,7 +20,7 @@ Each package has its own README with user-facing documentation. This document is
 External testers can install the plugin marketplace directly from this repository's
 `main` branch. No local clone is required.
 
-#### Codex
+#### Codex ([more details](./packages/codex-plugin))
 
 ```bash
 codex plugin marketplace add storybookjs/mcp --ref main
@@ -34,7 +34,7 @@ codex plugin marketplace list
 codex plugin list --marketplace storybook
 ```
 
-#### Claude Code
+#### Claude Code ([more details](./packages/claude-plugin))
 
 ```bash
 claude plugin marketplace add storybookjs/mcp@main --scope user
