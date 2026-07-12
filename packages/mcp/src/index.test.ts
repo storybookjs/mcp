@@ -246,6 +246,31 @@ describe('createStorybookMcpHandler', () => {
 		);
 	});
 
+	it('should include storybookId in documentation tool schemas when handler-level sources are multi-source', async () => {
+		const manifestProvider = createManifestProviderMockWithDocs();
+		const sources = [
+			{ id: 'local', title: 'Local' },
+			{ id: 'remote', title: 'Remote', url: 'https://example.com/storybook' },
+		];
+
+		const handler = await createStorybookMcpHandler({
+			manifestProvider,
+			sources,
+		});
+		await setupClient(handler);
+
+		const tools = await client.listTools();
+		const getDocumentationTool = tools.tools.find((tool) => tool.name === 'get-documentation');
+		const getStoryDocumentationTool = tools.tools.find(
+			(tool) => tool.name === 'get-documentation-for-story',
+		);
+
+		expect(getDocumentationTool?.inputSchema.properties).toHaveProperty('storybookId');
+		expect(getDocumentationTool?.inputSchema.required).toContain('storybookId');
+		expect(getStoryDocumentationTool?.inputSchema.properties).toHaveProperty('storybookId');
+		expect(getStoryDocumentationTool?.inputSchema.required).toContain('storybookId');
+	});
+
 	it('should call onListAllDocumentation handler when tool is invoked', async () => {
 		const onListAllDocumentation = vi.fn();
 		const manifestProvider = createManifestProviderMock();
