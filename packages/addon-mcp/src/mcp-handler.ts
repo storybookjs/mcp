@@ -2,7 +2,7 @@ import { McpServer } from 'tmcp';
 import { ValibotJsonSchemaAdapter } from '@tmcp/adapter-valibot';
 import { HttpTransport } from '@tmcp/transport-http';
 import pkgJson from '../package.json' with { type: 'json' };
-import type { Source } from '@storybook/mcp';
+import { getMcpDebugConfig, instrumentMcpServerForDebug, type Source } from '@storybook/mcp';
 import type { Options } from 'storybook/internal/types';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { buffer } from 'node:stream/consumers';
@@ -77,6 +77,18 @@ const initializeMCPServer = async (options: Options, multiSource?: boolean) => {
 	if (!disableTelemetry) {
 		server.on('initialize', async () => {
 			await collectTelemetry({ event: 'session:initialized', server });
+		});
+	}
+
+	const debugConfig = getMcpDebugConfig();
+	if (debugConfig.enabled) {
+		logger.info(
+			`MCP debug logging enabled${debugConfig.url ? ` — sending tool call records to ${debugConfig.url}` : ' — writing tool call records to stderr'}`,
+		);
+		instrumentMcpServerForDebug(server, {
+			transport: 'addon',
+			serverInfo: { name: pkgJson.name, version: pkgJson.version },
+			config: debugConfig,
 		});
 	}
 

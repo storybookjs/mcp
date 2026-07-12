@@ -7,8 +7,22 @@ import { addGetStoryDocumentationTool } from './tools/get-documentation-for-stor
 import { addGetDocumentationTool } from './tools/get-documentation.ts';
 import type { StorybookContext } from './types.ts';
 import serverInstructions from './instructions.md';
+import { instrumentMcpServerForDebug } from './debug-log.ts';
 
 export { serverInstructions as STORYBOOK_MCP_INSTRUCTIONS };
+
+// Debug logging of MCP tool calls (STORYBOOK_MCP_DEBUG / STORYBOOK_MCP_DEBUG_URL)
+export {
+	getMcpDebugConfig,
+	instrumentMcpServerForDebug,
+	type InstrumentMcpServerOptions,
+	type McpDebugConfig,
+	type McpDebugRecord,
+	type McpDebugSessionRecord,
+	type McpDebugToolCallEndRecord,
+	type McpDebugToolCallStartRecord,
+	type McpDebugTransport,
+} from './debug-log.ts';
 
 // Export tools for reuse by addon-mcp
 export {
@@ -126,6 +140,11 @@ export const createStorybookMcpHandler = async (
 	if (onSessionInitialize) {
 		server.on('initialize', onSessionInitialize);
 	}
+
+	instrumentMcpServerForDebug(server, {
+		transport: 'http',
+		serverInfo: { name: pkgJson.name, version: pkgJson.version },
+	});
 
 	await addListAllDocumentationTool(server);
 	await addGetStoryDocumentationTool(server);

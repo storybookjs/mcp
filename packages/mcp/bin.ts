@@ -19,6 +19,7 @@ import pkgJson from './package.json' with { type: 'json' };
 import { addListAllDocumentationTool } from './src/tools/list-all-documentation.ts';
 import { addGetStoryDocumentationTool } from './src/tools/get-documentation-for-story.ts';
 import { addGetDocumentationTool } from './src/tools/get-documentation.ts';
+import { instrumentMcpServerForDebug } from './src/debug-log.ts';
 import type { StorybookContext } from './src/types.ts';
 import { parseArgs } from 'node:util';
 import * as fs from 'node:fs/promises';
@@ -55,6 +56,11 @@ const server = new McpServer(
 		},
 	},
 ).withContext<StorybookContext>();
+
+instrumentMcpServerForDebug(server, {
+	transport: 'stdio',
+	serverInfo: { name: pkgJson.name, version: pkgJson.version },
+});
 
 await addListAllDocumentationTool(server);
 await addGetStoryDocumentationTool(server);
