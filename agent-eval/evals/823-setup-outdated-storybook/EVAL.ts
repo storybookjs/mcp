@@ -1,18 +1,26 @@
 import { test } from 'vitest';
 import {
+	expectMcpAddonInstalled,
+	expectNoStorybookAiSetup,
 	expectShellCommandMatching,
 	expectSkillInvoked,
+	expectStoryExportsExactly,
+	expectStoryFilesExactly,
 	expectStorybookBoots,
 	expectStorybookDependenciesAtLeast,
 } from '#test-utils';
 
 // Regression fixture for a setup request against an already-installed but
-// outdated Storybook (seeded 10.4.0, evals.pinStorybook: false): the agent
-// must notice the version is below the plugin requirement and route through
-// the upgrade skill instead of setting up on the old version. Same prompt as
-// 820-init-no-storybook — only the seeded state differs. Which entry skill
-// handles the request (setup vs stories) is deliberately not asserted; the
-// upgrade routing is the behavior under test.
+// outdated Storybook (seeded 10.4.0, evals.pinStorybook: false) that already
+// has a user-written story in src/components: the agent must notice the
+// version is below the plugin requirement and route through the upgrade skill
+// instead of setting up on the old version, and must then hit the setup
+// decision tree's story gate (storybookjs/mcp#364) — ensure the MCP addon but
+// skip story generation, because the project already has user-written
+// stories. Same prompt as 820-init-no-storybook — only the seeded state
+// differs. Which entry skill handles the request (setup vs stories) is
+// deliberately not asserted; the upgrade routing and the story gate are the
+// behavior under test.
 
 test('routes to the storybook-upgrade skill', () => {
 	expectSkillInvoked('storybook-upgrade');
@@ -32,6 +40,26 @@ test('upgrades the Storybook packages to the plugin-required release', () => {
 		// but a stale seeded copy left behind must fail the floor.
 		ifPresent: ['@storybook/react'],
 	});
+});
+
+test('does not run story generation on a project with user-written stories', () => {
+	expectNoStorybookAiSetup();
+});
+
+test('does not add or remove story files', () => {
+	expectStoryFilesExactly(['src/components/Button.stories.tsx']);
+});
+
+test('keeps the seeded story exports unchanged', () => {
+	expectStoryExportsExactly('src/components/Button.stories.tsx', [
+		'Primary',
+		'Secondary',
+		'Disabled',
+	]);
+});
+
+test('installs and registers the MCP addon', () => {
+	expectMcpAddonInstalled();
 });
 
 test('the upgraded Storybook boots', async () => {

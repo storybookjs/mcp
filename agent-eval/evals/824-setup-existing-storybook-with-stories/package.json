@@ -1,0 +1,15 @@
+{
+	"name": "824-setup-existing-storybook-with-stories",
+	"type": "module",
+	"scripts": {
+		"storybook": "storybook dev",
+		"build-storybook": "storybook build"
+	},
+	"devDependencies": {
+		"@storybook/react-vite": "next",
+		"storybook": "next"
+	},
+	"evals": {
+		"template": "vite-app"
+	}
+}
