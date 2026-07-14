@@ -494,4 +494,20 @@ describe('findStorybookAiSetupInvocations', () => {
 			findStorybookAiSetupInvocations(['storybook ai run-story-tests --json {}']),
 		).toHaveLength(0);
 	});
+
+	test('detects simple-setup and distinguishes it from setup via the subcommand filter', () => {
+		expect(findStorybookAiSetupInvocations(['npx storybook ai simple-setup'])).toHaveLength(1);
+		expect(
+			findStorybookAiSetupInvocations(['npx storybook ai simple-setup'], 'simple-setup'),
+		).toHaveLength(1);
+		expect(
+			findStorybookAiSetupInvocations(['npx storybook ai simple-setup'], 'setup'),
+		).toHaveLength(0);
+		expect(
+			findStorybookAiSetupInvocations(['npx storybook ai setup'], 'simple-setup'),
+		).toHaveLength(0);
+		expect(findStorybookAiSetupInvocations(['npx storybook ai simple-setup --help'])).toHaveLength(
+			0,
+		);
+	});
 });

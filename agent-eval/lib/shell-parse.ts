@@ -142,27 +142,43 @@ const STORYBOOK_RUNNER_TOKENS = new Set([
 ]);
 const STORYBOOK_BINARY_PATTERN = /^(?:.*\/)?(?:storybook|sb)(?:@\S+)?$/;
 
-// Token-aware detection of genuine `storybook ai setup` invocations — the
-// story-generation entry of the setup decision tree (storybookjs/mcp#364).
-// Matching tokens instead of raw command text keeps look-alikes from
-// counting either way: `rg 'storybook ai setup'` and `echo storybook ai
-// setup` have no storybook binary in command position, and
-// `storybook ai setup --help` asks for help instead of running setup.
+export type StorybookAiSetupSubcommand = 'setup' | 'simple-setup';
+const STORYBOOK_AI_SETUP_SUBCOMMANDS: readonly StorybookAiSetupSubcommand[] = [
+	'setup',
+	'simple-setup',
+];
+
+// Token-aware detection of genuine `storybook ai setup` / `storybook ai
+// simple-setup` invocations — the story-generation entries of the setup
+// decision tree (storybookjs/mcp#364). Pass a subcommand to match only that
+// entry; by default either counts. Matching tokens instead of raw command
+// text keeps look-alikes from counting either way: `rg 'storybook ai setup'`
+// and `echo storybook ai setup` have no storybook binary in command position,
+// and `storybook ai setup --help` asks for help instead of running setup.
 // Known limitation: an invocation hidden behind a package.json script
 // (`npm run setup`) is not recognized — accepted, agents have not been
 // observed doing that.
-export function findStorybookAiSetupInvocations(commands: string[]): string[] {
-	return commands.flatMap(findStorybookAiSetupInvocationsInCommand);
+export function findStorybookAiSetupInvocations(
+	commands: string[],
+	subcommand?: StorybookAiSetupSubcommand,
+): string[] {
+	const subcommands = subcommand === undefined ? STORYBOOK_AI_SETUP_SUBCOMMANDS : [subcommand];
+	return commands.flatMap((command) =>
+		findStorybookAiSetupInvocationsInCommand(command, subcommands),
+	);
 }
 
-function findStorybookAiSetupInvocationsInCommand(command: string): string[] {
+function findStorybookAiSetupInvocationsInCommand(
+	command: string,
+	subcommands: readonly StorybookAiSetupSubcommand[],
+): string[] {
 	const nestedCommand = getNestedShellCommand(command);
 	if (nestedCommand !== undefined) {
-		return findStorybookAiSetupInvocationsInCommand(nestedCommand);
+		return findStorybookAiSetupInvocationsInCommand(nestedCommand, subcommands);
 	}
 
 	return splitShellSegments(tokenizeShellCommand(command)).flatMap((segment) =>
-		isStorybookAiSetupSegment(segment) ? [segment.join(' ')] : [],
+		isStorybookAiSetupSegment(segment, subcommands) ? [segment.join(' ')] : [],
 	);
 }
 
@@ -187,7 +203,7 @@ function splitShellSegments(tokens: string[]): string[][] {
 	return segments;
 }
 
-function isStorybookAiSetupSegment(segment: string[]): boolean {
+function isStorybookAiSetupSegment(segment: string[], subcommands: readonly string[]): boolean {
 	const binaryIndex = segment.findIndex((token) => STORYBOOK_BINARY_PATTERN.test(token));
 	if (binaryIndex === -1) {
 		return false;
@@ -204,7 +220,12 @@ function isStorybookAiSetupSegment(segment: string[]): boolean {
 		return false;
 	}
 
-	if (segment[binaryIndex + 1] !== 'ai' || segment[binaryIndex + 2] !== 'setup') {
+	const subcommand = segment[binaryIndex + 2];
+	if (
+		segment[binaryIndex + 1] !== 'ai' ||
+		subcommand === undefined ||
+		!subcommands.includes(subcommand)
+	) {
 		return false;
 	}
 
