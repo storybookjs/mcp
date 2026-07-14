@@ -12,7 +12,7 @@ import {
 
 // Regression fixture for a setup request against an already-installed but
 // outdated Storybook (seeded 10.4.0, evals.pinStorybook: false) that already
-// has a user-written story in src/components: the agent must notice the
+// has user-written stories in src/components: the agent must notice the
 // version is below the plugin requirement and route through the upgrade skill
 // instead of setting up on the old version, and must then hit the setup
 // decision tree's story gate (storybookjs/mcp#364) — ensure the MCP addon but
@@ -46,8 +46,14 @@ test('does not run story generation on a project with user-written stories', () 
 	expectNoStorybookAiSetup();
 });
 
+// Every component in src/components has a seeded story, so nothing is left
+// to "fill in": any new story file is a genuine gate violation, not a
+// defensible reading of the prompt's "preview the components in
+// src/components". (Iteration 1 of the local runs showed Opus covering the
+// then-storyless Tag component through the stories skill — reasonable
+// behavior the eval must not punish.)
 test('does not add or remove story files', () => {
-	expectStoryFilesExactly(['src/components/Button.stories.tsx']);
+	expectStoryFilesExactly(['src/components/Button.stories.tsx', 'src/components/Tag.stories.tsx']);
 });
 
 test('keeps the seeded story exports unchanged', () => {
@@ -56,6 +62,7 @@ test('keeps the seeded story exports unchanged', () => {
 		'Secondary',
 		'Disabled',
 	]);
+	expectStoryExportsExactly('src/components/Tag.stories.tsx', ['Neutral', 'Positive', 'Notice']);
 });
 
 test('installs and registers the MCP addon', () => {
