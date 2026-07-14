@@ -948,28 +948,43 @@ export function expectShellCommandMatching(pattern: RegExp): void {
 	).toBe(true);
 }
 
-// The positive side of the setup decision tree's story gate
-// (storybookjs/mcp#364): a story-less project must get story generation.
-// Token-aware (see findStorybookAiSetupInvocations) so a help call or a
-// command that merely mentions the text does not count.
+// The bulk story-generation entry of the setup decision tree
+// (storybookjs/mcp#364): an explicit bulk request or an accepted build-out
+// offer must run `storybook ai setup`. Token-aware (see
+// findStorybookAiSetupInvocations) so a help call or a command that merely
+// mentions the text does not count.
 export function expectStorybookAiSetupRan(): void {
 	const commands = getShellCommands();
 	expect(
-		findStorybookAiSetupInvocations(commands).length > 0,
+		findStorybookAiSetupInvocations(commands, 'setup').length > 0,
 		`Expected a \`storybook ai setup\` invocation. Received: ${truncateForMessage(
 			JSON.stringify(commands),
 		)}`,
 	).toBe(true);
 }
 
+// The default no-user-stories entry of the setup decision tree
+// (storybookjs/mcp#365): a story-less project gets one simple story via
+// `storybook ai simple-setup`, not the bulk `storybook ai setup` run.
+export function expectStorybookAiSimpleSetupRan(): void {
+	const commands = getShellCommands();
+	expect(
+		findStorybookAiSetupInvocations(commands, 'simple-setup').length > 0,
+		`Expected a \`storybook ai simple-setup\` invocation. Received: ${truncateForMessage(
+			JSON.stringify(commands),
+		)}`,
+	).toBe(true);
+}
+
 // The negative side of the story gate: a project with user-written stories
-// must not get story generation. Token-aware, so a correct agent that only
-// greps or echoes the command text does not false-fail.
+// must not get story generation — neither `ai setup` nor `ai simple-setup`.
+// Token-aware, so a correct agent that only greps or echoes the command text
+// does not false-fail.
 export function expectNoStorybookAiSetup(): void {
 	const invocations = findStorybookAiSetupInvocations(getShellCommands());
 	expect(
 		invocations.length === 0,
-		`Expected no \`storybook ai setup\` invocation. Received: ${truncateForMessage(
+		`Expected no \`storybook ai setup\` or \`storybook ai simple-setup\` invocation. Received: ${truncateForMessage(
 			JSON.stringify(invocations),
 		)}`,
 	).toBe(true);

@@ -5,19 +5,20 @@ import {
 	expectMcpAddonInstalled,
 	expectShellCommandMatching,
 	expectSkillInvoked,
-	expectStorybookAiSetupRan,
+	expectStorybookAiSimpleSetupRan,
 	expectStorybookBoots,
 	isRecord,
 	parseJson,
 } from '#test-utils';
 
 // Lifecycle and routing assertions only: the storybook-init skill installs
-// the published stable release, so whatever `storybook ai setup` prints and
-// does afterwards (story generation, review) is release behavior, not this
-// repo's code — that workflow is owned by the 80x evals. The routing itself
-// is local skill text (storybookjs/mcp#364): init hands back to the setup
-// decision tree, and a fresh init leaves only example stories, so the tree
-// must reach the no-user-stories branch and run `npx storybook ai setup`.
+// the published stable release, so whatever `storybook ai simple-setup`
+// prints and does afterwards (story generation, review) is release behavior,
+// not this repo's code — that workflow is owned by the 80x evals. The routing
+// itself is local skill text (storybookjs/mcp#364, #365): init hands back to
+// the setup decision tree, and a fresh init leaves only example stories, so
+// the tree must reach the no-user-stories branch and run
+// `npx storybook ai simple-setup`.
 
 test('invokes the storybook-init skill', () => {
 	expectSkillInvoked('storybook-init');
@@ -48,8 +49,8 @@ test('installs the vitest addon for the story-less setup branch', () => {
 	);
 });
 
-test('runs story generation setup on the story-less project', () => {
-	expectStorybookAiSetupRan();
+test('runs simple story generation on the story-less project', () => {
+	expectStorybookAiSimpleSetupRan();
 });
 
 test('the initialized Storybook boots', async () => {
