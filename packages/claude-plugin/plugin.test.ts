@@ -57,21 +57,32 @@ function readSkillDescription(skillPath: string) {
 	return description;
 }
 
-describe('stories skill description', () => {
-	it.each([
-		resolve(packageRoot, 'skills/stories/SKILL.md'),
-		resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/stories/SKILL.md'),
-	])('stays under the silent-drop listing budget: %s', (skillPath) => {
-		const description = readSkillDescription(skillPath);
-		expect(Buffer.byteLength(description, 'utf8')).toBeLessThanOrEqual(MAX_SKILL_DESCRIPTION_BYTES);
-	});
+const SKILL_TWINS = [
+	{
+		name: 'stories',
+		claudePath: resolve(packageRoot, 'skills/stories/SKILL.md'),
+		codexPath: resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/stories/SKILL.md'),
+	},
+	{
+		name: 'setup',
+		claudePath: resolve(packageRoot, 'skills/storybook-setup/SKILL.md'),
+		codexPath: resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/setup/SKILL.md'),
+	},
+];
+
+describe.each(SKILL_TWINS)('$name skill description', ({ claudePath, codexPath }) => {
+	it.each([claudePath, codexPath])(
+		'stays under the silent-drop listing budget: %s',
+		(skillPath) => {
+			const description = readSkillDescription(skillPath);
+			expect(Buffer.byteLength(description, 'utf8')).toBeLessThanOrEqual(
+				MAX_SKILL_DESCRIPTION_BYTES,
+			);
+		},
+	);
 
 	it('keeps the claude and codex plugin descriptions identical', () => {
-		expect(readSkillDescription(resolve(packageRoot, 'skills/stories/SKILL.md'))).toBe(
-			readSkillDescription(
-				resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/stories/SKILL.md'),
-			),
-		);
+		expect(readSkillDescription(claudePath)).toBe(readSkillDescription(codexPath));
 	});
 });
 
