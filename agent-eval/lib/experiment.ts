@@ -18,7 +18,8 @@ const CORE_STORYBOOK_EVALS = [
 	'813-monorepo-leaf-create-component',
 ] as const;
 
-// The 82x block: lifecycle-skill evals (storybook-init / storybook-upgrade).
+// The 82x block: lifecycle-skill evals (storybook-init / storybook-upgrade /
+// the setup decision tree).
 // They only run on the plugin experiments — the MCP experiments require a
 // Storybook already running at :6006/mcp, which these fixtures don't have.
 const LIFECYCLE_STORYBOOK_EVALS = [
@@ -26,6 +27,7 @@ const LIFECYCLE_STORYBOOK_EVALS = [
 	'821-upgrade-from-sb9',
 	'822-upgrade-from-stable',
 	'823-setup-outdated-storybook',
+	'824-setup-existing-storybook-with-stories',
 ] as const;
 
 // The 9xx line: ports from the old /eval system, written for the MCP-only
