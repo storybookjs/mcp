@@ -68,7 +68,44 @@ const SKILL_TWINS = [
 		claudePath: resolve(packageRoot, 'skills/storybook-setup/SKILL.md'),
 		codexPath: resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/setup/SKILL.md'),
 	},
+	{
+		name: 'init',
+		claudePath: resolve(packageRoot, 'skills/storybook-init/SKILL.md'),
+		codexPath: resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/init/SKILL.md'),
+	},
+	{
+		name: 'upgrade',
+		claudePath: resolve(packageRoot, 'skills/storybook-upgrade/SKILL.md'),
+		codexPath: resolve(repoRoot, 'packages/codex-plugin/plugins/storybook/skills/upgrade/SKILL.md'),
+	},
 ];
+
+// The stories twins intentionally diverge below the frontmatter (platform-
+// specific launch and preview guidance); every other twin's body must stay
+// identical modulo how each plugin references its skills.
+const BODY_SYNCED_TWINS = SKILL_TWINS.filter((twin) => twin.name !== 'stories');
+
+const CODEX_TO_CLAUDE_SKILL_REFS: Array<[codexRef: string, claudeRef: string]> = [
+	['$storybook:init', '/storybook-init'],
+	['$storybook:upgrade', '/storybook-upgrade'],
+	['$storybook:setup', '/storybook-setup'],
+	['$storybook:stories', '/stories'],
+];
+
+function readSkillBody(skillPath: string) {
+	const skill = readFileSync(skillPath, 'utf8');
+	return skill.replace(/^---\n[\s\S]*?\n---\n/, '');
+}
+
+describe.each(BODY_SYNCED_TWINS)('$name skill body', ({ claudePath, codexPath }) => {
+	it('keeps the claude and codex plugin bodies identical modulo skill references', () => {
+		let codexBody = readSkillBody(codexPath);
+		for (const [codexRef, claudeRef] of CODEX_TO_CLAUDE_SKILL_REFS) {
+			codexBody = codexBody.replaceAll(codexRef, claudeRef);
+		}
+		expect(codexBody).toBe(readSkillBody(claudePath));
+	});
+});
 
 describe.each(SKILL_TWINS)('$name skill description', ({ claudePath, codexPath }) => {
 	it.each([claudePath, codexPath])(
