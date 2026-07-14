@@ -126,6 +126,92 @@ function parseStorybookAiInvocation(
 	};
 }
 
+// Runner commands that may precede the storybook binary in the same shell
+// segment: package-manager executors plus their subcommands.
+const STORYBOOK_RUNNER_TOKENS = new Set([
+	'npx',
+	'pnpx',
+	'bunx',
+	'npm',
+	'pnpm',
+	'yarn',
+	'bun',
+	'exec',
+	'dlx',
+	'run',
+]);
+const STORYBOOK_BINARY_PATTERN = /^(?:.*\/)?(?:storybook|sb)(?:@\S+)?$/;
+
+// Token-aware detection of genuine `storybook ai setup` invocations — the
+// story-generation entry of the setup decision tree (storybookjs/mcp#364).
+// Matching tokens instead of raw command text keeps look-alikes from
+// counting either way: `rg 'storybook ai setup'` and `echo storybook ai
+// setup` have no storybook binary in command position, and
+// `storybook ai setup --help` asks for help instead of running setup.
+// Known limitation: an invocation hidden behind a package.json script
+// (`npm run setup`) is not recognized — accepted, agents have not been
+// observed doing that.
+export function findStorybookAiSetupInvocations(commands: string[]): string[] {
+	return commands.flatMap(findStorybookAiSetupInvocationsInCommand);
+}
+
+function findStorybookAiSetupInvocationsInCommand(command: string): string[] {
+	const nestedCommand = getNestedShellCommand(command);
+	if (nestedCommand !== undefined) {
+		return findStorybookAiSetupInvocationsInCommand(nestedCommand);
+	}
+
+	return splitShellSegments(tokenizeShellCommand(command)).flatMap((segment) =>
+		isStorybookAiSetupSegment(segment) ? [segment.join(' ')] : [],
+	);
+}
+
+function splitShellSegments(tokens: string[]): string[][] {
+	const segments: string[][] = [];
+	let current: string[] = [];
+
+	for (const token of tokens) {
+		if (SHELL_COMMAND_SEPARATORS.has(token)) {
+			if (current.length > 0) {
+				segments.push(current);
+			}
+			current = [];
+			continue;
+		}
+		current.push(token);
+	}
+
+	if (current.length > 0) {
+		segments.push(current);
+	}
+	return segments;
+}
+
+function isStorybookAiSetupSegment(segment: string[]): boolean {
+	const binaryIndex = segment.findIndex((token) => STORYBOOK_BINARY_PATTERN.test(token));
+	if (binaryIndex === -1) {
+		return false;
+	}
+
+	// Everything before the binary must be a runner, a flag, or an env
+	// assignment — any other prefix (`echo`, `rg`, …) makes the rest arguments.
+	const prefixIsRunner = segment
+		.slice(0, binaryIndex)
+		.every(
+			(token) => STORYBOOK_RUNNER_TOKENS.has(token) || token.startsWith('-') || token.includes('='),
+		);
+	if (!prefixIsRunner) {
+		return false;
+	}
+
+	if (segment[binaryIndex + 1] !== 'ai' || segment[binaryIndex + 2] !== 'setup') {
+		return false;
+	}
+
+	const rest = segment.slice(binaryIndex + 3);
+	return !rest.includes('--help') && !rest.includes('-h');
+}
+
 // Matches the shell binary of a `bash -c '…'`-style wrapper, with or without a
 // path prefix (`/bin/sh`). `env bash -c` also works, but only because `bash`
 // itself is the token preceding `-c` — `env` is never matched.

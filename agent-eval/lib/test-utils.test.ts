@@ -1,6 +1,11 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
+import { findStorybookAiSetupInvocations } from './shell-parse.ts';
 import {
 	findDevServerKillCommands,
+	findStoryFiles,
 	isLocalDevServerUrl,
 	isLocalStorybookPreviewUrl,
 	parseCodexBrowserNavigations,
@@ -408,5 +413,85 @@ describe('isLocalStorybookPreviewUrl', () => {
 		expect(isLocalStorybookPreviewUrl('http://localhost:5173/')).toBe(false);
 		expect(isLocalStorybookPreviewUrl('http://localhost:6006/')).toBe(false);
 		expect(isLocalStorybookPreviewUrl('https://storybook.js.org/?path=/story/button')).toBe(false);
+	});
+});
+
+describe('findStoryFiles', () => {
+	test('finds project story files and skips dependency and harness directories', () => {
+		const root = mkdtempSync(join(tmpdir(), 'find-story-files-'));
+		try {
+			for (const dir of [
+				'src/components',
+				'stories',
+				'node_modules/some-dep',
+				'local-packages/addon-mcp',
+				'__agent_eval__',
+				'storybook-static',
+			]) {
+				mkdirSync(join(root, dir), { recursive: true });
+			}
+			writeFileSync(join(root, 'src/components/Button.stories.tsx'), '');
+			writeFileSync(join(root, 'stories/Header.stories.js'), '');
+			writeFileSync(join(root, 'src/components/Button.tsx'), '');
+			writeFileSync(join(root, 'node_modules/some-dep/Dep.stories.tsx'), '');
+			writeFileSync(join(root, 'local-packages/addon-mcp/Addon.stories.ts'), '');
+			writeFileSync(join(root, '__agent_eval__/Harness.stories.ts'), '');
+			writeFileSync(join(root, 'storybook-static/Built.stories.js'), '');
+
+			expect(findStoryFiles(root).sort()).toEqual([
+				join(root, 'src/components/Button.stories.tsx'),
+				join(root, 'stories/Header.stories.js'),
+			]);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	test('returns an empty list for a project without story files', () => {
+		const root = mkdtempSync(join(tmpdir(), 'find-story-files-'));
+		try {
+			mkdirSync(join(root, 'src'), { recursive: true });
+			writeFileSync(join(root, 'src/App.tsx'), '');
+
+			expect(findStoryFiles(root)).toEqual([]);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+});
+
+describe('findStorybookAiSetupInvocations', () => {
+	test('detects direct and runner-wrapped invocations', () => {
+		expect(findStorybookAiSetupInvocations(['npx storybook ai setup'])).toHaveLength(1);
+		expect(findStorybookAiSetupInvocations(['storybook@latest ai setup'])).toHaveLength(1);
+		expect(findStorybookAiSetupInvocations(['pnpm dlx storybook ai setup'])).toHaveLength(1);
+		expect(findStorybookAiSetupInvocations(['sb ai setup'])).toHaveLength(1);
+		expect(
+			findStorybookAiSetupInvocations(['./node_modules/.bin/storybook ai setup']),
+		).toHaveLength(1);
+		expect(findStorybookAiSetupInvocations(['CI=1 npx -y storybook ai setup'])).toHaveLength(1);
+	});
+
+	test('detects invocations inside chained and nested shell commands', () => {
+		expect(findStorybookAiSetupInvocations(['npm install && npx storybook ai setup'])).toHaveLength(
+			1,
+		);
+		expect(findStorybookAiSetupInvocations(["bash -lc 'npx storybook ai setup'"])).toHaveLength(1);
+	});
+
+	test('ignores commands that only mention the text', () => {
+		expect(findStorybookAiSetupInvocations(["rg 'storybook ai setup'"])).toHaveLength(0);
+		expect(findStorybookAiSetupInvocations(['echo storybook ai setup'])).toHaveLength(0);
+		expect(
+			findStorybookAiSetupInvocations(["grep -r 'npx storybook ai setup' skills/"]),
+		).toHaveLength(0);
+	});
+
+	test('ignores help invocations and other ai subcommands', () => {
+		expect(findStorybookAiSetupInvocations(['npx storybook ai setup --help'])).toHaveLength(0);
+		expect(findStorybookAiSetupInvocations(['npx storybook ai --help'])).toHaveLength(0);
+		expect(
+			findStorybookAiSetupInvocations(['storybook ai run-story-tests --json {}']),
+		).toHaveLength(0);
 	});
 });

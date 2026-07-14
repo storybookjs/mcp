@@ -62,7 +62,8 @@ full line, never multiple experiments in parallel.
 By default only the first core eval (`801-create-component-no-launch-config`)
 runs. Set `EVAL_EXTRA_EVALS=1` to run the full hand-crafted line — the 8xx
 workflow evals on every experiment plus the lifecycle 82x evals
-(`storybook-init`/`storybook-upgrade` scenarios) on the plugin experiments —
+(`storybook-init`/`storybook-upgrade`/setup decision-tree scenarios) on the
+plugin experiments —
 or `EVAL_ONLY=<name>[,<name>]` to debug specific evals one at a time:
 
 ```bash
@@ -70,8 +71,8 @@ EVAL_EXTRA_EVALS=1 pnpm eval
 EVAL_ONLY=803-edit-component pnpm eval
 ```
 
-A full `EVAL_EXTRA_EVALS=1` run (12 workflow evals × 4 experiments + 3
-lifecycle evals × 2 plugin experiments) costs roughly **$30–45** in agent
+A full `EVAL_EXTRA_EVALS=1` run (12 workflow evals × 4 experiments + 5
+lifecycle evals × 2 plugin experiments) costs roughly **$35–50** in agent
 tokens at current per-run averages ($0.30–0.80 per workflow eval, $1–2 per
 lifecycle eval). The budget guardrail is **$75 per full run** — check the
 usage metadata in the results playground before growing the eval set past it
@@ -173,7 +174,8 @@ Three templates exist today:
   top (821/822 upgrades and 823 setup-on-outdated, which also set
   `evals.pinStorybook: false` so the harness keeps their intentionally
   outdated versions); 812 layers a full Storybook `next` setup with zero
-  stories on top.
+  stories on top, and 824 layers a current Storybook with a user-written
+  story on top to pin the setup decision tree's story gate.
 - `monorepo`: an npm-workspaces repo where the runnable Storybook lives in the
   `packages/ui` leaf, so evals can cover agents working inside a workspace
   package. Storybook pinning and the local `file:` build detection cover
