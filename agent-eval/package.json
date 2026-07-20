@@ -9,6 +9,8 @@
 	"scripts": {
 		"eval": "agent-eval",
 		"eval:dry": "agent-eval --dry",
+		"eval:ar": "EVAL_AGENTIC_REFERENCE=1 agent-eval",
+		"eval:ar:dry": "EVAL_AGENTIC_REFERENCE=1 agent-eval --dry",
 		"playground": "agent-eval playground",
 		"playground:build": "next build --webpack",
 		"playground:check-routes": "node ./scripts/check-playground-routes.mjs",

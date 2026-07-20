@@ -1,0 +1,8 @@
+{
+	"name": "701-ar-rework-ui",
+	"description": "Agentic reference (SB-1724) — rework-ui workflow. Uses the generic vite-app template as a placeholder benchmark app until the Mealdrop-on-Base-UI branches exist (SB-1680/SB-1681).",
+	"type": "module",
+	"evals": {
+		"template": "vite-app"
+	}
+}

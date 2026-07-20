@@ -1,0 +1,8 @@
+{
+	"name": "702-ar-fix-bug",
+	"description": "Agentic reference (SB-1724) — fix-bug workflow. Uses the generic vite-app template as a placeholder benchmark app until the Mealdrop-on-Base-UI branches exist (SB-1680/SB-1681).",
+	"type": "module",
+	"evals": {
+		"template": "vite-app"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"name": "704-ar-migrate-to-ds",
+	"description": "Agentic reference (SB-1724) — migrate-to-ds workflow. Uses the generic vite-app template as a placeholder benchmark app until the Mealdrop-on-Base-UI `agentic-reference/original` branch exists (SB-1680/SB-1681).",
+	"type": "module",
+	"evals": {
+		"template": "vite-app"
+	}
+}
