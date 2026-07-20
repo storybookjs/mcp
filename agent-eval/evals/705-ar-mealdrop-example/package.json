@@ -1,0 +1,11 @@
+{
+	"name": "705-ar-mealdrop-example",
+	"description": "Agentic reference (SB-1724) — working example eval against the real Mealdrop benchmark app (yannbf/mealdrop), pinned to the agentic-reference/original branch. Proves the benchmark-app-by-git-ref pipeline end-to-end; see lib/agentic-reference/benchmark-app.ts.",
+	"type": "module",
+	"evals": {
+		"benchmarkApp": {
+			"repo": "yannbf/mealdrop",
+			"ref": "agentic-reference/original"
+		}
+	}
+}

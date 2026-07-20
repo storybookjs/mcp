@@ -5,8 +5,8 @@
 import type { ExperimentConfig } from '@vercel/agent-eval';
 import { DEFAULT_EXPERIMENT_CONFIG } from '../lib/experiment.ts';
 import {
-	AGENTIC_REFERENCE_EVALS,
 	AR_RUNS,
+	getActiveAgenticReferenceEvals,
 	isAgenticReferenceEnabled,
 } from '../lib/agentic-reference/config.ts';
 import { getAgenticReferenceCase } from '../lib/agentic-reference/cases.ts';
@@ -19,6 +19,9 @@ export default {
 	model: 'opus',
 	agentOptions: { effort: 'high' },
 	runs: AR_RUNS,
-	evals: isAgenticReferenceEnabled() ? [...AGENTIC_REFERENCE_EVALS] : [],
+	// See ar-control-empty-cc-opus-high.ts: 705's real `yarn install` needs
+	// more room than the shared 900s default.
+	timeout: 1800,
+	evals: isAgenticReferenceEnabled() ? [...getActiveAgenticReferenceEvals()] : [],
 	setup: agenticReferenceCase.setup,
 } satisfies ExperimentConfig;
