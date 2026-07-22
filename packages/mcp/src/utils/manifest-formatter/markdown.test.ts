@@ -70,6 +70,113 @@ describe('MarkdownFormatter - formatComponentManifest', () => {
 		});
 	});
 
+	describe('deprecation notice', () => {
+		it('renders @deprecated from top-level jsDocTags (docgen-server path), above the description', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				description: 'A basic button.',
+				jsDocTags: { deprecated: ['Use `NewButton` from `@acme/ui` instead.'] },
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			expect(result).toContain('> **Deprecated:** Use `NewButton` from `@acme/ui` instead.');
+			expect(result.indexOf('> **Deprecated:**')).toBeLessThan(result.indexOf('A basic button.'));
+			expect(result).toMatchInlineSnapshot(`
+				"# Button
+
+				ID: button
+
+				> **Deprecated:** Use \`NewButton\` from \`@acme/ui\` instead.
+
+				A basic button."
+			`);
+		});
+
+		it('renders @deprecated from react-docgen-typescript tags (legacy path)', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				description: 'A basic button.',
+				reactDocgenTypescript: {
+					props: {},
+					tags: { deprecated: 'Use `NewButton` from `@acme/ui` instead.' },
+				},
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			expect(result).toContain('> **Deprecated:** Use `NewButton` from `@acme/ui` instead.');
+		});
+
+		it('renders a bare notice when the tag has no message', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				jsDocTags: { deprecated: [''] },
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			expect(result).toContain('> **Deprecated**');
+			expect(result).not.toContain('> **Deprecated:**');
+		});
+
+		it('omits the notice entirely for non-deprecated components', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				description: 'A basic button.',
+				jsDocTags: { since: ['2.0.0'] },
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			expect(result).not.toContain('Deprecated');
+		});
+
+		it('omits the notice when the deprecated tag is present but empty', () => {
+			const manifest: ComponentManifest = {
+				id: 'button',
+				name: 'Button',
+				path: 'src/components/Button.tsx',
+				description: 'A basic button.',
+				jsDocTags: { deprecated: [] },
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			expect(result).not.toContain('Deprecated');
+		});
+
+		it('renders @deprecated for a deprecated subcomponent, under its heading', () => {
+			const manifest: ComponentManifest = {
+				id: 'combo-box',
+				name: 'ComboBox',
+				path: 'src/components/ComboBox.tsx',
+				subcomponents: {
+					Legacy: {
+						name: 'LegacyItem',
+						path: 'src/components/LegacyItem.tsx',
+						description: 'An old item.',
+						jsDocTags: { deprecated: ['Use `Item` instead.'] },
+					},
+				},
+			};
+
+			const result = formatComponentManifest(manifest);
+
+			expect(result).toContain('> **Deprecated:** Use `Item` instead.');
+			expect(result.indexOf('### LegacyItem')).toBeLessThan(result.indexOf('> **Deprecated:**'));
+			expect(result.indexOf('> **Deprecated:**')).toBeLessThan(result.indexOf('An old item.'));
+		});
+	});
+
 	describe('subcomponents section', () => {
 		it('should include subcomponent docs and props before stories', () => {
 			const manifest: ComponentManifest = {

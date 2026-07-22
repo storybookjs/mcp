@@ -302,6 +302,7 @@ describe('parseReactDocgen', () => {
       }
     `);
 	});
+
 });
 
 describe('parseReactDocgenTypescript', () => {
@@ -444,5 +445,31 @@ describe('parseReactDocgenTypescript', () => {
 			  "props": {},
 			}
 		`);
+	});
+
+	test('extracts component-level tags (deprecated as a string) into string arrays', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'OldButton',
+			filePath: 'src/OldButton.tsx',
+			description: 'A button',
+			methods: [],
+			props: {},
+			tags: { deprecated: 'Use `NewButton` from `@acme/ui` instead.', since: '2.0.0' },
+		});
+		expect(result.tags).toEqual({
+			deprecated: ['Use `NewButton` from `@acme/ui` instead.'],
+			since: ['2.0.0'],
+		});
+	});
+
+	test('omits the tags field entirely when the engine reports none', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Plain',
+			filePath: 'src/Plain.tsx',
+			description: '',
+			methods: [],
+			props: {},
+		});
+		expect('tags' in result).toBe(false);
 	});
 });
