@@ -11,11 +11,41 @@ export type ParsedDocgen = {
 			required?: boolean;
 		}
 	>;
+	/**
+	 * Component-level JSDoc tags (e.g. `@deprecated`), normalized to string arrays.
+	 * Populated from react-docgen-typescript's `ComponentDoc.tags` (and Storybook's
+	 * `reactComponentMeta`), which is where the legacy path carries `@deprecated`. The
+	 * docgen-server path carries these on the manifest's top-level `jsDocTags` instead.
+	 */
+	tags?: Record<string, string[]>;
 };
 
 // Storybook's `reactComponentMeta` payload is not the same full schema as
 // `react-docgen-typescript`'s `ComponentDoc`, but `props` has the same type shape.
 type ComponentDocLike = Pick<ComponentDoc, 'props'>;
+
+/**
+ * Normalize a docgen engine's component-level `tags` bag into `Record<string, string[]>`.
+ * react-docgen-typescript (and Storybook's `reactComponentMeta`) expose `tags` as a
+ * `Record<string, string>` — `deprecated` is a single string, `''` when the tag has no
+ * message. Non-string values are ignored. Returns `undefined` when there are no string
+ * tags so callers can omit the field entirely (keeping `ParsedDocgen` byte-identical when
+ * nothing is tagged).
+ */
+function normalizeTags(raw: unknown): Record<string, string[]> | undefined {
+	if (!raw || typeof raw !== 'object') {
+		return undefined;
+	}
+
+	const out: Record<string, string[]> = {};
+	for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+		if (typeof value === 'string') {
+			out[key] = [value];
+		}
+	}
+
+	return Object.keys(out).length > 0 ? out : undefined;
+}
 
 // Serialize a react-docgen tsType into a TypeScript-like string when raw is not available
 function serializeTsType(tsType: PropDescriptor['tsType']): string | undefined {
@@ -99,7 +129,7 @@ export const parseReactDocgen = (reactDocgen: Documentation): ParsedDocgen => {
  */
 const parseComponentDocLike = (componentDoc: ComponentDocLike): ParsedDocgen => {
 	const props = componentDoc.props ?? {};
-	return {
+	const parsed: ParsedDocgen = {
 		props: Object.fromEntries(
 			Object.entries(props).map(([propName, prop]) => [
 				propName,
@@ -114,6 +144,13 @@ const parseComponentDocLike = (componentDoc: ComponentDocLike): ParsedDocgen => 
 			]),
 		),
 	};
+	// RDT (and Storybook's reactComponentMeta) expose component-level JSDoc tags on
+	// `.tags` — the only place the legacy path carries `@deprecated`.
+	const tags = normalizeTags((componentDoc as { tags?: unknown }).tags);
+	if (tags) {
+		parsed.tags = tags;
+	}
+	return parsed;
 };
 
 export const parseReactDocgenTypescript = (reactDocgenTypescript: ComponentDoc): ParsedDocgen =>
