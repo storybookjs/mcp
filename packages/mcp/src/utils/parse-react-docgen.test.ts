@@ -472,4 +472,31 @@ describe('parseReactDocgenTypescript', () => {
 		});
 		expect('tags' in result).toBe(false);
 	});
+
+	test('omits the tags field when the tags bag is present but empty', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Empty',
+			filePath: 'src/Empty.tsx',
+			description: '',
+			methods: [],
+			props: {},
+			tags: {},
+		});
+		expect('tags' in result).toBe(false);
+	});
+
+	test('ignores non-string tag values and keeps the string ones', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Mixed',
+			filePath: 'src/Mixed.tsx',
+			description: '',
+			methods: [],
+			props: {},
+			// The engine's `tags` is typed `Record<string, string>`; a non-string
+			// value can only arrive from malformed docgen output, which is why
+			// `normalizeTags` guards against it. Cast to simulate that.
+			tags: { deprecated: 'Gone.', count: 3 } as unknown as Record<string, string>,
+		});
+		expect(result.tags).toEqual({ deprecated: ['Gone.'] });
+	});
 });
