@@ -97,6 +97,31 @@ function getParsedDocgen(
 }
 
 /**
+ * Render the `@deprecated` notice for a component or subcomponent, or nothing when it
+ * is not deprecated. The tag reaches the formatter two ways: the docgen-server path on
+ * the manifest's top-level `jsDocTags.deprecated` (a `string[]`), and the legacy
+ * react-docgen-typescript path on the engine output, recovered via `parsedDocgen.tags`.
+ * An empty message (`@deprecated` with no text) renders a bare notice; an absent tag or
+ * an empty `[]` renders nothing.
+ */
+function formatDeprecationNotice(
+	manifest: Pick<ComponentManifest, 'jsDocTags'>,
+	parsedDocgen: ParsedDocgen | undefined,
+): string[] {
+	const raw = manifest.jsDocTags?.deprecated ?? parsedDocgen?.tags?.deprecated;
+	if (raw === undefined || raw.length === 0) {
+		return [];
+	}
+	// Flatten to a single line so a multi-line message can't break the blockquote.
+	const reason = raw
+		.filter(Boolean)
+		.join(' ')
+		.replace(/\s*[\r\n]+\s*/g, ' ')
+		.trim();
+	return [reason ? `> **Deprecated:** ${reason}` : '> **Deprecated**', ''];
+}
+
+/**
  * Formats a story's content (description + code snippet) into markdown.
  * Reusable helper for both formatComponentManifest and formatStoryDocumentation.
  */
@@ -183,8 +208,13 @@ function formatSubcomponentsSection(
 	parts.push('');
 
 	for (const [key, subcomponent] of Object.entries(subcomponents)) {
+		const parsedDocgen = getParsedDocgen(subcomponent);
+
 		parts.push(`### ${subcomponent.name || key}`);
 		parts.push('');
+
+		// Same deprecation notice as the top-level component, under the subcomponent heading.
+		parts.push(...formatDeprecationNotice(subcomponent, parsedDocgen));
 
 		if (subcomponent.summary) {
 			parts.push(subcomponent.summary);
@@ -213,7 +243,6 @@ function formatSubcomponentsSection(
 			continue;
 		}
 
-		const parsedDocgen = getParsedDocgen(subcomponent);
 		const typeName = `${(subcomponent.name || key).replace(/\W+/g, '')}Props`;
 		parts.push(...formatPropsSection(parsedDocgen, { title: '#### Props', typeName }));
 	}
@@ -227,11 +256,17 @@ function formatSubcomponentsSection(
 export function formatComponentManifest(componentManifest: ComponentManifest): string {
 	const parts: string[] = [];
 
+	// Parse docgen data (from either engine) up front so the deprecation notice can use it.
+	const parsedDocgen = getParsedDocgen(componentManifest);
+
 	// Component header
 	parts.push(`# ${componentManifest.name}`);
 	parts.push('');
 	parts.push(`ID: ${componentManifest.id}`);
 	parts.push('');
+
+	// Deprecation notice, surfaced before the description so agents see it first.
+	parts.push(...formatDeprecationNotice(componentManifest, parsedDocgen));
 
 	// Description section
 	if (componentManifest.description) {
@@ -240,9 +275,6 @@ export function formatComponentManifest(componentManifest: ComponentManifest): s
 	}
 
 	parts.push(...formatSubcomponentsSection(componentManifest.subcomponents));
-
-	// Parse docgen data (from either engine)
-	const parsedDocgen = getParsedDocgen(componentManifest);
 
 	// Stories section
 	const stories = Array.isArray(componentManifest.stories) ? componentManifest.stories : [];

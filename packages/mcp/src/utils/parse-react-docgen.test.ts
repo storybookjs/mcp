@@ -302,6 +302,7 @@ describe('parseReactDocgen', () => {
       }
     `);
 	});
+
 });
 
 describe('parseReactDocgenTypescript', () => {
@@ -444,5 +445,58 @@ describe('parseReactDocgenTypescript', () => {
 			  "props": {},
 			}
 		`);
+	});
+
+	test('extracts component-level tags (deprecated as a string) into string arrays', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'OldButton',
+			filePath: 'src/OldButton.tsx',
+			description: 'A button',
+			methods: [],
+			props: {},
+			tags: { deprecated: 'Use `NewButton` from `@acme/ui` instead.', since: '2.0.0' },
+		});
+		expect(result.tags).toEqual({
+			deprecated: ['Use `NewButton` from `@acme/ui` instead.'],
+			since: ['2.0.0'],
+		});
+	});
+
+	test('omits the tags field entirely when the engine reports none', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Plain',
+			filePath: 'src/Plain.tsx',
+			description: '',
+			methods: [],
+			props: {},
+		});
+		expect('tags' in result).toBe(false);
+	});
+
+	test('omits the tags field when the tags bag is present but empty', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Empty',
+			filePath: 'src/Empty.tsx',
+			description: '',
+			methods: [],
+			props: {},
+			tags: {},
+		});
+		expect('tags' in result).toBe(false);
+	});
+
+	test('ignores non-string tag values and keeps the string ones', () => {
+		const result = parseReactDocgenTypescript({
+			displayName: 'Mixed',
+			filePath: 'src/Mixed.tsx',
+			description: '',
+			methods: [],
+			props: {},
+			// The engine's `tags` is typed `Record<string, string>`; a non-string
+			// value can only arrive from malformed docgen output, which is why
+			// `normalizeTags` guards against it. Cast to simulate that.
+			tags: { deprecated: 'Gone.', count: 3 } as unknown as Record<string, string>,
+		});
+		expect(result.tags).toEqual({ deprecated: ['Gone.'] });
 	});
 });
