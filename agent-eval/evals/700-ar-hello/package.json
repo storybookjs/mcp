@@ -1,0 +1,11 @@
+{
+	"name": "700-ar-hello",
+	"description": "Agentic reference — minimal educational example (see agent-eval/AGENTIC-REFERENCE-EVAL.md). Materializes the real Mealdrop benchmark app, pre-built with the design system already installed, and has an agent add one small button using the app's existing Button wrapper. One deterministic assertion, no LLM judge.",
+	"type": "module",
+	"evals": {
+		"benchmarkApp": {
+			"repo": "yannbf/mealdrop",
+			"ref": "base-ui-migration-squashed"
+		}
+	}
+}

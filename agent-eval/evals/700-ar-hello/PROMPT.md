@@ -1,0 +1,1 @@
+This app uses a design system: `@base-ui/react` components themed by `@droppy/theme` (see `src/components/Button/Button.tsx` for the wrapper pattern — it wraps `@base-ui/react/button`'s `Button` and applies the theme). Add a small "Order help" button to the footer (`src/components/Footer/Footer.tsx`), using the app's own `Button` component from `src/components/Button`.
