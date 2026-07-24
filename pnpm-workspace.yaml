@@ -8,12 +8,7 @@ packages:
   - '!eval/templates/project'
   - '!eval/tasks/*/trials/*/project'
 
-# @vercel/agent-eval is only a dependency of the agent-eval project, which keeps its
-# own lockfile (shared-workspace-lockfile=false). allowUnusedPatches stops sibling
-# projects that lack the dep from erroring on this root-level patch.
 allowUnusedPatches: true
-patchedDependencies:
-  '@vercel/agent-eval@1.2.0': agent-eval/patches/@vercel__agent-eval@1.2.0.patch
 
 catalog:
   '@storybook/addon-a11y': 10.6.0-alpha.0
@@ -21,16 +16,16 @@ catalog:
   '@storybook/addon-themes': 10.6.0-alpha.0
   '@storybook/addon-vitest': 10.6.0-alpha.0
   '@storybook/react-vite': 10.6.0-alpha.0
-  '@types/semver': 7.7.1
   '@tmcp/adapter-valibot': ^0.1.5
   '@tmcp/transport-http': ^0.8.5
   '@tmcp/transport-stdio': ^0.4.3
+  '@types/semver': 7.7.1
   '@vitest/browser-playwright': 4.0.6
   eslint-plugin-storybook: 10.6.0-alpha.0
   playwright: 1.56.1
+  semver: 7.8.1
   storybook: 10.6.0-alpha.0
   tmcp: ^1.19.4
-  semver: 7.8.1
   tsdown: ^0.15.12
   typescript: ^5.9.3
   valibot: 1.2.0
@@ -65,3 +60,6 @@ catalogs:
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
+
+patchedDependencies:
+  '@vercel/agent-eval@1.2.0': patches/@vercel__agent-eval@1.2.0.patch
