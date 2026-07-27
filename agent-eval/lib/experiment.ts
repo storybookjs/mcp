@@ -1,6 +1,11 @@
 import type { ExperimentConfig, RunCompleteContext } from '@vercel/agent-eval';
 import { collectTranscriptUsage } from './usage.ts';
 
+// The 7xx line: agentic-reference research evals — an agent does a small task in
+// a real external repo (e.g. Mealdrop) with an external design-system MCP. Not
+// registered in this file: they run only via their own experiments/agentic-ref-*.ts,
+// gated behind EVAL_AGENTIC_REFERENCE, never on CI. See lib/agentic-reference/.
+
 // The 8xx line: hand-crafted evals for the current plugin/MCP workflow,
 // one per workflow behavior branch. This is the set that always runs on CI.
 const CORE_STORYBOOK_EVALS = [

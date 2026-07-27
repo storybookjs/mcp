@@ -1,0 +1,12 @@
+{
+	"name": "701-agentic-ref-reuse-component-mcp",
+	"description": "Agentic reference — minimal MCP-behavior eval. Materializes the Mealdrop repo, has the agent add one small button using the app's own Button wrapper, with an externally hosted design-system Storybook MCP available. Asserts the outcome plus one signal: the agent consulted the MCP documentation tools (list-all-documentation / get-documentation) instead of relying only on raw source.",
+	"type": "module",
+	"evals": {
+		"externalRepo": {
+			"//": "Immutable SHA of yannbf/mealdrop@base-ui-migration-squashed as of 2026-07-24.",
+			"repo": "yannbf/mealdrop",
+			"ref": "ce507b345666ea8678101fccac580186b2b69b1f"
+		}
+	}
+}
