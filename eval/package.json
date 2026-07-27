@@ -34,7 +34,7 @@
 		"chromatic": "^13.3.3",
 		"commander": "^14.0.0",
 		"envinfo": "^7.20.0",
-		"eslint": "^9.36.0",
+		"eslint": "^10.8.0",
 		"globals": "^16.4.0",
 		"istanbul-lib-coverage": "^3.2.0",
 		"nypm": "^0.6.2",

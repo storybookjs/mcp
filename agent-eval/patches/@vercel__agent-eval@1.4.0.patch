@@ -1,8 +1,8 @@
 diff --git a/dist/cli.js b/dist/cli.js
-index 62513a2..5a50e3f 100644
+index 95d9de6..55ed954 100644
 --- a/dist/cli.js
 +++ b/dist/cli.js
-@@ -230,8 +230,13 @@ program
+@@ -232,8 +232,13 @@ program
      if (options.watch) {
          playgroundArgs.push('--watch');
      }
@@ -14,11 +14,11 @@ index 62513a2..5a50e3f 100644
 +    // 16.2.x) that cannot run the 16.1.6 build — it crashes on boot in setupFsCheck
 +    // (`reading 'map'` on the missing routesManifest.onMatchHeaders) and 500s on
 +    // every render (`reading 'forceStatic'`). Pinning keeps build and runtime in sync.
-+    const result = spawnSync('npx', ['-y', '-p', '@vercel/agent-eval-playground@0.1.2', '-p', 'next@16.1.6', 'agent-eval-playground', ...playgroundArgs], { stdio: 'inherit', cwd: process.cwd() });
++    const result = spawnSync('npx', ['-y', '-p', '@vercel/agent-eval-playground@0.1.3', '-p', 'next@16.1.6', 'agent-eval-playground', ...playgroundArgs], { stdio: 'inherit', cwd: process.cwd() });
      process.exit(result.status ?? 1);
  });
  /**
-@@ -373,10 +378,10 @@ async function runAllCommand(experimentArgs, options) {
+@@ -296,10 +301,10 @@ async function runAllCommand(experimentArgs, options) {
          }
          // Warn if classifier is disabled
          if (!isClassifierEnabled()) {
@@ -32,10 +32,10 @@ index 62513a2..5a50e3f 100644
          // Rate-limit sandbox starts across all experiments to avoid 429s (20 starts per 2 seconds)
          const rateLimiter = new StartRateLimiter(20, 2_000);
 diff --git a/dist/lib/agents/codex/run.mjs b/dist/lib/agents/codex/run.mjs
-index 12ff2d6..a6a3c5e 100644
+index 98f8c98..cd314fc 100644
 --- a/dist/lib/agents/codex/run.mjs
 +++ b/dist/lib/agents/codex/run.mjs
-@@ -287,12 +287,14 @@ export async function runAgent(input) {
+@@ -529,12 +529,14 @@ export async function runAgent(input) {
    const agentExitCode = res.status == null ? -1 : res.status;
  
    // Capture transcript + observed model regardless of success (the old adapter did
