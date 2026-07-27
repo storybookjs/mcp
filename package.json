@@ -34,24 +34,25 @@
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",
 		"@changesets/cli": "^2.29.6",
-		"@codecov/rollup-plugin": "^1.9.1",
-		"@modelcontextprotocol/inspector": "^0.17.2",
-		"@modelcontextprotocol/sdk": "^1.22.0",
+		"@codecov/rollup-plugin": "^2.0.1",
+		"@modelcontextprotocol/inspector": "^1.0.0",
+		"@modelcontextprotocol/sdk": "^1.29.0",
 		"@storybook/addon-mcp": "workspace:*",
 		"@storybook/mcp": "workspace:*",
 		"@types/node": "20.19.0",
-		"@vitest/coverage-v8": "4.0.6",
+		"@vitest/coverage-v8": "4.1.10",
 		"oxfmt": "^0.27.0",
 		"oxlint": "^1.43.0",
 		"oxlint-tsgolint": "^0.11.4",
-		"pkg-pr-new": "^0.0.57",
+		"pkg-pr-new": "^0.0.80",
+		"playwright": "catalog:",
 		"publint": "^0.3.15",
 		"tsdown": "^0.20.3",
 		"turbo": "^2.6.1",
 		"typescript": "~5.9.3",
 		"vite": "catalog:",
 		"vite-tsconfig-paths": "^5.1.4",
-		"vitest": "4.0.6"
+		"vitest": "4.1.10"
 	},
 	"packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }
