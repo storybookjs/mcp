@@ -12,5 +12,6 @@ import { agenticRefExperiment } from '../lib/agentic-reference/experiment.ts';
 export default agenticRefExperiment({
 	evals: ['701-agentic-ref-reuse-component-mcp'],
 	storybookMcpUrl:
-		process.env.AGENTIC_REF_STORYBOOK_MCP_URL ?? 'https://6a4e68f187e29b2ced28b17e-yxetpmuifn.chromatic.com',
+		process.env.AGENTIC_REF_STORYBOOK_MCP_URL ??
+		'https://6a4e68f187e29b2ced28b17e-yxetpmuifn.chromatic.com',
 });
