@@ -1,16 +1,14 @@
 #!/usr/bin/env node
-// Offline metrics pass for agentic-reference runs.
+// Offline metrics pass over stored eval runs.
 //
-// Each repetition of an experiment (AGENTIC_REF_RUNS) lands in its own run-N
-// directory. This script visits every one, compares the pre-run baseline (the
-// pinned ref) against the post-run tree (the collected post-agent project/),
-// folds in the signals the harness already recorded in result.json (status,
-// token usage, MCP tool calls), and reports both the per-run rows and an
-// aggregate across the repetitions.
+// This script is deliberately eval-agnostic. It discovers run directories and
+// hands each one to that eval's own hook at evals/<name>/post-analysis.ts;
+// which metrics matter, and what they are measured against, is the eval's
+// business. Evals without a hook are skipped.
 //
-// Source metric: how many `Button` imports the source contains — a footer that
-// reuses the design-system Button should have one more after the run than the
-// ref. Heavier analyzers (offline app tests, LLM judges) are left as stubs.
+// Every metric is a pure function of stored artifacts, so this can be re-run
+// over historical results as often as a metric definition changes, without
+// spending anything on model calls.
 //
 // Usage: pnpm results:analyze [--experiment=<name>] [--since=<ISO date>] [--latest]
 //
@@ -20,31 +18,13 @@
 //
 // The filters exist because results/ accumulates: every invocation adds a new
 // timestamped directory, and older ones may come from a different fixture pin.
-// Each run is measured against the pin it recorded at execution time
-// (`analysis.externalRepo`); runs predating that fall back to the fixture's
-// current pin and are marked "(assumed)" in the table.
-import { execFileSync } from 'node:child_process';
-import {
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	readdirSync,
-	renameSync,
-	rmSync,
-	writeFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(ROOT, 'results');
 const EVALS_DIR = join(ROOT, 'evals');
-const REF_CACHE_DIR = join(ROOT, '.eval-cache', 'refs');
-
-const SOURCE_FILE = /\.[jt]sx?$/;
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.next']);
-// An import statement that pulls in a `Button` binding.
-const BUTTON_IMPORT = /import\s+[^;]*?\bButton\b[^;]*?from\s+['"][^'"]+['"]/g;
 
 // --- options ---
 function parseArgs(argv) {
@@ -60,20 +40,6 @@ function parseArgs(argv) {
 			);
 	}
 	return options;
-}
-
-// --- metric: count Button imports across a source tree ---
-function countButtonImports(dir) {
-	let count = 0;
-	for (const entry of readdirSync(dir, { withFileTypes: true })) {
-		const path = join(dir, entry.name);
-		if (entry.isDirectory()) {
-			if (!SKIP_DIRS.has(entry.name)) count += countButtonImports(path);
-		} else if (SOURCE_FILE.test(entry.name)) {
-			count += (readFileSync(path, 'utf8').match(BUTTON_IMPORT) ?? []).length;
-		}
-	}
-	return count;
 }
 
 // --- discovery ---
@@ -135,252 +101,121 @@ function selectRuns(runs, options) {
 	return selected;
 }
 
-// Same shape check lib/agentic-reference/external-repo.ts applies to the marker,
-// repeated here because that module is TypeScript and this script is plain node.
-const SAFE_GITHUB_PATH = /^[\w./-]+$/;
+// --- hook loading ---
+// Node 24 strips types on import, so a .ts hook loads from this .mjs directly.
+const hookCache = new Map();
 
-function validPin(pin) {
-	return typeof pin?.repo === 'string' &&
-		typeof pin?.ref === 'string' &&
-		SAFE_GITHUB_PATH.test(pin.repo) &&
-		SAFE_GITHUB_PATH.test(pin.ref)
-		? { repo: pin.repo, ref: pin.ref }
-		: null;
-}
+async function loadHook(evalName) {
+	if (hookCache.has(evalName)) return hookCache.get(evalName);
 
-// The fixture's pin *as it stands today* — a fallback for runs recorded before
-// the pin was written into result.json.
-function readMarker(evalName) {
-	const manifest = join(EVALS_DIR, evalName, 'package.json');
-	if (!existsSync(manifest)) return null;
-	return validPin(JSON.parse(readFileSync(manifest, 'utf8'))?.evals?.externalRepo);
-}
-
-// --- pre-run baseline: fetch the ref source once per sha (no install) ---
-const refCache = new Map();
-// Extract into a scratch directory and rename it into place only once the whole
-// download+extract succeeded: a half-populated cache directory would otherwise
-// be trusted forever and quietly inflate every later Button-import delta.
-function prepareRef(repo, ref) {
-	// Escape separators on both halves: SAFE_GITHUB_PATH admits refs like
-	// `heads/main`, and an unescaped one would turn the slug into a nested path
-	// (`..` segments included) instead of a single cache directory name. SHA pins
-	// contain no separator, so existing cache directories keep their names.
-	const slug = `${repo.replace(/\//g, '__')}@${ref.replace(/\//g, '__')}`;
-	if (refCache.has(slug)) return refCache.get(slug);
-	const dir = join(REF_CACHE_DIR, slug);
-	if (!existsSync(dir)) {
-		mkdirSync(REF_CACHE_DIR, { recursive: true });
-		const scratch = `${dir}.partial-${process.pid}`;
-		rmSync(scratch, { recursive: true, force: true });
-		mkdirSync(scratch, { recursive: true });
-		try {
-			// execFile, not a shell: repo/ref never reach a command line.
-			const tarball = join(scratch, 'source.tar.gz');
-			execFileSync('curl', [
-				'-fsSL',
-				'-o',
-				tarball,
-				`https://codeload.github.com/${repo}/tar.gz/${ref}`,
-			]);
-			// --strip-components=1 drops the tarball's top-level <name>-<ref>/ dir.
-			execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', scratch]);
-			rmSync(tarball);
-			renameSync(scratch, dir);
-		} catch (error) {
-			rmSync(scratch, { recursive: true, force: true });
-			throw new Error(`Failed to fetch ${repo}@${ref}: ${error.message}`);
+	const path = join(EVALS_DIR, evalName, 'post-analysis.ts');
+	let hook = null;
+	if (existsSync(path)) {
+		hook = await import(pathToFileURL(path).href);
+		if (typeof hook.analyzeRun !== 'function') {
+			throw new Error(`${evalName}/post-analysis.ts must export an analyzeRun function`);
 		}
 	}
-	refCache.set(slug, dir);
-	return dir;
+
+	hookCache.set(evalName, hook);
+	return hook;
 }
 
-// --- in-run signals the harness already recorded ---
-function readRunResult(runDir) {
-	const path = join(runDir, 'result.json');
-	if (!existsSync(path)) return {};
+function readJson(path) {
+	if (!existsSync(path)) return null;
 	try {
-		const result = JSON.parse(readFileSync(path, 'utf8'));
-		return {
-			status: result?.status ?? null,
-			tokens: result?.metadata?.usage?.totalTokens ?? null,
-			costUsd: result?.metadata?.usage?.estimatedCostUsd ?? null,
-			mcpUsage: result?.analysis?.mcpUsage ?? null,
-			appTests: result?.analysis?.appTests ?? null,
-			// Recorded at execution time by agenticRefExperiment's onRunComplete.
-			externalRepo: validPin(result?.analysis?.externalRepo),
-		};
+		return JSON.parse(readFileSync(path, 'utf8'));
 	} catch {
-		return {};
+		return null;
 	}
 }
 
-// --- per-run analysis ---
-function analyzeRun(run) {
-	const {
-		status = null,
-		tokens = null,
-		costUsd = null,
-		mcpUsage = null,
-		appTests = null,
-		externalRepo = null,
-	} = readRunResult(run.runDir);
-
-	// Prefer the pin the run itself recorded; fall back to the fixture's current
-	// pin for runs predating that, and say which was used so a legacy row is not
-	// mistaken for one measured against its own ref.
-	const pin = externalRepo ?? readMarker(run.evalName);
-	if (!pin) return null;
-	const pinSource = externalRepo ? 'run' : 'fixture';
-
-	const before = countButtonImports(prepareRef(pin.repo, pin.ref));
-	const after = countButtonImports(run.projectDir);
-
-	const row = {
-		experiment: run.experiment,
-		model: run.model,
-		timestamp: run.timestamp,
-		run: run.run,
-		eval: run.evalName,
-		fixtureRef: `${pin.repo}@${pin.ref.slice(0, 12)}`,
-		pinSource,
-		status,
-		buttonImports: { before, after, delta: after - before },
-		mcpUsage,
-		tokens,
-		costUsd,
-		appTests,
-		judged: null, // TODO: LLM-judge columns
-	};
-	writeFileSync(join(run.runDir, 'analysis.json'), JSON.stringify(row, null, 2) + '\n');
-	return row;
-}
-
-// --- aggregate across repetitions ---
-function mean(values) {
-	return values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function round(value, digits = 2) {
-	return value === null ? null : Number(value.toFixed(digits));
-}
-
-function summarize(rows) {
-	const groups = new Map();
-	for (const row of rows) {
-		const key = `${row.experiment}::${row.eval}`;
-		if (!groups.has(key)) groups.set(key, []);
-		groups.get(key).push(row);
-	}
-
-	return [...groups.values()].map((group) => {
-		const deltas = group.map((row) => row.buttonImports.delta);
-		const docCalls = group.flatMap((row) =>
-			typeof row.mcpUsage?.documentationToolCalls === 'number'
-				? [row.mcpUsage.documentationToolCalls]
-				: [],
-		);
-		const costs = group.flatMap((row) => (typeof row.costUsd === 'number' ? [row.costUsd] : []));
-		// An aggregate that silently spans two different fixture pins is not one
-		// measurement, so carry the pins the group was built from.
-		const fixtureRefs = [...new Set(group.map((row) => row.fixtureRef))];
-		return {
-			experiment: group[0].experiment,
-			eval: group[0].eval,
-			fixtureRefs,
-			runs: group.length,
-			passed: group.filter((row) => row.status === 'passed').length,
-			reusedButton: deltas.filter((delta) => delta > 0).length,
-			buttonDelta: {
-				mean: round(mean(deltas)),
-				min: Math.min(...deltas),
-				max: Math.max(...deltas),
-			},
-			documentationToolCalls: { mean: round(mean(docCalls)), reported: docCalls.length },
-			// null rather than 0 when no run reported a cost, so an unpriced model
-			// does not read as a free one.
-			costUsd: {
-				total: costs.length === 0 ? null : round(costs.reduce((sum, cost) => sum + cost, 0)),
-				reported: costs.length,
-			},
-		};
-	});
-}
-
-function main() {
+async function main() {
 	const options = parseArgs(process.argv.slice(2));
 	const runs = selectRuns(findRuns(RESULTS_DIR), options);
+
 	const rows = [];
-	const skipped = new Set();
+	const withoutHook = new Set();
+	const failed = [];
+
 	for (const run of runs) {
-		const row = analyzeRun(run);
-		if (row) rows.push(row);
-		else skipped.add(run.evalName);
-	}
-	if (skipped.size > 0) {
-		// A result directory outlives the fixture it came from; say so instead of
-		// dropping those runs without a word.
-		console.log(`Skipped runs with no matching fixture in evals/: ${[...skipped].join(', ')}`);
-	}
-	if (rows.length === 0) {
-		console.log('No external-repo runs found under results/.');
-		return;
+		const hook = await loadHook(run.evalName);
+		if (hook === null) {
+			withoutHook.add(run.evalName);
+			continue;
+		}
+
+		try {
+			const row = await hook.analyzeRun({
+				runDir: run.runDir,
+				projectDir: run.projectDir,
+				fixtureDir: join(EVALS_DIR, run.evalName),
+				experiment: run.experiment,
+				model: run.model,
+				timestamp: run.timestamp,
+				evalName: run.evalName,
+				run: run.run,
+				result: readJson(join(run.runDir, 'result.json')),
+				readTranscript: () => {
+					const transcript = readJson(join(run.runDir, 'transcript.json'));
+					if (transcript === null) throw new Error('transcript.json missing or unreadable');
+					return transcript;
+				},
+			});
+			if (row) rows.push({ ...row, __eval: run.evalName });
+		} catch (error) {
+			// One broken run must not cost us the others.
+			failed.push(`${run.evalName} run-${run.run}: ${error.message}`);
+		}
 	}
 
-	const legacy = rows.filter((row) => row.pinSource === 'fixture').length;
-	if (legacy > 0) {
-		console.log(
-			`${legacy} run(s) recorded no fixture pin and were measured against the fixture's ` +
-				'current pin; their `before`/`delta` are only meaningful if the pin has not moved since.',
-		);
+	if (withoutHook.size > 0) {
+		console.log(`Skipped evals with no post-analysis.ts: ${[...withoutHook].join(', ')}`);
+	}
+	for (const message of failed) console.error(`Analysis failed for ${message}`);
+
+	if (rows.length === 0) {
+		console.log('No analysable runs found under results/.');
+		return;
 	}
 
 	rows.sort(
 		(a, b) =>
-			a.experiment.localeCompare(b.experiment) ||
-			a.timestamp.localeCompare(b.timestamp) ||
+			String(a.experiment).localeCompare(String(b.experiment)) ||
+			String(a.timestamp).localeCompare(String(b.timestamp)) ||
 			a.run - b.run,
 	);
-	const summary = summarize(rows);
+
+	// `__eval` is internal routing state, stripped before anything sees a record.
+	const strip = (row) =>
+		Object.fromEntries(Object.entries(row).filter(([key]) => key !== '__eval'));
+
+	// Aggregation and rendering belong to the eval; fall back to a generic table.
+	const byEval = new Map();
+	for (const row of rows) {
+		const list = byEval.get(row.__eval) ?? [];
+		list.push(row);
+		byEval.set(row.__eval, list);
+	}
+
+	const allSummaries = [];
+	for (const [evalName, evalRows] of byEval) {
+		const hook = await loadHook(evalName);
+		const bare = evalRows.map(strip);
+		const summary = typeof hook.summarize === 'function' ? hook.summarize(bare) : [];
+		allSummaries.push(...summary);
+
+		if (typeof hook.renderTables === 'function') hook.renderTables(bare, summary);
+		else console.table(bare.map(({ experiment, run, status }) => ({ experiment, run, status })));
+	}
+
 	writeFileSync(
 		join(RESULTS_DIR, 'agentic-ref-analysis.json'),
-		JSON.stringify({ runs: rows, summary }, null, 2) + '\n',
-	);
-
-	console.table(
-		rows.map((row) => ({
-			experiment: row.experiment.replace(/^agentic-ref-/, ''),
-			timestamp: row.timestamp,
-			run: row.run,
-			status: row.status,
-			fixtureRef: row.pinSource === 'run' ? row.fixtureRef : `${row.fixtureRef} (assumed)`,
-			delta: row.buttonImports.delta,
-			docCalls: row.mcpUsage?.documentationToolCalls ?? null,
-			costUsd: row.costUsd,
-		})),
-	);
-	console.table(
-		summary.map((group) => ({
-			experiment: group.experiment.replace(/^agentic-ref-/, ''),
-			fixtureRef:
-				group.fixtureRefs.length === 1
-					? group.fixtureRefs[0]
-					: `mixed (${group.fixtureRefs.length})`,
-			runs: group.runs,
-			passed: group.passed,
-			reusedButton: group.reusedButton,
-			deltaMean: group.buttonDelta.mean,
-			deltaRange: `${group.buttonDelta.min}–${group.buttonDelta.max}`,
-			docCallsMean: group.documentationToolCalls.mean,
-			costUsd: group.costUsd.total,
-		})),
+		JSON.stringify({ runs: rows.map(strip), summary: allSummaries }, null, 2) + '\n',
 	);
 }
 
-try {
-	main();
-} catch (error) {
+main().catch((error) => {
 	console.error(error instanceof Error ? error.message : String(error));
 	process.exit(1);
-}
+});
