@@ -366,7 +366,7 @@ Measured values, asserted by the tests:
 | tool calls            | 25                                                      |
 | estimated cost        | $1.89273325                                             |
 | cache hit rate        | 0.8330                                                  |
-| buckets               | docs 1, exploration 13, edit 8, verification 6, other 1 |
+| buckets               | docs 1, exploration 14, edit 8, verification 7, other 0 |
 | edits to `Footer.tsx` | 3                                                       |
 | SLoC                  | +10 / -1 across 1 file                                  |
 
@@ -512,10 +512,10 @@ describe('classifyToolUse', () => {
 		const metrics = classifyToolUse(goldenTranscript.events);
 		expect(metrics.buckets).toEqual({
 			docs: 1,
-			exploration: 13,
+			exploration: 14,
 			edit: 8,
-			verification: 6,
-			other: 1,
+			verification: 7,
+			other: 0,
 		});
 	});
 });
@@ -722,7 +722,7 @@ export function classifyToolUse(events: unknown[]): ToolUseMetrics {
 cd /home/steve/Development/mcp && npx vitest run --project agent-eval tool-taxonomy
 ```
 
-Expected: PASS, 30 tests. The golden test asserting `{docs: 1, exploration: 13, edit: 8, verification: 6, other: 1}` is the one that matters most — it is the hand-verified classification of a real run.
+Expected: PASS, 30 tests. The golden test asserting `{docs: 1, exploration: 14, edit: 8, verification: 7, other: 0}` is the one that matters most — it is the hand-verified classification of a real run.
 
 If the golden test fails, print the per-call classification to find the disagreement:
 
@@ -749,7 +749,7 @@ git commit -m "feat(agent-eval): classify agent tool calls into five buckets
 
 Adds docs/exploration/edit/verification/other classification with
 compound-shell splitting. Verified against a real run: 25 calls resolve to
-docs 1, exploration 13, edit 8, verification 6, other 1."
+docs 1, exploration 14, edit 8, verification 7, other 0."
 ```
 
 ---
@@ -2980,7 +2980,7 @@ describe('analyzeRun', () => {
 		});
 		expect((row?.cost as { cacheHitRate: number }).cacheHitRate).toBeCloseTo(0.833, 4);
 		expect(row?.toolUse).toMatchObject({
-			buckets: { docs: 1, exploration: 13, edit: 8, verification: 6, other: 1 },
+			buckets: { docs: 1, exploration: 14, edit: 8, verification: 7, other: 0 },
 		});
 		expect((row?.churn as { perFile: Record<string, number> }).perFile).toEqual({
 			'src/components/Footer/Footer.tsx': 3,
@@ -3626,7 +3626,7 @@ main().catch((error) => {
 cd /home/steve/Development/mcp/agent-eval && pnpm results:analyze --latest
 ```
 
-Expected: two tables printed, the first showing `run 1`, `status failed`, `seconds 403.365`, `turns 12`, `costUsd 1.89273325`, `docs 1`, `explore 13`, `slocAdded 10`.
+Expected: two tables printed, the first showing `run 1`, `status failed`, `seconds 403.365`, `turns 12`, `costUsd 1.89273325`, `docs 1`, `explore 14`, `slocAdded 10`.
 
 - [ ] **Step 3: Verify the written artifact**
 
@@ -3919,7 +3919,7 @@ Every metric from the specification, and where it is proved:
 | per-file iteration count                  | 4          | golden test asserts Footer.tsx = 3                                              |
 | cyclomatic complexity diff                | 8, 11      | four ported tests plus the composed record                                      |
 | cognitive complexity diff                 | 9, 11      | white-paper sumOfPrimes = 7 plus the composed record                            |
-| doc vs exploration vs edit classification | 3          | golden test asserts docs 1 / exploration 13 / edit 8 / verification 6 / other 1 |
+| doc vs exploration vs edit classification | 3          | golden test asserts docs 1 / exploration 14 / edit 8 / verification 7 / other 0 |
 | metrics written to the run artifact       | 11, 12, 13 | `analysis.json` written per run; CI step added before the tar                   |
 
 ## Deliberately not built

@@ -1,0 +1,125 @@
+import { describe, expect, it } from 'vitest';
+
+import goldenTranscript from './__fixtures__/golden-run/transcript.json' with { type: 'json' };
+import { classifyShellCommand, classifyToolUse } from './tool-taxonomy.ts';
+
+describe('classifyShellCommand', () => {
+	const cases: Array<[string, string[]]> = [
+		['ls /workspace/src', ['exploration']],
+		['find /workspace/src -iname "*footer*"', ['exploration']],
+		['grep -rn "path=" src', ['exploration']],
+		['cat src/components/Footer/Footer.tsx', ['exploration']],
+		['npx tsc --noEmit -p tsconfig.json', ['verification']],
+		['npx vitest run --config vitest.config.app.ts', ['verification']],
+		['npx eslint src/a.tsx', ['verification']],
+		['git status --short', ['verification']],
+		['cp /tmp/a.tsx src/a.tsx', ['edit']],
+		['rm -f src/tmp.test.ts', ['edit']],
+		['mkdir -p src/new', ['edit']],
+		// Output filters after a pipe are not exploration.
+		['npx tsc --noEmit 2>&1 | tail -20', ['verification']],
+		['npx vitest run 2>&1 | tail -25', ['verification']],
+		['cat a.ts | head -30', ['exploration']],
+		// Compound commands contribute to several buckets.
+		['ls src/ && cat src/a.ts', ['exploration']],
+		['rm -f tmp.ts; npx vitest run', ['edit', 'verification']],
+		['rm -f tmp.ts && git status --short', ['edit', 'verification']],
+		// sed is ambiguous: -i writes, otherwise it reads.
+		["sed -i 's#a#b#' src/a.ts", ['edit']],
+		["sed -n '1,20p' src/a.ts", ['exploration']],
+		// Wrappers and env prefixes are stepped past to find the real binary.
+		['NO_COLOR=1 npx tsc --noEmit', ['verification']],
+		['pnpm run typecheck', ['other']],
+		['yarn vitest run', ['verification']],
+		// Redirects are writes regardless of head binary.
+		['cat > /tmp/scratch.tsx', ['edit']],
+		['echo hi > src/a.ts', ['edit']],
+		// echo alone is noise, not a bucket.
+		['echo "=== marker ==="', []],
+	];
+
+	for (const [command, expected] of cases) {
+		it(`classifies \`${command}\` as ${expected.join('+') || '(none)'}`, () => {
+			expect(classifyShellCommand(command).sort()).toEqual([...expected].sort());
+		});
+	}
+});
+
+describe('classifyToolUse', () => {
+	it('buckets structured tool calls by normalised name', () => {
+		const metrics = classifyToolUse([
+			{ type: 'tool_call', tool: { name: 'file_read', originalName: 'Read', args: {} } },
+			{ type: 'tool_call', tool: { name: 'grep', originalName: 'Grep', args: {} } },
+			{ type: 'tool_call', tool: { name: 'file_edit', originalName: 'Edit', args: {} } },
+			{ type: 'tool_call', tool: { name: 'web_fetch', originalName: 'WebFetch', args: {} } },
+		]);
+		expect(metrics.buckets).toEqual({
+			docs: 1,
+			exploration: 2,
+			edit: 1,
+			verification: 0,
+			other: 0,
+		});
+	});
+
+	it('counts any mcp__ tool as a documentation read', () => {
+		const metrics = classifyToolUse([
+			{
+				type: 'tool_call',
+				tool: {
+					name: 'unknown',
+					originalName: 'mcp__storybook-dev-mcp__get-documentation',
+					args: {},
+				},
+			},
+		]);
+		expect(metrics.buckets.docs).toBe(1);
+	});
+
+	it('ignores non tool_call events', () => {
+		const metrics = classifyToolUse([
+			{ type: 'message', role: 'user', content: 'hi' },
+			{ type: 'tool_result', content: 'ok' },
+		]);
+		expect(metrics.buckets).toEqual({
+			docs: 0,
+			exploration: 0,
+			edit: 0,
+			verification: 0,
+			other: 0,
+		});
+	});
+
+	it('records unrecognised shell heads for later triage', () => {
+		const metrics = classifyToolUse([
+			{
+				type: 'tool_call',
+				tool: { name: 'shell', originalName: 'Bash', args: { command: 'frobnicate --all' } },
+			},
+		]);
+		expect(metrics.buckets.other).toBe(1);
+		expect(metrics.unclassified).toEqual(['frobnicate']);
+	});
+
+	// Hand-verified against all 25 calls of the captured run:
+	//   exploration  1,2,3,5,6,7,8,9,11,14,17,18,22,25
+	//   edit         10,12,13,18,19,20,23,24
+	//   verification 15,16,19,20,21,23,24
+	//   docs         4
+	// Calls 18 and 23 write a heredoc and then run a further command on the next
+	// line, so they land in two buckets each.
+	it('reproduces the golden run exactly', () => {
+		const metrics = classifyToolUse(goldenTranscript.events);
+		expect(metrics.buckets).toEqual({
+			docs: 1,
+			exploration: 14,
+			edit: 8,
+			verification: 7,
+			other: 0,
+		});
+	});
+
+	it('leaves nothing unclassified in the golden run', () => {
+		expect(classifyToolUse(goldenTranscript.events).unclassified).toEqual([]);
+	});
+});

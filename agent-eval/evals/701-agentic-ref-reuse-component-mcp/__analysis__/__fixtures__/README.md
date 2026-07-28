@@ -23,7 +23,7 @@ Measured values, asserted by the tests:
 | tool calls          | 25                                                      |
 | estimated cost      | $1.89273325                                             |
 | cache hit rate      | 0.8330                                                  |
-| buckets             | docs 1, exploration 13, edit 8, verification 6, other 1 |
+| buckets             | docs 1, exploration 14, edit 8, verification 7, other 0 |
 | edits to Footer.tsx | 3                                                       |
 | SLoC                | +10 / -1 across 1 file                                  |
 

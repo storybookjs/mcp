@@ -14,8 +14,11 @@ import { tokenizeShellCommand } from '../../../lib/shell-parse.ts';
 
 export interface ShellSegment {
 	tokens: string[];
-	/** A `>` or `>>` redirect into a path: a write regardless of head binary. */
-	redirectsToFile: boolean;
+	/**
+	 * Path this segment redirects stdout into, or null. A write regardless of the
+	 * head binary, so churn and the taxonomy both key off it.
+	 */
+	redirectTarget: string | null;
 	/** This segment consumes the previous segment's stdout. */
 	piped: boolean;
 }
@@ -30,9 +33,19 @@ function stripHeredocBodies(command: string): string {
 	return command.replace(HEREDOC, '<<HEREDOC');
 }
 
-// `2>&1` and `&>` duplicate a descriptor rather than naming a file; only a
-// bare `>`/`>>` (optionally prefixed by a single digit) creates or truncates one.
-const FILE_REDIRECT = /^\d?>>?$/;
+// Only a stdout redirect writes content worth counting. `2>&1` duplicates a
+// descriptor, and `2>/dev/null` is stderr suppression — treating either as a
+// write turned every `grep ... 2>/dev/null` in the captured run into an "edit".
+const STDOUT_REDIRECT = /^1?>>?$/;
+const STDOUT_REDIRECT_WITH_TARGET = /^1?>>?([^&>].*)$/;
+/** Redirects here discard output; nothing is written. */
+const DISCARD_TARGETS = new Set(['/dev/null', '/dev/stdout', '/dev/stderr']);
+
+function redirectTargetOf(target: string | undefined): string | null {
+	if (target === undefined || target === '') return null;
+	const path = target.replace(/^['"]|['"]$/g, '');
+	return DISCARD_TARGETS.has(path) ? null : path;
+}
 
 /**
  * A newline separates commands just as `;` does, but the tokenizer collapses it
@@ -55,16 +68,21 @@ export function splitCommandSegments(command: string): ShellSegment[] {
 
 	for (const line of commandLines(stripHeredocBodies(command))) {
 		let current: string[] = [];
-		let redirectsToFile = false;
+		let redirectTarget: string | null = null;
 		// A line break ends any pipeline, so each line starts unpiped.
 		let piped = false;
+		// The previous token was a bare redirect operator, so this token is its
+		// target. 'discard' distinguishes `2> file` — whose target must be dropped
+		// rather than treated as an argument — from a real stdout write.
+		let awaiting: 'stdout' | 'discard' | null = null;
 
 		const flush = () => {
 			if (current.length > 0) {
-				segments.push({ tokens: current, redirectsToFile, piped });
+				segments.push({ tokens: current, redirectTarget, piped });
 			}
 			current = [];
-			redirectsToFile = false;
+			redirectTarget = null;
+			awaiting = null;
 		};
 
 		for (const token of tokenizeShellCommand(line)) {
@@ -73,13 +91,24 @@ export function splitCommandSegments(command: string): ShellSegment[] {
 				piped = token === '|';
 				continue;
 			}
-			if (FILE_REDIRECT.test(token)) {
-				redirectsToFile = true;
+			if (awaiting !== null) {
+				if (awaiting === 'stdout') redirectTarget = redirectTargetOf(token);
+				awaiting = null;
+				continue;
+			}
+			if (STDOUT_REDIRECT.test(token)) {
+				awaiting = 'stdout';
 				continue;
 			}
 			// An attached form such as `>/tmp/out` survives tokenisation as one token.
-			if (/^\d?>>?[^&]/.test(token)) {
-				redirectsToFile = true;
+			const attached = STDOUT_REDIRECT_WITH_TARGET.exec(token);
+			if (attached) {
+				redirectTarget = redirectTargetOf(attached[1]);
+				continue;
+			}
+			// A non-stdout redirect (`2>`, `2>>`, `2>&1`) writes no content.
+			if (/^\d>>?/.test(token)) {
+				if (/^\d>>?$/.test(token)) awaiting = 'discard';
 				continue;
 			}
 			current.push(token);

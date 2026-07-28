@@ -289,7 +289,7 @@ from a walker that gave up.
 	},
 
 	"toolUse": {
-		"buckets": { "docs": 1, "exploration": 13, "edit": 8, "verification": 6, "other": 1 },
+		"buckets": { "docs": 1, "exploration": 14, "edit": 8, "verification": 7, "other": 0 },
 		"unclassified": [],
 	},
 
@@ -341,7 +341,7 @@ path.
 
 ```
 duration 403.365s · turns 12 · 25 tool calls · $1.8927 · cacheHitRate 0.8330
-buckets: docs 1 · exploration 13 · edit 8 · verification 6 · other 1
+buckets: docs 1 · exploration 14 · edit 8 · verification 7 · other 0
 Footer.tsx edits 3 · sloc +10 / −1 · filesChanged 1
 ```
 
