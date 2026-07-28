@@ -13,7 +13,7 @@ type FixturePackageJson = {
 	};
 };
 
-type EvalAgent = 'claude-code' | 'codex';
+export type EvalAgent = 'claude-code' | 'codex';
 type EvalIntegration = 'mcp' | 'plugin';
 type Catalog = Record<string, string>;
 type DependencyOverrides = Record<string, string>;
@@ -762,22 +762,38 @@ async function collectFiles(options: {
 	}
 }
 
-export async function writeClaudeMcpConfig(sandbox: Sandbox): Promise<void> {
-	await writeClaudeMcpServer(sandbox, STORYBOOK_MCP_SERVER_NAME, {
-		type: 'http',
-		url: STORYBOOK_MCP_URL,
-	});
-}
-
-export async function writeCodexMcpConfig(sandbox: Sandbox): Promise<void> {
-	const config = `[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]
-url = "${STORYBOOK_MCP_URL}"
+/**
+ * Register the Storybook MCP in whichever config format the agent reads. `url`
+ * defaults to the sandbox-local Storybook; pass an absolute URL to point the
+ * agent at an externally hosted build instead.
+ */
+export async function writeStorybookMcpConfig(
+	sandbox: Sandbox,
+	agent: EvalAgent,
+	url: string = STORYBOOK_MCP_URL,
+): Promise<void> {
+	if (agent === 'codex') {
+		await appendCodexConfig(
+			sandbox,
+			`[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]
+url = "${url}"
 default_tools_approval_mode = "auto"
 startup_timeout_sec = 30
 tool_timeout_sec = 120
-`;
+`,
+		);
+		return;
+	}
 
-	await appendCodexConfig(sandbox, config);
+	await writeClaudeMcpServer(sandbox, STORYBOOK_MCP_SERVER_NAME, { type: 'http', url });
+}
+
+export async function writeClaudeMcpConfig(sandbox: Sandbox): Promise<void> {
+	await writeStorybookMcpConfig(sandbox, 'claude-code');
+}
+
+export async function writeCodexMcpConfig(sandbox: Sandbox): Promise<void> {
+	await writeStorybookMcpConfig(sandbox, 'codex');
 }
 
 /**

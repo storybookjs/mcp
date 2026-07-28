@@ -4,20 +4,10 @@
 // runs (Chromatic build URLs are immutable).
 //
 // Registered under the same server name the stock templates use, so every
-// #test-utils workflow helper applies unchanged. Writes Claude Code's `.mcp.json`
-// or Codex's `.codex/config.toml`, depending on the agent.
+// #test-utils workflow helper applies unchanged.
 import type { Sandbox } from '@vercel/agent-eval';
 
-import { isRecord } from '../shell-parse.ts';
-
-// These merges duplicate templates.ts's private writeClaudeMcpServer /
-// appendCodexConfig: exporting those would violate the SB-1724 additive-only
-// constraint. If it lifts, export the canonical helpers and delete these.
-const CLAUDE_MCP_CONFIG_PATH = '.mcp.json';
-const CODEX_CONFIG_PATH = '.codex/config.toml';
-const STORYBOOK_MCP_SERVER_NAME = 'storybook-dev-mcp';
-
-type EvalAgent = 'claude-code' | 'codex';
+import { type EvalAgent, writeStorybookMcpConfig } from '../templates.ts';
 
 /** Accept a Storybook build URL with or without the /mcp suffix. */
 function normalizeMcpUrl(storybookUrl: string): string {
@@ -60,41 +50,6 @@ async function probeMcpEndpoint(url: string): Promise<void> {
 	}
 }
 
-async function registerForClaude(sandbox: Sandbox, url: string): Promise<void> {
-	const existing: unknown = JSON.parse(
-		await sandbox.readFile(CLAUDE_MCP_CONFIG_PATH).catch(() => '{}'),
-	);
-	const config = isRecord(existing) ? existing : {};
-	const mcpServers = isRecord(config.mcpServers) ? config.mcpServers : {};
-
-	await sandbox.writeFiles({
-		[CLAUDE_MCP_CONFIG_PATH]: JSON.stringify(
-			{
-				...config,
-				mcpServers: { ...mcpServers, [STORYBOOK_MCP_SERVER_NAME]: { type: 'http', url } },
-			},
-			null,
-			2,
-		).concat('\n'),
-	});
-}
-
-async function registerForCodex(sandbox: Sandbox, url: string): Promise<void> {
-	const section = `[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]
-url = "${url}"
-default_tools_approval_mode = "auto"
-startup_timeout_sec = 30
-tool_timeout_sec = 120
-`;
-	const existing = await sandbox.readFile(CODEX_CONFIG_PATH).catch(() => '');
-	if (existing.includes(`[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]`)) {
-		return;
-	}
-	await sandbox.writeFiles({
-		[CODEX_CONFIG_PATH]: existing.length > 0 ? `${existing.trimEnd()}\n\n${section}` : section,
-	});
-}
-
 /**
  * Register an externally hosted Storybook MCP in the sandbox, in whichever
  * config format the agent reads. Call in an experiment's setup(), any time
@@ -107,9 +62,5 @@ export async function registerExternalStorybookMcp(
 ): Promise<void> {
 	const url = normalizeMcpUrl(storybookUrl);
 	await probeMcpEndpoint(url);
-	if (agent === 'codex') {
-		await registerForCodex(sandbox, url);
-	} else {
-		await registerForClaude(sandbox, url);
-	}
+	await writeStorybookMcpConfig(sandbox, agent, url);
 }

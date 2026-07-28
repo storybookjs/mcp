@@ -7,15 +7,13 @@ import { join } from 'node:path';
 
 import type { ExperimentConfig, RunCompleteContext, Sandbox } from '@vercel/agent-eval';
 import { DEFAULT_EXPERIMENT_CONFIG } from '../experiment.ts';
-import { setupSandbox } from '../templates.ts';
+import { type EvalAgent, setupSandbox } from '../templates.ts';
 import {
 	type ExternalRepoPin,
 	parseExternalRepoMarker,
 	setupExternalRepo,
 } from './external-repo.ts';
 import { registerExternalStorybookMcp } from './external-mcp.ts';
-
-type EvalAgent = 'claude-code' | 'codex';
 
 interface AgenticRefExperimentOptions {
 	evals: string[];
