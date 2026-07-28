@@ -121,6 +121,16 @@ jobs:
 
           echo "has_result_files=true" >> "$GITHUB_OUTPUT"
 
+      - name: Compute offline metrics
+        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+        # Writes analysis.json next to each run's result.json so the metrics ride
+        # along in the uploaded artifact. Needs network to fetch the pinned
+        # external ref, which the analysis already does via codeload.
+        # Non-blocking: a metrics failure must not fail an otherwise good run.
+        continue-on-error: true
+        working-directory: agent-eval
+        run: pnpm results:analyze
+
       - name: Archive eval results
         if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
         # Tar before upload: result files may contain characters (e.g. the colon

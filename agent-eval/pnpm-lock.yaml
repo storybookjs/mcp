@@ -20,9 +20,12 @@ catalogs:
       specifier: 5.9.3
       version: 5.9.3
 
+overrides:
+  '@ai-sdk/anthropic': ^2.0.0
+
 patchedDependencies:
   '@vercel/agent-eval@1.2.0':
-    hash: 520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4
+    hash: 10f910516c09774cf5ade436c18eaddbba8685f6006cef338d0f65e57c4a0194
     path: patches/@vercel__agent-eval@1.2.0.patch
 
 importers:
@@ -47,7 +50,7 @@ importers:
         version: 19.2.3(@types/react@19.2.17)
       '@vercel/agent-eval':
         specifier: 1.2.0
-        version: 1.2.0(patch_hash=520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4)
+        version: 1.2.0(patch_hash=10f910516c09774cf5ade436c18eaddbba8685f6006cef338d0f65e57c4a0194)
       '@vercel/agent-eval-playground':
         specifier: 0.1.3
         version: 0.1.3(@opentelemetry/api@1.9.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)
@@ -75,11 +78,11 @@ importers:
 
 packages:
 
-  '@ai-sdk/anthropic@1.2.12':
-    resolution: {integrity: sha512-YSzjlko7JvuiyQFmI9RN1tNZdEiZxc+6xld/0tq/VkJaHpEzGAb1yiNxxvmYVcjvfu/PcvCxAAYXmTYQQ63IHQ==}
+  '@ai-sdk/anthropic@2.0.91':
+    resolution: {integrity: sha512-3to9SlfYOIsPvakux6SEW3kFudKsy8OEakm+0osAV7YEBMY4MtXUK/j8P+Y4VXrtVvrH6NVmhtT+TJFNx8WkEw==}
     engines: {node: '>=18'}
     peerDependencies:
-      zod: ^3.0.0
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/gateway@2.0.107':
     resolution: {integrity: sha512-4Yjo7U6KqcePqsMHL7g0NcwwQQh1IQ3gyW16LEXKlBX5C4pWxXM0qUyxRnNohyVAMKDW2VSWL4BViNNVqQoIDw==}
@@ -87,21 +90,17 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@2.2.8':
-    resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.23.8
-
   '@ai-sdk/provider-utils@3.0.28':
     resolution: {integrity: sha512-bXlX1WX7E50a2N+AJW+1a/x63m52aPhm+6xYe5THxWrx9vW9NR7E2Ay+1G1ndlCdMdYKo2Fnsd7kBhuyQPaphw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider@1.1.3':
-    resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
+  '@ai-sdk/provider-utils@3.0.30':
+    resolution: {integrity: sha512-NCJ9JKow5ENAgEZxzvEvF20thwDiH+hutvzmrUDbloRX0azpJHNst8+7pZIVryYhLM9wgpT5/ShTSjPTFhkxEQ==}
     engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/provider@2.0.3':
     resolution: {integrity: sha512-h88OPkavHTiN9tMn2l5awAznGB0lXzjcLhgR1/rvjB2zlLprsNxbM2tt6OJsHUxduLC3klq0/eqaSf6fX5XVww==}
@@ -3349,9 +3348,6 @@ packages:
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
-  secure-json-parse@2.7.0:
-    resolution: {integrity: sha512-6aU+Rwsezw7VR8/nyvKTx8QpWH9FrcYiXXlqC4z5d5XQBDRqtbfsRjnwGyqbi3gddNtWHuEk9OANUotL26qKUw==}
-
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
@@ -3831,10 +3827,10 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/anthropic@1.2.12(zod@3.25.76)':
+  '@ai-sdk/anthropic@2.0.91(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      '@ai-sdk/provider': 2.0.3
+      '@ai-sdk/provider-utils': 3.0.30(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/gateway@2.0.107(zod@3.25.76)':
@@ -3844,13 +3840,6 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 3.25.76
 
-  '@ai-sdk/provider-utils@2.2.8(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      nanoid: 3.3.15
-      secure-json-parse: 2.7.0
-      zod: 3.25.76
-
   '@ai-sdk/provider-utils@3.0.28(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.3
@@ -3858,9 +3847,12 @@ snapshots:
       eventsource-parser: 3.1.0
       zod: 3.25.76
 
-  '@ai-sdk/provider@1.1.3':
+  '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)':
     dependencies:
-      json-schema: 0.4.0
+      '@ai-sdk/provider': 2.0.3
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.0
+      zod: 3.25.76
 
   '@ai-sdk/provider@2.0.3':
     dependencies:
@@ -5456,9 +5448,9 @@ snapshots:
       - date-fns
       - sass
 
-  '@vercel/agent-eval@1.2.0(patch_hash=520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4)':
+  '@vercel/agent-eval@1.2.0(patch_hash=10f910516c09774cf5ade436c18eaddbba8685f6006cef338d0f65e57c4a0194)':
     dependencies:
-      '@ai-sdk/anthropic': 1.2.12(zod@3.25.76)
+      '@ai-sdk/anthropic': 2.0.91(zod@3.25.76)
       '@vercel/sandbox': 1.10.2
       ai: 5.0.208(zod@3.25.76)
       chalk: 5.6.2
@@ -7013,8 +7005,6 @@ snapshots:
       - supports-color
 
   scheduler@0.27.0: {}
-
-  secure-json-parse@2.7.0: {}
 
   semver@6.3.1: {}
 

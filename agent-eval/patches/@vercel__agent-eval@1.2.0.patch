@@ -237,3 +237,22 @@ index 99df8fb3ab72003144926f19243baf6b2102f050..369c4033d491105a97d95f7e86290553
                  try {
                      const inspection = await exec.inspect();
                      resolve({
+diff --git a/dist/lib/sandbox.js b/dist/lib/sandbox.js
+index 4c5aeaaeae890c8a062e9d80638dddb87e25b666..4129be54d032e8cf74007136a76deb810e2a90c1 100644
+--- a/dist/lib/sandbox.js
++++ b/dist/lib/sandbox.js
+@@ -26,6 +26,14 @@ export const IGNORED_PATTERNS = [
+     'dist',
+     'pnpm-lock.yaml',
+     'package-lock.json',
++    // Offline post-run analysis lives beside the fixture it belongs to, but must
++    // never reach the sandbox: the agent under evaluation would otherwise be able
++    // to read the definitions of the metrics scoring it, and the colocated vitest
++    // files would be collected by the post-run validation run.
++    // Deliberately specific names — shouldExclude matches on basename, so a
++    // generic entry such as 'helpers' would delete real application source.
++    'post-analysis.ts',
++    '__analysis__',
+ ];
+ /**
+  * Test/eval file patterns to withhold from agent during task execution.
