@@ -136,15 +136,20 @@ export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
 	if (!isRecord(appManifest)) {
 		throw new Error(`setupExternalRepo: ${repo}@${ref} package.json is not a JSON object`);
 	}
+	// Ensures EVAL.ts subpath imports are defined in the fetched repo.
 	appManifest.imports = {
 		...(isRecord(appManifest.imports) ? appManifest.imports : {}),
 		'#test-utils': './__agent_eval__/test-utils.ts',
 	};
+	// Adds the agent eval dependency to the repo.
 	appManifest.devDependencies = {
 		...(isRecord(appManifest.devDependencies) ? appManifest.devDependencies : {}),
 		'@vercel/agent-eval': harnessVersion(),
 	};
 
+	// In some external repos (e.g. Mealdrop), there might be peer dependency
+	// issues that we don't care about and that can cause the eval to fail
+	// installing deps. Silently ignore them.
 	const existingNpmrc = await sandbox.readFile('.npmrc').catch(() => '');
 	const npmrc = [existingNpmrc.trim(), 'legacy-peer-deps=true'].filter(Boolean).join('\n') + '\n';
 

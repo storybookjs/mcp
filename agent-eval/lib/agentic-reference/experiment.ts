@@ -44,6 +44,7 @@ const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	},
 };
 
+// TODO: ⚠️ Change the default to 10 once the eval is more concrete
 /** Research sample size, from AGENTIC_REF_RUNS (default 1). */
 function resolveRuns(): number {
 	const raw = process.env.AGENTIC_REF_RUNS;

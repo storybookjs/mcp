@@ -3,7 +3,7 @@
 // Storybook MCP; the eval asserts the agent consulted it. Runs nothing unless
 // EVAL_AGENTIC_REFERENCE=1. Point a run at a different published MCP with
 // AGENTIC_REF_STORYBOOK_MCP_URL, or add a sibling experiment pinning its own
-// URL. Scale the research sample size with AGENTIC_REF_RUNS (default 1).
+// URL. Scale the research sample size with AGENTIC_REF_RUNS.
 //
 // Result JSON carries token usage + app-tests (pre/post) + MCP tool usage in
 // `analysis`, composed by agenticRefExperiment's onRunComplete.

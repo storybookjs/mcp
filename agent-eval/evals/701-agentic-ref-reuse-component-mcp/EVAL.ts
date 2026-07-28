@@ -1,10 +1,3 @@
-// Agentic-reference reuse-component eval: the agent makes a small footer change
-// that should reuse the app's own Button component, with the design system's
-// published Storybook MCP available.
-// Asserts the outcome and one MCP-usage signal (published `@storybook/mcp`
-// builds expose only the documentation workflow, hence
-// expectDocumentationToolingCalled). Heavy, dep-needing metrics (the app's own
-// test suite, baseline vs after) run offline in scripts/analyze-results.mjs.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { expect, test } from 'vitest';
