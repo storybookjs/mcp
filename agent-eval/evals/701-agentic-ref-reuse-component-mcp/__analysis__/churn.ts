@@ -5,6 +5,13 @@
 // captured run edited via `cp` and `sed -i`, and `o11y.filesModified` lists
 // only Footer.tsx as a result. Agents also differ in how much they reach for
 // the shell, so ignoring it would bias any cross-agent comparison.
+//
+// Scratch files count too, deliberately. The captured run wrote two throwaway
+// test harnesses inside the workspace and deleted them again, so it reports
+// three files edited where only one survived. Every write the agent made is an
+// edit, and needing scaffolding to get a change right is itself iteration.
+// Consequence to keep in mind when reading the numbers: these counts do not
+// reconcile with the SLoC diff, which only ever sees files that survived.
 import { isRecord } from '../../../lib/shell-parse.ts';
 import { splitCommandSegments } from './shell-segments.ts';
 
