@@ -303,7 +303,7 @@ from a walker that gave up.
 	"diff": {
 		"filesChanged": 1,
 		"files": ["src/components/Footer/Footer.tsx"],
-		"sloc": { "added": 10, "removed": 1, "net": 9 },
+		"sloc": { "added": 9, "removed": 1, "net": 8 },
 	},
 
 	"complexity": {
@@ -342,7 +342,7 @@ path.
 ```
 duration 403.365s · turns 12 · 25 tool calls · $1.8927 · cacheHitRate 0.8330
 buckets: docs 1 · exploration 14 · edit 8 · verification 7 · other 0
-Footer.tsx edits 3 · sloc +10 / −1 · filesChanged 1
+Footer.tsx edits 3 · sloc +9 / −1 stripped (+10 / −1 physical) · filesChanged 1
 ```
 
 The agent's entire change is 10 added and 1 removed line in

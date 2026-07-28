@@ -25,8 +25,10 @@ Measured values, asserted by the tests:
 | cache hit rate      | 0.8330                                                  |
 | buckets             | docs 1, exploration 14, edit 8, verification 7, other 0 |
 | edits to Footer.tsx | 3                                                       |
-| SLoC                | +10 / -1 across 1 file                                  |
+| SLoC (stripped)     | +9 / -1 across 1 file                                   |
+| SLoC (physical)     | +10 / -1 across 1 file                                  |
 
-The agent's entire change was 10 added and 1 removed line in
+The agent's entire change was 10 added and 1 removed physical line in
 `src/components/Footer/Footer.tsx`, confirmed by diffing the pinned ref
-against the collected `project/` tree.
+against the collected `project/` tree. One of those added lines is blank, so
+the comment- and blank-stripped SLoC figure the metric reports is +9 / -1.

@@ -368,11 +368,12 @@ Measured values, asserted by the tests:
 | cache hit rate        | 0.8330                                                  |
 | buckets               | docs 1, exploration 14, edit 8, verification 7, other 0 |
 | edits to `Footer.tsx` | 3                                                       |
-| SLoC                  | +10 / -1 across 1 file                                  |
+| SLoC (stripped)       | +9 / -1 across 1 file                                   |
 
-The agent's entire change was 10 added and 1 removed line in
+The agent's entire change was 10 added and 1 removed physical line in
 `src/components/Footer/Footer.tsx`, confirmed by diffing the pinned ref
-against the collected `project/` tree.
+against the collected `project/` tree. One of those added lines is blank, so
+the comment- and blank-stripped SLoC figure the metric reports is +9 / -1.
 ```
 
 - [ ] **Step 5: Commit**
@@ -1735,7 +1736,7 @@ Expected:
 {
 	"filesChanged": 1,
 	"files": ["src/components/Footer/Footer.tsx"],
-	"sloc": { "added": 10, "removed": 1, "net": 9 }
+	"sloc": { "added": 9, "removed": 1, "net": 8 }
 }
 ```
 
@@ -3626,7 +3627,7 @@ main().catch((error) => {
 cd /home/steve/Development/mcp/agent-eval && pnpm results:analyze --latest
 ```
 
-Expected: two tables printed, the first showing `run 1`, `status failed`, `seconds 403.365`, `turns 12`, `costUsd 1.89273325`, `docs 1`, `explore 14`, `slocAdded 10`.
+Expected: two tables printed, the first showing `run 1`, `status failed`, `seconds 403.365`, `turns 12`, `costUsd 1.89273325`, `docs 1`, `explore 14`, `slocAdded 9`.
 
 - [ ] **Step 3: Verify the written artifact**
 
@@ -3649,7 +3650,7 @@ Expected:
 speed       {"durationSeconds":403.365,"turns":12}
 buckets     {"docs":1,"exploration":13,"edit":8,"verification":6,"other":1}
 churn       {"src/components/Footer/Footer.tsx":3}
-sloc        {"added":10,"removed":1,"net":9}
+sloc        {"added":9,"removed":1,"net":8}
 complexity  {"before":<n>,"after":<n>,"delta":<n>}
 ```
 
@@ -3915,7 +3916,7 @@ Every metric from the specification, and where it is proved:
 | cache-hit percentage                      | 5          | golden test asserts 0.8330                                                      |
 | tool-call counts                          | 5          | golden test asserts 25                                                          |
 | derived cost                              | 5          | golden test asserts $1.89273325                                                 |
-| SLoC diff                                 | 7          | golden check asserts +10 / −1 over 1 file                                       |
+| SLoC diff                                 | 7          | golden check asserts +9 / −1 over 1 file                                        |
 | per-file iteration count                  | 4          | golden test asserts Footer.tsx = 3                                              |
 | cyclomatic complexity diff                | 8, 11      | four ported tests plus the composed record                                      |
 | cognitive complexity diff                 | 9, 11      | white-paper sumOfPrimes = 7 plus the composed record                            |
