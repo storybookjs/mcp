@@ -20,8 +20,19 @@
 //
 // The filters exist because results/ accumulates: every invocation adds a new
 // timestamped directory, and older ones may come from a different fixture pin.
+// Each run is measured against the pin it recorded at execution time
+// (`analysis.externalRepo`); runs predating that fall back to the fixture's
+// current pin and are marked "(assumed)" in the table.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	readdirSync,
+	renameSync,
+	rmSync,
+	writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -124,29 +135,58 @@ function selectRuns(runs, options) {
 	return selected;
 }
 
+// Same shape check lib/agentic-reference/external-repo.ts applies to the marker,
+// repeated here because that module is TypeScript and this script is plain node.
+const SAFE_GITHUB_PATH = /^[\w./-]+$/;
+
+function validPin(pin) {
+	return typeof pin?.repo === 'string' &&
+		typeof pin?.ref === 'string' &&
+		SAFE_GITHUB_PATH.test(pin.repo) &&
+		SAFE_GITHUB_PATH.test(pin.ref)
+		? { repo: pin.repo, ref: pin.ref }
+		: null;
+}
+
+// The fixture's pin *as it stands today* — a fallback for runs recorded before
+// the pin was written into result.json.
 function readMarker(evalName) {
 	const manifest = join(EVALS_DIR, evalName, 'package.json');
 	if (!existsSync(manifest)) return null;
-	const marker = JSON.parse(readFileSync(manifest, 'utf8'))?.evals?.externalRepo;
-	return marker?.repo && marker?.ref ? marker : null;
+	return validPin(JSON.parse(readFileSync(manifest, 'utf8'))?.evals?.externalRepo);
 }
 
 // --- pre-run baseline: fetch the ref source once per sha (no install) ---
 const refCache = new Map();
+// Extract into a scratch directory and rename it into place only once the whole
+// download+extract succeeded: a half-populated cache directory would otherwise
+// be trusted forever and quietly inflate every later Button-import delta.
 function prepareRef(repo, ref) {
 	const slug = `${repo.replace(/\//g, '__')}@${ref}`;
 	if (refCache.has(slug)) return refCache.get(slug);
 	const dir = join(REF_CACHE_DIR, slug);
 	if (!existsSync(dir)) {
-		mkdirSync(dir, { recursive: true });
-		execFileSync(
-			'bash',
-			[
-				'-lc',
-				`set -euo pipefail; curl -fsSL 'https://codeload.github.com/${repo}/tar.gz/${ref}' | tar xz --strip-components=1`,
-			],
-			{ cwd: dir },
-		);
+		mkdirSync(REF_CACHE_DIR, { recursive: true });
+		const scratch = `${dir}.partial-${process.pid}`;
+		rmSync(scratch, { recursive: true, force: true });
+		mkdirSync(scratch, { recursive: true });
+		try {
+			// execFile, not a shell: repo/ref never reach a command line.
+			const tarball = join(scratch, 'source.tar.gz');
+			execFileSync('curl', [
+				'-fsSL',
+				'-o',
+				tarball,
+				`https://codeload.github.com/${repo}/tar.gz/${ref}`,
+			]);
+			// --strip-components=1 drops the tarball's top-level <name>-<ref>/ dir.
+			execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', scratch]);
+			rmSync(tarball);
+			renameSync(scratch, dir);
+		} catch (error) {
+			rmSync(scratch, { recursive: true, force: true });
+			throw new Error(`Failed to fetch ${repo}@${ref}: ${error.message}`);
+		}
 	}
 	refCache.set(slug, dir);
 	return dir;
@@ -164,6 +204,8 @@ function readRunResult(runDir) {
 			costUsd: result?.metadata?.usage?.estimatedCostUsd ?? null,
 			mcpUsage: result?.analysis?.mcpUsage ?? null,
 			appTests: result?.analysis?.appTests ?? null,
+			// Recorded at execution time by agenticRefExperiment's onRunComplete.
+			externalRepo: validPin(result?.analysis?.externalRepo),
 		};
 	} catch {
 		return {};
@@ -172,18 +214,24 @@ function readRunResult(runDir) {
 
 // --- per-run analysis ---
 function analyzeRun(run) {
-	const marker = readMarker(run.evalName);
-	if (!marker) return null;
-
-	const before = countButtonImports(prepareRef(marker.repo, marker.ref));
-	const after = countButtonImports(run.projectDir);
 	const {
 		status = null,
 		tokens = null,
 		costUsd = null,
 		mcpUsage = null,
 		appTests = null,
+		externalRepo = null,
 	} = readRunResult(run.runDir);
+
+	// Prefer the pin the run itself recorded; fall back to the fixture's current
+	// pin for runs predating that, and say which was used so a legacy row is not
+	// mistaken for one measured against its own ref.
+	const pin = externalRepo ?? readMarker(run.evalName);
+	if (!pin) return null;
+	const pinSource = externalRepo ? 'run' : 'fixture';
+
+	const before = countButtonImports(prepareRef(pin.repo, pin.ref));
+	const after = countButtonImports(run.projectDir);
 
 	const row = {
 		experiment: run.experiment,
@@ -191,9 +239,8 @@ function analyzeRun(run) {
 		timestamp: run.timestamp,
 		run: run.run,
 		eval: run.evalName,
-		// The fixture's pin as it stands today, which is not necessarily the pin an
-		// older result directory was produced from.
-		fixtureRef: `${marker.repo}@${marker.ref.slice(0, 12)}`,
+		fixtureRef: `${pin.repo}@${pin.ref.slice(0, 12)}`,
+		pinSource,
 		status,
 		buttonImports: { before, after, delta: after - before },
 		mcpUsage,
@@ -231,9 +278,13 @@ function summarize(rows) {
 				: [],
 		);
 		const costs = group.flatMap((row) => (typeof row.costUsd === 'number' ? [row.costUsd] : []));
+		// An aggregate that silently spans two different fixture pins is not one
+		// measurement, so carry the pins the group was built from.
+		const fixtureRefs = [...new Set(group.map((row) => row.fixtureRef))];
 		return {
 			experiment: group[0].experiment,
 			eval: group[0].eval,
+			fixtureRefs,
 			runs: group.length,
 			passed: group.filter((row) => row.status === 'passed').length,
 			reusedButton: deltas.filter((delta) => delta > 0).length,
@@ -273,6 +324,14 @@ function main() {
 		return;
 	}
 
+	const legacy = rows.filter((row) => row.pinSource === 'fixture').length;
+	if (legacy > 0) {
+		console.log(
+			`${legacy} run(s) recorded no fixture pin and were measured against the fixture's ` +
+				'current pin; their `before`/`delta` are only meaningful if the pin has not moved since.',
+		);
+	}
+
 	rows.sort(
 		(a, b) =>
 			a.experiment.localeCompare(b.experiment) ||
@@ -291,6 +350,7 @@ function main() {
 			timestamp: row.timestamp,
 			run: row.run,
 			status: row.status,
+			fixtureRef: row.pinSource === 'run' ? row.fixtureRef : `${row.fixtureRef} (assumed)`,
 			delta: row.buttonImports.delta,
 			docCalls: row.mcpUsage?.documentationToolCalls ?? null,
 			costUsd: row.costUsd,
@@ -299,6 +359,10 @@ function main() {
 	console.table(
 		summary.map((group) => ({
 			experiment: group.experiment.replace(/^agentic-ref-/, ''),
+			fixtureRef:
+				group.fixtureRefs.length === 1
+					? group.fixtureRefs[0]
+					: `mixed (${group.fixtureRefs.length})`,
 			runs: group.runs,
 			passed: group.passed,
 			reusedButton: group.reusedButton,

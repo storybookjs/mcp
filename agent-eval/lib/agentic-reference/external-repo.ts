@@ -11,24 +11,30 @@ import { isRecord } from '../shell-parse.ts';
 /** Keep interpolated values shell-safe (they land in a bash command). */
 const SAFE_GITHUB_PATH = /^[\w./-]+$/;
 
-function readExternalRepoMarker(packageJsonContent: string): { repo: string; ref: string } {
+export interface ExternalRepoPin {
+	repo: string;
+	ref: string;
+}
+
+/** Parse (and shell-sanity-check) a fixture's `evals.externalRepo` marker. */
+export function parseExternalRepoMarker(packageJsonContent: string): ExternalRepoPin {
 	const manifest: unknown = JSON.parse(packageJsonContent);
 	const evals = isRecord(manifest) ? manifest.evals : undefined;
 	const marker = isRecord(evals) ? evals.externalRepo : undefined;
 
 	if (!isRecord(marker)) {
 		throw new Error(
-			'setupExternalRepo: fixture package.json has no `evals.externalRepo` marker; ' +
+			'externalRepo: fixture package.json has no `evals.externalRepo` marker; ' +
 				'expected { "evals": { "externalRepo": { "repo": "owner/name", "ref": "<sha>" } } }',
 		);
 	}
 
 	const { repo, ref } = marker;
 	if (typeof repo !== 'string' || !SAFE_GITHUB_PATH.test(repo)) {
-		throw new Error(`setupExternalRepo: evals.externalRepo.repo must match ${String(SAFE_GITHUB_PATH)}`);
+		throw new Error(`externalRepo: evals.externalRepo.repo must match ${String(SAFE_GITHUB_PATH)}`);
 	}
 	if (typeof ref !== 'string' || !SAFE_GITHUB_PATH.test(ref)) {
-		throw new Error(`setupExternalRepo: evals.externalRepo.ref must match ${String(SAFE_GITHUB_PATH)}`);
+		throw new Error(`externalRepo: evals.externalRepo.ref must match ${String(SAFE_GITHUB_PATH)}`);
 	}
 	return { repo, ref };
 }
@@ -99,8 +105,15 @@ async function installDependencies(sandbox: Sandbox): Promise<void> {
 // harness/template contract the tarball clobbers: the #test-utils import, the
 // agent-eval devDependency, legacy-peer-deps, and a copy of vitest.config.ts
 // under a name the harness won't overwrite at validation time.
+//
+// Ordering note: the manifest mutation deliberately lands *after*
+// installDependencies(). The native install exists to reproduce the app's own
+// lockfile-pinned tree (`pnpm install --frozen-lockfile` / vendored yarn), which
+// a package.json carrying a dependency the lockfile has never seen would reject.
+// The added @vercel/agent-eval devDependency is installed by the `npm install`
+// every agent definition runs against the sandbox root right after setup().
 export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
-	const { repo, ref } = readExternalRepoMarker(await sandbox.readFile('package.json'));
+	const { repo, ref } = parseExternalRepoMarker(await sandbox.readFile('package.json'));
 	const tarballUrl = `https://codeload.github.com/${repo}/tar.gz/${ref}`;
 
 	// --strip-components=1 drops the tarball's top-level <name>-<ref>/ dir.

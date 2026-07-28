@@ -16,6 +16,10 @@ import { isRecord } from '../shell-parse.ts';
 const CLAUDE_MCP_CONFIG_PATH = '.mcp.json';
 const CODEX_CONFIG_PATH = '.codex/config.toml';
 const STORYBOOK_MCP_SERVER_NAME = 'storybook-dev-mcp';
+// Match the version the rest of the harness negotiates (lib/mcp/*), so a server
+// that enforces protocol negotiation cannot fail the probe while answering the
+// real agent fine.
+const MCP_PROTOCOL_VERSION = '2025-06-18';
 
 type EvalAgent = 'claude-code' | 'codex';
 
@@ -43,7 +47,7 @@ async function probeMcpEndpoint(url: string): Promise<void> {
 				id: 1,
 				method: 'initialize',
 				params: {
-					protocolVersion: '2025-03-26',
+					protocolVersion: MCP_PROTOCOL_VERSION,
 					capabilities: {},
 					clientInfo: { name: 'agent-eval-probe', version: '0' },
 				},
@@ -61,7 +65,9 @@ async function probeMcpEndpoint(url: string): Promise<void> {
 }
 
 async function registerForClaude(sandbox: Sandbox, url: string): Promise<void> {
-	const existing: unknown = JSON.parse(await sandbox.readFile(CLAUDE_MCP_CONFIG_PATH).catch(() => '{}'));
+	const existing: unknown = JSON.parse(
+		await sandbox.readFile(CLAUDE_MCP_CONFIG_PATH).catch(() => '{}'),
+	);
 	const config = isRecord(existing) ? existing : {};
 	const mcpServers = isRecord(config.mcpServers) ? config.mcpServers : {};
 
@@ -77,19 +83,41 @@ async function registerForClaude(sandbox: Sandbox, url: string): Promise<void> {
 	});
 }
 
+// Drop a whole TOML table (its header plus every line up to the next `[`) from a
+// config. Enough for the flat sections this file and templates.ts write.
+function dropTomlSection(config: string, header: string): string {
+	const kept: string[] = [];
+	let inSection = false;
+	for (const line of config.split('\n')) {
+		if (line.trim() === header) {
+			inSection = true;
+			continue;
+		}
+		if (inSection && line.trimStart().startsWith('[')) {
+			inSection = false;
+		}
+		if (!inSection) {
+			kept.push(line);
+		}
+	}
+	return kept.join('\n');
+}
+
 async function registerForCodex(sandbox: Sandbox, url: string): Promise<void> {
-	const section = `[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]
+	const header = `[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]`;
+	const section = `${header}
 url = "${url}"
 default_tools_approval_mode = "auto"
 startup_timeout_sec = 30
 tool_timeout_sec = 120
 `;
+	// Replace rather than skip: a section left by a template or an earlier setup
+	// step points at a different URL, and silently keeping it would run the
+	// experiment against the wrong Storybook.
 	const existing = await sandbox.readFile(CODEX_CONFIG_PATH).catch(() => '');
-	if (existing.includes(`[mcp_servers.${STORYBOOK_MCP_SERVER_NAME}]`)) {
-		return;
-	}
+	const rest = dropTomlSection(existing, header).trimEnd();
 	await sandbox.writeFiles({
-		[CODEX_CONFIG_PATH]: existing.length > 0 ? `${existing.trimEnd()}\n\n${section}` : section,
+		[CODEX_CONFIG_PATH]: rest.length > 0 ? `${rest}\n\n${section}` : section,
 	});
 }
 

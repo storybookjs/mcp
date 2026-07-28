@@ -2,10 +2,17 @@
 // arm selector: present = MCP arm (also flips the `integration: 'mcp'` context
 // flag), absent = no-MCP control arm. Gated behind EVAL_AGENTIC_REFERENCE=1 so
 // the default matrix never spends on it.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { ExperimentConfig, RunCompleteContext, Sandbox } from '@vercel/agent-eval';
 import { DEFAULT_EXPERIMENT_CONFIG } from '../experiment.ts';
 import { setupSandbox } from '../templates.ts';
-import { setupExternalRepo } from './external-repo.ts';
+import {
+	type ExternalRepoPin,
+	parseExternalRepoMarker,
+	setupExternalRepo,
+} from './external-repo.ts';
 import { registerExternalStorybookMcp } from './external-mcp.ts';
 
 type EvalAgent = 'claude-code' | 'codex';
@@ -58,6 +65,18 @@ function readMetric(generatedFiles: Record<string, string> | undefined, path: st
 	}
 }
 
+// Snapshot the fixture's external-repo pin at execution time. The offline
+// analyzer compares each run against the ref it actually ran on; without this it
+// would have to assume the fixture's pin as it stands today, which retroactively
+// changes `before`/`delta` for every historical run whenever the pin moves.
+function readExternalRepoPin(fixturePath: string): ExternalRepoPin | null {
+	try {
+		return parseExternalRepoMarker(readFileSync(join(fixturePath, 'package.json'), 'utf8'));
+	} catch {
+		return null;
+	}
+}
+
 // Compose the shared usage hook with the in-run signal (mcpUsage) so neither
 // clobbers the other (a bare override would drop token usage). Heavy metrics
 // (app tests, baseline) are computed offline — see scripts/analyze-results.mjs.
@@ -70,6 +89,7 @@ function attachAgenticRefMetrics(context: RunCompleteContext) {
 			analysis: {
 				...withUsage.result.analysis,
 				mcpUsage: readMetric(withUsage.generatedFiles, '__metrics__/mcp-usage.json'),
+				externalRepo: readExternalRepoPin(context.fixture.path),
 			},
 		},
 	};
