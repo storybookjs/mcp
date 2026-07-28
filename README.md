@@ -1,5 +1,7 @@
 # Storybook MCP - Contributor Guide
 
+[![MCP Toplist](https://mcptoplist.com/badge/io.github.storybookjs%2Faddon-mcp.svg)](https://mcptoplist.com/server/io.github.storybookjs%2Faddon-mcp)
+
 Welcome to the Storybook MCP Addon monorepo! This project enables AI agents to work more efficiently with Storybook by providing an MCP (Model Context Protocol) server that exposes UI component information and development workflows.
 
 ## 📦 Packages
