@@ -4,9 +4,9 @@
 	"type": "module",
 	"evals": {
 		"externalRepo": {
-			"//": "Immutable SHA of yannbf/mealdrop@base-ui-migration-squashed as of 2026-07-24.",
+			"//": "From agentic-reference-base branch - July 28 - https://github.com/yannbf/mealdrop/commit/561c3d6407718d8505532f6a3e729422046893f3",
 			"repo": "yannbf/mealdrop",
-			"ref": "ce507b345666ea8678101fccac580186b2b69b1f"
+			"ref": "561c3d6407718d8505532f6a3e729422046893f3"
 		}
 	}
 }
