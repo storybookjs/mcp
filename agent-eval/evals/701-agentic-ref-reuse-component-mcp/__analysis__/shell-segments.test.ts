@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+
+import { splitCommandSegments } from './shell-segments.ts';
+
+describe('splitCommandSegments', () => {
+	it('returns one segment for a plain command', () => {
+		expect(splitCommandSegments('ls /workspace/src')).toEqual([
+			{ tokens: ['ls', '/workspace/src'], redirectsToFile: false, piped: false },
+		]);
+	});
+
+	it('splits on &&, || and ;', () => {
+		const segments = splitCommandSegments('ls a && cat b; grep c d');
+		expect(segments.map((segment) => segment.tokens[0])).toEqual(['ls', 'cat', 'grep']);
+		expect(segments.every((segment) => !segment.piped)).toBe(true);
+	});
+
+	it('marks segments downstream of a pipe', () => {
+		const segments = splitCommandSegments('npx tsc --noEmit | tail -20');
+		expect(segments).toHaveLength(2);
+		expect(segments[0]?.piped).toBe(false);
+		expect(segments[1]).toMatchObject({ tokens: ['tail', '-20'], piped: true });
+	});
+
+	it('only the segment immediately after a pipe is piped, not later ones', () => {
+		const segments = splitCommandSegments('cat a | head -5; ls b');
+		expect(segments.map((segment) => segment.piped)).toEqual([false, true, false]);
+	});
+
+	it('flags redirection to a file', () => {
+		const segments = splitCommandSegments('cat > /tmp/out.txt');
+		expect(segments[0]?.redirectsToFile).toBe(true);
+	});
+
+	it('does not treat 2>&1 as a file redirect', () => {
+		const segments = splitCommandSegments('npx tsc 2>&1');
+		expect(segments[0]?.redirectsToFile).toBe(false);
+	});
+
+	it('strips heredoc bodies so their contents are not parsed as commands', () => {
+		const command =
+			"cat > /tmp/t.tsx <<'EOF'\nimport { render } from 'x'\nrm -rf /\nEOF\nls /workspace";
+		const segments = splitCommandSegments(command);
+		expect(segments.some((segment) => segment.tokens[0] === 'rm')).toBe(false);
+		expect(segments.some((segment) => segment.tokens[0] === 'ls')).toBe(true);
+	});
+
+	it('keeps a quoted sed expression as a single token', () => {
+		const segments = splitCommandSegments("sed -i 's#a; b#c#' file.ts");
+		expect(segments).toHaveLength(1);
+		expect(segments[0]?.tokens).toEqual(['sed', '-i', 's#a; b#c#', 'file.ts']);
+	});
+
+	it('returns no segments for an empty command', () => {
+		expect(splitCommandSegments('   ')).toEqual([]);
+	});
+});

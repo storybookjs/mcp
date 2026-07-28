@@ -267,7 +267,7 @@ function unwrapWorkflowInput(value: Record<string, unknown>): Record<string, unk
 // Known limitation: command substitution (`$(...)`) and heredocs are treated
 // as literal text, so a `storybook ai` invocation nested inside them is not
 // recognized. Acceptable for eval scoring; extend if agents start doing that.
-function tokenizeShellCommand(command: string): string[] {
+export function tokenizeShellCommand(command: string): string[] {
 	const tokens: string[] = [];
 	let token = '';
 	let quote: '"' | "'" | undefined;
