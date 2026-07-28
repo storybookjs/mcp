@@ -20,22 +20,22 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `agent-eval/lib/shell-parse.ts` | *(modify)* export the existing `tokenizeShellCommand` |
+| Path                                                                    | Responsibility                                        |
+| ----------------------------------------------------------------------- | ----------------------------------------------------- |
+| `agent-eval/lib/shell-parse.ts`                                         | _(modify)_ export the existing `tokenizeShellCommand` |
 | `agent-eval/evals/701-agentic-ref-reuse-component-mcp/post-analysis.ts` | The hook. Wires helpers together, returns one record. |
-| `.../__analysis__/shell-segments.ts` | Split a shell command into classifiable segments |
-| `.../__analysis__/tool-taxonomy.ts` | Classify tool calls into 5 buckets |
-| `.../__analysis__/churn.ts` | Per-file edit counts |
-| `.../__analysis__/run-signals.ts` | Speed + cost from `result.json` |
-| `.../__analysis__/sloc.ts` | Comment/blank stripping |
-| `.../__analysis__/tree-diff.ts` | Ref-vs-project changed files + SLoC delta |
-| `.../__analysis__/cyclomatic.ts` | Cyclomatic complexity walker (ported) |
-| `.../__analysis__/cognitive.ts` | Cognitive complexity walker (new) |
-| `.../__analysis__/external-ref.ts` | Fetch + cache the pinned ref |
-| `.../__analysis__/baseline.ts` | Precomputed per-sha complexity baseline |
-| `.../__analysis__/baselines/<repo>@<sha>.json` | Committed baseline data |
-| `agent-eval/scripts/analyze-results.mjs` | *(rewrite)* generic gateway |
+| `.../__analysis__/shell-segments.ts`                                    | Split a shell command into classifiable segments      |
+| `.../__analysis__/tool-taxonomy.ts`                                     | Classify tool calls into 5 buckets                    |
+| `.../__analysis__/churn.ts`                                             | Per-file edit counts                                  |
+| `.../__analysis__/run-signals.ts`                                       | Speed + cost from `result.json`                       |
+| `.../__analysis__/sloc.ts`                                              | Comment/blank stripping                               |
+| `.../__analysis__/tree-diff.ts`                                         | Ref-vs-project changed files + SLoC delta             |
+| `.../__analysis__/cyclomatic.ts`                                        | Cyclomatic complexity walker (ported)                 |
+| `.../__analysis__/cognitive.ts`                                         | Cognitive complexity walker (new)                     |
+| `.../__analysis__/external-ref.ts`                                      | Fetch + cache the pinned ref                          |
+| `.../__analysis__/baseline.ts`                                          | Precomputed per-sha complexity baseline               |
+| `.../__analysis__/baselines/<repo>@<sha>.json`                          | Committed baseline data                               |
+| `agent-eval/scripts/analyze-results.mjs`                                | _(rewrite)_ generic gateway                           |
 
 **Task order rationale:** Tasks 1–9 build independent leaf modules, each testable alone. Task 10 composes them. Task 11 rewrites the gateway. Task 12 handles infrastructure. Task 13 is the live run.
 
@@ -44,6 +44,7 @@
 ### Task 1: Setup and shell segment splitter
 
 **Files:**
+
 - Modify: `agent-eval/package.json` (add `diff` devDependency)
 - Modify: `agent-eval/tsconfig.json` (include the new paths)
 - Modify: `agent-eval/lib/shell-parse.ts:270` (export `tokenizeShellCommand`)
@@ -51,6 +52,7 @@
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/shell-segments.test.ts`
 
 **Interfaces:**
+
 - Consumes: `tokenizeShellCommand(command: string): string[]` from `lib/shell-parse.ts` — a quote-aware tokenizer that emits `&&`, `||`, `;`, `|` as standalone tokens.
 - Produces: `splitCommandSegments(command: string): ShellSegment[]` and the `ShellSegment` interface, both used by Task 2.
 
@@ -129,7 +131,8 @@ describe('splitCommandSegments', () => {
 	});
 
 	it('strips heredoc bodies so their contents are not parsed as commands', () => {
-		const command = "cat > /tmp/t.tsx <<'EOF'\nimport { render } from 'x'\nrm -rf /\nEOF\nls /workspace";
+		const command =
+			"cat > /tmp/t.tsx <<'EOF'\nimport { render } from 'x'\nrm -rf /\nEOF\nls /workspace";
 		const segments = splitCommandSegments(command);
 		expect(segments.some((segment) => segment.tokens[0] === 'rm')).toBe(false);
 		expect(segments.some((segment) => segment.tokens[0] === 'ls')).toBe(true);
@@ -266,11 +269,13 @@ filters (| head, | tail) are not counted as codebase exploration."
 ### Task 2: Golden test fixture
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/__fixtures__/golden-run/transcript.json`
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/__fixtures__/golden-run/result.json`
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/__fixtures__/README.md`
 
 **Interfaces:**
+
 - Produces: two committed JSON files consumed by the tests in Tasks 3, 4, 5 and 10.
 
 **Why this is its own task:** `agent-eval/results/` is gitignored, so the captured run cannot be referenced from tests directly. Every later task's golden assertions depend on these files existing, and they must be generated once from a source that may later be deleted.
@@ -323,6 +328,7 @@ console.log('cost             :', r.metadata.usage.estimatedCostUsd, '(expect 1.
 ```
 
 Expected exactly:
+
 ```
 tool_call events : 25 (expect 25)
 duration         : 403.365 (expect 403.365)
@@ -353,16 +359,16 @@ Source: experiment `agentic-ref-reuse-component-cc-mcp-opus-high`, model
 
 Measured values, asserted by the tests:
 
-| Metric | Value |
-| --- | --- |
-| duration | 403.365s |
-| turns | 12 |
-| tool calls | 25 |
-| estimated cost | $1.89273325 |
-| cache hit rate | 0.8330 |
-| buckets | docs 1, exploration 13, edit 8, verification 6, other 1 |
-| edits to `Footer.tsx` | 3 |
-| SLoC | +10 / -1 across 1 file |
+| Metric                | Value                                                   |
+| --------------------- | ------------------------------------------------------- |
+| duration              | 403.365s                                                |
+| turns                 | 12                                                      |
+| tool calls            | 25                                                      |
+| estimated cost        | $1.89273325                                             |
+| cache hit rate        | 0.8330                                                  |
+| buckets               | docs 1, exploration 13, edit 8, verification 6, other 1 |
+| edits to `Footer.tsx` | 3                                                       |
+| SLoC                  | +10 / -1 across 1 file                                  |
 
 The agent's entire change was 10 added and 1 removed line in
 `src/components/Footer/Footer.tsx`, confirmed by diffing the pinned ref
@@ -385,10 +391,12 @@ give every metric module a permanent, zero-cost regression target."
 ### Task 3: Tool-use taxonomy
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/tool-taxonomy.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/tool-taxonomy.test.ts`
 
 **Interfaces:**
+
 - Consumes: `splitCommandSegments`, `ShellSegment` from `./shell-segments.ts` (Task 1); the golden fixture from Task 2.
 - Produces: `classifyToolUse(events: unknown[]): ToolUseMetrics`, `classifyShellCommand(command: string): Bucket[]`, and types `Bucket`, `ToolUseMetrics` — used by Task 10.
 
@@ -465,7 +473,11 @@ describe('classifyToolUse', () => {
 		const metrics = classifyToolUse([
 			{
 				type: 'tool_call',
-				tool: { name: 'unknown', originalName: 'mcp__storybook-dev-mcp__get-documentation', args: {} },
+				tool: {
+					name: 'unknown',
+					originalName: 'mcp__storybook-dev-mcp__get-documentation',
+					args: {},
+				},
 			},
 		]);
 		expect(metrics.buckets.docs).toBe(1);
@@ -487,7 +499,10 @@ describe('classifyToolUse', () => {
 
 	it('records unrecognised shell heads for later triage', () => {
 		const metrics = classifyToolUse([
-			{ type: 'tool_call', tool: { name: 'shell', originalName: 'Bash', args: { command: 'frobnicate --all' } } },
+			{
+				type: 'tool_call',
+				tool: { name: 'shell', originalName: 'Bash', args: { command: 'frobnicate --all' } },
+			},
 		]);
 		expect(metrics.buckets.other).toBe(1);
 		expect(metrics.unclassified).toEqual(['frobnicate']);
@@ -545,13 +560,39 @@ export interface ToolUseMetrics {
 }
 
 const EXPLORATION_BINARIES = new Set([
-	'ls', 'cat', 'grep', 'rg', 'find', 'fd', 'head', 'tail', 'wc',
-	'tree', 'stat', 'file', 'less', 'more', 'diff', 'realpath', 'pwd',
+	'ls',
+	'cat',
+	'grep',
+	'rg',
+	'find',
+	'fd',
+	'head',
+	'tail',
+	'wc',
+	'tree',
+	'stat',
+	'file',
+	'less',
+	'more',
+	'diff',
+	'realpath',
+	'pwd',
 ]);
 
 const VERIFICATION_BINARIES = new Set([
-	'tsc', 'eslint', 'oxlint', 'biome', 'prettier', 'oxfmt',
-	'vitest', 'jest', 'playwright', 'test-storybook', 'git', 'node', 'tsx',
+	'tsc',
+	'eslint',
+	'oxlint',
+	'biome',
+	'prettier',
+	'oxfmt',
+	'vitest',
+	'jest',
+	'playwright',
+	'test-storybook',
+	'git',
+	'node',
+	'tsx',
 ]);
 
 const EDIT_BINARIES = new Set(['cp', 'mv', 'rm', 'mkdir', 'touch', 'tee', 'chmod', 'ln']);
@@ -716,10 +757,12 @@ docs 1, exploration 13, edit 8, verification 6, other 1."
 ### Task 4: Per-file churn
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/churn.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/churn.test.ts`
 
 **Interfaces:**
+
 - Consumes: `splitCommandSegments` from `./shell-segments.ts` (Task 1); the golden fixture from Task 2.
 - Produces: `computeChurn(events: unknown[], workspaceRoot?: string): ChurnMetrics` and the `ChurnMetrics` interface — used by Task 10.
 
@@ -734,7 +777,10 @@ import goldenTranscript from './__fixtures__/golden-run/transcript.json' with { 
 import { computeChurn } from './churn.ts';
 
 function edit(filePath: string) {
-	return { type: 'tool_call', tool: { name: 'file_edit', originalName: 'Edit', args: { file_path: filePath } } };
+	return {
+		type: 'tool_call',
+		tool: { name: 'file_edit', originalName: 'Edit', args: { file_path: filePath } },
+	};
 }
 
 function shell(command: string) {
@@ -751,7 +797,11 @@ describe('computeChurn', () => {
 	});
 
 	it('averages across several files', () => {
-		const churn = computeChurn([edit('/workspace/a.ts'), edit('/workspace/a.ts'), edit('/workspace/b.ts')]);
+		const churn = computeChurn([
+			edit('/workspace/a.ts'),
+			edit('/workspace/a.ts'),
+			edit('/workspace/b.ts'),
+		]);
 		expect(churn.filesEdited).toBe(2);
 		expect(churn.maxEditsPerFile).toBe(2);
 		expect(churn.meanEditsPerFile).toBe(1.5);
@@ -859,7 +909,9 @@ function collectShellWrites(command: string, workspaceRoot: string, into: string
 		const args = tokens.slice(index + 1);
 
 		// `cmd > path` and `cmd >path` both name a redirect target.
-		const attached = tokens.map((token) => FILE_REDIRECT_WITH_TARGET.exec(token)?.[1]).find(Boolean);
+		const attached = tokens
+			.map((token) => FILE_REDIRECT_WITH_TARGET.exec(token)?.[1])
+			.find(Boolean);
 		if (attached !== undefined) {
 			const target = normalize(attached, workspaceRoot);
 			if (target !== null) into.push(target);
@@ -935,9 +987,7 @@ export function computeChurn(events: unknown[], workspaceRoot = '/workspace/'): 
 		filesEdited: counts.length,
 		maxEditsPerFile: counts.length === 0 ? null : Math.max(...counts),
 		meanEditsPerFile:
-			counts.length === 0
-				? null
-				: counts.reduce((sum, count) => sum + count, 0) / counts.length,
+			counts.length === 0 ? null : counts.reduce((sum, count) => sum + count, 0) / counts.length,
 	};
 }
 ```
@@ -967,10 +1017,12 @@ sed -i, which o11y.filesModified does not report."
 ### Task 5: Speed and cost signals
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/run-signals.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/run-signals.test.ts`
 
 **Interfaces:**
+
 - Consumes: the golden fixture from Task 2.
 - Produces: `readSpeed(result: unknown): SpeedMetrics`, `readCost(result: unknown): CostMetrics`, and both interfaces — used by Task 10.
 
@@ -1012,7 +1064,15 @@ describe('readCost', () => {
 
 	it('nulls the cache hit rate when there are no input-side tokens', () => {
 		const cost = readCost({
-			metadata: { usage: { inputTokens: 0, cacheWriteTokens: 0, cacheReadTokens: 0, outputTokens: 5, totalTokens: 5 } },
+			metadata: {
+				usage: {
+					inputTokens: 0,
+					cacheWriteTokens: 0,
+					cacheReadTokens: 0,
+					outputTokens: 5,
+					totalTokens: 5,
+				},
+			},
 		});
 		expect(cost.cacheHitRate).toBeNull();
 	});
@@ -1129,10 +1189,12 @@ partial result.json cannot abort the pass."
 ### Task 6: SLoC stripping
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/sloc.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/sloc.test.ts`
 
 **Interfaces:**
+
 - Consumes: `typescript` (already a devDependency at 5.9.3).
 - Produces: `stripToSloc(source: string, filename: string): string` and `SOURCE_EXTENSIONS: RegExp` — used by Task 7.
 
@@ -1153,7 +1215,9 @@ describe('stripToSloc', () => {
 	});
 
 	it('drops blank and whitespace-only lines', () => {
-		expect(stripToSloc('const a = 1\n\n   \nconst b = 2\n', 'a.ts')).toBe('const a = 1\nconst b = 2');
+		expect(stripToSloc('const a = 1\n\n   \nconst b = 2\n', 'a.ts')).toBe(
+			'const a = 1\nconst b = 2',
+		);
 	});
 
 	it('drops whole-line comments', () => {
@@ -1367,14 +1431,16 @@ by extension so generic arrows in .ts files do not parse as JSX."
 ### Task 7: Tree diff
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/tree-diff.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/tree-diff.test.ts`
 
 **Interfaces:**
+
 - Consumes: `stripToSloc`, `SOURCE_EXTENSIONS` from `./sloc.ts` (Task 6); `diffLines` from `diff` (Task 1).
 - Produces: `diffTrees(refDir: string, projectDir: string): TreeDiff`, `TreeDiff`, `SlocDiff`, `EXCLUDED_PATHS` — used by Tasks 10 and 11.
 
-**Why an LCS diff:** we diff *stripped* text, so `git diff --numstat` cannot be used. Comparing line-by-line without LCS would report every line after an insertion as changed.
+**Why an LCS diff:** we diff _stripped_ text, so `git diff --numstat` cannot be used. Comparing line-by-line without LCS would report every line after an insertion as changed.
 
 **Why exclusions are mandatory:** the collected `project/` tree contains harness-injected files that no agent wrote (`EVAL.ts`, `PROMPT.md`, `__agent_eval__/`, `__metrics__/`, `.npmrc`, `package-lock.json`, `vitest.config*.ts`, and a mutated `package.json`), and every binary asset in it is UTF-8 corrupted by the copy-out path — `favicon.ico` grows from 14254 to 24506 bytes. Without the extension filter all 17 images read as changed.
 
@@ -1433,7 +1499,10 @@ describe('diffTrees', () => {
 
 	it('counts a new file as all-added', () => {
 		const before = tree('before', { 'src/a.ts': 'const a = 1\n' });
-		const after = tree('after', { 'src/a.ts': 'const a = 1\n', 'src/b.ts': 'const b = 1\nconst c = 2\n' });
+		const after = tree('after', {
+			'src/a.ts': 'const a = 1\n',
+			'src/b.ts': 'const b = 1\nconst c = 2\n',
+		});
 		expect(diffTrees(before, after).sloc).toEqual({ added: 2, removed: 0, net: 2 });
 	});
 
@@ -1615,7 +1684,10 @@ export function diffTrees(refDir: string, projectDir: string): TreeDiff {
 		let fileAdded = 0;
 		let fileRemoved = 0;
 		// diffLines needs trailing newlines to treat the last line consistently.
-		for (const change of diffLines(before === '' ? '' : before + '\n', after === '' ? '' : after + '\n')) {
+		for (const change of diffLines(
+			before === '' ? '' : before + '\n',
+			after === '' ? '' : after + '\n',
+		)) {
 			const lines = countLines(change.value.replace(/\n$/, ''));
 			if (change.added) fileAdded += lines;
 			else if (change.removed) fileRemoved += lines;
@@ -1658,11 +1730,12 @@ import('./evals/701-agentic-ref-reuse-component-mcp/__analysis__/tree-diff.ts').
 ```
 
 Expected:
+
 ```json
 {
-  "filesChanged": 1,
-  "files": ["src/components/Footer/Footer.tsx"],
-  "sloc": { "added": 10, "removed": 1, "net": 9 }
+	"filesChanged": 1,
+	"files": ["src/components/Footer/Footer.tsx"],
+	"sloc": { "added": 10, "removed": 1, "net": 9 }
 }
 ```
 
@@ -1687,17 +1760,20 @@ the collected tree is UTF-8 corrupted."
 ### Task 8: Cyclomatic complexity walker
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/cyclomatic.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/cyclomatic.test.ts`
 
 **Interfaces:**
+
 - Consumes: `scriptKindFor` from `./sloc.ts` (Task 6); `typescript`.
 - Produces: `complexityForSource(filename: string, source: string): FunctionComplexity[]` and `FunctionComplexity` — used by Tasks 10 and 11.
 
 **Provenance:** ported from storybookjs/storybook#35141, branch `sidnioulz/mvc-script-and-skill`, file `scripts/sustainability/assess-mvc/cost-benefit/utils/cyclomatic.ts`. It is dead code in that PR — nothing imports it but its own test — so this is a well-formed leaf module, not a proven integration. Two defects are fixed on port, and the four original tests are carried over verbatim so the ported semantics stay pinned.
 
 **Defects fixed relative to the original:**
-1. The original parsed *every* file as `ts.ScriptKind.TSX`, so a generic arrow function in a plain `.ts` file (`const f = <T>(x: T) => x`) parsed as unterminated JSX. Now uses `scriptKindFor`.
+
+1. The original parsed _every_ file as `ts.ScriptKind.TSX`, so a generic arrow function in a plain `.ts` file (`const f = <T>(x: T) => x`) parsed as unterminated JSX. Now uses `scriptKindFor`.
 2. The original did not treat `ConstructorDeclaration`, `GetAccessor` or `SetAccessor` as function-likes, so their bodies were attributed to an enclosing function or dropped. Now included.
 
 - [ ] **Step 1: Write the failing test**
@@ -1935,7 +2011,10 @@ export function complexityForSource(filename: string, source: string): FunctionC
 		const walk = (node: ts.Node): void => {
 			if (DECISION_KINDS.has(node.kind)) {
 				complexity += 1;
-			} else if (ts.isBinaryExpression(node) && SHORT_CIRCUIT_OPERATORS.has(node.operatorToken.kind)) {
+			} else if (
+				ts.isBinaryExpression(node) &&
+				SHORT_CIRCUIT_OPERATORS.has(node.operatorToken.kind)
+			) {
 				complexity += 1;
 			}
 
@@ -1985,10 +2064,12 @@ functions."
 ### Task 9: Cognitive complexity walker
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/cognitive.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/cognitive.test.ts`
 
 **Interfaces:**
+
 - Consumes: `scriptKindFor` from `./sloc.ts` (Task 6); `FunctionComplexity` from `./cyclomatic.ts` (Task 8); `typescript`.
 - Produces: `cognitiveForSource(filename: string, source: string): FunctionComplexity[]` — used by Tasks 10 and 11.
 
@@ -1998,7 +2079,7 @@ functions."
 
 - Base score is **0**, not 1 — there is no cost of entry.
 - **+1 plus current nesting depth** for: `if`, ternary, `switch`, `for`, `for-in`, `for-of`, `while`, `do`, `catch`.
-- **+1 with no nesting penalty** for: an `else` or `else if` clause, and each *sequence* of like binary logical operators.
+- **+1 with no nesting penalty** for: an `else` or `else if` clause, and each _sequence_ of like binary logical operators.
 - **Nesting depth increases** inside those structures and inside nested function bodies.
 - An `else if` does **not** increase depth for its own branches beyond its parent's — it reads as a flat chain, not nesting.
 - A sequence of like operators counts once: `a && b && c` is +1, `a && b || c` is +2.
@@ -2297,10 +2378,7 @@ export function cognitiveForSource(filename: string, source: string): FunctionCo
 			}
 
 			// A labelled break or continue is a jump out of normal flow: +1 flat.
-			if (
-				(ts.isBreakStatement(node) || ts.isContinueStatement(node)) &&
-				node.label !== undefined
-			) {
+			if ((ts.isBreakStatement(node) || ts.isContinueStatement(node)) && node.label !== undefined) {
 				complexity += 1;
 			}
 
@@ -2358,11 +2436,13 @@ Verified against the white paper's sumOfPrimes example."
 ### Task 10: External ref cache and complexity baseline
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/external-ref.ts`
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/baseline.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/baseline.test.ts`
 
 **Interfaces:**
+
 - Consumes: `complexityForSource` (Task 8), `cognitiveForSource` (Task 9), `SOURCE_EXTENSIONS` (Task 6), `EXCLUDED_PATHS` (Task 7).
 - Produces: `prepareRef(cacheDir, repo, ref): string`, `validPin(value): ExternalRepoPin | null`, `loadOrBuildBaseline(baselineDir, refDir, pin): Baseline`, `baselineKey(pin): string`, `complexityForFiles(dir, files): FileComplexity`, and types `Baseline`, `FileComplexity` — used by Task 11.
 
@@ -2489,7 +2569,11 @@ describe('loadOrBuildBaseline', () => {
 		mkdirSync(baselineDir, { recursive: true });
 		writeFileSync(
 			join(baselineDir, 'owner__name@deadbeef.json'),
-			JSON.stringify({ repo: 'owner/name', ref: 'deadbeef', files: { 'src/a.ts': { cyclomatic: 9, cognitive: 9 } } }),
+			JSON.stringify({
+				repo: 'owner/name',
+				ref: 'deadbeef',
+				files: { 'src/a.ts': { cyclomatic: 9, cognitive: 9 } },
+			}),
 		);
 
 		// A nonexistent ref directory proves the cached copy was used.
@@ -2687,7 +2771,11 @@ function scoreFile(dir: string, path: string): FileComplexity | 'unparseable' | 
 
 	// A non-trivial file that yields no functions at all is the signature of a
 	// parse failure: the walkers swallow their errors and return [].
-	if (cyclomaticEntries.length === 0 && source.trim().length > 0 && /\bfunction\b|=>/.test(source)) {
+	if (
+		cyclomaticEntries.length === 0 &&
+		source.trim().length > 0 &&
+		/\bfunction\b|=>/.test(source)
+	) {
 		return 'unparseable';
 	}
 
@@ -2810,10 +2898,12 @@ eval-agnostic."
 ### Task 11: The post-analysis hook
 
 **Files:**
+
 - Create: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/post-analysis.ts`
 - Test: `agent-eval/evals/701-agentic-ref-reuse-component-mcp/__analysis__/post-analysis.test.ts`
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 3–10.
 - Produces: `analyzeRun(ctx: PostAnalysisContext)`, `summarize(rows)`, `renderTables(rows, summary)`, and the `PostAnalysisContext` interface — the contract Task 12's gateway calls.
 
@@ -2852,7 +2942,9 @@ function context(overrides: Record<string, unknown> = {}) {
 	return {
 		resolveRefDir: () => defaultRef,
 		runDir: join(root, 'run'),
-		projectDir: writeTree('project', { 'src/a.ts': 'function a(x){ if (x) return 1; return 0; }\n' }),
+		projectDir: writeTree('project', {
+			'src/a.ts': 'function a(x){ if (x) return 1; return 0; }\n',
+		}),
 		fixtureDir: join(root, 'fixture'),
 		experiment: 'agentic-ref-reuse-component-cc-mcp-opus-high',
 		model: 'opus',
@@ -2952,8 +3044,22 @@ describe('analyzeRun', () => {
 describe('summarize', () => {
 	it('groups by experiment and eval, and reports means', () => {
 		const rows = [
-			{ experiment: 'x', eval: 'e', status: 'passed', cost: { estimatedCostUsd: 1 }, speed: { durationSeconds: 10 }, toolUse: { buckets: { docs: 2, exploration: 4 } } },
-			{ experiment: 'x', eval: 'e', status: 'failed', cost: { estimatedCostUsd: 3 }, speed: { durationSeconds: 20 }, toolUse: { buckets: { docs: 0, exploration: 8 } } },
+			{
+				experiment: 'x',
+				eval: 'e',
+				status: 'passed',
+				cost: { estimatedCostUsd: 1 },
+				speed: { durationSeconds: 10 },
+				toolUse: { buckets: { docs: 2, exploration: 4 } },
+			},
+			{
+				experiment: 'x',
+				eval: 'e',
+				status: 'failed',
+				cost: { estimatedCostUsd: 3 },
+				speed: { durationSeconds: 20 },
+				toolUse: { buckets: { docs: 0, exploration: 8 } },
+			},
 		];
 		const [group] = summarize(rows as never);
 		expect(group).toMatchObject({ experiment: 'x', eval: 'e', runs: 2, passed: 1 });
@@ -2962,7 +3068,16 @@ describe('summarize', () => {
 	});
 
 	it('reports null cost rather than zero when no run priced', () => {
-		const rows = [{ experiment: 'x', eval: 'e', status: 'passed', cost: { estimatedCostUsd: null }, speed: {}, toolUse: null }];
+		const rows = [
+			{
+				experiment: 'x',
+				eval: 'e',
+				status: 'passed',
+				cost: { estimatedCostUsd: null },
+				speed: {},
+				toolUse: null,
+			},
+		];
 		const [group] = summarize(rows as never);
 		expect((group as { costUsd: { total: number | null } }).costUsd.total).toBeNull();
 	});
@@ -3139,9 +3254,7 @@ function numbersAt(rows: Array<Record<string, unknown>>, read: (row: never) => u
 	});
 }
 
-export function summarize(
-	rows: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
+export function summarize(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
 	const groups = new Map<string, Array<Record<string, unknown>>>();
 	for (const row of rows) {
 		const key = `${String(row.experiment)}::${String(row.eval)}`;
@@ -3151,12 +3264,32 @@ export function summarize(
 	}
 
 	return [...groups.values()].map((group) => {
-		const costs = numbersAt(group, (row) => (row as { cost?: { estimatedCostUsd?: number } }).cost?.estimatedCostUsd);
-		const durations = numbersAt(group, (row) => (row as { speed?: { durationSeconds?: number } }).speed?.durationSeconds);
-		const docs = numbersAt(group, (row) => (row as { toolUse?: { buckets?: { docs?: number } } }).toolUse?.buckets?.docs);
-		const exploration = numbersAt(group, (row) => (row as { toolUse?: { buckets?: { exploration?: number } } }).toolUse?.buckets?.exploration);
-		const slocAdded = numbersAt(group, (row) => (row as { diff?: { sloc?: { added?: number } } }).diff?.sloc?.added);
-		const cognitiveDelta = numbersAt(group, (row) => (row as { complexity?: { cognitive?: { delta?: number } } }).complexity?.cognitive?.delta);
+		const costs = numbersAt(
+			group,
+			(row) => (row as { cost?: { estimatedCostUsd?: number } }).cost?.estimatedCostUsd,
+		);
+		const durations = numbersAt(
+			group,
+			(row) => (row as { speed?: { durationSeconds?: number } }).speed?.durationSeconds,
+		);
+		const docs = numbersAt(
+			group,
+			(row) => (row as { toolUse?: { buckets?: { docs?: number } } }).toolUse?.buckets?.docs,
+		);
+		const exploration = numbersAt(
+			group,
+			(row) =>
+				(row as { toolUse?: { buckets?: { exploration?: number } } }).toolUse?.buckets?.exploration,
+		);
+		const slocAdded = numbersAt(
+			group,
+			(row) => (row as { diff?: { sloc?: { added?: number } } }).diff?.sloc?.added,
+		);
+		const cognitiveDelta = numbersAt(
+			group,
+			(row) =>
+				(row as { complexity?: { cognitive?: { delta?: number } } }).complexity?.cognitive?.delta,
+		);
 
 		// An aggregate silently spanning two pins is not one measurement.
 		const fixtureRefs = [...new Set(group.map((row) => String(row.fixtureRef)))];
@@ -3195,7 +3328,8 @@ export function renderTables(
 			turns: (row.speed as { turns?: number })?.turns ?? null,
 			costUsd: (row.cost as { estimatedCostUsd?: number })?.estimatedCostUsd ?? null,
 			docs: (row.toolUse as { buckets?: { docs?: number } })?.buckets?.docs ?? null,
-			explore: (row.toolUse as { buckets?: { exploration?: number } })?.buckets?.exploration ?? null,
+			explore:
+				(row.toolUse as { buckets?: { exploration?: number } })?.buckets?.exploration ?? null,
 			slocAdded: (row.diff as { sloc?: { added?: number } })?.sloc?.added ?? null,
 			cognitive: (row.complexity as { cognitive?: { delta?: number } })?.cognitive?.delta ?? null,
 		})),
@@ -3247,9 +3381,11 @@ yields the metrics it can support."
 ### Task 12: Rewrite the analyzer as a generic gateway
 
 **Files:**
+
 - Rewrite: `agent-eval/scripts/analyze-results.mjs`
 
 **Interfaces:**
+
 - Consumes: `analyzeRun`, `summarize`, `renderTables` from `evals/<name>/post-analysis.ts` (Task 11).
 - Produces: the `pnpm results:analyze` command, used by Task 13's CI step.
 
@@ -3458,7 +3594,8 @@ async function main() {
 	}
 
 	// `__eval` is internal routing state, stripped before anything sees a record.
-	const strip = (row) => Object.fromEntries(Object.entries(row).filter(([key]) => key !== '__eval'));
+	const strip = (row) =>
+		Object.fromEntries(Object.entries(row).filter(([key]) => key !== '__eval'));
 
 	const allSummaries = [];
 	for (const [evalName, evalRows] of byEval) {
@@ -3507,6 +3644,7 @@ console.log('complexity ', JSON.stringify(a.complexity.cognitive));
 ```
 
 Expected:
+
 ```
 speed       {"durationSeconds":403.365,"turns":12}
 buckets     {"docs":1,"exploration":13,"edit":8,"verification":6,"other":1}
@@ -3534,13 +3672,15 @@ the pass."
 ### Task 13: Keep analysis code out of the sandbox, and run it on CI
 
 **Files:**
+
 - Modify: `agent-eval/patches/@vercel__agent-eval@1.2.0.patch`
 - Modify: `.github/workflows/agent-eval.yml`
 
 **Interfaces:**
+
 - Consumes: `pnpm results:analyze` from Task 12.
 
-**Why the patch is necessary.** Fixture directories are uploaded into the agent's workspace before it runs. `EXCLUDED_FILES` does not govern that — its own source comment says *"This is for local fixture introspection, NOT for sandbox uploads."* Uploads are filtered by `IGNORED_PATTERNS` in `dist/lib/sandbox.js` via `collectLocalFiles`, and only `TEST_FILE_PATTERNS` (`EVAL.ts`, `EVAL.tsx`, `PROMPT.md`) are held back until after the agent finishes. Both `claude-code/agent.js` and `codex/agent.js` delegate to `plugin/orchestrator.js`, so this applies to every agent we run.
+**Why the patch is necessary.** Fixture directories are uploaded into the agent's workspace before it runs. `EXCLUDED_FILES` does not govern that — its own source comment says _"This is for local fixture introspection, NOT for sandbox uploads."_ Uploads are filtered by `IGNORED_PATTERNS` in `dist/lib/sandbox.js` via `collectLocalFiles`, and only `TEST_FILE_PATTERNS` (`EVAL.ts`, `EVAL.tsx`, `PROMPT.md`) are held back until after the agent finishes. Both `claude-code/agent.js` and `codex/agent.js` delegate to `plugin/orchestrator.js`, so this applies to every agent we run.
 
 Without the patch, the agent under evaluation would find `post-analysis.ts` and `__analysis__/` in `/workspace` — including the file defining the tool-use buckets it is scored on — and `__analysis__/*.test.ts` would be collected by the sandbox's validation vitest run.
 
@@ -3566,21 +3706,21 @@ This prints a temporary directory. In that directory, edit `dist/lib/sandbox.js`
 
 ```js
 export const IGNORED_PATTERNS = [
-    '.git',
-    '.next',
-    'node_modules',
-    '.DS_Store',
-    '*.log',
-    'build',
-    'dist',
-    'pnpm-lock.yaml',
-    'package-lock.json',
-    // Offline post-run analysis lives beside the fixture it belongs to, but must
-    // never reach the sandbox: the agent under evaluation would otherwise be able
-    // to read the definitions of the metrics scoring it, and the colocated vitest
-    // files would be collected by the post-run validation run.
-    'post-analysis.ts',
-    '__analysis__',
+	'.git',
+	'.next',
+	'node_modules',
+	'.DS_Store',
+	'*.log',
+	'build',
+	'dist',
+	'pnpm-lock.yaml',
+	'package-lock.json',
+	// Offline post-run analysis lives beside the fixture it belongs to, but must
+	// never reach the sandbox: the agent under evaluation would otherwise be able
+	// to read the definitions of the metrics scoring it, and the colocated vitest
+	// files would be collected by the post-run validation run.
+	'post-analysis.ts',
+	'__analysis__',
 ];
 ```
 
@@ -3616,15 +3756,15 @@ Expected: `package.json` only. `post-analysis.ts` and everything under `__analys
 In `.github/workflows/agent-eval.yml`, insert a step between "Check eval results" and "Archive eval results":
 
 ```yaml
-      - name: Compute offline metrics
-        if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
-        # Writes analysis.json next to each run's result.json so the metrics ride
-        # along in the uploaded artifact. Needs network to fetch the pinned
-        # external ref, which the script already does today via codeload.
-        # Non-blocking: a metrics failure must not fail an otherwise good run.
-        continue-on-error: true
-        working-directory: agent-eval
-        run: pnpm results:analyze
+- name: Compute offline metrics
+  if: ${{ always() && steps.check_results.outputs.has_result_files == 'true' }}
+  # Writes analysis.json next to each run's result.json so the metrics ride
+  # along in the uploaded artifact. Needs network to fetch the pinned
+  # external ref, which the script already does today via codeload.
+  # Non-blocking: a metrics failure must not fail an otherwise good run.
+  continue-on-error: true
+  working-directory: agent-eval
+  run: pnpm results:analyze
 ```
 
 - [ ] **Step 5: Verify the workflow is still valid YAML and the step is ordered correctly**
@@ -3743,6 +3883,7 @@ cd /home/steve/Development/mcp/agent-eval && pnpm results:analyze --latest
 Expected: a table row for the new run with non-null `seconds`, `turns`, `costUsd`, `docs`, `explore`, `slocAdded` and `cognitive`.
 
 Sanity-check the values against the recorded run rather than assuming they match — a different run legitimately produces different numbers, but nulls or absurd values indicate a bug:
+
 - `docs` should be at least 1 if the eval passed its documentation assertion.
 - `slocAdded` should be single or low double digits for a one-button change.
 - `cognitive` delta should be small; a large value means the changed-file set is wrong.
@@ -3766,20 +3907,20 @@ git commit -m "chore(agent-eval): add complexity baseline for the current pin"
 
 Every metric from the specification, and where it is proved:
 
-| Metric | Task | Proof |
-| --- | --- | --- |
-| workflow duration | 5 | golden test asserts 403.365 |
-| number of turns | 5 | golden test asserts 12 |
-| input/output/cache tokens | 5 | golden test asserts all four counts |
-| cache-hit percentage | 5 | golden test asserts 0.8330 |
-| tool-call counts | 5 | golden test asserts 25 |
-| derived cost | 5 | golden test asserts $1.89273325 |
-| SLoC diff | 7 | golden check asserts +10 / −1 over 1 file |
-| per-file iteration count | 4 | golden test asserts Footer.tsx = 3 |
-| cyclomatic complexity diff | 8, 11 | four ported tests plus the composed record |
-| cognitive complexity diff | 9, 11 | white-paper sumOfPrimes = 7 plus the composed record |
-| doc vs exploration vs edit classification | 3 | golden test asserts docs 1 / exploration 13 / edit 8 / verification 6 / other 1 |
-| metrics written to the run artifact | 11, 12, 13 | `analysis.json` written per run; CI step added before the tar |
+| Metric                                    | Task       | Proof                                                                           |
+| ----------------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| workflow duration                         | 5          | golden test asserts 403.365                                                     |
+| number of turns                           | 5          | golden test asserts 12                                                          |
+| input/output/cache tokens                 | 5          | golden test asserts all four counts                                             |
+| cache-hit percentage                      | 5          | golden test asserts 0.8330                                                      |
+| tool-call counts                          | 5          | golden test asserts 25                                                          |
+| derived cost                              | 5          | golden test asserts $1.89273325                                                 |
+| SLoC diff                                 | 7          | golden check asserts +10 / −1 over 1 file                                       |
+| per-file iteration count                  | 4          | golden test asserts Footer.tsx = 3                                              |
+| cyclomatic complexity diff                | 8, 11      | four ported tests plus the composed record                                      |
+| cognitive complexity diff                 | 9, 11      | white-paper sumOfPrimes = 7 plus the composed record                            |
+| doc vs exploration vs edit classification | 3          | golden test asserts docs 1 / exploration 13 / edit 8 / verification 6 / other 1 |
+| metrics written to the run artifact       | 11, 12, 13 | `analysis.json` written per run; CI step added before the tar                   |
 
 ## Deliberately not built
 

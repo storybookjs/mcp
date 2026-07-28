@@ -33,7 +33,7 @@ several contradict reasonable prior beliefs.
 `summary.json`, `transcript.json`, `index.json`. CI never runs `results:analyze` — it goes straight
 from "Check eval results" to `tar -czf`, so on CI the file is never created at all.
 
-The thing that *is* loaded and injected is `result.json`'s `analysis` **key**, written by
+The thing that _is_ loaded and injected is `result.json`'s `analysis` **key**, written by
 `onRunComplete`. Same word, different artifact.
 
 **Consequence:** a CI step must run `results:analyze` before the tar, or the metrics never leave a
@@ -42,7 +42,7 @@ developer's laptop.
 ### The harness cannot tell us which files changed
 
 `generatedFiles` is built from `git diff HEAD --name-status` inside the sandbox, against a commit
-taken *before* our `setup()` materialises the external repo. It therefore contains the entire
+taken _before_ our `setup()` materialises the external repo. It therefore contains the entire
 Mealdrop tree, not the agent's changes. `o11y.filesModified` is transcript-derived and misses any
 edit made through the shell (`sed -i`, heredoc redirects) — the observed run used both.
 
@@ -51,8 +51,8 @@ collected `project/`. This is the same pass that produces SLoC, so it costs noth
 
 ### Fixture files are uploaded into the agent's workspace
 
-`EXCLUDED_FILES = ['PROMPT.md','EVAL.ts','EVAL.tsx','node_modules','.git']` governs *local fixture
-introspection*, not sandbox uploads. Uploads are governed by `IGNORED_PATTERNS` (`.git`, `.next`,
+`EXCLUDED_FILES = ['PROMPT.md','EVAL.ts','EVAL.tsx','node_modules','.git']` governs _local fixture
+introspection_, not sandbox uploads. Uploads are governed by `IGNORED_PATTERNS` (`.git`, `.next`,
 `node_modules`, `.DS_Store`, `*.log`, `build`, `dist`, `pnpm-lock.yaml`, `package-lock.json`) via
 `collectLocalFiles`, and `TEST_FILE_PATTERNS = ['EVAL.ts','EVAL.tsx','PROMPT.md']` are held back
 until after the agent finishes. `claude-code/agent.js` and `codex/agent.js` both delegate to
@@ -81,13 +81,13 @@ blocker for Spec B, which needs to actually run the app.
 SonarQube shipped `FUNCTION_COMPLEXITY` ("Complexity / Function",
 `COMPLEXITY_IN_FUNCTIONS ÷ FUNCTIONS`), deprecated it in 6.7 and removed it in 2025.4 along with
 every other complexity ratio. What survives is `complexity` and `cognitive_complexity`, both
-integers. Their docs: *"the overall code's cyclomatic complexity is basically the sum of all
-complexity scores calculated at the function level."*
+integers. Their docs: _"the overall code's cyclomatic complexity is basically the sum of all
+complexity scores calculated at the function level."_
 
-Kuipers & Visser (SQM'07): *"We feel this is a fundamentally flawed number… The average complexity
+Kuipers & Visser (SQM'07): _"We feel this is a fundamentally flawed number… The average complexity
 will invariably be low (e.g. because all setters and getters of a Java system have a complexity of
-1), whereas the maintenance problems will occur in the few outliers."* Shepperd's identity makes it
-concrete: splitting one CC-*v* function into *k* drives the mean to *(v+k−1)/k* → 1, so extraction
+1), whereas the maintenance problems will occur in the few outliers."_ Shepperd's identity makes it
+concrete: splitting one CC-_v_ function into _k_ drives the mean to _(v+k−1)/k_ → 1, so extraction
 always lowers the mean whether or not it helped.
 
 Cyclomatic complexity charges +1 per function merely for existing, so an agent adding three trivial
@@ -95,8 +95,8 @@ helpers scores "+3 worse". Cognitive Complexity charges zero cost-of-entry and w
 instead; Sonar enables S3776 (cognitive) by default and leaves S1541 (cyclomatic) off.
 
 Fan-in weighting was investigated and **does not exist in any shipped tool**. CCCC's documentation
-states the field's position explicitly: combining the terms *"debases the measure by combining two
-attributes which can and should be separately measured."* Kitchenham (1990) found fan-in to be the
+states the field's position explicitly: combining the terms _"debases the measure by combining two
+attributes which can and should be separately measured."_ Kitchenham (1990) found fan-in to be the
 non-predictive half of the fan-in/fan-out pair. It will not be built.
 
 Complexity correlates ~0.9 with LOC (Jay et al., ~1.2M files), so a bare complexity delta partly
@@ -202,7 +202,7 @@ documentation reads — is **deliberately not stored**. It is a pure function of
 question it answers is a cross-run comparison between arms rather than a property of any single
 run, so it is computed at analysis time over all run logs.
 
-This is a judgement about *this* ratio, not a blanket rule: `cacheHitRate`, `densityPerSloc`,
+This is a judgement about _this_ ratio, not a blanket rule: `cacheHitRate`, `densityPerSloc`,
 `maxEditsPerFile`, `meanEditsPerFile`, and `sloc.net` are also derived, and are retained because
 each encodes a non-obvious convention (which tokens form the cache denominator, which complexity
 measure pairs with which SLoC figure) that is worth pinning in the artifact rather than
@@ -265,46 +265,56 @@ from a walker that gave up.
 
 ```jsonc
 {
-  "experiment": "agentic-ref-reuse-component-cc-mcp-opus-high",
-  "eval": "701-agentic-ref-reuse-component-mcp",
-  "run": 1, "model": "opus", "timestamp": "2026-07-28T12-21-43.772Z",
-  "fixtureRef": "yannbf/mealdrop@ce507b345666", "pinSource": "run", "status": "failed",
+	"experiment": "agentic-ref-reuse-component-cc-mcp-opus-high",
+	"eval": "701-agentic-ref-reuse-component-mcp",
+	"run": 1,
+	"model": "opus",
+	"timestamp": "2026-07-28T12-21-43.772Z",
+	"fixtureRef": "yannbf/mealdrop@ce507b345666",
+	"pinSource": "run",
+	"status": "failed",
 
-  "speed": { "durationSeconds": 403.365, "turns": 12 },
+	"speed": { "durationSeconds": 403.365, "turns": 12 },
 
-  "cost": {
-    "inputTokens": 53157, "cacheWriteTokens": 147365, "cacheReadTokens": 999884,
-    "outputTokens": 8239, "totalTokens": 1208645,
-    "cacheHitRate": 0.8330, "estimatedCostUsd": 1.89273325,
-    "toolCalls": { "file_read": 4, "file_edit": 3, "shell": 17, "unknown": 1, "...": 0 },
-    "totalToolCalls": 25
-  },
+	"cost": {
+		"inputTokens": 53157,
+		"cacheWriteTokens": 147365,
+		"cacheReadTokens": 999884,
+		"outputTokens": 8239,
+		"totalTokens": 1208645,
+		"cacheHitRate": 0.833,
+		"estimatedCostUsd": 1.89273325,
+		"toolCalls": { "file_read": 4, "file_edit": 3, "shell": 17, "unknown": 1, "...": 0 },
+		"totalToolCalls": 25,
+	},
 
-  "toolUse": {
-    "buckets": { "docs": 1, "exploration": 13, "edit": 8, "verification": 6, "other": 1 },
-    "unclassified": []
-  },
+	"toolUse": {
+		"buckets": { "docs": 1, "exploration": 13, "edit": 8, "verification": 6, "other": 1 },
+		"unclassified": [],
+	},
 
-  "churn": {
-    "perFile": { "src/components/Footer/Footer.tsx": 3 },
-    "filesEdited": 1, "maxEditsPerFile": 3, "meanEditsPerFile": 3
-  },
+	"churn": {
+		"perFile": { "src/components/Footer/Footer.tsx": 3 },
+		"filesEdited": 1,
+		"maxEditsPerFile": 3,
+		"meanEditsPerFile": 3,
+	},
 
-  "diff": {
-    "filesChanged": 1,
-    "files": ["src/components/Footer/Footer.tsx"],
-    "sloc": { "added": 10, "removed": 1, "net": 9 }
-  },
+	"diff": {
+		"filesChanged": 1,
+		"files": ["src/components/Footer/Footer.tsx"],
+		"sloc": { "added": 10, "removed": 1, "net": 9 },
+	},
 
-  "complexity": {
-    "cyclomatic": { "before": 0, "after": 0, "delta": 0 },
-    "cognitive":  { "before": 0, "after": 0, "delta": 0 },
-    "densityPerSloc": 0,
-    "parseFailures": [],
-    "baselineKey": "yannbf__mealdrop@ce507b345666ea8678101fccac580186b2b69b1f"
-  },
+	"complexity": {
+		"cyclomatic": { "before": 0, "after": 0, "delta": 0 },
+		"cognitive": { "before": 0, "after": 0, "delta": 0 },
+		"densityPerSloc": 0,
+		"parseFailures": [],
+		"baselineKey": "yannbf__mealdrop@ce507b345666ea8678101fccac580186b2b69b1f",
+	},
 
-  "buttonImports": { "before": 0, "after": 1, "delta": 1 }
+	"buttonImports": { "before": 0, "after": 1, "delta": 1 },
 }
 ```
 
@@ -316,13 +326,13 @@ run and is the regression target.
 No layer requires an LLM call. Every metric is a pure function of stored artifacts, so the single
 run already on disk becomes a permanent fixture.
 
-| Layer | Contents |
-| --- | --- |
-| Unit | `cyclomatic` (four tests ported verbatim), `cognitive` (Sonar white-paper Appendix A cases), `sloc` stripping (line/block/JSDoc/JSX comments, template literals and regex literals containing `//`), `tree-diff` over synthetic two-file trees |
-| Table | ~40 shell commands → expected buckets: the 17 real ones plus heredocs, quoted `sed -i`, pipes, `ENV=x` prefixes, `npx`/`pnpm` wrappers, `bash -c` nesting |
-| Golden | 21KB trimmed transcript (tool_call events only) plus `result.json` from the stored run, asserting every measured value in the record above |
-| Smoke | `pnpm results:analyze --latest` over the real stored run, snapshotting `analysis.json` |
-| Synthetic | Hand-written transcripts for cases we have no run of: zero doc reads (the control arm), shell-only editing, zero edits |
+| Layer     | Contents                                                                                                                                                                                                                                       |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit      | `cyclomatic` (four tests ported verbatim), `cognitive` (Sonar white-paper Appendix A cases), `sloc` stripping (line/block/JSDoc/JSX comments, template literals and regex literals containing `//`), `tree-diff` over synthetic two-file trees |
+| Table     | ~40 shell commands → expected buckets: the 17 real ones plus heredocs, quoted `sed -i`, pipes, `ENV=x` prefixes, `npx`/`pnpm` wrappers, `bash -c` nesting                                                                                      |
+| Golden    | 21KB trimmed transcript (tool_call events only) plus `result.json` from the stored run, asserting every measured value in the record above                                                                                                     |
+| Smoke     | `pnpm results:analyze --latest` over the real stored run, snapshotting `analysis.json`                                                                                                                                                         |
+| Synthetic | Hand-written transcripts for cases we have no run of: zero doc reads (the control arm), shell-only editing, zero edits                                                                                                                         |
 
 The control-arm case is deliberate: no no-MCP run exists on disk, and it exercises the zero-doc-read
 path.
