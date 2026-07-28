@@ -1,4 +1,5 @@
 node_modules/
+.eval-cache/
 dist/
 .next/
 next-env.d.ts

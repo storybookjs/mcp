@@ -139,37 +139,3 @@ export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
 		...(appVitestConfig !== null ? { 'vitest.config.app.ts': appVitestConfig } : {}),
 	});
 }
-
-// Record the repo's own unit-test result before the agent runs, so a post-agent
-// failure is attributable to the agent and not a flaky install or an already-red
-// ref. Mirrors EVAL.ts (`--project node`; the browser-mode `storybook` project
-// needs a chromium the sandbox lacks). Best-effort — a baseline we cannot
-// capture is recorded as skipped, never thrown.
-export async function captureAppTestBaseline(sandbox: Sandbox): Promise<void> {
-	const hasVitest = await exists(sandbox, 'node_modules/.bin/vitest');
-	const hasConfig = await exists(sandbox, 'vitest.config.app.ts');
-	if (!hasVitest || !hasConfig) {
-		await writeBaseline(sandbox, {
-			skipped: true,
-			reason: hasVitest ? 'no vitest.config.app.ts preserved' : 'no local vitest binary',
-		});
-		return;
-	}
-
-	const result = await sandbox.runCommand('bash', [
-		'-lc',
-		'NO_COLOR=1 node_modules/.bin/vitest run --config vitest.config.app.ts --project node',
-	]);
-	const output = `${result.stdout}${result.stderr}`;
-	await writeBaseline(sandbox, {
-		passed: result.exitCode === 0,
-		exitCode: result.exitCode,
-		summary: /Tests\s+.*$/m.exec(output)?.[0]?.trim() ?? 'no summary line found',
-	});
-}
-
-function writeBaseline(sandbox: Sandbox, metric: unknown): Promise<void> {
-	return sandbox.writeFiles({
-		'__metrics__/app-tests-baseline.json': JSON.stringify(metric, null, 2) + '\n',
-	});
-}

@@ -1,11 +1,10 @@
 // Agentic-reference reuse-component eval: the agent makes a small footer change
 // that should reuse the app's own Button component, with the design system's
 // published Storybook MCP available.
-// Asserts the outcome, one MCP-usage signal (published `@storybook/mcp`
+// Asserts the outcome and one MCP-usage signal (published `@storybook/mcp`
 // builds expose only the documentation workflow, hence
-// expectDocumentationToolingCalled), and that the app's own test suite
-// still passes.
-import { execSync } from 'node:child_process';
+// expectDocumentationToolingCalled). Heavy, dep-needing metrics (the app's own
+// test suite, baseline vs after) run offline in scripts/analyze-results.mjs.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { expect, test } from 'vitest';
@@ -79,49 +78,4 @@ test("Footer.tsx uses the app's own Button component", () => {
 
 test('agent consulted the design system Storybook MCP documentation tools', () => {
 	expectDocumentationToolingCalled();
-});
-
-// Side-effectful, so deliberately LAST: tests in this file run sequentially in
-// declaration order and share the workspace — everything above must assert on
-// the untouched post-agent state.
-test('app test suite still passes after the agent changes', () => {
-	// Preserved by setupExternalRepo; the harness clobbers the original
-	// vitest.config.ts at validation time.
-	const appConfig = 'vitest.config.app.ts';
-	expect(existsSync(appConfig), `Expected ${appConfig} (preserved by setup)`).toBe(true);
-
-	let exitCode = 0;
-	let output = '';
-	try {
-		// --project node: the app's `storybook` vitest project is browser-mode
-		// and needs a Playwright chromium the sandbox doesn't have; gate on
-		// the unit project only.
-		output = execSync(`npx vitest run --config ${appConfig} --project node`, {
-			encoding: 'utf8',
-			// Don't leak the outer vitest run's env into the child suite.
-			env: { ...process.env, VITEST: undefined, NO_COLOR: '1' },
-			timeout: 300_000,
-		});
-	} catch (error) {
-		const failure = error as { status?: number; stdout?: string; stderr?: string };
-		exitCode = failure.status ?? 1;
-		output = `${failure.stdout ?? ''}${failure.stderr ?? ''}`;
-	}
-
-	// Write the metric before asserting, so the artifact ships even on failure.
-	mkdirSync('__metrics__', { recursive: true });
-	writeFileSync(
-		'__metrics__/app-tests.json',
-		JSON.stringify(
-			{
-				passed: exitCode === 0,
-				exitCode,
-				summary: output.match(/Tests\s+.*$/m)?.[0]?.trim() ?? 'no summary line found',
-			},
-			null,
-			2,
-		) + '\n',
-	);
-
-	expect(exitCode, `App test suite failed:\n${output.slice(-2000)}`).toBe(0);
 });

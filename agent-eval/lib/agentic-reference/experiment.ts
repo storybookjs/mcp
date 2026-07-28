@@ -5,7 +5,7 @@
 import type { ExperimentConfig, RunCompleteContext, Sandbox } from '@vercel/agent-eval';
 import { DEFAULT_EXPERIMENT_CONFIG } from '../experiment.ts';
 import { setupSandbox } from '../templates.ts';
-import { captureAppTestBaseline, setupExternalRepo } from './external-repo.ts';
+import { setupExternalRepo } from './external-repo.ts';
 import { registerExternalStorybookMcp } from './external-mcp.ts';
 
 type EvalAgent = 'claude-code' | 'codex';
@@ -58,8 +58,9 @@ function readMetric(generatedFiles: Record<string, string> | undefined, path: st
 	}
 }
 
-// Compose the shared usage hook with the research signals so neither clobbers
-// the other (a bare override would drop token usage).
+// Compose the shared usage hook with the in-run signal (mcpUsage) so neither
+// clobbers the other (a bare override would drop token usage). Heavy metrics
+// (app tests, baseline) are computed offline — see scripts/analyze-results.mjs.
 function attachAgenticRefMetrics(context: RunCompleteContext) {
 	const withUsage = DEFAULT_EXPERIMENT_CONFIG.onRunComplete?.(context) ?? context.runData;
 	return {
@@ -68,11 +69,6 @@ function attachAgenticRefMetrics(context: RunCompleteContext) {
 			...withUsage.result,
 			analysis: {
 				...withUsage.result.analysis,
-				appTests: readMetric(withUsage.generatedFiles, '__metrics__/app-tests.json'),
-				appTestsBaseline: readMetric(
-					withUsage.generatedFiles,
-					'__metrics__/app-tests-baseline.json',
-				),
 				mcpUsage: readMetric(withUsage.generatedFiles, '__metrics__/mcp-usage.json'),
 			},
 		},
@@ -89,7 +85,6 @@ export function agenticRefExperiment(options: AgenticRefExperimentOptions): Expe
 			integration: storybookMcpUrl ? 'mcp' : 'plugin',
 		});
 		await setupExternalRepo(sandbox);
-		await captureAppTestBaseline(sandbox);
 		if (storybookMcpUrl) {
 			await registerExternalStorybookMcp(sandbox, storybookMcpUrl, agent);
 		}
