@@ -29,6 +29,34 @@ export function scriptKindFor(filename: string): ts.ScriptKind {
 	return ts.ScriptKind.JS;
 }
 
+/**
+ * Whether TypeScript reported syntax errors parsing this file.
+ *
+ * The parser is deliberately error-tolerant — `function ( { { {` recovers into
+ * a malformed declaration rather than throwing — so "the walker found no
+ * functions" is not a reliable failure signal. `parseDiagnostics` is, and it
+ * stays empty for valid but unusual code such as a generic arrow in a `.ts`
+ * file, which is exactly the case the ScriptKind choice exists to protect.
+ *
+ * Not part of the public typings, hence the cast.
+ */
+export function hasParseErrors(filename: string, source: string): boolean {
+	try {
+		const sourceFile = ts.createSourceFile(
+			filename,
+			source,
+			ts.ScriptTarget.Latest,
+			/* setParentNodes */ false,
+			scriptKindFor(filename),
+		);
+		const diagnostics = (sourceFile as unknown as { parseDiagnostics?: unknown[] })
+			.parseDiagnostics;
+		return Array.isArray(diagnostics) && diagnostics.length > 0;
+	} catch {
+		return true;
+	}
+}
+
 /** Every comment in the file, as [start, end) offsets, deduplicated and sorted. */
 function commentRanges(sourceFile: ts.SourceFile, text: string): Array<[number, number]> {
 	const seen = new Map<number, number>();

@@ -1,6 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
-import { countSloc, stripToSloc } from './sloc.ts';
+import { countSloc, hasParseErrors, stripToSloc } from './sloc.ts';
+
+describe('hasParseErrors', () => {
+	it('reports no errors for valid code', () => {
+		expect(hasParseErrors('a.ts', 'function a(){ return 1 }')).toBe(false);
+	});
+
+	it('reports errors for broken code the parser silently recovers from', () => {
+		// TypeScript recovers this into a malformed declaration rather than
+		// throwing, so "the walker found no functions" would not have caught it.
+		expect(hasParseErrors('a.ts', 'function ( { { {')).toBe(true);
+		expect(hasParseErrors('a.ts', 'const = = =')).toBe(true);
+	});
+
+	it('accepts a generic arrow in .ts, which TSX mode would reject', () => {
+		expect(hasParseErrors('a.ts', 'const f = <T,>(x: T) => x')).toBe(false);
+	});
+
+	it('accepts JSX in .tsx', () => {
+		expect(hasParseErrors('a.tsx', 'const C = () => <div>hi</div>')).toBe(false);
+	});
+});
 
 describe('stripToSloc', () => {
 	it('keeps plain code untouched', () => {

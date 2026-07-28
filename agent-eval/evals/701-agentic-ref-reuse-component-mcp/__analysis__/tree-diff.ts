@@ -14,7 +14,8 @@ import { join, relative, sep } from 'node:path';
 
 import { diffLines } from 'diff';
 
-import { SOURCE_EXTENSIONS, stripToSloc } from './sloc.ts';
+import { isExcludedPath, SKIP_DIRS, SOURCE_EXTENSIONS } from './paths.ts';
+import { stripToSloc } from './sloc.ts';
 
 export interface SlocDiff {
 	added: number;
@@ -29,34 +30,10 @@ export interface TreeDiff {
 	sloc: SlocDiff;
 }
 
-/** Directories never worth walking. */
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage']);
-
-/**
- * Files the harness injects into the collected tree that no agent authored.
- * Counting them would attribute several hundred lines of scaffolding to the run.
- */
-export const EXCLUDED_PATHS = new Set([
-	'EVAL.ts',
-	'EVAL.tsx',
-	'PROMPT.md',
-	'.npmrc',
-	'package.json',
-	'package-lock.json',
-	'yarn.lock',
-	'pnpm-lock.yaml',
-	'vitest.config.ts',
-	'vitest.config.app.ts',
-]);
-
-const EXCLUDED_PREFIXES = ['__agent_eval__/', '__metrics__/', '__analysis__/'];
-
 function isExcluded(path: string): boolean {
-	if (EXCLUDED_PATHS.has(path)) return true;
-	if (EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))) return true;
 	// Binary assets are UTF-8 corrupted by the copy-out path, so every one of
 	// them would otherwise read as changed.
-	return !SOURCE_EXTENSIONS.test(path);
+	return isExcludedPath(path) || !SOURCE_EXTENSIONS.test(path);
 }
 
 /** Workspace-relative, POSIX-separated paths of every candidate source file. */
