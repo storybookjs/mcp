@@ -2,13 +2,15 @@
  * @see https://vercel.com/docs/ai-gateway/pricing
  */
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-	/** @see https://platform.claude.com/docs/en/pricing */
+	/** @see https://platform.claude.com/docs/en/about-claude/pricing */
+	'claude-opus-5': { input: 5, output: 25 },
+	/** @see https://platform.claude.com/docs/en/about-claude/pricing */
 	'claude-opus-4-8': { input: 5, output: 25 },
-	/** @see https://platform.claude.com/docs/en/pricing */
+	/** @see https://platform.claude.com/docs/en/about-claude/pricing */
 	'claude-opus-4-7': { input: 5, output: 25 },
-	/** @see https://platform.claude.com/docs/en/pricing */
+	/** @see https://platform.claude.com/docs/en/about-claude/pricing */
 	'claude-sonnet-5': { input: 3, output: 15 },
-	/** @see https://platform.claude.com/docs/en/pricing */
+	/** @see https://platform.claude.com/docs/en/about-claude/pricing */
 	'claude-haiku-4-5': { input: 1, output: 5 },
 	/**
 	 * @see https://developers.openai.com/api/docs/pricing
