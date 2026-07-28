@@ -214,7 +214,16 @@ Counts `file_edit`/`file_write` calls per `file_path`, plus writes detected in s
 (`sed -i`, heredoc and `>` redirects, `cp`, `mv`, `tee`). Shell detection is required: the observed
 run edited via `cp` and `sed -i`, and `o11y.filesModified` misses exactly that.
 
-Emits `perFile`, `filesEdited`, `maxEditsPerFile`, `meanEditsPerFile`.
+Renames are followed. `mv` (and `git mv`) transfers a path's accumulated history
+to its destination, so a file is keyed under its final path and carries every edit
+made under earlier names. Without this a rename splits one file's history across
+two paths, inflating `filesEdited` and deflating `maxEditsPerFile` — both in the
+wrong direction for a metric where fewer is better. A move out of the workspace is
+not followed; the source keeps its history. `cp` is not a rename: the source
+retains its own count.
+
+Emits `perFile`, `filesEdited`, `maxEditsPerFile`, `meanEditsPerFile`, and
+`renames` (the observed chain, in order, so a merged count can be traced back).
 
 ### SLoC diff
 

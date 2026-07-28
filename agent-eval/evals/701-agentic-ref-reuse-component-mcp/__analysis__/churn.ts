@@ -12,20 +12,41 @@
 // edit, and needing scaffolding to get a change right is itself iteration.
 // Consequence to keep in mind when reading the numbers: these counts do not
 // reconcile with the SLoC diff, which only ever sees files that survived.
+//
+// Renames are followed. Without that, `mv` splits one file's history across two
+// paths — inflating filesEdited and deflating maxEditsPerFile, both in the
+// wrong direction for a metric where fewer is better. A file keyed under its
+// final path therefore carries every edit made under its earlier names, and
+// `renames` records the chain so a merged count can be traced back.
 import { isRecord } from '../../../lib/shell-parse.ts';
 import { splitCommandSegments } from './shell-segments.ts';
 
+export interface Rename {
+	from: string;
+	to: string;
+}
+
 export interface ChurnMetrics {
-	/** Workspace-relative path to number of write operations. */
+	/**
+	 * Workspace-relative path to number of write operations, keyed by the file's
+	 * *final* path. A renamed file carries its history with it.
+	 */
 	perFile: Record<string, number>;
 	filesEdited: number;
 	/** null when no file was edited — distinct from an average that came out 0. */
 	maxEditsPerFile: number | null;
 	meanEditsPerFile: number | null;
+	/** Renames observed, in order, so a merged history can be traced back. */
+	renames: Rename[];
 }
 
-/** Binaries whose *last* path argument is the file being written. */
-const WRITES_LAST_ARGUMENT = new Set(['cp', 'mv', 'tee', 'touch', 'ln']);
+/**
+ * Binaries whose *last* path argument is the file being written.
+ *
+ * `mv` is deliberately absent: it is handled as a rename, and leaving it here
+ * would count the destination twice.
+ */
+const WRITES_LAST_ARGUMENT = new Set(['cp', 'tee', 'touch', 'ln']);
 /** Binaries where every path argument is affected. */
 const WRITES_EVERY_ARGUMENT = new Set(['rm', 'mkdir', 'chmod']);
 
@@ -47,11 +68,31 @@ function normalize(rawPath: string, workspaceRoot: string): string | null {
 	return path.replace(/^\.\//, '');
 }
 
-function collectShellWrites(command: string, workspaceRoot: string, into: string[]): void {
-	const push = (rawPath: string | undefined): void => {
+/**
+ * One thing the agent did to a file. `write` counts against the path; `rename`
+ * moves the path's accumulated history to a new one.
+ *
+ * Operations are kept as an ordered stream rather than tallied as they are
+ * found, because a rename rewrites history that precedes it: the two edits
+ * before `mv a.ts b.ts` belong to `b.ts`, and that is only knowable once the
+ * move is seen.
+ */
+type Operation = { kind: 'write'; path: string } | { kind: 'rename'; from: string; to: string };
+
+/** `mv a.ts b.ts dir/` — several sources into a directory, rather than a rename. */
+function movesIntoDirectory(paths: string[]): boolean {
+	return paths.length > 2 || (paths.at(-1) ?? '').endsWith('/');
+}
+
+function basename(path: string): string {
+	return path.slice(path.lastIndexOf('/') + 1);
+}
+
+function collectShellOperations(command: string, workspaceRoot: string, into: Operation[]): void {
+	const write = (rawPath: string | undefined): void => {
 		if (rawPath === undefined) return;
 		const normalized = normalize(rawPath, workspaceRoot);
-		if (normalized !== null) into.push(normalized);
+		if (normalized !== null) into.push({ kind: 'write', path: normalized });
 	};
 
 	for (const segment of splitCommandSegments(command)) {
@@ -59,35 +100,62 @@ function collectShellWrites(command: string, workspaceRoot: string, into: string
 
 		// The splitter has already discarded `2>` and `/dev/null` targets, so a
 		// non-null target here is a genuine content write.
-		if (segment.redirectTarget !== null) push(segment.redirectTarget);
+		if (segment.redirectTarget !== null) write(segment.redirectTarget);
 
 		let index = 0;
 		const { tokens } = segment;
 		while (index < tokens.length && ENV_ASSIGNMENT.test(tokens[index] ?? '')) index += 1;
-		const head = (tokens[index] ?? '').replace(/^.*\//, '');
-		const args = tokens.slice(index + 1);
+		let head = (tokens[index] ?? '').replace(/^.*\//, '');
+		let args = tokens.slice(index + 1);
+
+		// `git mv` renames exactly as `mv` does.
+		if (head === 'git' && args[0] === 'mv') {
+			head = 'mv';
+			args = args.slice(1);
+		}
 
 		if (head === 'sed' || head === 'awk') {
 			if (!args.some((token) => token === '-i' || token.startsWith('-i'))) continue;
 			// The last path-like argument is the file edited in place; the ones
 			// before it are the script and its flags.
-			push(args.filter(isPathLike).at(-1));
+			write(args.filter(isPathLike).at(-1));
+			continue;
+		}
+
+		if (head === 'mv') {
+			const paths = args.filter(isPathLike);
+			const destination = paths.at(-1);
+			if (destination === undefined || paths.length < 2) continue;
+
+			const sources = paths.slice(0, -1);
+			for (const source of sources) {
+				const from = normalize(source, workspaceRoot);
+				const rawTo = movesIntoDirectory(paths)
+					? `${destination.replace(/\/$/, '')}/${basename(source)}`
+					: destination;
+				const to = normalize(rawTo, workspaceRoot);
+
+				// A move out of the workspace is not a rename we can follow; the
+				// source's history stays where it is rather than vanishing.
+				if (from === null || to === null) continue;
+				into.push({ kind: 'rename', from, to });
+			}
 			continue;
 		}
 
 		if (WRITES_LAST_ARGUMENT.has(head)) {
-			push(args.filter(isPathLike).at(-1));
+			write(args.filter(isPathLike).at(-1));
 			continue;
 		}
 
 		if (WRITES_EVERY_ARGUMENT.has(head)) {
-			for (const token of args.filter(isPathLike)) push(token);
+			for (const token of args.filter(isPathLike)) write(token);
 		}
 	}
 }
 
 export function computeChurn(events: unknown[], workspaceRoot = '/workspace/'): ChurnMetrics {
-	const written: string[] = [];
+	const operations: Operation[] = [];
 
 	for (const event of events) {
 		if (!isRecord(event) || event.type !== 'tool_call' || !isRecord(event.tool)) continue;
@@ -97,25 +165,42 @@ export function computeChurn(events: unknown[], workspaceRoot = '/workspace/'): 
 			const filePath = args.file_path;
 			if (typeof filePath === 'string') {
 				const normalized = normalize(filePath, workspaceRoot);
-				if (normalized !== null) written.push(normalized);
+				if (normalized !== null) operations.push({ kind: 'write', path: normalized });
 			}
 			continue;
 		}
 
 		if (name === 'shell' && isRecord(args) && typeof args.command === 'string') {
-			collectShellWrites(args.command, workspaceRoot, written);
+			collectShellOperations(args.command, workspaceRoot, operations);
 		}
 	}
 
-	const perFile: Record<string, number> = {};
-	for (const path of written) perFile[path] = (perFile[path] ?? 0) + 1;
+	const counts = new Map<string, number>();
+	const renames: Rename[] = [];
 
-	const counts = Object.values(perFile);
+	for (const operation of operations) {
+		if (operation.kind === 'write') {
+			counts.set(operation.path, (counts.get(operation.path) ?? 0) + 1);
+			continue;
+		}
+
+		// The move itself is an operation the agent performed, counted like any
+		// other write. Renaming onto an existing path merges both histories:
+		// afterwards there is one file, so there is one count.
+		const carried = counts.get(operation.from) ?? 0;
+		counts.set(operation.to, (counts.get(operation.to) ?? 0) + carried + 1);
+		counts.delete(operation.from);
+		renames.push({ from: operation.from, to: operation.to });
+	}
+
+	const perFile = Object.fromEntries(counts);
+	const values = [...counts.values()];
 	return {
 		perFile,
-		filesEdited: counts.length,
-		maxEditsPerFile: counts.length === 0 ? null : Math.max(...counts),
+		filesEdited: values.length,
+		maxEditsPerFile: values.length === 0 ? null : Math.max(...values),
 		meanEditsPerFile:
-			counts.length === 0 ? null : counts.reduce((sum, count) => sum + count, 0) / counts.length,
+			values.length === 0 ? null : values.reduce((sum, count) => sum + count, 0) / values.length,
+		renames,
 	};
 }

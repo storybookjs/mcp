@@ -65,6 +65,69 @@ describe('computeChurn', () => {
 		expect(churn.perFile).toEqual({ 'src/tmp.test.ts': 1 });
 	});
 
+	it('carries edit history across a rename', () => {
+		// Without rename tracking this splits into {a: 2, b: 1}: two files edited,
+		// max 2. The agent worked on one file throughout.
+		const churn = computeChurn([
+			edit('/workspace/src/a.ts'),
+			edit('/workspace/src/a.ts'),
+			shell('mv src/a.ts src/b.ts'),
+			edit('/workspace/src/b.ts'),
+		]);
+		expect(churn.perFile).toEqual({ 'src/b.ts': 4 });
+		expect(churn.filesEdited).toBe(1);
+		expect(churn.maxEditsPerFile).toBe(4);
+		expect(churn.renames).toEqual([{ from: 'src/a.ts', to: 'src/b.ts' }]);
+	});
+
+	it('follows a chain of renames to the final path', () => {
+		const churn = computeChurn([
+			edit('/workspace/a.ts'),
+			shell('mv a.ts b.ts'),
+			shell('mv b.ts c.ts'),
+		]);
+		expect(churn.perFile).toEqual({ 'c.ts': 3 });
+		expect(churn.renames).toEqual([
+			{ from: 'a.ts', to: 'b.ts' },
+			{ from: 'b.ts', to: 'c.ts' },
+		]);
+	});
+
+	it('treats git mv as a rename too', () => {
+		const churn = computeChurn([edit('/workspace/a.ts'), shell('git mv a.ts b.ts')]);
+		expect(churn.perFile).toEqual({ 'b.ts': 2 });
+	});
+
+	it('does not treat a copy as a rename: the source keeps its history', () => {
+		const churn = computeChurn([edit('/workspace/a.ts'), shell('cp a.ts b.ts')]);
+		expect(churn.perFile).toEqual({ 'a.ts': 1, 'b.ts': 1 });
+		expect(churn.renames).toEqual([]);
+	});
+
+	it('moves several files into a directory', () => {
+		const churn = computeChurn([
+			edit('/workspace/a.ts'),
+			edit('/workspace/b.ts'),
+			shell('mv a.ts b.ts src/'),
+		]);
+		expect(churn.perFile).toEqual({ 'src/a.ts': 2, 'src/b.ts': 2 });
+	});
+
+	it('keeps history under the source when a file is moved out of the workspace', () => {
+		const churn = computeChurn([edit('/workspace/a.ts'), shell('mv a.ts /tmp/a.ts')]);
+		expect(churn.perFile).toEqual({ 'a.ts': 1 });
+		expect(churn.renames).toEqual([]);
+	});
+
+	it('counts a rename onto an existing file as merging both histories', () => {
+		const churn = computeChurn([
+			edit('/workspace/a.ts'),
+			edit('/workspace/b.ts'),
+			shell('mv a.ts b.ts'),
+		]);
+		expect(churn.perFile).toEqual({ 'b.ts': 3 });
+	});
+
 	it('reports null rather than zero when nothing was edited', () => {
 		const churn = computeChurn([]);
 		expect(churn).toEqual({
@@ -72,6 +135,7 @@ describe('computeChurn', () => {
 			filesEdited: 0,
 			maxEditsPerFile: null,
 			meanEditsPerFile: null,
+			renames: [],
 		});
 	});
 
