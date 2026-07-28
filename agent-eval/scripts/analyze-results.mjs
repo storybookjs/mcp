@@ -162,7 +162,11 @@ const refCache = new Map();
 // download+extract succeeded: a half-populated cache directory would otherwise
 // be trusted forever and quietly inflate every later Button-import delta.
 function prepareRef(repo, ref) {
-	const slug = `${repo.replace(/\//g, '__')}@${ref}`;
+	// Escape separators on both halves: SAFE_GITHUB_PATH admits refs like
+	// `heads/main`, and an unescaped one would turn the slug into a nested path
+	// (`..` segments included) instead of a single cache directory name. SHA pins
+	// contain no separator, so existing cache directories keep their names.
+	const slug = `${repo.replace(/\//g, '__')}@${ref.replace(/\//g, '__')}`;
 	if (refCache.has(slug)) return refCache.get(slug);
 	const dir = join(REF_CACHE_DIR, slug);
 	if (!existsSync(dir)) {

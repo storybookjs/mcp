@@ -116,10 +116,12 @@ export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
 	const { repo, ref } = parseExternalRepoMarker(await sandbox.readFile('package.json'));
 	const tarballUrl = `https://codeload.github.com/${repo}/tar.gz/${ref}`;
 
-	// --strip-components=1 drops the tarball's top-level <name>-<ref>/ dir.
+	// -f - reads the pipe explicitly rather than relying on tar's compiled-in
+	// default archive; --strip-components=1 drops the tarball's top-level
+	// <name>-<ref>/ dir.
 	const extract = await sandbox.runCommand('bash', [
 		'-lc',
-		`set -euo pipefail; curl -fsSL '${tarballUrl}' | tar xz --strip-components=1`,
+		`set -euo pipefail; curl -fsSL '${tarballUrl}' | tar xz -f - --strip-components=1`,
 	]);
 	if (extract.exitCode !== 0) {
 		const tail = (extract.stderr || extract.stdout).trim().split('\n').slice(-15).join('\n');
