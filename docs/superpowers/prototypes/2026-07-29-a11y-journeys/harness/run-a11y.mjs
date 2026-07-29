@@ -119,9 +119,7 @@ async function main() {
 		args.serve === 'static' ? serveStatic(buildDir) : serveViaVite(args.app, args.serve),
 	);
 
-	const browser = await mark('browserLaunchMs', () =>
-		chromium.launch({ headless: !args.headed }),
-	);
+	const browser = await mark('browserLaunchMs', () => chromium.launch({ headless: !args.headed }));
 
 	const journeys = await loadJourneys();
 	const results = [];

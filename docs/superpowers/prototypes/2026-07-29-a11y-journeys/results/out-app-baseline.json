@@ -1,1806 +1,1636 @@
 {
-  "schema": "a11y/2",
-  "app": "/tmp/claude-1000/-home-steve-Development-mcp/54f2b0ae-e134-448d-990e-89c4e35b4cbd/scratchpad/axe-prototype/app-baseline",
-  "serveMode": "static",
-  "stubImages": true,
-  "axe": {
-    "version": "4.12.1",
-    "options": {
-      "runOnly": {
-        "type": "tag",
-        "values": [
-          "wcag2a",
-          "wcag2aa",
-          "wcag21a",
-          "wcag21aa",
-          "best-practice"
-        ]
-      },
-      "resultTypes": [
-        "violations",
-        "incomplete"
-      ]
-    }
-  },
-  "playwright": "1.61.1",
-  "timings": {
-    "serveMs": 3,
-    "browserLaunchMs": 37
-  },
-  "journeys": [
-    {
-      "id": "browse-to-restaurant",
-      "description": "Home page -> restaurant card -> restaurant detail page with menu rendered",
-      "ok": true,
-      "error": null,
-      "outcome": {
-        "endedAt": "/restaurants/1"
-      },
-      "expectedCheckpoints": null,
-      "durationMs": 743,
-      "network": {
-        "api": 2,
-        "images": 11,
-        "fonts": 8,
-        "unexpected": []
-      },
-      "consoleErrors": [
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-      ],
-      "pageErrors": [],
-      "checkpoints": [
-        {
-          "label": "home-loaded",
-          "path": "/",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/",
-          "violations": [
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            },
-            {
-              "id": "region",
-              "impact": "moderate",
-              "help": "All page content should be contained by landmarks",
-              "tags": [
-                "cat.keyboard",
-                "best-practice",
-                "RGAAv4",
-                "RGAA-9.2.1"
-              ],
-              "nodeCount": 11,
-              "nodes": [
-                {
-                  "target": [
-                    ".sc-fFejRA"
-                  ],
-                  "html": "<a aria-label=\"go to home page\" class=\"sc-fFejRA foxtgq\" href=\"/\" data-discover=\"true\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-eGRUIf"
-                  ],
-                  "html": "<h2 class=\"sc-jRQzZg iAJATa sc-eGRUIf hA-DHKY\"><strong>Hungry?</strong> find your next meal</h2>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-hmjqoT.kQSWdF.container-desktop:nth-child(3) > .sc-eLwIuu.fiTHrT"
-                  ],
-                  "html": "<div class=\"sc-eLwIuu fiTHrT\"><h2 class=\"sc-jRQzZg iAJATa\">Our favorite picks</h2></div>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-hmjqoT.kQSWdF.container-desktop:nth-child(3) > .sc-kHOZcY.ERSDL > .sc-hOGkBq.krpTjc"
-                  ],
-                  "html": "<div class=\"sc-hOGkBq krpTjc\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".bolder"
-                  ],
-                  "html": "<h1 class=\"sc-jRQzZg bMOkJt bolder\">Award winning</h1>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    "h1:nth-child(2)"
-                  ],
-                  "html": "<h1 class=\"sc-jRQzZg bMOkJt\">The best restaurants near you!</h1>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-hmjqoT.kQSWdF.container-desktop:nth-child(7) > .sc-eLwIuu.fiTHrT > h2"
-                  ],
-                  "html": "<h2 class=\"sc-jRQzZg iAJATa\">Categories</h2>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-hmjqoT.kQSWdF.container-desktop:nth-child(7) > .sc-kHOZcY.ERSDL"
-                  ],
-                  "html": "<div class=\"sc-kHOZcY ERSDL\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(2)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(3)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(4)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                }
-              ]
-            }
-          ],
-          "incomplete": [
-            {
-              "id": "color-contrast",
-              "impact": "serious",
-              "nodeCount": 3
-            }
-          ],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-conditional-attr",
-            "aria-hidden-body",
-            "aria-prohibited-attr",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "empty-heading",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "image-alt",
-            "image-redundant-alt",
-            "landmark-one-main",
-            "link-name",
-            "list",
-            "listitem",
-            "meta-viewport-large",
-            "nested-interactive",
-            "page-has-heading-one",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 26,
-          "inapplicableCount": 62,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-allowed-role",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-focus",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-attr",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-roles",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "autocomplete-valid",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "duplicate-id-aria",
-            "empty-table-header",
-            "form-field-multiple-labels",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "input-button-name",
-            "input-image-alt",
-            "label-title-only",
-            "label",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        },
-        {
-          "label": "restaurant-detail",
-          "path": "/restaurants/1",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/restaurants/1",
-          "violations": [
-            {
-              "id": "landmark-one-main",
-              "impact": "moderate",
-              "help": "Document should have one main landmark",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
-                }
-              ]
-            },
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            },
-            {
-              "id": "page-has-heading-one",
-              "impact": "moderate",
-              "help": "Page should contain a level-one heading",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
-                }
-              ]
-            },
-            {
-              "id": "region",
-              "impact": "moderate",
-              "help": "All page content should be contained by landmarks",
-              "tags": [
-                "cat.keyboard",
-                "best-practice",
-                "RGAAv4",
-                "RGAA-9.2.1"
-              ],
-              "nodeCount": 5,
-              "nodes": [
-                {
-                  "target": [
-                    ".sc-fFejRA"
-                  ],
-                  "html": "<a aria-label=\"go to home page\" class=\"sc-fFejRA foxtgq\" href=\"/\" data-discover=\"true\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-bBHyYg"
-                  ],
-                  "html": "<div class=\"sc-bBHyYg dfcZSR\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(2)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(3)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(4)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                }
-              ]
-            }
-          ],
-          "incomplete": [],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-conditional-attr",
-            "aria-hidden-body",
-            "aria-prohibited-attr",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "empty-heading",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "image-alt",
-            "image-redundant-alt",
-            "link-name",
-            "list",
-            "listitem",
-            "meta-viewport-large",
-            "nested-interactive",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 24,
-          "inapplicableCount": 62,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-allowed-role",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-focus",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-attr",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-roles",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "autocomplete-valid",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "duplicate-id-aria",
-            "empty-table-header",
-            "form-field-multiple-labels",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "input-button-name",
-            "input-image-alt",
-            "label-title-only",
-            "label",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "open-food-item-modal",
-      "description": "Restaurant detail -> click a menu item -> scan with the modal open",
-      "ok": true,
-      "error": null,
-      "outcome": {
-        "endedAt": "/restaurants/1",
-        "modalOpen": true
-      },
-      "expectedCheckpoints": null,
-      "durationMs": 1052,
-      "network": {
-        "api": 1,
-        "images": 1,
-        "fonts": 6,
-        "unexpected": []
-      },
-      "consoleErrors": [
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-      ],
-      "pageErrors": [],
-      "checkpoints": [
-        {
-          "label": "menu-closed",
-          "path": "/restaurants/1",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/restaurants/1",
-          "violations": [
-            {
-              "id": "landmark-one-main",
-              "impact": "moderate",
-              "help": "Document should have one main landmark",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
-                }
-              ]
-            },
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            },
-            {
-              "id": "page-has-heading-one",
-              "impact": "moderate",
-              "help": "Page should contain a level-one heading",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
-                }
-              ]
-            },
-            {
-              "id": "region",
-              "impact": "moderate",
-              "help": "All page content should be contained by landmarks",
-              "tags": [
-                "cat.keyboard",
-                "best-practice",
-                "RGAAv4",
-                "RGAA-9.2.1"
-              ],
-              "nodeCount": 5,
-              "nodes": [
-                {
-                  "target": [
-                    ".sc-fFejRA"
-                  ],
-                  "html": "<a aria-label=\"go to home page\" class=\"sc-fFejRA foxtgq\" href=\"/\" data-discover=\"true\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-bBHyYg"
-                  ],
-                  "html": "<div class=\"sc-bBHyYg dfcZSR\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(2)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(3)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-dlVxDp.dVqBRM:nth-child(4)"
-                  ],
-                  "html": "<div class=\"sc-dlVxDp dVqBRM\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                }
-              ]
-            }
-          ],
-          "incomplete": [],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-conditional-attr",
-            "aria-hidden-body",
-            "aria-prohibited-attr",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "empty-heading",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "image-alt",
-            "image-redundant-alt",
-            "link-name",
-            "list",
-            "listitem",
-            "meta-viewport-large",
-            "nested-interactive",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 24,
-          "inapplicableCount": 62,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-allowed-role",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-focus",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-attr",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-roles",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "autocomplete-valid",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "duplicate-id-aria",
-            "empty-table-header",
-            "form-field-multiple-labels",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "input-button-name",
-            "input-image-alt",
-            "label-title-only",
-            "label",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        },
-        {
-          "label": "modal-open",
-          "path": "/restaurants/1",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/restaurants/1",
-          "violations": [
-            {
-              "id": "color-contrast",
-              "impact": "serious",
-              "help": "Elements must meet minimum color contrast ratio thresholds",
-              "tags": [
-                "cat.color",
-                "wcag2aa",
-                "wcag143",
-                "TTv5",
-                "TT13.c",
-                "EN-301-549",
-                "EN-9.1.4.3",
-                "ACT",
-                "RGAAv4",
-                "RGAA-3.2.1"
-              ],
-              "nodeCount": 3,
-              "nodes": [
-                {
-                  "target": [
-                    "h1"
-                  ],
-                  "html": "<h1 class=\"sc-jRQzZg bMOkJt\">Cheeseburger</h1>",
-                  "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 1.43 (foreground color: #b6b6b6, background color: #d9d9da, font size: 32.9pt (43.84px), font weight: bold). Expected contrast ratio of 3:1"
-                },
-                {
-                  "target": [
-                    ".sc-nVhaW"
-                  ],
-                  "html": "<p class=\"sc-hKwAaq kxXeHC sc-nVhaW cFtBat\">Nice grilled burger with cheese</p>",
-                  "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 1.43 (foreground color: #b6b6b6, background color: #d9d9da, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
-                },
-                {
-                  "target": [
-                    ".dPpXry"
-                  ],
-                  "html": "<button type=\"button\" tabindex=\"0\" aria-label=\"confirm\" class=\"sc-dkPvMp dPpXry Button sc-hiwOQz jKEcu\">add for €8.50</button>",
-                  "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.78 (foreground color: #f8f8f8, background color: #969696, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
-                }
-              ]
-            },
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            }
-          ],
-          "incomplete": [
-            {
-              "id": "aria-hidden-focus",
-              "impact": "serious",
-              "nodeCount": 4
-            },
-            {
-              "id": "color-contrast",
-              "impact": "serious",
-              "nodeCount": 1
-            }
-          ],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-allowed-role",
-            "aria-conditional-attr",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-body",
-            "aria-hidden-focus",
-            "aria-prohibited-attr",
-            "aria-required-attr",
-            "aria-roles",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "empty-heading",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "landmark-one-main",
-            "meta-viewport-large",
-            "nested-interactive",
-            "page-has-heading-one",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 27,
-          "inapplicableCount": 61,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "autocomplete-valid",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "duplicate-id-aria",
-            "empty-table-header",
-            "form-field-multiple-labels",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "image-alt",
-            "image-redundant-alt",
-            "input-button-name",
-            "input-image-alt",
-            "label-title-only",
-            "label",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "link-name",
-            "list",
-            "listitem",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        },
-        {
-          "label": "modal-quantity-changed",
-          "path": "/restaurants/1",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/restaurants/1",
-          "violations": [
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            }
-          ],
-          "incomplete": [
-            {
-              "id": "aria-hidden-focus",
-              "impact": "serious",
-              "nodeCount": 4
-            }
-          ],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-allowed-role",
-            "aria-conditional-attr",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-body",
-            "aria-hidden-focus",
-            "aria-prohibited-attr",
-            "aria-required-attr",
-            "aria-roles",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "empty-heading",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "landmark-one-main",
-            "meta-viewport-large",
-            "nested-interactive",
-            "page-has-heading-one",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 27,
-          "inapplicableCount": 61,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "autocomplete-valid",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "duplicate-id-aria",
-            "empty-table-header",
-            "form-field-multiple-labels",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "image-alt",
-            "image-redundant-alt",
-            "input-button-name",
-            "input-image-alt",
-            "label-title-only",
-            "label",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "link-name",
-            "list",
-            "listitem",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "checkout-validation-errors",
-      "description": "Add item to cart -> cart menu -> checkout -> submit empty form -> scan errors",
-      "ok": true,
-      "error": null,
-      "outcome": {
-        "endedAt": "/checkout",
-        "errorsShown": 4
-      },
-      "expectedCheckpoints": null,
-      "durationMs": 1857,
-      "network": {
-        "api": 1,
-        "images": 1,
-        "fonts": 8,
-        "unexpected": []
-      },
-      "consoleErrors": [
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-      ],
-      "pageErrors": [],
-      "checkpoints": [
-        {
-          "label": "cart-open",
-          "path": "/restaurants/1",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/restaurants/1",
-          "violations": [
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            }
-          ],
-          "incomplete": [
-            {
-              "id": "aria-hidden-focus",
-              "impact": "serious",
-              "nodeCount": 3
-            },
-            {
-              "id": "color-contrast",
-              "impact": "serious",
-              "nodeCount": 1
-            }
-          ],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-allowed-role",
-            "aria-conditional-attr",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-body",
-            "aria-hidden-focus",
-            "aria-prohibited-attr",
-            "aria-required-attr",
-            "aria-roles",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "duplicate-id-aria",
-            "empty-heading",
-            "form-field-multiple-labels",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "label-title-only",
-            "landmark-one-main",
-            "meta-viewport-large",
-            "nested-interactive",
-            "page-has-heading-one",
-            "region",
-            "select-name",
-            "tabindex"
-          ],
-          "passCount": 31,
-          "inapplicableCount": 57,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "autocomplete-valid",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "empty-table-header",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "image-alt",
-            "image-redundant-alt",
-            "input-button-name",
-            "input-image-alt",
-            "label",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "link-name",
-            "list",
-            "listitem",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        },
-        {
-          "label": "checkout-empty",
-          "path": "/checkout",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/checkout",
-          "violations": [
-            {
-              "id": "landmark-one-main",
-              "impact": "moderate",
-              "help": "Document should have one main landmark",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
-                }
-              ]
-            },
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            },
-            {
-              "id": "page-has-heading-one",
-              "impact": "moderate",
-              "help": "Page should contain a level-one heading",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
-                }
-              ]
-            },
-            {
-              "id": "region",
-              "impact": "moderate",
-              "help": "All page content should be contained by landmarks",
-              "tags": [
-                "cat.keyboard",
-                "best-practice",
-                "RGAAv4",
-                "RGAA-9.2.1"
-              ],
-              "nodeCount": 9,
-              "nodes": [
-                {
-                  "target": [
-                    ".sc-fotPOC"
-                  ],
-                  "html": "<div data-testid=\"header\" class=\"sc-fotPOC FiexZ\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-fmBBaG"
-                  ],
-                  "html": "<div class=\"sc-fmBBaG giCWkd\"><h2 class=\"sc-jRQzZg iAJATa sc-jlRLxw caQVAg container\">Checkout</h2></div>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-jWUChQ > div:nth-child(1)"
-                  ],
-                  "html": "<div style=\"margin-bottom: 2rem;\"><div class=\"sc-FNZOL laWtGT\"><h3 class=\"sc-jRQzZg erihkl sc-jHkVTj jyRqLa\">Contact details</h3><span class=\"sc-hKwAaq hHeeqE\">Step 1 of 2</span></div><div class=\"sc-bQtKCm jKEY\"><div class=\"sc-fXErLa fmiqFD\"></div></div></div>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(1)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(2)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(3)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(4)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".hulEUk"
-                  ],
-                  "html": "<span class=\"sc-hKwAaq hulEUk sc-dVNiaY hqgCdn\">We'll only use your phone to call you about your order</span>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-eFeklB"
-                  ],
-                  "html": "<div class=\"sc-eFeklB cekPmq\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                }
-              ]
-            }
-          ],
-          "incomplete": [],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-conditional-attr",
-            "aria-hidden-body",
-            "aria-prohibited-attr",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "autocomplete-valid",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "duplicate-id-aria",
-            "empty-heading",
-            "form-field-multiple-labels",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "label-title-only",
-            "label",
-            "link-name",
-            "meta-viewport-large",
-            "nested-interactive",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 25,
-          "inapplicableCount": 61,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-allowed-role",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-focus",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-attr",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-roles",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "empty-table-header",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "image-alt",
-            "image-redundant-alt",
-            "input-button-name",
-            "input-image-alt",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "list",
-            "listitem",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        },
-        {
-          "label": "checkout-errors",
-          "path": "/checkout",
-          "testEngine": {
-            "name": "axe-core",
-            "version": "4.12.1"
-          },
-          "url": "http://127.0.0.1:38267/checkout",
-          "violations": [
-            {
-              "id": "landmark-one-main",
-              "impact": "moderate",
-              "help": "Document should have one main landmark",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
-                }
-              ]
-            },
-            {
-              "id": "meta-viewport",
-              "impact": "moderate",
-              "help": "Zooming and scaling must not be disabled",
-              "tags": [
-                "cat.sensory-and-visual-cues",
-                "wcag2aa",
-                "wcag144",
-                "EN-301-549",
-                "EN-9.1.4.4",
-                "ACT",
-                "RGAAv4",
-                "RGAA-10.4.2"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "meta[name=\"viewport\"]"
-                  ],
-                  "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
-                  "failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
-                }
-              ]
-            },
-            {
-              "id": "page-has-heading-one",
-              "impact": "moderate",
-              "help": "Page should contain a level-one heading",
-              "tags": [
-                "cat.semantics",
-                "best-practice"
-              ],
-              "nodeCount": 1,
-              "nodes": [
-                {
-                  "target": [
-                    "html"
-                  ],
-                  "html": "<html lang=\"en\" data-theme=\"light\">",
-                  "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
-                }
-              ]
-            },
-            {
-              "id": "region",
-              "impact": "moderate",
-              "help": "All page content should be contained by landmarks",
-              "tags": [
-                "cat.keyboard",
-                "best-practice",
-                "RGAAv4",
-                "RGAA-9.2.1"
-              ],
-              "nodeCount": 9,
-              "nodes": [
-                {
-                  "target": [
-                    ".sc-fotPOC"
-                  ],
-                  "html": "<div data-testid=\"header\" class=\"sc-fotPOC FiexZ\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-fmBBaG"
-                  ],
-                  "html": "<div class=\"sc-fmBBaG giCWkd\"><h2 class=\"sc-jRQzZg iAJATa sc-jlRLxw caQVAg container\">Checkout</h2></div>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-jWUChQ > div:nth-child(1)"
-                  ],
-                  "html": "<div style=\"margin-bottom: 2rem;\"><div class=\"sc-FNZOL laWtGT\"><h3 class=\"sc-jRQzZg erihkl sc-jHkVTj jyRqLa\">Contact details</h3><span class=\"sc-hKwAaq hHeeqE\">Step 1 of 2</span></div><div class=\"sc-bQtKCm jKEY\"><div class=\"sc-fXErLa fmiqFD\"></div></div></div>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(1)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(2)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(3)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-xiJSZ.fGakqR.FieldRoot:nth-child(4)"
-                  ],
-                  "html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".hulEUk"
-                  ],
-                  "html": "<span class=\"sc-hKwAaq hulEUk sc-dVNiaY hqgCdn\">We'll only use your phone to call you about your order</span>",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                },
-                {
-                  "target": [
-                    ".sc-eFeklB"
-                  ],
-                  "html": "<div class=\"sc-eFeklB cekPmq\">",
-                  "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
-                }
-              ]
-            }
-          ],
-          "incomplete": [],
-          "passes": [
-            "aria-allowed-attr",
-            "aria-conditional-attr",
-            "aria-hidden-body",
-            "aria-prohibited-attr",
-            "aria-valid-attr-value",
-            "aria-valid-attr",
-            "autocomplete-valid",
-            "avoid-inline-spacing",
-            "button-name",
-            "bypass",
-            "color-contrast",
-            "document-title",
-            "duplicate-id-aria",
-            "empty-heading",
-            "form-field-multiple-labels",
-            "heading-order",
-            "html-has-lang",
-            "html-lang-valid",
-            "label-title-only",
-            "label",
-            "link-name",
-            "meta-viewport-large",
-            "nested-interactive",
-            "region",
-            "tabindex"
-          ],
-          "passCount": 25,
-          "inapplicableCount": 61,
-          "inapplicable": [
-            "accesskeys",
-            "area-alt",
-            "aria-allowed-role",
-            "aria-braille-equivalent",
-            "aria-command-name",
-            "aria-deprecated-role",
-            "aria-dialog-name",
-            "aria-hidden-focus",
-            "aria-input-field-name",
-            "aria-meter-name",
-            "aria-progressbar-name",
-            "aria-required-attr",
-            "aria-required-children",
-            "aria-required-parent",
-            "aria-roles",
-            "aria-tab-name",
-            "aria-text",
-            "aria-toggle-field-name",
-            "aria-tooltip-name",
-            "aria-treeitem-name",
-            "blink",
-            "definition-list",
-            "dlitem",
-            "empty-table-header",
-            "frame-focusable-content",
-            "frame-tested",
-            "frame-title-unique",
-            "frame-title",
-            "html-xml-lang-mismatch",
-            "image-alt",
-            "image-redundant-alt",
-            "input-button-name",
-            "input-image-alt",
-            "landmark-banner-is-top-level",
-            "landmark-contentinfo-is-top-level",
-            "landmark-main-is-top-level",
-            "landmark-no-duplicate-banner",
-            "landmark-no-duplicate-contentinfo",
-            "landmark-no-duplicate-main",
-            "landmark-unique",
-            "link-in-text-block",
-            "list",
-            "listitem",
-            "marquee",
-            "meta-refresh",
-            "object-alt",
-            "presentation-role-conflict",
-            "role-img-alt",
-            "scope-attr-valid",
-            "scrollable-region-focusable",
-            "select-name",
-            "server-side-image-map",
-            "skip-link",
-            "summary-name",
-            "svg-img-alt",
-            "table-duplicate-name",
-            "td-headers-attr",
-            "th-has-data-cells",
-            "valid-lang",
-            "video-caption",
-            "no-autoplay-audio"
-          ]
-        }
-      ]
-    }
-  ],
-  "totals": {
-    "complete": true,
-    "journeys": 3,
-    "journeysOk": 3,
-    "checkpoints": 8,
-    "distinctRules": 5,
-    "violationNodes": 17,
-    "weighted": 43,
-    "byImpact": {
-      "critical": 0,
-      "serious": 1,
-      "moderate": 4,
-      "minor": 0
-    },
-    "byRule": [
-      {
-        "id": "region",
-        "impact": "moderate",
-        "peakNodes": 11,
-        "checkpoints": [
-          "browse-to-restaurant/home-loaded",
-          "browse-to-restaurant/restaurant-detail",
-          "open-food-item-modal/menu-closed",
-          "checkout-validation-errors/checkout-empty",
-          "checkout-validation-errors/checkout-errors"
-        ]
-      },
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "peakNodes": 3,
-        "checkpoints": [
-          "open-food-item-modal/modal-open"
-        ]
-      },
-      {
-        "id": "meta-viewport",
-        "impact": "moderate",
-        "peakNodes": 1,
-        "checkpoints": [
-          "browse-to-restaurant/home-loaded",
-          "browse-to-restaurant/restaurant-detail",
-          "open-food-item-modal/menu-closed",
-          "open-food-item-modal/modal-open",
-          "open-food-item-modal/modal-quantity-changed",
-          "checkout-validation-errors/cart-open",
-          "checkout-validation-errors/checkout-empty",
-          "checkout-validation-errors/checkout-errors"
-        ]
-      },
-      {
-        "id": "landmark-one-main",
-        "impact": "moderate",
-        "peakNodes": 1,
-        "checkpoints": [
-          "browse-to-restaurant/restaurant-detail",
-          "open-food-item-modal/menu-closed",
-          "checkout-validation-errors/checkout-empty",
-          "checkout-validation-errors/checkout-errors"
-        ]
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "peakNodes": 1,
-        "checkpoints": [
-          "browse-to-restaurant/restaurant-detail",
-          "open-food-item-modal/menu-closed",
-          "checkout-validation-errors/checkout-empty",
-          "checkout-validation-errors/checkout-errors"
-        ]
-      }
-    ]
-  }
+	"schema": "a11y/2",
+	"app": "/tmp/claude-1000/-home-steve-Development-mcp/54f2b0ae-e134-448d-990e-89c4e35b4cbd/scratchpad/axe-prototype/app-baseline",
+	"serveMode": "static",
+	"stubImages": true,
+	"axe": {
+		"version": "4.12.1",
+		"options": {
+			"runOnly": {
+				"type": "tag",
+				"values": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]
+			},
+			"resultTypes": ["violations", "incomplete"]
+		}
+	},
+	"playwright": "1.61.1",
+	"timings": {
+		"serveMs": 3,
+		"browserLaunchMs": 37
+	},
+	"journeys": [
+		{
+			"id": "browse-to-restaurant",
+			"description": "Home page -> restaurant card -> restaurant detail page with menu rendered",
+			"ok": true,
+			"error": null,
+			"outcome": {
+				"endedAt": "/restaurants/1"
+			},
+			"expectedCheckpoints": null,
+			"durationMs": 743,
+			"network": {
+				"api": 2,
+				"images": 11,
+				"fonts": 8,
+				"unexpected": []
+			},
+			"consoleErrors": [
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+			],
+			"pageErrors": [],
+			"checkpoints": [
+				{
+					"label": "home-loaded",
+					"path": "/",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/",
+					"violations": [
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						},
+						{
+							"id": "region",
+							"impact": "moderate",
+							"help": "All page content should be contained by landmarks",
+							"tags": ["cat.keyboard", "best-practice", "RGAAv4", "RGAA-9.2.1"],
+							"nodeCount": 11,
+							"nodes": [
+								{
+									"target": [".sc-fFejRA"],
+									"html": "<a aria-label=\"go to home page\" class=\"sc-fFejRA foxtgq\" href=\"/\" data-discover=\"true\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-eGRUIf"],
+									"html": "<h2 class=\"sc-jRQzZg iAJATa sc-eGRUIf hA-DHKY\"><strong>Hungry?</strong> find your next meal</h2>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [
+										".sc-hmjqoT.kQSWdF.container-desktop:nth-child(3) > .sc-eLwIuu.fiTHrT"
+									],
+									"html": "<div class=\"sc-eLwIuu fiTHrT\"><h2 class=\"sc-jRQzZg iAJATa\">Our favorite picks</h2></div>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [
+										".sc-hmjqoT.kQSWdF.container-desktop:nth-child(3) > .sc-kHOZcY.ERSDL > .sc-hOGkBq.krpTjc"
+									],
+									"html": "<div class=\"sc-hOGkBq krpTjc\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".bolder"],
+									"html": "<h1 class=\"sc-jRQzZg bMOkJt bolder\">Award winning</h1>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": ["h1:nth-child(2)"],
+									"html": "<h1 class=\"sc-jRQzZg bMOkJt\">The best restaurants near you!</h1>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [
+										".sc-hmjqoT.kQSWdF.container-desktop:nth-child(7) > .sc-eLwIuu.fiTHrT > h2"
+									],
+									"html": "<h2 class=\"sc-jRQzZg iAJATa\">Categories</h2>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-hmjqoT.kQSWdF.container-desktop:nth-child(7) > .sc-kHOZcY.ERSDL"],
+									"html": "<div class=\"sc-kHOZcY ERSDL\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(2)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(3)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(4)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								}
+							]
+						}
+					],
+					"incomplete": [
+						{
+							"id": "color-contrast",
+							"impact": "serious",
+							"nodeCount": 3
+						}
+					],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-conditional-attr",
+						"aria-hidden-body",
+						"aria-prohibited-attr",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"empty-heading",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"image-alt",
+						"image-redundant-alt",
+						"landmark-one-main",
+						"link-name",
+						"list",
+						"listitem",
+						"meta-viewport-large",
+						"nested-interactive",
+						"page-has-heading-one",
+						"region",
+						"tabindex"
+					],
+					"passCount": 26,
+					"inapplicableCount": 62,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-allowed-role",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-focus",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-attr",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-roles",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"autocomplete-valid",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"duplicate-id-aria",
+						"empty-table-header",
+						"form-field-multiple-labels",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"input-button-name",
+						"input-image-alt",
+						"label-title-only",
+						"label",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				},
+				{
+					"label": "restaurant-detail",
+					"path": "/restaurants/1",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/restaurants/1",
+					"violations": [
+						{
+							"id": "landmark-one-main",
+							"impact": "moderate",
+							"help": "Document should have one main landmark",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
+								}
+							]
+						},
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						},
+						{
+							"id": "page-has-heading-one",
+							"impact": "moderate",
+							"help": "Page should contain a level-one heading",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
+								}
+							]
+						},
+						{
+							"id": "region",
+							"impact": "moderate",
+							"help": "All page content should be contained by landmarks",
+							"tags": ["cat.keyboard", "best-practice", "RGAAv4", "RGAA-9.2.1"],
+							"nodeCount": 5,
+							"nodes": [
+								{
+									"target": [".sc-fFejRA"],
+									"html": "<a aria-label=\"go to home page\" class=\"sc-fFejRA foxtgq\" href=\"/\" data-discover=\"true\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-bBHyYg"],
+									"html": "<div class=\"sc-bBHyYg dfcZSR\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(2)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(3)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(4)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								}
+							]
+						}
+					],
+					"incomplete": [],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-conditional-attr",
+						"aria-hidden-body",
+						"aria-prohibited-attr",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"empty-heading",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"image-alt",
+						"image-redundant-alt",
+						"link-name",
+						"list",
+						"listitem",
+						"meta-viewport-large",
+						"nested-interactive",
+						"region",
+						"tabindex"
+					],
+					"passCount": 24,
+					"inapplicableCount": 62,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-allowed-role",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-focus",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-attr",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-roles",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"autocomplete-valid",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"duplicate-id-aria",
+						"empty-table-header",
+						"form-field-multiple-labels",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"input-button-name",
+						"input-image-alt",
+						"label-title-only",
+						"label",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				}
+			]
+		},
+		{
+			"id": "open-food-item-modal",
+			"description": "Restaurant detail -> click a menu item -> scan with the modal open",
+			"ok": true,
+			"error": null,
+			"outcome": {
+				"endedAt": "/restaurants/1",
+				"modalOpen": true
+			},
+			"expectedCheckpoints": null,
+			"durationMs": 1052,
+			"network": {
+				"api": 1,
+				"images": 1,
+				"fonts": 6,
+				"unexpected": []
+			},
+			"consoleErrors": [
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+			],
+			"pageErrors": [],
+			"checkpoints": [
+				{
+					"label": "menu-closed",
+					"path": "/restaurants/1",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/restaurants/1",
+					"violations": [
+						{
+							"id": "landmark-one-main",
+							"impact": "moderate",
+							"help": "Document should have one main landmark",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
+								}
+							]
+						},
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						},
+						{
+							"id": "page-has-heading-one",
+							"impact": "moderate",
+							"help": "Page should contain a level-one heading",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
+								}
+							]
+						},
+						{
+							"id": "region",
+							"impact": "moderate",
+							"help": "All page content should be contained by landmarks",
+							"tags": ["cat.keyboard", "best-practice", "RGAAv4", "RGAA-9.2.1"],
+							"nodeCount": 5,
+							"nodes": [
+								{
+									"target": [".sc-fFejRA"],
+									"html": "<a aria-label=\"go to home page\" class=\"sc-fFejRA foxtgq\" href=\"/\" data-discover=\"true\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-bBHyYg"],
+									"html": "<div class=\"sc-bBHyYg dfcZSR\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(2)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(3)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-dlVxDp.dVqBRM:nth-child(4)"],
+									"html": "<div class=\"sc-dlVxDp dVqBRM\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								}
+							]
+						}
+					],
+					"incomplete": [],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-conditional-attr",
+						"aria-hidden-body",
+						"aria-prohibited-attr",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"empty-heading",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"image-alt",
+						"image-redundant-alt",
+						"link-name",
+						"list",
+						"listitem",
+						"meta-viewport-large",
+						"nested-interactive",
+						"region",
+						"tabindex"
+					],
+					"passCount": 24,
+					"inapplicableCount": 62,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-allowed-role",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-focus",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-attr",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-roles",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"autocomplete-valid",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"duplicate-id-aria",
+						"empty-table-header",
+						"form-field-multiple-labels",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"input-button-name",
+						"input-image-alt",
+						"label-title-only",
+						"label",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				},
+				{
+					"label": "modal-open",
+					"path": "/restaurants/1",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/restaurants/1",
+					"violations": [
+						{
+							"id": "color-contrast",
+							"impact": "serious",
+							"help": "Elements must meet minimum color contrast ratio thresholds",
+							"tags": [
+								"cat.color",
+								"wcag2aa",
+								"wcag143",
+								"TTv5",
+								"TT13.c",
+								"EN-301-549",
+								"EN-9.1.4.3",
+								"ACT",
+								"RGAAv4",
+								"RGAA-3.2.1"
+							],
+							"nodeCount": 3,
+							"nodes": [
+								{
+									"target": ["h1"],
+									"html": "<h1 class=\"sc-jRQzZg bMOkJt\">Cheeseburger</h1>",
+									"failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 1.43 (foreground color: #b6b6b6, background color: #d9d9da, font size: 32.9pt (43.84px), font weight: bold). Expected contrast ratio of 3:1"
+								},
+								{
+									"target": [".sc-nVhaW"],
+									"html": "<p class=\"sc-hKwAaq kxXeHC sc-nVhaW cFtBat\">Nice grilled burger with cheese</p>",
+									"failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 1.43 (foreground color: #b6b6b6, background color: #d9d9da, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
+								},
+								{
+									"target": [".dPpXry"],
+									"html": "<button type=\"button\" tabindex=\"0\" aria-label=\"confirm\" class=\"sc-dkPvMp dPpXry Button sc-hiwOQz jKEcu\">add for €8.50</button>",
+									"failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.78 (foreground color: #f8f8f8, background color: #969696, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+								}
+							]
+						},
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						}
+					],
+					"incomplete": [
+						{
+							"id": "aria-hidden-focus",
+							"impact": "serious",
+							"nodeCount": 4
+						},
+						{
+							"id": "color-contrast",
+							"impact": "serious",
+							"nodeCount": 1
+						}
+					],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-allowed-role",
+						"aria-conditional-attr",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-body",
+						"aria-hidden-focus",
+						"aria-prohibited-attr",
+						"aria-required-attr",
+						"aria-roles",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"empty-heading",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"landmark-one-main",
+						"meta-viewport-large",
+						"nested-interactive",
+						"page-has-heading-one",
+						"region",
+						"tabindex"
+					],
+					"passCount": 27,
+					"inapplicableCount": 61,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"autocomplete-valid",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"duplicate-id-aria",
+						"empty-table-header",
+						"form-field-multiple-labels",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"image-alt",
+						"image-redundant-alt",
+						"input-button-name",
+						"input-image-alt",
+						"label-title-only",
+						"label",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"link-name",
+						"list",
+						"listitem",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				},
+				{
+					"label": "modal-quantity-changed",
+					"path": "/restaurants/1",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/restaurants/1",
+					"violations": [
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						}
+					],
+					"incomplete": [
+						{
+							"id": "aria-hidden-focus",
+							"impact": "serious",
+							"nodeCount": 4
+						}
+					],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-allowed-role",
+						"aria-conditional-attr",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-body",
+						"aria-hidden-focus",
+						"aria-prohibited-attr",
+						"aria-required-attr",
+						"aria-roles",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"empty-heading",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"landmark-one-main",
+						"meta-viewport-large",
+						"nested-interactive",
+						"page-has-heading-one",
+						"region",
+						"tabindex"
+					],
+					"passCount": 27,
+					"inapplicableCount": 61,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"autocomplete-valid",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"duplicate-id-aria",
+						"empty-table-header",
+						"form-field-multiple-labels",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"image-alt",
+						"image-redundant-alt",
+						"input-button-name",
+						"input-image-alt",
+						"label-title-only",
+						"label",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"link-name",
+						"list",
+						"listitem",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				}
+			]
+		},
+		{
+			"id": "checkout-validation-errors",
+			"description": "Add item to cart -> cart menu -> checkout -> submit empty form -> scan errors",
+			"ok": true,
+			"error": null,
+			"outcome": {
+				"endedAt": "/checkout",
+				"errorsShown": 4
+			},
+			"expectedCheckpoints": null,
+			"durationMs": 1857,
+			"network": {
+				"api": 1,
+				"images": 1,
+				"fonts": 8,
+				"unexpected": []
+			},
+			"consoleErrors": [
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+				"Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+			],
+			"pageErrors": [],
+			"checkpoints": [
+				{
+					"label": "cart-open",
+					"path": "/restaurants/1",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/restaurants/1",
+					"violations": [
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						}
+					],
+					"incomplete": [
+						{
+							"id": "aria-hidden-focus",
+							"impact": "serious",
+							"nodeCount": 3
+						},
+						{
+							"id": "color-contrast",
+							"impact": "serious",
+							"nodeCount": 1
+						}
+					],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-allowed-role",
+						"aria-conditional-attr",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-body",
+						"aria-hidden-focus",
+						"aria-prohibited-attr",
+						"aria-required-attr",
+						"aria-roles",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"duplicate-id-aria",
+						"empty-heading",
+						"form-field-multiple-labels",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"label-title-only",
+						"landmark-one-main",
+						"meta-viewport-large",
+						"nested-interactive",
+						"page-has-heading-one",
+						"region",
+						"select-name",
+						"tabindex"
+					],
+					"passCount": 31,
+					"inapplicableCount": 57,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"autocomplete-valid",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"empty-table-header",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"image-alt",
+						"image-redundant-alt",
+						"input-button-name",
+						"input-image-alt",
+						"label",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"link-name",
+						"list",
+						"listitem",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				},
+				{
+					"label": "checkout-empty",
+					"path": "/checkout",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/checkout",
+					"violations": [
+						{
+							"id": "landmark-one-main",
+							"impact": "moderate",
+							"help": "Document should have one main landmark",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
+								}
+							]
+						},
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						},
+						{
+							"id": "page-has-heading-one",
+							"impact": "moderate",
+							"help": "Page should contain a level-one heading",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
+								}
+							]
+						},
+						{
+							"id": "region",
+							"impact": "moderate",
+							"help": "All page content should be contained by landmarks",
+							"tags": ["cat.keyboard", "best-practice", "RGAAv4", "RGAA-9.2.1"],
+							"nodeCount": 9,
+							"nodes": [
+								{
+									"target": [".sc-fotPOC"],
+									"html": "<div data-testid=\"header\" class=\"sc-fotPOC FiexZ\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-fmBBaG"],
+									"html": "<div class=\"sc-fmBBaG giCWkd\"><h2 class=\"sc-jRQzZg iAJATa sc-jlRLxw caQVAg container\">Checkout</h2></div>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-jWUChQ > div:nth-child(1)"],
+									"html": "<div style=\"margin-bottom: 2rem;\"><div class=\"sc-FNZOL laWtGT\"><h3 class=\"sc-jRQzZg erihkl sc-jHkVTj jyRqLa\">Contact details</h3><span class=\"sc-hKwAaq hHeeqE\">Step 1 of 2</span></div><div class=\"sc-bQtKCm jKEY\"><div class=\"sc-fXErLa fmiqFD\"></div></div></div>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(1)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(2)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(3)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(4)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".hulEUk"],
+									"html": "<span class=\"sc-hKwAaq hulEUk sc-dVNiaY hqgCdn\">We'll only use your phone to call you about your order</span>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-eFeklB"],
+									"html": "<div class=\"sc-eFeklB cekPmq\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								}
+							]
+						}
+					],
+					"incomplete": [],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-conditional-attr",
+						"aria-hidden-body",
+						"aria-prohibited-attr",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"autocomplete-valid",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"duplicate-id-aria",
+						"empty-heading",
+						"form-field-multiple-labels",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"label-title-only",
+						"label",
+						"link-name",
+						"meta-viewport-large",
+						"nested-interactive",
+						"region",
+						"tabindex"
+					],
+					"passCount": 25,
+					"inapplicableCount": 61,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-allowed-role",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-focus",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-attr",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-roles",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"empty-table-header",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"image-alt",
+						"image-redundant-alt",
+						"input-button-name",
+						"input-image-alt",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"list",
+						"listitem",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				},
+				{
+					"label": "checkout-errors",
+					"path": "/checkout",
+					"testEngine": {
+						"name": "axe-core",
+						"version": "4.12.1"
+					},
+					"url": "http://127.0.0.1:38267/checkout",
+					"violations": [
+						{
+							"id": "landmark-one-main",
+							"impact": "moderate",
+							"help": "Document should have one main landmark",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Document does not have a main landmark"
+								}
+							]
+						},
+						{
+							"id": "meta-viewport",
+							"impact": "moderate",
+							"help": "Zooming and scaling must not be disabled",
+							"tags": [
+								"cat.sensory-and-visual-cues",
+								"wcag2aa",
+								"wcag144",
+								"EN-301-549",
+								"EN-9.1.4.4",
+								"ACT",
+								"RGAAv4",
+								"RGAA-10.4.2"
+							],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["meta[name=\"viewport\"]"],
+									"html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">",
+									"failureSummary": "Fix any of the following:\n  user-scalable=no on <meta> tag disables zooming on mobile devices"
+								}
+							]
+						},
+						{
+							"id": "page-has-heading-one",
+							"impact": "moderate",
+							"help": "Page should contain a level-one heading",
+							"tags": ["cat.semantics", "best-practice"],
+							"nodeCount": 1,
+							"nodes": [
+								{
+									"target": ["html"],
+									"html": "<html lang=\"en\" data-theme=\"light\">",
+									"failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
+								}
+							]
+						},
+						{
+							"id": "region",
+							"impact": "moderate",
+							"help": "All page content should be contained by landmarks",
+							"tags": ["cat.keyboard", "best-practice", "RGAAv4", "RGAA-9.2.1"],
+							"nodeCount": 9,
+							"nodes": [
+								{
+									"target": [".sc-fotPOC"],
+									"html": "<div data-testid=\"header\" class=\"sc-fotPOC FiexZ\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-fmBBaG"],
+									"html": "<div class=\"sc-fmBBaG giCWkd\"><h2 class=\"sc-jRQzZg iAJATa sc-jlRLxw caQVAg container\">Checkout</h2></div>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-jWUChQ > div:nth-child(1)"],
+									"html": "<div style=\"margin-bottom: 2rem;\"><div class=\"sc-FNZOL laWtGT\"><h3 class=\"sc-jRQzZg erihkl sc-jHkVTj jyRqLa\">Contact details</h3><span class=\"sc-hKwAaq hHeeqE\">Step 1 of 2</span></div><div class=\"sc-bQtKCm jKEY\"><div class=\"sc-fXErLa fmiqFD\"></div></div></div>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(1)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(2)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(3)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-xiJSZ.fGakqR.FieldRoot:nth-child(4)"],
+									"html": "<div class=\"sc-xiJSZ fGakqR FieldRoot\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".hulEUk"],
+									"html": "<span class=\"sc-hKwAaq hulEUk sc-dVNiaY hqgCdn\">We'll only use your phone to call you about your order</span>",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								},
+								{
+									"target": [".sc-eFeklB"],
+									"html": "<div class=\"sc-eFeklB cekPmq\">",
+									"failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+								}
+							]
+						}
+					],
+					"incomplete": [],
+					"passes": [
+						"aria-allowed-attr",
+						"aria-conditional-attr",
+						"aria-hidden-body",
+						"aria-prohibited-attr",
+						"aria-valid-attr-value",
+						"aria-valid-attr",
+						"autocomplete-valid",
+						"avoid-inline-spacing",
+						"button-name",
+						"bypass",
+						"color-contrast",
+						"document-title",
+						"duplicate-id-aria",
+						"empty-heading",
+						"form-field-multiple-labels",
+						"heading-order",
+						"html-has-lang",
+						"html-lang-valid",
+						"label-title-only",
+						"label",
+						"link-name",
+						"meta-viewport-large",
+						"nested-interactive",
+						"region",
+						"tabindex"
+					],
+					"passCount": 25,
+					"inapplicableCount": 61,
+					"inapplicable": [
+						"accesskeys",
+						"area-alt",
+						"aria-allowed-role",
+						"aria-braille-equivalent",
+						"aria-command-name",
+						"aria-deprecated-role",
+						"aria-dialog-name",
+						"aria-hidden-focus",
+						"aria-input-field-name",
+						"aria-meter-name",
+						"aria-progressbar-name",
+						"aria-required-attr",
+						"aria-required-children",
+						"aria-required-parent",
+						"aria-roles",
+						"aria-tab-name",
+						"aria-text",
+						"aria-toggle-field-name",
+						"aria-tooltip-name",
+						"aria-treeitem-name",
+						"blink",
+						"definition-list",
+						"dlitem",
+						"empty-table-header",
+						"frame-focusable-content",
+						"frame-tested",
+						"frame-title-unique",
+						"frame-title",
+						"html-xml-lang-mismatch",
+						"image-alt",
+						"image-redundant-alt",
+						"input-button-name",
+						"input-image-alt",
+						"landmark-banner-is-top-level",
+						"landmark-contentinfo-is-top-level",
+						"landmark-main-is-top-level",
+						"landmark-no-duplicate-banner",
+						"landmark-no-duplicate-contentinfo",
+						"landmark-no-duplicate-main",
+						"landmark-unique",
+						"link-in-text-block",
+						"list",
+						"listitem",
+						"marquee",
+						"meta-refresh",
+						"object-alt",
+						"presentation-role-conflict",
+						"role-img-alt",
+						"scope-attr-valid",
+						"scrollable-region-focusable",
+						"select-name",
+						"server-side-image-map",
+						"skip-link",
+						"summary-name",
+						"svg-img-alt",
+						"table-duplicate-name",
+						"td-headers-attr",
+						"th-has-data-cells",
+						"valid-lang",
+						"video-caption",
+						"no-autoplay-audio"
+					]
+				}
+			]
+		}
+	],
+	"totals": {
+		"complete": true,
+		"journeys": 3,
+		"journeysOk": 3,
+		"checkpoints": 8,
+		"distinctRules": 5,
+		"violationNodes": 17,
+		"weighted": 43,
+		"byImpact": {
+			"critical": 0,
+			"serious": 1,
+			"moderate": 4,
+			"minor": 0
+		},
+		"byRule": [
+			{
+				"id": "region",
+				"impact": "moderate",
+				"peakNodes": 11,
+				"checkpoints": [
+					"browse-to-restaurant/home-loaded",
+					"browse-to-restaurant/restaurant-detail",
+					"open-food-item-modal/menu-closed",
+					"checkout-validation-errors/checkout-empty",
+					"checkout-validation-errors/checkout-errors"
+				]
+			},
+			{
+				"id": "color-contrast",
+				"impact": "serious",
+				"peakNodes": 3,
+				"checkpoints": ["open-food-item-modal/modal-open"]
+			},
+			{
+				"id": "meta-viewport",
+				"impact": "moderate",
+				"peakNodes": 1,
+				"checkpoints": [
+					"browse-to-restaurant/home-loaded",
+					"browse-to-restaurant/restaurant-detail",
+					"open-food-item-modal/menu-closed",
+					"open-food-item-modal/modal-open",
+					"open-food-item-modal/modal-quantity-changed",
+					"checkout-validation-errors/cart-open",
+					"checkout-validation-errors/checkout-empty",
+					"checkout-validation-errors/checkout-errors"
+				]
+			},
+			{
+				"id": "landmark-one-main",
+				"impact": "moderate",
+				"peakNodes": 1,
+				"checkpoints": [
+					"browse-to-restaurant/restaurant-detail",
+					"open-food-item-modal/menu-closed",
+					"checkout-validation-errors/checkout-empty",
+					"checkout-validation-errors/checkout-errors"
+				]
+			},
+			{
+				"id": "page-has-heading-one",
+				"impact": "moderate",
+				"peakNodes": 1,
+				"checkpoints": [
+					"browse-to-restaurant/restaurant-detail",
+					"open-food-item-modal/menu-closed",
+					"checkout-validation-errors/checkout-empty",
+					"checkout-validation-errors/checkout-errors"
+				]
+			}
+		]
+	}
 }

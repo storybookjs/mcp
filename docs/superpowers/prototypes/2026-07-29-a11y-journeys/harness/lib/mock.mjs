@@ -21,8 +21,7 @@ const BLANK_PNG = Buffer.from(
 	'base64',
 );
 
-const isLocal = (url) =>
-	url.startsWith('http://127.0.0.1') || url.startsWith('http://localhost');
+const isLocal = (url) => url.startsWith('http://127.0.0.1') || url.startsWith('http://localhost');
 
 /**
  * Install the network stub. Returns a mutable log so a caller can assert that

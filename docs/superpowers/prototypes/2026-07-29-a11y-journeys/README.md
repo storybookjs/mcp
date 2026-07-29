@@ -33,13 +33,13 @@ distinct state. No journey is written by hand.
 
 These are **not** retired — the replacement reuses them:
 
-| file | why it survives |
-| --- | --- |
-| `harness/lib/axe.mjs` | Standalone axe-core injection: reads `axe.min.js` off disk, injects via `addInitScript`, calls `axe.run()` in-page. No `@axe-core/playwright`. |
-| `harness/lib/server.mjs` | Static server bound to **IPv4 explicitly**. Vite binds `[::1]` only, so `127.0.0.1` gets ECONNREFUSED while the server is up. |
-| `harness/lib/mock.mjs` | Request interception for the app's live API. Without it, violation counts depend on a third-party server. |
-| `harness/make-mutant.mjs` | Injects three known defects. This is the test oracle, and the only way to verify the metric without spending on LLM runs. |
-| `harness/fixtures/` | Pinned API responses. |
+| file                      | why it survives                                                                                                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `harness/lib/axe.mjs`     | Standalone axe-core injection: reads `axe.min.js` off disk, injects via `addInitScript`, calls `axe.run()` in-page. No `@axe-core/playwright`. |
+| `harness/lib/server.mjs`  | Static server bound to **IPv4 explicitly**. Vite binds `[::1]` only, so `127.0.0.1` gets ECONNREFUSED while the server is up.                  |
+| `harness/lib/mock.mjs`    | Request interception for the app's live API. Without it, violation counts depend on a third-party server.                                      |
+| `harness/make-mutant.mjs` | Injects three known defects. This is the test oracle, and the only way to verify the metric without spending on LLM runs.                      |
+| `harness/fixtures/`       | Pinned API responses.                                                                                                                          |
 
 Retired: `harness/journeys/*`, and the journey-driving parts of `measure.mjs` /
 `run-a11y.mjs`.
@@ -48,12 +48,12 @@ Retired: `harness/journeys/*`, and the journey-driving parts of `measure.mjs` /
 
 Raw output in `results/`. Peak nodes per rule, across 8 checkpoints in 3 journeys.
 
-| tree | WCAG rules/nodes | best-practice rules/nodes |
-| --- | --- | --- |
-| pinned ref baseline | 2 / 4 | 3 / 13 |
-| real collected run | 2 / 4 | 3 / 14 |
-| mutant (3 injected defects) | 4 / 17 | 3 / 13 |
-| ref with corrupted binaries | 2 / 4 | 3 / 13 |
+| tree                        | WCAG rules/nodes | best-practice rules/nodes |
+| --------------------------- | ---------------- | ------------------------- |
+| pinned ref baseline         | 2 / 4            | 3 / 13                    |
+| real collected run          | 2 / 4            | 3 / 14                    |
+| mutant (3 injected defects) | 4 / 17           | 3 / 13                    |
+| ref with corrupted binaries | 2 / 4            | 3 / 13                    |
 
 Baseline rules: `region` ×11 (best-practice), `color-contrast` ×3 (wcag2aa/143),
 `meta-viewport` ×1 (wcag2aa/144), `landmark-one-main` ×1 (BP),
@@ -63,7 +63,7 @@ Bit-identical across 5 repeat runs. Full pipeline 3.9–4.9s.
 
 ### Findings that must survive into any replacement
 
-1. **A failed journey scored *better* than a clean baseline.** `results/out-mutant.json`
+1. **A failed journey scored _better_ than a clean baseline.** `results/out-mutant.json`
    records 6 rules / **14 nodes** with 2 of 3 journeys passing — a tree containing
    three injected defects scoring below the 17-node baseline, because a failed
    journey contributes zero violations. Any successor **must** gate on completion
@@ -76,7 +76,7 @@ Bit-identical across 5 repeat runs. Full pipeline 3.9–4.9s.
 
 3. **Scanning only at the end of a journey misses regressions.** An earlier version
    scanned once per journey and was **completely blind** to an injected `image-alt`
-   defect affecting 10 nodes, because no journey *ended* on the home page. Scan at
+   defect affecting 10 nodes, because no journey _ended_ on the home page. Scan at
    every distinct state.
 
 4. **Headless Chrome reports `prefers-color-scheme: dark`.** The app switches themes

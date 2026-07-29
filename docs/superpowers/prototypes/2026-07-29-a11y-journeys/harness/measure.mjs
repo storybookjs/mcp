@@ -43,11 +43,10 @@ function build(workDir) {
 }
 
 function measure(workDir, outPath) {
-	execFileSync(
-		'node',
-		[join(HARNESS, 'run-a11y.mjs'), '--app', workDir, '--out', outPath],
-		{ stdio: 'pipe', timeout: 600_000 },
-	);
+	execFileSync('node', [join(HARNESS, 'run-a11y.mjs'), '--app', workDir, '--out', outPath], {
+		stdio: 'pipe',
+		timeout: 600_000,
+	});
 	return JSON.parse(readFileSync(outPath, 'utf8'));
 }
 
@@ -106,9 +105,10 @@ function main() {
 
 		const raw = mark('measureMs', () => measure(work, join(work, 'a11y-raw.json')));
 		const current = score(raw);
-		const baseline = args.baseline && existsSync(args.baseline)
-			? JSON.parse(readFileSync(args.baseline, 'utf8'))
-			: null;
+		const baseline =
+			args.baseline && existsSync(args.baseline)
+				? JSON.parse(readFileSync(args.baseline, 'utf8'))
+				: null;
 
 		// Delta against the pinned ref, not an absolute count. The app ships with
 		// pre-existing violations that no agent introduced; an absolute number
