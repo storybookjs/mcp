@@ -1,5 +1,9 @@
 {
-	"ignorePatterns": ["agent-eval/.eval-cache/**", "agent-eval/results/**"],
+	"ignorePatterns": [
+		"agent-eval/.eval-cache/**",
+		"agent-eval/results/**",
+		"docs/superpowers/prototypes/**"
+	],
 	"rules": {
 		"typescript/switch-exhaustiveness-check": "error",
 		"import/no-cycle": "error"
