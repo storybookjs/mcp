@@ -25,7 +25,7 @@ overrides:
 
 patchedDependencies:
   '@vercel/agent-eval@1.2.0':
-    hash: d10a497bc5c244513d5d3d00aca32ee76678d0e760b01a5fe5bd993f4da02b8a
+    hash: 520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4
     path: patches/@vercel__agent-eval@1.2.0.patch
 
 importers:
@@ -50,7 +50,7 @@ importers:
         version: 19.2.3(@types/react@19.2.17)
       '@vercel/agent-eval':
         specifier: 1.2.0
-        version: 1.2.0(patch_hash=d10a497bc5c244513d5d3d00aca32ee76678d0e760b01a5fe5bd993f4da02b8a)
+        version: 1.2.0(patch_hash=520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4)
       '@vercel/agent-eval-playground':
         specifier: 0.1.3
         version: 0.1.3(@opentelemetry/api@1.9.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)
@@ -5428,7 +5428,7 @@ snapshots:
       - date-fns
       - sass
 
-  '@vercel/agent-eval@1.2.0(patch_hash=d10a497bc5c244513d5d3d00aca32ee76678d0e760b01a5fe5bd993f4da02b8a)':
+  '@vercel/agent-eval@1.2.0(patch_hash=520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4)':
     dependencies:
       '@ai-sdk/anthropic': 2.0.85(zod@3.25.76)
       '@vercel/sandbox': 1.10.2
