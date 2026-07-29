@@ -77,6 +77,24 @@ describe('diffTrees', () => {
 		expect(diffTrees(before, after).filesChanged).toBe(0);
 	});
 
+	it('ignores this eval’s own analysis code, which the results copy re-adds', () => {
+		// The sandbox never sees these, but the results-save step copies fixture
+		// files into the collected tree through a different exclusion list. Left
+		// in, post-analysis.ts alone was scored as 211 added lines by the agent.
+		const before = tree('before', { 'src/a.ts': 'const a = 1\n' });
+		const after = tree('after', {
+			'src/a.ts': 'const a = 1\n',
+			'post-analysis.ts': 'export function analyzeRun() {\n  return null\n}\n',
+			'__analysis__/churn.ts': 'export const x = 1\n',
+			'__analysis__/__fixtures__/golden-run/transcript.json': '{}\n',
+		});
+		expect(diffTrees(before, after)).toEqual({
+			filesChanged: 0,
+			files: [],
+			sloc: { added: 0, removed: 0, net: 0 },
+		});
+	});
+
 	it('ignores harness-injected paths', () => {
 		const before = tree('before', { 'src/a.ts': 'const a = 1\n' });
 		const after = tree('after', {

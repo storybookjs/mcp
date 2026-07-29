@@ -33,6 +33,7 @@ export const EXCLUDED_PATHS = new Set([
 	'EVAL.ts',
 	'EVAL.tsx',
 	'PROMPT.md',
+	'post-analysis.ts',
 	'.npmrc',
 	'package.json',
 	'package-lock.json',

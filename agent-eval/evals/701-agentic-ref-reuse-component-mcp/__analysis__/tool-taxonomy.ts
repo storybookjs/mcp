@@ -19,7 +19,7 @@ export type Bucket = 'docs' | 'exploration' | 'edit' | 'verification' | 'other';
 
 export interface ToolUseMetrics {
 	buckets: Record<Bucket, number>;
-	/** Shell heads that matched no rule, so the tables can grow from real data. */
+	/** Shell heads that matched no rule, always analyse and retrofit manually into buckets. */
 	unclassified: string[];
 }
 
@@ -61,10 +61,24 @@ const VERIFICATION_BINARIES = new Set([
 
 const EDIT_BINARIES = new Set(['cp', 'mv', 'rm', 'mkdir', 'touch', 'tee', 'chmod', 'ln']);
 
-/** Commands that do nothing measurable — pure output noise. */
-const NOISE_BINARIES = new Set(['echo', 'true', 'false', 'printf', ':']);
+const NOISE_BINARIES = new Set([
+	'echo',
+	'true',
+	'false',
+	'printf',
+	'sleep',
+	'kill',
+	'pkill',
+	'wait',
+	'export',
+	'cd',
+]);
 
+/** Wrappers to step past to reach the binary that actually runs. */
 const PACKAGE_RUNNERS = new Set(['npx', 'npm', 'pnpm', 'yarn', 'bun', 'bunx']);
+// `xargs` is deliberately absent: its own arguments interleave with the command
+// it runs (`xargs -n 1 rm`), so stepping past it cannot be done by flag-skipping.
+const COMMAND_PREFIXES = new Set(['sudo', 'env', 'time', 'nohup', 'command', 'exec']);
 
 const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
@@ -72,18 +86,39 @@ const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
  * Resolve the binary a segment actually invokes, stepping past `ENV=value`
  * prefixes and package-runner wrappers. `npx tsc` is a typecheck, not an npx.
  */
+/** Subshell and grouping punctuation the tokenizer leaves attached to a word. */
+function stripGrouping(token: string): string {
+	return token.replace(/^[({]+/, '').replace(/[)}]+$/, '');
+}
+
 function resolveHead(tokens: string[]): { head: string; rest: string[] } {
 	let index = 0;
-	while (index < tokens.length && ENV_ASSIGNMENT.test(tokens[index] ?? '')) index += 1;
+	const at = (position: number) => stripGrouping(tokens[position] ?? '');
 
-	let head = tokens[index] ?? '';
+	// Step past `ENV=value` prefixes and command wrappers such as `sudo` or
+	// `time`, which stand in front of the binary that actually runs. A wrapper's
+	// own flags go with it: `sudo -n apt-get` would otherwise resolve to `-n`.
+	while (index < tokens.length) {
+		if (ENV_ASSIGNMENT.test(tokens[index] ?? '')) {
+			index += 1;
+			continue;
+		}
+		if (COMMAND_PREFIXES.has(at(index))) {
+			index += 1;
+			while (index < tokens.length && (tokens[index] ?? '').startsWith('-')) index += 1;
+			continue;
+		}
+		break;
+	}
+
+	let head = at(index);
 	if (PACKAGE_RUNNERS.has(head)) {
 		index += 1;
 		while (index < tokens.length && (tokens[index] ?? '').startsWith('-')) index += 1;
 		// `pnpm run typecheck` names a script, not a binary; the script's contents
 		// are not visible here, so it stays unclassified rather than guessed at.
 		if (tokens[index] === 'exec') index += 1;
-		head = tokens[index] ?? '';
+		head = at(index);
 	}
 
 	return { head: head.replace(/^.*\//, ''), rest: tokens.slice(index + 1) };
@@ -131,6 +166,43 @@ export function classifyShellCommand(command: string): Bucket[] {
 	return [...buckets];
 }
 
+/**
+ * MCP calls arrive as `name: 'unknown'` with the real identity in
+ * `originalName`. The name is not missing — the harness's normaliser maps tools
+ * onto a fixed set of categories (file_read, shell, glob, …) and has no category
+ * for an MCP workflow, so it emits `unknown` and preserves the original.
+ *
+ * Classifying on the `mcp__` prefix alone would be wrong: the design-system MCP
+ * exposes nine workflows and only three of them are documentation. Doing so
+ * scored `preview-stories` and `run-story-tests` as documentation reads —
+ * inflating the exact signal this experiment exists to measure, and it would
+ * count any unrelated MCP server's tools as documentation too.
+ */
+const MCP_PREFIX = 'mcp__';
+
+/** `mcp__<server>__<workflow>` — the workflow is what identifies the call. */
+function mcpWorkflowName(originalName: string): string {
+	return originalName.slice(originalName.lastIndexOf('__') + 2);
+}
+
+/**
+ * The design-system MCP's workflows, by what the agent is actually doing.
+ * The documentation subset mirrors DOCUMENTATION_WORKFLOW_NAMES in EVAL.ts,
+ * which gates the eval itself; an unlisted workflow lands in `other` and is
+ * recorded in `unclassified` rather than guessed at.
+ */
+const MCP_WORKFLOW_BUCKETS: Record<string, Bucket> = {
+	'get-documentation': 'docs',
+	'get-documentation-for-story': 'docs',
+	'list-all-documentation': 'docs',
+	'run-story-tests': 'verification',
+	'get-changed-stories': 'other',
+	'get-stories-by-component': 'other',
+	'get-storybook-story-instructions': 'other',
+	'preview-stories': 'other',
+	'display-review': 'other',
+};
+
 const STRUCTURED_BUCKETS: Record<string, Bucket> = {
 	file_read: 'exploration',
 	glob: 'exploration',
@@ -153,13 +225,17 @@ export function classifyToolUse(events: unknown[]): ToolUseMetrics {
 	const unclassified: string[] = [];
 
 	for (const event of events) {
-		if (!isRecord(event) || event.type !== 'tool_call' || !isRecord(event.tool)) continue;
+		if (!isRecord(event) || event.type !== 'tool_call' || !isRecord(event.tool)) {
+			continue;
+		}
+
 		const { name, originalName, args } = event.tool;
 
-		// MCP tools surface as `unknown` with an `mcp__server__workflow` original
-		// name; that prefix is the only reliable marker of a documentation call.
-		if (typeof originalName === 'string' && originalName.startsWith('mcp__')) {
-			buckets.docs += 1;
+		if (typeof originalName === 'string' && originalName.startsWith(MCP_PREFIX)) {
+			const workflow = mcpWorkflowName(originalName);
+			const bucket = MCP_WORKFLOW_BUCKETS[workflow];
+			if (bucket === undefined) unclassified.push(`mcp:${workflow}`);
+			buckets[bucket ?? 'other'] += 1;
 			continue;
 		}
 
@@ -167,7 +243,9 @@ export function classifyToolUse(events: unknown[]): ToolUseMetrics {
 			const command = isRecord(args) && typeof args.command === 'string' ? args.command : '';
 			const found = new Set<Bucket>();
 			collectShellBuckets(command, found, unclassified);
-			for (const bucket of found) buckets[bucket] += 1;
+			for (const bucket of found) {
+				buckets[bucket] += 1;
+			}
 			continue;
 		}
 

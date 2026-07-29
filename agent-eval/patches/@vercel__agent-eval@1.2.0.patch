@@ -256,3 +256,27 @@ index 4c5aeaaeae890c8a062e9d80638dddb87e25b666..4129be54d032e8cf74007136a76deb81
  ];
  /**
   * Test/eval file patterns to withhold from agent during task execution.
+diff --git a/dist/lib/types.js b/dist/lib/types.js
+index 43081f310ef1cfd5a68799071a6417bc3fa82c5f..292b29e1d9a879069c9f6a53e3e6fe3e18c2cc73 100644
+--- a/dist/lib/types.js
++++ b/dist/lib/types.js
+@@ -13,5 +13,18 @@ export const REQUIRED_EVAL_FILES = ['PROMPT.md', 'EVAL.ts', 'package.json'];
+  * This is for local fixture introspection, NOT for sandbox uploads.
+  * For sandbox file filtering, see TEST_FILE_PATTERNS in sandbox.ts.
+  */
+-export const EXCLUDED_FILES = ['PROMPT.md', 'EVAL.ts', 'EVAL.tsx', 'node_modules', '.git'];
++export const EXCLUDED_FILES = [
++    'PROMPT.md',
++    'EVAL.ts',
++    'EVAL.tsx',
++    'node_modules',
++    '.git',
++    // Offline post-run analysis, kept beside the fixture it belongs to. Already
++    // excluded from sandbox uploads via IGNORED_PATTERNS, but this list governs
++    // the separate copy that `copyFiles: 'all'` makes into results/<run>/project/.
++    // Without it the analysis code lands in the collected tree and the metrics
++    // score their own source as agent-authored work.
++    'post-analysis.ts',
++    '__analysis__',
++];
+ //# sourceMappingURL=types.js.map

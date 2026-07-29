@@ -36,6 +36,19 @@ describe('classifyShellCommand', () => {
 		['echo hi > src/a.ts', ['edit']],
 		// echo alone is noise, not a bucket.
 		['echo "=== marker ==="', []],
+		// Found in the unclassified list of a real run: an agent that started a
+		// dev server and polled it. Waiting and process control touch neither the
+		// codebase nor its documentation.
+		['sleep 5', []],
+		['pkill -f vite', []],
+		// A subshell paren stays attached to the word; without stripping it the
+		// head reads as "(sudo" and falls through to `other`.
+		['(sudo pkill -f node)', []],
+		['sudo rm -rf src/tmp', ['edit']],
+		['time npx vitest run', ['verification']],
+		// A wrapper's own flags belong to the wrapper: `sudo -n apt-get` must not
+		// resolve to `-n`.
+		['sudo -n apt-get install -y libnss3', ['other']],
 	];
 
 	for (const [command, expected] of cases) {
@@ -62,15 +75,51 @@ describe('classifyToolUse', () => {
 		});
 	});
 
-	it('counts any mcp__ tool as a documentation read', () => {
+	function mcp(workflow: string) {
+		return {
+			type: 'tool_call',
+			tool: { name: 'unknown', originalName: `mcp__storybook-dev-mcp__${workflow}`, args: {} },
+		};
+	}
+
+	it('counts the documentation workflows as documentation reads', () => {
+		const metrics = classifyToolUse([
+			mcp('get-documentation'),
+			mcp('get-documentation-for-story'),
+			mcp('list-all-documentation'),
+		]);
+		expect(metrics.buckets.docs).toBe(3);
+	});
+
+	it('does not count non-documentation MCP workflows as documentation', () => {
+		// The design-system MCP exposes nine workflows and only three are docs.
+		// Counting the prefix alone scored preview-stories and run-story-tests as
+		// documentation reads, inflating the very signal the experiment measures.
+		const metrics = classifyToolUse([
+			mcp('preview-stories'),
+			mcp('display-review'),
+			mcp('get-changed-stories'),
+		]);
+		expect(metrics.buckets.docs).toBe(0);
+		expect(metrics.buckets.other).toBe(3);
+	});
+
+	it('counts running story tests as verification, not documentation', () => {
+		const metrics = classifyToolUse([mcp('run-story-tests')]);
+		expect(metrics.buckets).toMatchObject({ docs: 0, verification: 1 });
+	});
+
+	it('records an unrecognised MCP workflow for triage', () => {
+		const metrics = classifyToolUse([mcp('some-new-workflow')]);
+		expect(metrics.buckets.other).toBe(1);
+		expect(metrics.unclassified).toEqual(['mcp:some-new-workflow']);
+	});
+
+	it('counts a documentation workflow from any MCP server', () => {
 		const metrics = classifyToolUse([
 			{
 				type: 'tool_call',
-				tool: {
-					name: 'unknown',
-					originalName: 'mcp__storybook-dev-mcp__get-documentation',
-					args: {},
-				},
+				tool: { name: 'unknown', originalName: 'mcp__other-server__get-documentation', args: {} },
 			},
 		]);
 		expect(metrics.buckets.docs).toBe(1);
