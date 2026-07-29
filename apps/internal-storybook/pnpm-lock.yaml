@@ -42,7 +42,7 @@ overrides:
 
 patchedDependencies:
   '@vercel/agent-eval@1.2.0':
-    hash: 329c0db6e847da2419d98e4172d979a45f979905775e5d65b43fcb88db2082e5
+    hash: 77deddc39af5b6e2a6de369a16962e29ecdb97508e6197038701f7cb5f1d838e
     path: ../../agent-eval/patches/@vercel__agent-eval@1.2.0.patch
 
 importers:

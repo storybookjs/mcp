@@ -56,9 +56,11 @@ function resolveRuns(): number {
 	return parsed;
 }
 
-function readMetric(generatedFiles: Record<string, string> | undefined, path: string): unknown {
+// Captured files are raw bytes — the harness stopped UTF-8 decoding them so that
+// binary assets survive collection — so decode explicitly before parsing.
+function readMetric(generatedFiles: Record<string, Buffer> | undefined, path: string): unknown {
 	try {
-		return JSON.parse(generatedFiles?.[path] ?? 'null');
+		return JSON.parse(generatedFiles?.[path]?.toString('utf8') ?? 'null');
 	} catch {
 		return null;
 	}

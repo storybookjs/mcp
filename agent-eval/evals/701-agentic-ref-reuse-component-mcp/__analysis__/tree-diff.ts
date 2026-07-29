@@ -31,8 +31,9 @@ export interface TreeDiff {
 }
 
 function isExcluded(path: string): boolean {
-	// Binary assets are UTF-8 corrupted by the copy-out path, so every one of
-	// them would otherwise read as changed.
+	// Source files only: this metric counts source lines, and stripToSloc has no
+	// meaning for a binary asset. (Until the harness patch made the copy-out path
+	// byte-exact, binaries also read as changed on every single run.)
 	return isExcludedPath(path) || !SOURCE_EXTENSIONS.test(path);
 }
 
