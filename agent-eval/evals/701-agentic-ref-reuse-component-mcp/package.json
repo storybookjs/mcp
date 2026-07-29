@@ -4,9 +4,9 @@
 	"type": "module",
 	"evals": {
 		"externalRepo": {
-			"//": "From agentic-reference-base branch - July 28 - https://github.com/yannbf/mealdrop/commit/561c3d6407718d8505532f6a3e729422046893f3",
+			"//": "Tag agentic-reference/base-ui-v1 (= 6865dfb) - https://github.com/yannbf/mealdrop/releases/tag/agentic-reference%2Fbase-ui-v1",
 			"repo": "yannbf/mealdrop",
-			"ref": "561c3d6407718d8505532f6a3e729422046893f3"
+			"ref": "refs/tags/agentic-reference/base-ui-v1"
 		}
 	}
 }
