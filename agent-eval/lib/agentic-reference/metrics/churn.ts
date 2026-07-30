@@ -1,25 +1,13 @@
 // How many times the agent rewrote each file. Fewer passes over the same file
-// suggests it understood the change before making it.
+// suggests it understood the change before making it. Higher file churn is
+// usually indicative of lower code quality.
 //
-// Shell writes must be counted, not just structured Edit/Write calls: the
-// captured run edited via `cp` and `sed -i`, and `o11y.filesModified` lists
-// only Footer.tsx as a result. Agents also differ in how much they reach for
-// the shell, so ignoring it would bias any cross-agent comparison.
-//
-// Scratch files count too, deliberately. The captured run wrote two throwaway
-// test harnesses inside the workspace and deleted them again, so it reports
-// three files edited where only one survived. Every write the agent made is an
-// edit, and needing scaffolding to get a change right is itself iteration.
-// Consequence to keep in mind when reading the numbers: these counts do not
-// reconcile with the SLoC diff, which only ever sees files that survived.
-//
-// Renames are followed. Without that, `mv` splits one file's history across two
-// paths — inflating filesEdited and deflating maxEditsPerFile, both in the
-// wrong direction for a metric where fewer is better. A file keyed under its
-// final path therefore carries every edit made under its earlier names, and
-// `renames` records the chain so a merged count can be traced back.
-import { isRecord } from '../../../lib/shell-parse.ts';
-import { splitCommandSegments } from './shell-segments.ts';
+// Both shell writes and structured Edit/Write calls are counted, and renames
+// are accounted for. Files are keyed under their final path. Temporary files
+// count too, deliberately. If an agent generates temporary test probes, those
+// are acts of editing that were required.
+import { isRecord } from '../../utils/type.ts';
+import { splitCommandSegments } from '../../utils/shell-segments.ts';
 
 export interface Rename {
 	from: string;

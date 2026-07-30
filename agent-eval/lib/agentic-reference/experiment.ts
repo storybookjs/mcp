@@ -10,10 +10,13 @@ import { DEFAULT_EXPERIMENT_CONFIG } from '../experiment.ts';
 import { type EvalAgent, setupSandbox } from '../templates.ts';
 import {
 	type ExternalRepoPin,
-	parseExternalRepoMarker,
+	parseExternalRepoFromManifest,
 	setupExternalRepo,
 } from './external-repo.ts';
 import { registerExternalStorybookMcp } from './external-mcp.ts';
+import { postAnalysis } from './post-analysis.ts';
+
+import type { PostAnalysisExperiment } from '../post-analysis/types.ts';
 
 interface AgenticRefExperimentOptions {
 	evals: string[];
@@ -21,7 +24,7 @@ interface AgenticRefExperimentOptions {
 	agent?: EvalAgent;
 	/** Present = MCP arm, absent = control arm. */
 	storybookMcpUrl?: string;
-	overrides?: Partial<ExperimentConfig>;
+	overrides?: Partial<ExperimentConfig & PostAnalysisExperiment>;
 }
 
 // Codex runs direct (the AI Gateway Codex path mis-handles its Responses tool
@@ -72,7 +75,7 @@ function readMetric(generatedFiles: Record<string, Buffer> | undefined, path: st
 // changes `before`/`delta` for every historical run whenever the pin moves.
 function readExternalRepoPin(fixturePath: string): ExternalRepoPin | null {
 	try {
-		return parseExternalRepoMarker(readFileSync(join(fixturePath, 'package.json'), 'utf8'));
+		return parseExternalRepoFromManifest(readFileSync(join(fixturePath, 'package.json'), 'utf8'));
 	} catch {
 		return null;
 	}
@@ -80,7 +83,7 @@ function readExternalRepoPin(fixturePath: string): ExternalRepoPin | null {
 
 // Compose the shared usage hook with the in-run signal (mcpUsage) so neither
 // clobbers the other (a bare override would drop token usage). Heavy metrics
-// (app tests, baseline) are computed offline — see scripts/analyze-results.mjs.
+// (app tests, baseline) are computed offline — see scripts/analyze-results.ts.
 function attachAgenticRefMetrics(context: RunCompleteContext) {
 	const withUsage = DEFAULT_EXPERIMENT_CONFIG.onRunComplete?.(context) ?? context.runData;
 	return {
@@ -96,7 +99,9 @@ function attachAgenticRefMetrics(context: RunCompleteContext) {
 	};
 }
 
-export function agenticRefExperiment(options: AgenticRefExperimentOptions): ExperimentConfig {
+export function agenticRefExperiment(
+	options: AgenticRefExperimentOptions,
+): ExperimentConfig & PostAnalysisExperiment {
 	const { evals, storybookMcpUrl, overrides } = options;
 	const agent = options.agent ?? 'claude-code';
 
@@ -114,6 +119,11 @@ export function agenticRefExperiment(options: AgenticRefExperimentOptions): Expe
 	return {
 		...DEFAULT_EXPERIMENT_CONFIG,
 		...AGENT_CONFIG[agent],
+		// Every arm of this family is measured the same way — prompt and MCP
+		// endpoint are what vary — so they share one module, and sharing it by
+		// reference is what groups their runs into a single summary table.
+		// Override per experiment to measure one arm differently.
+		postAnalysis,
 		// The real dependency install outgrows the shared 900s default.
 		timeout: 1800,
 		// Research, not a CI gate: complete every repetition rather than aborting

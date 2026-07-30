@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { complexityForSource } from './cyclomatic.ts';
+import { complexityForSource } from './complexity-cyclomatic.ts';
 
 describe('complexityForSource', () => {
 	// --- the four tests carried over verbatim from storybookjs/storybook#35141 ---

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import goldenResult from './__fixtures__/golden-run/result.json' with { type: 'json' };
+import goldenResult from '../__fixtures__/golden-run/result.json' with { type: 'json' };
 import { readCost, readSpeed } from './run-signals.ts';
 
 describe('readSpeed', () => {

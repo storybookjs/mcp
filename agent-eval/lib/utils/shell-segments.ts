@@ -10,7 +10,7 @@
 // verification whose output is filtered, not verification plus exploration.
 // Counting the `tail` as exploration would inflate a lower-is-better metric
 // every time an agent trimmed noisy output — penalising the careful ones.
-import { tokenizeShellCommand } from '../../../lib/shell-parse.ts';
+import { tokenizeShellCommand } from '../shell-parse.ts';
 
 export interface ShellSegment {
 	tokens: string[];

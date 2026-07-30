@@ -32,7 +32,7 @@ export interface TranscriptUsage {
 	estimatedCostUsd?: number;
 }
 
-import { isRecord } from './shell-parse.ts';
+import { isRecord } from './utils/type.ts';
 
 function parseJsonLines(raw: string): Record<string, unknown>[] {
 	return raw.split('\n').flatMap((line) => {

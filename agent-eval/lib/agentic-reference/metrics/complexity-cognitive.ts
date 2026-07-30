@@ -1,20 +1,16 @@
 // Cognitive complexity per function, following Sonar's specification
 // (https://www.sonarsource.com/docs/CognitiveComplexity.pdf, Appendix B).
-// Reference implementation: eslint-plugin-sonarjs/src/rules/cognitive-complexity.ts.
 //
-// This is the headline complexity measure. Unlike cyclomatic complexity it
-// charges no cost of entry for a function, so extracting a helper does not
-// inflate the score, and it weights nesting, so a triply-nested conditional
-// costs more than three flat ones. Sonar enables the cognitive rule (S3776) by
-// default and leaves the cyclomatic one (S1541) off.
+// Unlike cyclomatic complexity, it charges no cost of entry for a function,
+// so it doesn't penalise LLMs that extract generic utilities.
 //
 // Deliberately not implemented: recursion detection, which needs name
 // resolution the single-file parse does not have. It is rare in the component
 // code these evals touch.
 import ts from 'typescript';
 
-import type { FunctionComplexity } from './cyclomatic.ts';
 import { scriptKindFor } from './sloc.ts';
+import type { FunctionComplexity } from '../types.ts';
 
 const SCRIPT_EXTENSIONS = /\.(?:tsx?|jsx?|mjs|cjs)$/;
 

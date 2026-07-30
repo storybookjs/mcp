@@ -1,12 +1,16 @@
-// Materialize an arbitrary GitHub repo into the sandbox for agentic-reference
-// evals. Which repo is declared by the fixture's own package.json:
+// Utilities to setup an external GitHub repo for use in an eval, and to manipulate
+// references to external repos.
+// Each eval can have a single external repo pinned in its fixture's package.json:
 //
 //   "evals": { "externalRepo": { "repo": "owner/name", "ref": "<sha>" } }
-import { readFileSync } from 'node:fs';
+
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 
 import type { Sandbox } from '@vercel/agent-eval';
 
-import { isRecord } from '../shell-parse.ts';
+import { isRecord } from '../utils/type.ts';
 
 /** Keep interpolated values shell-safe (they land in a bash command). */
 const SAFE_GITHUB_PATH = /^[\w./-]+$/;
@@ -16,12 +20,17 @@ export interface ExternalRepoPin {
 	ref: string;
 }
 
-/** Parse (and shell-sanity-check) a fixture's `evals.externalRepo` marker. */
-export function parseExternalRepoMarker(packageJsonContent: string): ExternalRepoPin {
+/** Parse (and sanity-check) an eval's `evals.externalRepo` package.json marker. */
+export function parseExternalRepoFromManifest(packageJsonContent: string): ExternalRepoPin {
 	const manifest: unknown = JSON.parse(packageJsonContent);
 	const evals = isRecord(manifest) ? manifest.evals : undefined;
 	const marker = isRecord(evals) ? evals.externalRepo : undefined;
 
+	return typecheckExternalRepo(marker);
+}
+
+/** Typecheck and validate an ExternalRepoPin. */
+export function typecheckExternalRepo(marker: unknown): ExternalRepoPin {
 	if (!isRecord(marker)) {
 		throw new Error(
 			'externalRepo: fixture package.json has no `evals.externalRepo` marker; ' +
@@ -37,6 +46,60 @@ export function parseExternalRepoMarker(packageJsonContent: string): ExternalRep
 		throw new Error(`externalRepo: evals.externalRepo.ref must match ${String(SAFE_GITHUB_PATH)}`);
 	}
 	return { repo, ref };
+}
+
+/**
+ * A single directory name for a pin. Both halves have their separators escaped:
+ * SAFE_GITHUB_PATH admits refs like `heads/main`, which unescaped would turn the
+ * slug into a nested path. SHA pins contain no separator, so existing cache
+ * directories keep their names.
+ */
+export function pinSlug({ repo, ref }: ExternalRepoPin): string {
+	return `${repo.replace(/\//g, '__')}@${ref.replace(/\//g, '__')}`;
+}
+
+const refCache = new Map<string, string>();
+
+/**
+ * Download and extract a ref, returning its directory. Extraction happens in a
+ * scratch directory that is renamed into place only once it fully succeeded: a
+ * half-populated cache directory would be trusted forever and would quietly
+ * skew every later diff.
+ */
+export function prepareRef(cacheDir: string, repo: string, ref: string): string {
+	const slug = pinSlug({ repo, ref });
+	const cached = refCache.get(slug);
+	if (cached !== undefined) return cached;
+
+	const dir = join(cacheDir, slug);
+	if (!existsSync(dir)) {
+		mkdirSync(cacheDir, { recursive: true });
+		const scratch = `${dir}.partial-${process.pid}`;
+		rmSync(scratch, { recursive: true, force: true });
+		mkdirSync(scratch, { recursive: true });
+		try {
+			// execFile, not a shell: repo and ref never reach a command line.
+			const tarball = join(scratch, 'source.tar.gz');
+			execFileSync('curl', [
+				'-fsSL',
+				'-o',
+				tarball,
+				`https://codeload.github.com/${repo}/tar.gz/${ref}`,
+			]);
+			// --strip-components=1 drops the tarball's top-level <name>-<ref>/ dir.
+			execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', scratch]);
+			rmSync(tarball);
+			renameSync(scratch, dir);
+		} catch (error) {
+			rmSync(scratch, { recursive: true, force: true });
+			throw new Error(
+				`Failed to fetch ${repo}@${ref}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+
+	refCache.set(slug, dir);
+	return dir;
 }
 
 // Pin the sandbox @vercel/agent-eval to this package's own version — EVAL.ts
@@ -113,7 +176,7 @@ async function installDependencies(sandbox: Sandbox): Promise<void> {
 // The added @vercel/agent-eval devDependency is installed by the `npm install`
 // every agent definition runs against the sandbox root right after setup().
 export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
-	const { repo, ref } = parseExternalRepoMarker(await sandbox.readFile('package.json'));
+	const { repo, ref } = parseExternalRepoFromManifest(await sandbox.readFile('package.json'));
 	const tarballUrl = `https://codeload.github.com/${repo}/tar.gz/${ref}`;
 
 	// -f - reads the pipe explicitly rather than relying on tar's compiled-in

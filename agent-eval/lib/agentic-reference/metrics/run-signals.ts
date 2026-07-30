@@ -4,7 +4,7 @@
 // Everything here is defensive: an interrupted run can leave result.json
 // without metadata, and a metric pass that throws on one bad run loses the
 // good ones alongside it.
-import { isRecord } from '../../../lib/shell-parse.ts';
+import { isRecord } from '../../utils/type.ts';
 
 export interface SpeedMetrics {
 	durationSeconds: number | null;

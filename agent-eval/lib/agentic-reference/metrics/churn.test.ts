@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import goldenTranscript from './__fixtures__/golden-run/transcript.json' with { type: 'json' };
+import goldenTranscript from '../__fixtures__/golden-run/transcript.json' with { type: 'json' };
 import { computeChurn } from './churn.ts';
 
 function edit(filePath: string) {

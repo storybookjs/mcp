@@ -9,14 +9,16 @@ import { expect } from 'vitest';
 
 import {
 	getNestedWorkflowInput,
-	isRecord,
 	isSameWorkflowCall,
 	normalizeStorybookWorkflowName,
 	parseJson,
 	parseStorybookWorkflowShellCommands,
 } from './shell-parse.ts';
 import type { StorybookWorkflowCall } from './shell-parse.ts';
+import { isRecord } from './utils/type.ts';
 
+// Re-exported, not merely used: #test-utils is the only module an EVAL.ts can
+// reach from inside a sandbox, so anything evals need has to surface here.
 export { isRecord, parseJson, parseStorybookWorkflowShellCommands };
 export type { StorybookWorkflowCall };
 

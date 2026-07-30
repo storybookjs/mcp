@@ -4,6 +4,7 @@
 	"private": true,
 	"type": "module",
 	"imports": {
+		"#lib/*": "./lib/*.ts",
 		"#test-utils": "./lib/test-utils.ts"
 	},
 	"scripts": {
@@ -13,7 +14,7 @@
 		"playground:build": "next build --webpack",
 		"playground:check-routes": "node ./scripts/check-playground-routes.mjs",
 		"results:download": "node ./scripts/download-ci-results.mjs",
-		"results:analyze": "node ./scripts/analyze-results.mjs",
+		"results:analyze": "node ./scripts/analyze-results.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {

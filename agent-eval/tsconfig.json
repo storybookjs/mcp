@@ -4,6 +4,7 @@
 		"jsx": "react-jsx",
 		"moduleResolution": "bundler",
 		"paths": {
+			"#lib/*": ["./lib/*.ts"],
 			"#test-utils": ["./lib/test-utils.ts"],
 			"@storybook/mcp": ["../packages/mcp/src/index.ts"]
 		}
@@ -17,6 +18,7 @@
 		"evals/**/post-analysis.ts",
 		"evals/**/__analysis__/**/*.ts",
 		"lib/**/*.ts",
+		"scripts/**/*.ts",
 		"vitest.config.ts"
 	],
 	"exclude": ["results/**", "templates/**"]

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import type { Sandbox } from '@vercel/agent-eval';
 
-import { isRecord } from './shell-parse.ts';
+import { isRecord } from './utils/type.ts';
 
 type FixturePackageJson = {
 	evals?: {
@@ -82,9 +82,15 @@ const START_STORYBOOK_SCRIPT_SOURCE_PATH = path.join(
 const START_STORYBOOK_SCRIPT_SANDBOX_PATH = path.posix.join('scripts', 'start-storybook-mcp.mjs');
 const TRANSCRIPT_HELPER_SOURCE_PATH = path.join(AGENT_EVAL_ROOT, 'lib', 'test-utils.ts');
 const TRANSCRIPT_HELPER_SANDBOX_PATH = path.posix.join('__agent_eval__', 'test-utils.ts');
-// test-utils.ts imports ./shell-parse.ts, so the sandbox copy needs both files.
+// The sandbox copy has to carry test-utils.ts's whole import graph, since these
+// files are written verbatim and resolve relatively once there: test-utils.ts
+// imports ./shell-parse.ts and ./utils/type.ts, and shell-parse.ts imports
+// ./utils/type.ts too. Missing one fails every eval at import time, and only in
+// the sandbox — so add the file here whenever that graph grows.
 const SHELL_PARSE_SOURCE_PATH = path.join(AGENT_EVAL_ROOT, 'lib', 'shell-parse.ts');
 const SHELL_PARSE_SANDBOX_PATH = path.posix.join('__agent_eval__', 'shell-parse.ts');
+const TYPE_UTIL_SOURCE_PATH = path.join(AGENT_EVAL_ROOT, 'lib', 'utils', 'type.ts');
+const TYPE_UTIL_SANDBOX_PATH = path.posix.join('__agent_eval__', 'utils', 'type.ts');
 const AGENT_CONTEXT_SANDBOX_PATH = path.posix.join('__agent_eval__', 'agent.json');
 const TEMPLATE_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 // EVAL_REVIEW=1 enables the `experimentalReview` feature flag in every
@@ -191,6 +197,7 @@ async function writeEvalSupportFiles(
 	await sandbox.writeFiles({
 		[TRANSCRIPT_HELPER_SANDBOX_PATH]: await fs.readFile(TRANSCRIPT_HELPER_SOURCE_PATH, 'utf8'),
 		[SHELL_PARSE_SANDBOX_PATH]: await fs.readFile(SHELL_PARSE_SOURCE_PATH, 'utf8'),
+		[TYPE_UTIL_SANDBOX_PATH]: await fs.readFile(TYPE_UTIL_SOURCE_PATH, 'utf8'),
 		[AGENT_CONTEXT_SANDBOX_PATH]: JSON.stringify(
 			{
 				agent: options.agent,

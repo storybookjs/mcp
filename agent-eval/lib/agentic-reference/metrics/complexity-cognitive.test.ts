@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { cognitiveForSource } from './cognitive.ts';
+import { cognitiveForSource } from './complexity-cognitive.ts';
 
 function scoreOf(source: string, name: string, filename = 'a.ts'): number | undefined {
 	return cognitiveForSource(filename, source).find((entry) => entry.name === name)?.complexity;

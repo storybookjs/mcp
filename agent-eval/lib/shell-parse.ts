@@ -2,6 +2,8 @@
 // filesystem access. This file is copied into eval sandboxes next to
 // test-utils.ts, so it must stay dependency-free.
 
+import { isRecord } from './utils/type.ts';
+
 export type StorybookWorkflowCall = {
 	name: string;
 	input: Record<string, unknown>;
@@ -361,8 +363,4 @@ export function parseJson(value: string): unknown {
 	} catch {
 		return undefined;
 	}
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

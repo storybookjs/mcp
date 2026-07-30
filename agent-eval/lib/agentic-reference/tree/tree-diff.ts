@@ -15,7 +15,7 @@ import { join, relative, sep } from 'node:path';
 import { diffLines } from 'diff';
 
 import { isExcludedPath, SKIP_DIRS, SOURCE_EXTENSIONS } from './paths.ts';
-import { stripToSloc } from './sloc.ts';
+import { stripToSloc } from '../metrics/sloc.ts';
 
 export interface SlocDiff {
 	added: number;

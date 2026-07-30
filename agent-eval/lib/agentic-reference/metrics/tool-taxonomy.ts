@@ -1,19 +1,17 @@
 // Classify an agent's tool calls into five buckets.
 //
-// The documentation-quality proxy this feeds asks: did the agent lean on the
-// design system's documentation, or grope through source? That needs
-// `exploration` and `docs` kept clean, which in turn forces two buckets the
-// original three-way split did not have.
+// To measure documentation quality indirectly, we want to measure whether doc tool
+// calls helped reduce the number of other tool calls (e.g. fewer edits or less code
+// exploration). The first step to that is classifying each tool call.
 //
-// `verification` exists because tsc/eslint/vitest are neither exploration nor
-// edits, and folding them into exploration would make a *more* careful agent
-// score worse on a lower-is-better metric. `other` exists so the buckets
-// reconcile against the call total instead of silently dropping calls.
-//
-// Only raw counts are stored. The exploration-to-docs ratio is a cross-arm
-// comparison, not a property of one run, so it is computed later over all runs.
-import { isRecord } from '../../../lib/shell-parse.ts';
-import { splitCommandSegments } from './shell-segments.ts';
+// Buckets:
+// - docs: the agent is reading documentation, e.g. get-documentation, web_fetch.
+// - exploration: the agent is reading code or other files, e.g. file_read, glob, grep.
+// - edit: the agent is writing to files, e.g. file_edit, file_write.
+// - verification: the agent is running tests or linters, e.g. run-story-tests, tsc.
+// - other: the agent is doing something else, e.g. preview-stories, display-review.
+import { isRecord } from '../../utils/type.ts';
+import { splitCommandSegments } from '../../utils/shell-segments.ts';
 
 export type Bucket = 'docs' | 'exploration' | 'edit' | 'verification' | 'other';
 

@@ -1,13 +1,4 @@
-// Strip comments and blank lines so the diff measures code, not prose.
-//
-// A ten-line JSDoc block is not ten lines of new logic, and an agent that
-// documents its work should not score worse than one that does not. Both sides
-// of the diff are stripped before comparison, so the resulting counts are
-// source lines rather than physical ones.
-//
-// Comments are collected as leading trivia of parsed tokens rather than by
-// scanning for `//`. A bare scan cannot distinguish a regex literal from
-// division, so `const r = /https:\/\//` would lose the rest of its line.
+// Source Line of Code computation metric.
 import ts from 'typescript';
 
 export const SOURCE_EXTENSIONS = /\.(?:tsx?|jsx?|mjs|cjs|css)$/;

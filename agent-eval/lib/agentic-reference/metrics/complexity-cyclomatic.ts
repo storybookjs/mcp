@@ -1,6 +1,4 @@
-// Cyclomatic complexity per function: decision points plus one.
-//
-// Ported from storybookjs/storybook#35141
+// Cyclomatic complexity per function. Ported from storybookjs/storybook#35141
 // (scripts/sustainability/assess-mvc/cost-benefit/utils/cyclomatic.ts). The two
 // repositories are expected to merge later, at which point this and its
 // original should be deduplicated.
@@ -8,18 +6,10 @@
 // Two defects were fixed on port: the original parsed every file as TSX, so
 // generic arrows in .ts mis-parsed as JSX; and it omitted constructors and
 // accessors from its notion of a function, so their bodies were misattributed.
-//
-// Reported alongside cognitive complexity rather than alone. Cyclomatic charges
-// every function a cost of entry of 1, so an agent that extracts three trivial
-// helpers scores +3 without having made anything harder to read.
 import ts from 'typescript';
 
 import { scriptKindFor } from './sloc.ts';
-
-export interface FunctionComplexity {
-	name: string;
-	complexity: number;
-}
+import type { FunctionComplexity } from '../types.ts';
 
 const SCRIPT_EXTENSIONS = /\.(?:tsx?|jsx?|mjs|cjs)$/;
 
