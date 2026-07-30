@@ -37,9 +37,6 @@ catalogs:
       specifier: 4.0.6
       version: 4.0.6
 
-overrides:
-  '@ai-sdk/anthropic': ^2.0.0
-
 patchedDependencies:
   '@vercel/agent-eval@1.2.0':
     hash: 77deddc39af5b6e2a6de369a16962e29ecdb97508e6197038701f7cb5f1d838e
