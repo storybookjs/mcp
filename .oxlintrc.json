@@ -2,6 +2,7 @@
 	"ignorePatterns": [
 		"agent-eval/.eval-cache/**",
 		"agent-eval/results/**",
+		"agent-eval/.agentic-ref/**",
 		"docs/superpowers/prototypes/**"
 	],
 	"rules": {

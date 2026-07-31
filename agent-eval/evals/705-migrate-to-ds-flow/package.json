@@ -1,0 +1,12 @@
+{
+	"name": "705-migrate-to-ds-flow",
+	"description": "Agentic reference \u2014 migration workflow. The agent moves hand-rolled UI onto the installed design-system packages, starting with cart and checkout. Runs under every case; metrics are computed offline.",
+	"type": "module",
+	"evals": {
+		"externalRepo": {
+			"//": "Tag agentic-reference/before-migrating-ds-v1 (= c951ad9): agentic-reference/original plus @droppy/design-system and its @base-ui/react peer installed but unused - https://github.com/yannbf/mealdrop/releases/tag/agentic-reference%2Fbefore-migrating-ds-v1",
+			"repo": "yannbf/mealdrop",
+			"ref": "refs/tags/agentic-reference/before-migrating-ds-v1"
+		}
+	}
+}

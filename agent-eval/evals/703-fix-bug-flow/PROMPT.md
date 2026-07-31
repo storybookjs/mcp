@@ -1,0 +1,1 @@
+On checkout, pressing Enter after filling in your details doesn't do anything — you have to click the button with the mouse. Fix it so Enter works the way people expect, on both checkout steps: moving on from contact details and placing the order at the end.

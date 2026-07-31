@@ -13,3 +13,5 @@ results/
 .env*.local
 .env*
 !.env.example
+# Generated agentic-reference work directory; cases.ts is the source of truth.
+.agentic-ref/

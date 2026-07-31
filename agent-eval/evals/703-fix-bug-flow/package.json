@@ -1,0 +1,12 @@
+{
+	"name": "703-fix-bug-flow",
+	"description": "Agentic reference \u2014 bug-fix workflow. The agent fixes Enter not submitting either checkout step (the app has no form element anywhere). Runs under every case; metrics are computed offline.",
+	"type": "module",
+	"evals": {
+		"externalRepo": {
+			"//": "Tag agentic-reference/base-ui-v1 (= 6865dfb) - https://github.com/yannbf/mealdrop/releases/tag/agentic-reference%2Fbase-ui-v1",
+			"repo": "yannbf/mealdrop",
+			"ref": "refs/tags/agentic-reference/base-ui-v1"
+		}
+	}
+}

@@ -1,13 +1,22 @@
-// Shared experiment shape for agentic-reference evals. `storybookMcpUrl` is the
-// arm selector: present = MCP arm (also flips the `integration: 'mcp'` context
-// flag), absent = no-MCP control arm. Gated behind EVAL_AGENTIC_REFERENCE=1 so
-// the default matrix never spends on it.
+// Shared experiment shape for agentic-reference evals. A case's agent support
+// is whatever its options declare: the design-system Storybook MCP
+// (`storybookMcpUrl`), other MCP servers (`mcpServers`), skills (`skillDirs`),
+// extra sandbox files (`extraFiles`) — or nothing at all, the bare control.
+// Gated behind EVAL_AGENTIC_REFERENCE=1 so the default matrix never spends
+// on it.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { ExperimentConfig, RunCompleteContext, Sandbox } from '@vercel/agent-eval';
 import { DEFAULT_EXPERIMENT_CONFIG } from '../experiment.ts';
-import { type EvalAgent, setupSandbox } from '../templates.ts';
+import {
+	type EvalAgent,
+	type EvalIntegration,
+	type McpServerSpec,
+	installSkillDir,
+	registerMcpServer,
+	setupSandbox,
+} from '../templates.ts';
 import {
 	type ExternalRepoPin,
 	parseExternalRepoFromManifest,
@@ -19,11 +28,21 @@ import { postAnalysis } from './post-analysis.ts';
 import type { PostAnalysisExperiment } from '../post-analysis/types.ts';
 
 interface AgenticRefExperimentOptions {
+	/** Case name; recorded in `result.analysis.case` for the offline analyzer. */
+	name: string;
 	evals: string[];
 	/** Coding agent to evaluate. Default 'claude-code'. */
 	agent?: EvalAgent;
-	/** Present = MCP arm, absent = control arm. */
+	/** Present = run with the design-system Storybook MCP registered at this URL. */
 	storybookMcpUrl?: string;
+	/** Sandbox flavor. Defaults to 'mcp' with a storybookMcpUrl, bare ('none') without. */
+	integration?: EvalIntegration;
+	/** Additional MCP servers to register, e.g. a component library's own server. */
+	mcpServers?: Record<string, McpServerSpec>;
+	/** Skill directories (relative to agent-eval/) installed into the agent's skills root. */
+	skillDirs?: string[];
+	/** Files written into the sandbox (path → content), e.g. an AGENTS.md docs pointer. */
+	extraFiles?: Record<string, string>;
 	overrides?: Partial<ExperimentConfig & PostAnalysisExperiment>;
 }
 
@@ -45,6 +64,14 @@ const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	},
 };
 
+// Case-name segments for each AGENT_CONFIG entry, so generated case names
+// (`<prefix>-<variant>-<modelSuffix>`) spell out the model and effort the
+// entry pins.
+export const AGENT_NAME_PARTS: Record<EvalAgent, { prefix: string; modelSuffix: string }> = {
+	'claude-code': { prefix: 'cc', modelSuffix: 'opus-high' },
+	codex: { prefix: 'codex', modelSuffix: 'gpt-5.5-medium' },
+};
+
 // TODO: ⚠️ Change the default to 10 once the eval is more concrete
 /** Research sample size, from AGENTIC_REF_RUNS (default 1). */
 function resolveRuns(): number {
@@ -59,16 +86,6 @@ function resolveRuns(): number {
 	return parsed;
 }
 
-// Captured files are raw bytes — the harness stopped UTF-8 decoding them so that
-// binary assets survive collection — so decode explicitly before parsing.
-function readMetric(generatedFiles: Record<string, Buffer> | undefined, path: string): unknown {
-	try {
-		return JSON.parse(generatedFiles?.[path]?.toString('utf8') ?? 'null');
-	} catch {
-		return null;
-	}
-}
-
 // Snapshot the fixture's external-repo pin at execution time. The offline
 // analyzer compares each run against the ref it actually ran on; without this it
 // would have to assume the fixture's pin as it stands today, which retroactively
@@ -81,40 +98,71 @@ function readExternalRepoPin(fixturePath: string): ExternalRepoPin | null {
 	}
 }
 
-// Compose the shared usage hook with the in-run signal (mcpUsage) so neither
-// clobbers the other (a bare override would drop token usage). Heavy metrics
-// (app tests, baseline) are computed offline — see scripts/analyze-results.ts.
-function attachAgenticRefMetrics(context: RunCompleteContext) {
-	const withUsage = DEFAULT_EXPERIMENT_CONFIG.onRunComplete?.(context) ?? context.runData;
-	return {
-		...withUsage,
-		result: {
-			...withUsage.result,
-			analysis: {
-				...withUsage.result.analysis,
-				mcpUsage: readMetric(withUsage.generatedFiles, '__metrics__/mcp-usage.json'),
-				externalRepo: readExternalRepoPin(context.fixture.path),
+// The case record persisted into `result.analysis.case`: everything the
+// offline analyzer needs to group runs by treatment. Names and paths only —
+// file contents already live in the sandbox snapshot.
+interface AgenticRefCaseRecord {
+	name: string;
+	integration: EvalIntegration;
+	storybookMcpUrl?: string;
+	mcpServers?: string[];
+	skillDirs?: string[];
+	extraFiles?: string[];
+}
+
+// Compose the shared usage hook with the case record so neither clobbers the
+// other (a bare override would drop token usage). Heavy metrics, including MCP
+// tool usage, are computed offline — see scripts/analyze-results.ts.
+function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
+	return function attachAgenticRefMetrics(context: RunCompleteContext) {
+		const withUsage = DEFAULT_EXPERIMENT_CONFIG.onRunComplete?.(context) ?? context.runData;
+		return {
+			...withUsage,
+			result: {
+				...withUsage.result,
+				analysis: {
+					...withUsage.result.analysis,
+					externalRepo: readExternalRepoPin(context.fixture.path),
+					case: agenticRefCase,
+				},
 			},
-		},
+		};
 	};
 }
 
 export function agenticRefExperiment(
 	options: AgenticRefExperimentOptions,
 ): ExperimentConfig & PostAnalysisExperiment {
-	const { evals, storybookMcpUrl, overrides } = options;
+	const { name, evals, storybookMcpUrl, mcpServers, skillDirs, extraFiles, overrides } = options;
 	const agent = options.agent ?? 'claude-code';
+	const integration = options.integration ?? (storybookMcpUrl ? 'mcp' : 'none');
 
 	async function setup(sandbox: Sandbox): Promise<void> {
-		await setupSandbox(sandbox, {
-			agent,
-			integration: storybookMcpUrl ? 'mcp' : 'plugin',
-		});
+		await setupSandbox(sandbox, { agent, integration });
 		await setupExternalRepo(sandbox);
 		if (storybookMcpUrl) {
 			await registerExternalStorybookMcp(sandbox, storybookMcpUrl, agent);
 		}
+		for (const [serverName, spec] of Object.entries(mcpServers ?? {})) {
+			await registerMcpServer(sandbox, agent, serverName, spec);
+		}
+		for (const skillDir of skillDirs ?? []) {
+			await installSkillDir(sandbox, agent, skillDir);
+		}
+		// After setupExternalRepo so the repo tarball cannot clobber them.
+		if (extraFiles && Object.keys(extraFiles).length > 0) {
+			await sandbox.writeFiles(extraFiles);
+		}
 	}
+
+	const caseRecord: AgenticRefCaseRecord = {
+		name,
+		integration,
+		...(storybookMcpUrl !== undefined && { storybookMcpUrl }),
+		...(mcpServers && { mcpServers: Object.keys(mcpServers) }),
+		...(skillDirs && { skillDirs }),
+		...(extraFiles && { extraFiles: Object.keys(extraFiles) }),
+	};
 
 	return {
 		...DEFAULT_EXPERIMENT_CONFIG,
@@ -127,7 +175,9 @@ export function agenticRefExperiment(
 		// siblings once one passes.
 		runs: resolveRuns(),
 		earlyExit: false,
-		onRunComplete: attachAgenticRefMetrics,
+		// In-sandbox vitest runs only the fixtures' transcript sanity gate, so a
+		// dead agent surfaces as a failed run; the real measurement is offline.
+		onRunComplete: makeAgenticRefMetricsHook(caseRecord),
 		evals: process.env.EVAL_AGENTIC_REFERENCE === '1' ? evals : [],
 		setup,
 		...overrides,
