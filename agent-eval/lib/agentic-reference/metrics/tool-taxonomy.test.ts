@@ -31,6 +31,19 @@ describe('classifyShellCommand', () => {
 		['NO_COLOR=1 npx tsc --noEmit', ['verification']],
 		['pnpm run typecheck', ['other']],
 		['yarn vitest run', ['verification']],
+		// xargs interleaves its own options with the command it runs, so the
+		// wrapped binary is only reachable by knowing which flags take a value.
+		['find . -name "*.tmp" | xargs rm', ['exploration', 'edit']],
+		['find . -name "*.ts" | xargs -n 1 npx tsc --noEmit', ['exploration', 'verification']],
+		['find . | xargs -P 4 -I {} cp {} /tmp', ['exploration', 'edit']],
+		['find . | xargs -0 -r rm -f', ['exploration', 'edit']],
+		// Inline values need no lookahead; -- ends the option list.
+		['find . | xargs -n1 rm', ['exploration', 'edit']],
+		['find . | xargs --max-args=1 rm', ['exploration', 'edit']],
+		['find . | xargs -- rm', ['exploration', 'edit']],
+		// -i takes an *optional* argument, so eating the next token would swallow
+		// the command and classify this run as nothing at all.
+		['find . | xargs -i rm', ['exploration', 'edit']],
 		// Redirects are writes regardless of head binary.
 		['cat > /tmp/scratch.tsx', ['edit']],
 		['echo hi > src/a.ts', ['edit']],

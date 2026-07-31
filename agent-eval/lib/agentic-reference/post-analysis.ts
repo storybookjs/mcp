@@ -16,7 +16,6 @@
 // the only entry point here that needs the external repo on disk.
 import { complexityForTree, complexityForFiles, sumComplexities } from './metrics/complexity.ts';
 import { computeChurn } from './metrics/churn.ts';
-import { SCRIPT_EXTENSIONS } from './tree/paths.ts';
 import { readCost, readSpeed } from './metrics/run-signals.ts';
 import { classifyToolUse } from './metrics/tool-taxonomy.ts';
 import { diffTrees } from './tree/tree-diff.ts';
@@ -28,6 +27,7 @@ import type {
 	PostAnalysis,
 	PostAnalysisContext,
 } from '../post-analysis/types.ts';
+import { finiteNumbers, mean, round, sum } from '../utils/math.ts';
 import { isRecord } from '../utils/type.ts';
 
 /** Transcript events, or null when the transcript has no usable `events` array. */
@@ -72,7 +72,7 @@ function baselineFiles(analysis: Analysis): Record<string, FileComplexity> {
 
 /**
  * The baseline's scores for just the files this run touched. A file the agent
- * created has no baseline entry, and so contributes nothing to `before`.
+ * created has no baseline entry, so it contributes nothing on the baseline side.
  */
 function scoresFor(
 	files: Record<string, FileComplexity>,
@@ -81,21 +81,36 @@ function scoresFor(
 	return Object.fromEntries(paths.flatMap((path) => (files[path] ? [[path, files[path]]] : [])));
 }
 
+function addComplexity(a: FileComplexity, b: FileComplexity): FileComplexity {
+	return { cyclomatic: a.cyclomatic + b.cyclomatic, cognitive: a.cognitive + b.cognitive };
+}
+
+function subtractComplexity(a: FileComplexity, b: FileComplexity): FileComplexity {
+	return { cyclomatic: a.cyclomatic - b.cyclomatic, cognitive: a.cognitive - b.cognitive };
+}
+
 export function deltaToBaseline({
 	baselineAnalysis,
 	baselineDir,
-	// TODO: add projectScore
 	projectDir,
 }: DeltaToBaselineContext): Analysis {
 	const diff = diffTrees(baselineDir, projectDir);
 
-	// Complexity needs an AST, so .css participates in SLoC but not here.
-	const changedScripts = diff.files.filter((file) => SCRIPT_EXTENSIONS.test(file));
+	// No extension filter: complexityForFiles already skips anything without an
+	// AST, so .css participates in the SLoC diff and drops out here on its own.
+	const baseline = baselineFiles(baselineAnalysis);
+	const afterFiles = complexityForFiles(projectDir, diff.files);
 
-	// Both sides are scored per file, then totalled, so they stay comparable.
-	const afterFiles = complexityForFiles(projectDir, changedScripts);
-	const before = sumComplexities(scoresFor(baselineFiles(baselineAnalysis), changedScripts));
-	const after = sumComplexities(afterFiles.files);
+	// Whole-project totals, not just the touched subset — otherwise `before` and
+	// `after` are sums over an arbitrary file set and only their difference means
+	// anything. Rebuilding `after` as "the baseline, with the touched files
+	// swapped for what the agent left behind" keeps both ends comparable across
+	// runs while leaving the delta exactly what it was.
+	const before = sumComplexities(baseline);
+	const after = addComplexity(
+		subtractComplexity(before, sumComplexities(scoresFor(baseline, diff.files))),
+		sumComplexities(afterFiles.files),
+	);
 	const cognitiveDelta = after.cognitive - before.cognitive;
 
 	return {
@@ -120,16 +135,6 @@ export function deltaToBaseline({
 	};
 }
 
-function mean(values: number[]): number | null {
-	return values.length === 0
-		? null
-		: values.reduce((total, value) => total + value, 0) / values.length;
-}
-
-function round(value: number | null, digits = 2): number | null {
-	return value === null ? null : Number(value.toFixed(digits));
-}
-
 /** Comparative metrics, under the key analyze-results.ts nests them at. */
 function deltaOf(row: Record<string, unknown>): {
 	diff?: { sloc?: { added?: number } };
@@ -142,10 +147,7 @@ function numbersAt(
 	rows: Array<Record<string, unknown>>,
 	read: (row: Record<string, unknown>) => unknown,
 ): number[] {
-	return rows.flatMap((row) => {
-		const value = read(row);
-		return typeof value === 'number' && Number.isFinite(value) ? [value] : [];
-	});
+	return finiteNumbers(rows.map(read));
 }
 
 function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
@@ -189,7 +191,7 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			// null rather than 0 when nothing priced, so an unpriced model does not
 			// read as a free one.
 			costUsd: {
-				total: costs.length === 0 ? null : round(costs.reduce((sum, cost) => sum + cost, 0)),
+				total: round(sum(costs)),
 				reported: costs.length,
 			},
 			durationSeconds: { mean: round(mean(durations)) },

@@ -297,7 +297,7 @@ index 99df8fb3ab72003144926f19243baf6b2102f050..5e9d1aaa34cb8c8644ca185888a3906d
                  try {
                      const inspection = await exec.inspect();
                      resolve({
-@@ -262,6 +238,21 @@ export class DockerSandboxManager {
+@@ -262,6 +238,24 @@ export class DockerSandboxManager {
          }
          return result.stdout;
      }
@@ -310,7 +310,10 @@ index 99df8fb3ab72003144926f19243baf6b2102f050..5e9d1aaa34cb8c8644ca185888a3906d
 +     * the same transport round-trips losslessly.
 +     */
 +    async readFileBuffer(path) {
-+        const result = await this.runCommand('base64', [path]);
++        // A leading `-` reads as a flag. `./` keeps it an operand and, unlike
++        // `--`, is accepted by every base64 implementation including BusyBox.
++        const operand = path.startsWith('-') ? `./${path}` : path;
++        const result = await this.runCommand('base64', [operand]);
 +        if (result.exitCode !== 0) {
 +            throw new Error(`Failed to read file ${path}: ${result.stderr}`);
 +        }
@@ -389,7 +392,7 @@ index 4c5aeaaeae890c8a062e9d80638dddb87e25b666..415b184d2082e24aa67a0a7cfdc4872f
  ];
  /**
   * Test/eval file patterns to withhold from agent during task execution.
-@@ -141,6 +149,26 @@ export class SandboxManager {
+@@ -141,6 +149,29 @@ export class SandboxManager {
          }
          return result.stdout;
      }
@@ -407,7 +410,10 @@ index 4c5aeaaeae890c8a062e9d80638dddb87e25b666..415b184d2082e24aa67a0a7cfdc4872f
 +     * inserts, so no `-w` flag (which BusyBox lacks) is needed.
 +     */
 +    async readFileBuffer(path) {
-+        const result = await this.runCommand('base64', [path]);
++        // A leading `-` reads as a flag. `./` keeps it an operand and, unlike
++        // `--`, is accepted by every base64 implementation including BusyBox.
++        const operand = path.startsWith('-') ? `./${path}` : path;
++        const result = await this.runCommand('base64', [operand]);
 +        if (result.exitCode !== 0) {
 +            throw new Error(`Failed to read file ${path}: ${result.stderr}`);
 +        }

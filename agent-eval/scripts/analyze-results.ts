@@ -154,22 +154,37 @@ function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
 	return selected;
 }
 
+function messageOf(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 // --- post-analysis loading ---
 // Which module analyses a run is the experiment's call, not the eval's. The
 // module comes across as a live object, so arms that share one share it by
 // reference — which is exactly what groups their runs into a single summary.
 const byExperiment = new Map<string, PostAnalysis | null>();
 
-async function loadPostAnalysis(experiment: string): Promise<PostAnalysis | null> {
+async function loadPostAnalysis(
+	experiment: string,
+	failures: string[],
+): Promise<PostAnalysis | null> {
 	const cached = byExperiment.get(experiment);
 	if (cached !== undefined) return cached;
 
 	const definition = join(ROOT, 'experiments', `${experiment}.ts`);
 	// Results outlive experiment definitions: a renamed or deleted arm leaves its
 	// runs on disk, and those are skipped rather than fatal.
-	const postAnalysis = existsSync(definition)
-		? postAnalysisFrom(await import(pathToFileURL(definition).href), experiment)
-		: null;
+	let postAnalysis: PostAnalysis | null = null;
+	if (existsSync(definition)) {
+		try {
+			postAnalysis = postAnalysisFrom(await import(pathToFileURL(definition).href), experiment);
+		} catch (error) {
+			// A definition that will not import, or names a malformed module, must
+			// not cost every other arm its analysis. Reported once: the outcome is
+			// cached below, so the remaining runs of this arm skip quietly.
+			failures.push(`experiments/${experiment}.ts: ${messageOf(error)}`);
+		}
+	}
 
 	byExperiment.set(experiment, postAnalysis);
 	return postAnalysis;
@@ -288,7 +303,7 @@ async function main() {
 	for (const run of runs) {
 		// The experiment names the module that analyses its runs; if it names
 		// none, this run is not ours to measure.
-		const postAnalysis = await loadPostAnalysis(run.experiment);
+		const postAnalysis = await loadPostAnalysis(run.experiment, failedAnalyses);
 		if (postAnalysis === null) {
 			withoutHook += 1;
 			continue;
@@ -323,9 +338,7 @@ async function main() {
 			}
 		} catch (error) {
 			// One broken run must not cost us the others.
-			failedAnalyses.push(
-				`${run.evalName} run-${run.run}: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			failedAnalyses.push(`${run.evalName} run-${run.run}: ${messageOf(error)}`);
 		}
 	}
 
@@ -379,6 +392,6 @@ async function main() {
 }
 
 main().catch((error) => {
-	console.error(error instanceof Error ? error.message : String(error));
+	console.error(messageOf(error));
 	process.exit(1);
 });

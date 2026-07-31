@@ -178,6 +178,8 @@ describe('deltaToBaseline', () => {
 	});
 
 	it('scores a file the agent created as zero before', () => {
+		// baseline src/a.ts is cyclomatic 1; the added src/new.ts is 2 and has no
+		// baseline entry, so the whole-project total goes 1 -> 3.
 		const delta = deltaToBaseline(
 			deltaContext(
 				{ 'src/a.ts': 'function a(){ return 0; }\n' },
@@ -189,8 +191,47 @@ describe('deltaToBaseline', () => {
 		);
 
 		expect(delta.complexity).toMatchObject({
-			cyclomatic: { before: 0, after: 2, delta: 2 },
+			cyclomatic: { before: 1, after: 3, delta: 2 },
 			cognitive: { before: 0, after: 1, delta: 1 },
+		});
+	});
+
+	// before/after are whole-project totals, not sums over the touched subset:
+	// summed over changed files alone they are two arbitrary numbers whose only
+	// meaningful content is their difference, and they cannot be compared to
+	// another run that happened to touch different files.
+	it('reports whole-project totals, counting files the run never touched', () => {
+		const untouched = { 'src/untouched.ts': 'function u(x){ if (x) return 1; return 0; }\n' };
+		const delta = deltaToBaseline(
+			deltaContext(
+				{ ...untouched, 'src/a.ts': 'function a(){ return 0; }\n' },
+				{ ...untouched, 'src/a.ts': 'function a(x){ if (x) return 1; return 0; }\n' },
+			),
+		);
+
+		// untouched is cyclomatic 2 / cognitive 1 on both sides; a.ts goes 1 -> 2
+		// and 0 -> 1. Totals carry untouched; the delta does not.
+		expect(delta.complexity).toMatchObject({
+			cyclomatic: { before: 3, after: 4, delta: 1 },
+			cognitive: { before: 1, after: 2, delta: 1 },
+		});
+		expect((delta.diff as { files: string[] }).files).toEqual(['src/a.ts']);
+	});
+
+	it('drops a deleted file from the after total', () => {
+		const delta = deltaToBaseline(
+			deltaContext(
+				{
+					'src/a.ts': 'function a(){ return 0; }\n',
+					'src/gone.ts': 'function g(x){ if (x) return 1; return 0; }\n',
+				},
+				{ 'src/a.ts': 'function a(){ return 0; }\n' },
+			),
+		);
+
+		expect(delta.complexity).toMatchObject({
+			cyclomatic: { before: 3, after: 1, delta: -2 },
+			cognitive: { before: 1, after: 0, delta: -1 },
 		});
 	});
 

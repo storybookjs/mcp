@@ -27,7 +27,13 @@ const SEPARATORS = new Set(['&&', '||', ';', '|']);
 
 // Heredoc bodies are data, not commands. Left in place, a payload containing
 // `rm -rf /` would be tokenised and classified as an edit.
-const HEREDOC = /<<-?\s*'?"?(\w+)'?"?[\s\S]*?^\1$/gm;
+//
+// `<<-` strips leading tabs from the body *and* from the terminator, so the
+// closing word may be indented. Anchoring it at column 0 let those bodies fall
+// through and be tokenised — the exact failure this exists to prevent. Only
+// tabs are allowed before the terminator, matching what the shell strips;
+// accepting spaces would swallow a body line that merely ends in that word.
+const HEREDOC = /<<-?\s*'?"?(\w+)'?"?[\s\S]*?^\t*\1$/gm;
 
 function stripHeredocBodies(command: string): string {
 	return command.replace(HEREDOC, '<<HEREDOC');

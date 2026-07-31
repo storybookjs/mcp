@@ -60,6 +60,15 @@ export function pinSlug({ repo, ref }: ExternalRepoPin): string {
 
 const refCache = new Map<string, string>();
 
+// Both subprocesses are bounded: a stalled codeload connection would otherwise
+// hang `pnpm results:analyze` indefinitely, and on CI hold the job to its own
+// limit. curl's own timeouts fire first so the error names the cause; the
+// execFileSync ceilings are the backstop for a process that ignores them.
+const CONNECT_TIMEOUT_SECONDS = 30;
+// Generous for a ~20MB tarball on a slow link, still far short of a hang.
+const FETCH_TIMEOUT_SECONDS = 300;
+const EXTRACT_TIMEOUT_SECONDS = 120;
+
 /**
  * Download and extract a ref, returning its directory. Extraction happens in a
  * scratch directory that is renamed into place only once it fully succeeded: a
@@ -80,14 +89,24 @@ export function prepareRef(cacheDir: string, repo: string, ref: string): string 
 		try {
 			// execFile, not a shell: repo and ref never reach a command line.
 			const tarball = join(scratch, 'source.tar.gz');
-			execFileSync('curl', [
-				'-fsSL',
-				'-o',
-				tarball,
-				`https://codeload.github.com/${repo}/tar.gz/${ref}`,
-			]);
+			execFileSync(
+				'curl',
+				[
+					'-fsSL',
+					'--connect-timeout',
+					String(CONNECT_TIMEOUT_SECONDS),
+					'--max-time',
+					String(FETCH_TIMEOUT_SECONDS),
+					'-o',
+					tarball,
+					`https://codeload.github.com/${repo}/tar.gz/${ref}`,
+				],
+				{ timeout: (FETCH_TIMEOUT_SECONDS + 30) * 1000 },
+			);
 			// --strip-components=1 drops the tarball's top-level <name>-<ref>/ dir.
-			execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', scratch]);
+			execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', scratch], {
+				timeout: EXTRACT_TIMEOUT_SECONDS * 1000,
+			});
 			rmSync(tarball);
 			renameSync(scratch, dir);
 		} catch (error) {

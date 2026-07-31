@@ -84,6 +84,23 @@ describe('splitCommandSegments', () => {
 		expect(segments.some((segment) => segment.tokens[0] === 'ls')).toBe(true);
 	});
 
+	// `<<-` strips leading tabs from the terminator as well as the body, so a
+	// column-0 anchor let the whole body through to be tokenised as commands.
+	it('strips a <<- body whose terminator is tab-indented', () => {
+		const segments = splitCommandSegments(
+			'cat > file.sh <<-EOF\n\trm -rf /workspace/important\n\tEOF',
+		);
+		expect(segments).toHaveLength(1);
+		expect(segments.some((segment) => segment.tokens.includes('rm'))).toBe(false);
+	});
+
+	it('still requires the terminator to own its line', () => {
+		// `EOF` here is the tail of a body line, not the terminator, so the heredoc
+		// is unterminated and nothing is stripped.
+		const segments = splitCommandSegments('cat > file.sh <<EOF\necho not EOF');
+		expect(segments.some((segment) => segment.tokens.includes('<<HEREDOC'))).toBe(false);
+	});
+
 	it('keeps a quoted sed expression as a single token', () => {
 		const segments = splitCommandSegments("sed -i 's#a; b#c#' file.ts");
 		expect(segments).toHaveLength(1);

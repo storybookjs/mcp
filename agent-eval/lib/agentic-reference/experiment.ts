@@ -119,10 +119,7 @@ export function agenticRefExperiment(
 	return {
 		...DEFAULT_EXPERIMENT_CONFIG,
 		...AGENT_CONFIG[agent],
-		// Every arm of this family is measured the same way — prompt and MCP
-		// endpoint are what vary — so they share one module, and sharing it by
-		// reference is what groups their runs into a single summary table.
-		// Override per experiment to measure one arm differently.
+		// Override per experiment to measure one case or prompt differently.
 		postAnalysis,
 		// The real dependency install outgrows the shared 900s default.
 		timeout: 1800,
