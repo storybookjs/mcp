@@ -34,7 +34,9 @@ type AgentContext = {
 
 type EvalContext = {
 	agent: string;
-	integration: 'mcp' | 'plugin';
+	// 'none' is the agentic-reference bare control (no Storybook tooling flavor);
+	// see lib/templates.ts. Plugin-only helpers below treat it as "not plugin".
+	integration: 'mcp' | 'plugin' | 'none';
 	/** Whether the sandbox runs review-on: always for the plugin integration, via EVAL_REVIEW=1 for MCP. */
 	review: boolean;
 };
@@ -65,7 +67,7 @@ export function getEvalContext(): EvalContext {
 		);
 	}
 
-	if (integration !== 'mcp' && integration !== 'plugin') {
+	if (integration !== 'mcp' && integration !== 'plugin' && integration !== 'none') {
 		throw new Error(
 			'Expected ' +
 				AGENT_CONTEXT_PATH +

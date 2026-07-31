@@ -135,6 +135,28 @@ function harnessVersion(): string {
 	return version;
 }
 
+// Vercel Sandboxes run Amazon Linux 2023, whose base image ships node, tar and
+// gzip but *not* curl (and `dnf install curl` is not available to us), so the
+// tarball is fetched with node's own fetch.
+const DOWNLOAD_SCRIPT = [
+	'const { createWriteStream } = require("node:fs");',
+	'const { Readable } = require("node:stream");',
+	'const { pipeline } = require("node:stream/promises");',
+	'const [url, dest, timeoutMs] = process.argv.slice(1);',
+	'fetch(url, { signal: AbortSignal.timeout(Number(timeoutMs)) })',
+	'  .then(async (response) => {',
+	'    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);',
+	'    await pipeline(Readable.fromWeb(response.body), createWriteStream(dest));',
+	'  })',
+	'  .catch((error) => {',
+	'    console.error(error instanceof Error ? error.message : String(error));',
+	'    process.exit(1);',
+	'  });',
+].join('\n');
+
+// Outside the working directory, so the extraction cannot swallow it.
+const SANDBOX_TARBALL_PATH = '/tmp/external-repo.tar.gz';
+
 function exists(sandbox: Sandbox, path: string): Promise<boolean> {
 	return sandbox.readFile(path).then(
 		() => true,
@@ -198,17 +220,24 @@ export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
 	const { repo, ref } = parseExternalRepoFromManifest(await sandbox.readFile('package.json'));
 	const tarballUrl = `https://codeload.github.com/${repo}/tar.gz/${ref}`;
 
-	// -f - reads the pipe explicitly rather than relying on tar's compiled-in
-	// default archive; --strip-components=1 drops the tarball's top-level
-	// <name>-<ref>/ dir.
-	const extract = await sandbox.runCommand('bash', [
-		'-lc',
-		`set -euo pipefail; curl -fsSL '${tarballUrl}' | tar xz -f - --strip-components=1`,
-	]);
-	if (extract.exitCode !== 0) {
-		const tail = (extract.stderr || extract.stdout).trim().split('\n').slice(-15).join('\n');
-		throw new Error(`setupExternalRepo: failed to materialize ${repo}@${ref}:\n${tail}`);
-	}
+	// Download and extract as two steps rather than one `fetch | tar` pipe, so a
+	// failure names which half broke. --strip-components=1 drops the tarball's
+	// top-level <name>-<ref>/ dir.
+	await runOrThrow(
+		sandbox,
+		'node',
+		['-e', DOWNLOAD_SCRIPT, tarballUrl, SANDBOX_TARBALL_PATH, String(FETCH_TIMEOUT_SECONDS * 1000)],
+		`download ${repo}@${ref}`,
+	);
+	await runOrThrow(
+		sandbox,
+		'tar',
+		['xzf', SANDBOX_TARBALL_PATH, '--strip-components=1'],
+		`extract ${repo}@${ref}`,
+	);
+	// Best-effort: the tarball is ~20MB of dead weight in the sandbox image, but
+	// a failure to remove it is not a reason to fail the run.
+	await sandbox.runCommand('rm', ['-f', SANDBOX_TARBALL_PATH]);
 
 	await installDependencies(sandbox);
 

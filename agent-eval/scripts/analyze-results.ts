@@ -171,13 +171,21 @@ async function loadPostAnalysis(
 	const cached = byExperiment.get(experiment);
 	if (cached !== undefined) return cached;
 
-	const definition = join(ROOT, 'experiments', `${experiment}.ts`);
+	// Agentic-reference arms are run from .agentic-ref/, so their generated
+	// definitions live under .agentic-ref/experiments/ rather than experiments/.
+	const definition = [
+		join(ROOT, 'experiments', `${experiment}.ts`),
+		join(ROOT, '.agentic-ref', 'experiments', `${experiment}.ts`),
+	].find(existsSync);
 	// Results outlive experiment definitions: a renamed or deleted arm leaves its
 	// runs on disk, and those are skipped rather than fatal.
 	let postAnalysis: PostAnalysis | null = null;
-	if (existsSync(definition)) {
+	if (definition) {
 		try {
-			postAnalysis = postAnalysisFrom(await import(pathToFileURL(definition).href), experiment);
+			postAnalysis = postAnalysisFrom(
+				await import(pathToFileURL(definition).href),
+				experiment,
+			);
 		} catch (error) {
 			// A definition that will not import, or names a malformed module, must
 			// not cost every other arm its analysis. Reported once: the outcome is
