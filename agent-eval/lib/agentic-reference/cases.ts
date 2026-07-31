@@ -103,6 +103,13 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// 	storybookMcpUrl: chromaticBranchPermalink('main', DROPPY_CHROMATIC_APP_ID),
 	// 	evals: ['705-migrate-to-ds-flow'],
 	// },
+	{
+		name: 'cc-base-ui-ds-opus-high',
+		description:
+			'Base UI Storybook MCP (research branch permalink); the Base UI migration flow runs with the docs of the system it migrates to.',
+		storybookMcpUrl: chromaticBranchPermalink('research', BASE_UI_CHROMATIC_APP_ID),
+		evals: ['706-migrate-to-base-ui-flow'],
+	},
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.
 	{
