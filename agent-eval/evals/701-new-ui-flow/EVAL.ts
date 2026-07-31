@@ -1,7 +1,5 @@
-// Sanity gate, not measurement: a run whose agent died or produced no
-// transcript fails here instead of reporting success. Everything this eval
-// actually measures is computed offline; see
-// lib/agentic-reference/post-analysis.ts.
+// Sanity gate, not measurement: a dead or transcript-less run fails instead of
+// reporting success. Real measurement is offline; see lib/agentic-reference/post-analysis.ts.
 import { expect, test } from 'vitest';
 import { getTranscript } from '#test-utils';
 

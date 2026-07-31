@@ -21,11 +21,10 @@ export const AGENTIC_REF_EVALS: string[] = [
 	'706-migrate-to-base-ui-flow',
 ];
 
-// The workflows the base-ui Storybook content variants treat. The Droppy
-// migration flow is excluded when listed: its design-system docs come from
-// the Droppy Storybook, not the base-ui one.
+// The workflows the base-ui Storybook content variants treat; the migration
+// flows are excluded.
 const BASE_UI_APP_WORKFLOWS = AGENTIC_REF_EVALS.filter(
-	(evalName) => evalName !== '705-migrate-to-ds-flow',
+	(evalName) => !['705-migrate-to-ds-flow', '706-migrate-to-base-ui-flow'].includes(evalName),
 );
 
 export interface AgenticRefCase {
