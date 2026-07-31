@@ -10,7 +10,6 @@
 // Usage: node scripts/generate-agentic-ref-experiments.mts
 
 import {
-	existsSync,
 	lstatSync,
 	mkdirSync,
 	readdirSync,
@@ -48,11 +47,18 @@ export default agenticRefCaseExperiment('${caseName}');
 function ensureRelativeSymlink(linkPath: string, targetDir: string): void {
 	const target = relative(dirname(linkPath), targetDir);
 
-	if (existsSync(linkPath)) {
-		if (lstatSync(linkPath).isSymbolicLink() && readlinkSync(linkPath) === target) {
+	// lstat rather than exists: a dangling symlink reports as non-existent but
+	// still blocks symlinkSync.
+	let existing: ReturnType<typeof lstatSync> | undefined;
+	try {
+		existing = lstatSync(linkPath);
+	} catch {}
+
+	if (existing !== undefined) {
+		if (existing.isSymbolicLink() && readlinkSync(linkPath) === target) {
 			return;
 		}
-		rmSync(linkPath, { force: true });
+		rmSync(linkPath, { recursive: true, force: true });
 	}
 
 	symlinkSync(target, linkPath);
@@ -63,16 +69,6 @@ function main(): void {
 	// The results symlink would dangle without this — created here rather than
 	// left to agent-eval, since the generator runs before the CLI does.
 	mkdirSync(join(AGENT_EVAL_ROOT, 'results'), { recursive: true });
-
-	// Duplicate case names would silently share one stub file — and with it one
-	// results directory and fingerprint cache, corrupting the arm comparison.
-	const names = AGENTIC_REF_CASES.map((agenticRefCase) => agenticRefCase.name);
-	const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-	if (duplicates.length > 0) {
-		throw new Error(
-			`generate-agentic-ref-experiments: duplicate case names: ${[...new Set(duplicates)].join(', ')}`,
-		);
-	}
 
 	const expectedByName = new Map(
 		AGENTIC_REF_CASES.map((agenticRefCase) => [

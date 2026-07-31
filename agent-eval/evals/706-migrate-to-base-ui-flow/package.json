@@ -1,6 +1,6 @@
 {
-	"name": "705-migrate-to-ds-flow",
-	"description": "Agentic reference, migration workflow, Droppy migration scenario.",
+	"name": "706-migrate-to-base-ui-flow",
+	"description": "Agentic reference, migration workflow, Base UI migration scenario.",
 	"type": "module",
 	"evals": {
 		"externalRepo": {

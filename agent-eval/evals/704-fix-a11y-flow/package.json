@@ -1,10 +1,9 @@
 {
 	"name": "704-fix-a11y-flow",
-	"description": "Agentic reference \u2014 accessibility workflow. The agent walks checkout as a screen-reader user would and fixes what blocks them (unnamed fields, unannounced step changes and errors, disabled autofill). Runs under every case; metrics are computed offline.",
+	"description": "Agentic reference, accessibility workflow.",
 	"type": "module",
 	"evals": {
 		"externalRepo": {
-			"//": "Tag agentic-reference/base-ui-v1 (= 6865dfb) - https://github.com/yannbf/mealdrop/releases/tag/agentic-reference%2Fbase-ui-v1",
 			"repo": "yannbf/mealdrop",
 			"ref": "refs/tags/agentic-reference/base-ui-v1"
 		}

@@ -237,9 +237,10 @@ pnpm eval:agentic-ref:dry
 `experiments/agentic-ref-<case-name>.ts` stub per case plus symlinks to the
 shared `evals/` and `results/` directories — then run `agent-eval` from inside
 it. This keeps agentic-ref cases out of the default `pnpm eval`/`pnpm
-eval:dry` matrix; `lib/agentic-reference/cases.ts` is the only agentic-ref
-source in git. `pnpm gen:agentic-ref` regenerates the work directory without
-running anything.
+eval:dry` matrix. The generated `.agentic-ref/` workspace is ignored; the
+case registry and the workflow fixtures remain the versioned sources.
+`pnpm gen:agentic-ref` regenerates the work directory without running
+anything.
 
 In-sandbox validation is a single transcript sanity gate per fixture — a run
 whose agent died fails instead of reporting success — while metrics and

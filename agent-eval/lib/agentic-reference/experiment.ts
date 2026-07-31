@@ -7,7 +7,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { ExperimentConfig, RunCompleteContext, Sandbox } from '@vercel/agent-eval';
+import type {
+	ExperimentConfig,
+	RunCompleteContext,
+	RunCompleteHook,
+	Sandbox,
+} from '@vercel/agent-eval';
 import { DEFAULT_EXPERIMENT_CONFIG } from '../experiment.ts';
 import {
 	type EvalAgent,
@@ -35,7 +40,12 @@ interface AgenticRefExperimentOptions {
 	agent?: EvalAgent;
 	/** Present = run with the design-system Storybook MCP registered at this URL. */
 	storybookMcpUrl?: string;
-	/** Sandbox flavor. Defaults to 'mcp' with a storybookMcpUrl, bare ('none') without. */
+	/**
+	 * Sandbox flavor recorded in the agent context: Storybook tooling only.
+	 * Defaults to 'mcp' with a storybookMcpUrl, bare ('none') without —
+	 * mcpServers and skillDirs deliberately do not affect it, since they carry
+	 * non-Storybook support.
+	 */
 	integration?: EvalIntegration;
 	/** Additional MCP servers to register, e.g. a component library's own server. */
 	mcpServers?: Record<string, McpServerSpec>;
@@ -164,6 +174,17 @@ export function agenticRefExperiment(
 		...(extraFiles && { extraFiles: Object.keys(extraFiles) }),
 	};
 
+	const metricsHook = makeAgenticRefMetricsHook(caseRecord);
+	// An override may add its own hook, but the case record must always land in
+	// the result — compose instead of letting the override replace the hook.
+	const onRunComplete: RunCompleteHook =
+		overrides?.onRunComplete === undefined
+			? metricsHook
+			: (context) => {
+					const withMetrics = metricsHook(context);
+					return overrides.onRunComplete?.({ ...context, runData: withMetrics }) ?? withMetrics;
+				};
+
 	return {
 		...DEFAULT_EXPERIMENT_CONFIG,
 		...AGENT_CONFIG[agent],
@@ -175,11 +196,11 @@ export function agenticRefExperiment(
 		// siblings once one passes.
 		runs: resolveRuns(),
 		earlyExit: false,
-		// In-sandbox vitest runs only the fixtures' transcript sanity gate, so a
-		// dead agent surfaces as a failed run; the real measurement is offline.
-		onRunComplete: makeAgenticRefMetricsHook(caseRecord),
 		evals: process.env.EVAL_AGENTIC_REFERENCE === '1' ? evals : [],
 		setup,
 		...overrides,
+		// In-sandbox vitest runs only the fixtures' transcript sanity gate, so a
+		// dead agent surfaces as a failed run; the real measurement is offline.
+		onRunComplete,
 	};
 }

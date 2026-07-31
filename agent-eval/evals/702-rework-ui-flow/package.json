@@ -1,10 +1,9 @@
 {
 	"name": "702-rework-ui-flow",
-	"description": "Agentic reference \u2014 rework workflow (prescribed variant). The prompt names the plus/minus pattern from the dish modal; measures execution quality when the target pattern is given. Runs under every case; metrics are computed offline.",
+	"description": "Agentic reference, rework workflow (prescribed variant)",
 	"type": "module",
 	"evals": {
 		"externalRepo": {
-			"//": "Tag agentic-reference/base-ui-v1 (= 6865dfb) - https://github.com/yannbf/mealdrop/releases/tag/agentic-reference%2Fbase-ui-v1",
 			"repo": "yannbf/mealdrop",
 			"ref": "refs/tags/agentic-reference/base-ui-v1"
 		}

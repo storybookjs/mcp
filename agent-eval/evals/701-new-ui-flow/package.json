@@ -1,10 +1,9 @@
 {
 	"name": "701-new-ui-flow",
-	"description": "Agentic reference \u2014 new-UI workflow. The agent adds an order-history feature to Mealdrop; measures whether new UI reuses the design system's components and tokens. Runs under every case in lib/agentic-reference/cases.ts; metrics are computed offline by the post-analysis module.",
+	"description": "Agentic reference, new-UI workflow.",
 	"type": "module",
 	"evals": {
 		"externalRepo": {
-			"//": "Tag agentic-reference/base-ui-v1 (= 6865dfb) - https://github.com/yannbf/mealdrop/releases/tag/agentic-reference%2Fbase-ui-v1",
 			"repo": "yannbf/mealdrop",
 			"ref": "refs/tags/agentic-reference/base-ui-v1"
 		}

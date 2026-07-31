@@ -1,1 +1,1 @@
-Adjusting quantities works differently depending on where you are — when you're adding a dish you tap plus and minus, but in the cart you pick a number from a dropdown list. Make it work the same way everywhere.
+Adjusting dish quantities works differently depending on where you are in the app. When adding a dish in a restaurant page, you tap plus and minus, but in the cart, you pick a number from a dropdown list. Make it work the same way everywhere.

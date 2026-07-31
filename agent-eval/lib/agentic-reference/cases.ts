@@ -17,12 +17,13 @@ export const AGENTIC_REF_EVALS: string[] = [
 	'702-rework-ui-flow',
 	'703-fix-bug-flow',
 	'704-fix-a11y-flow',
-	'705-migrate-to-ds-flow',
+	// Parked until the Droppy baseline round: '705-migrate-to-ds-flow'.
+	'706-migrate-to-base-ui-flow',
 ];
 
-// The workflows that run against the Base UI-consuming app. The base-ui
-// Storybook content variants only make sense as a treatment for these; the
-// migration flow's design-system docs come from the Droppy Storybook instead.
+// The workflows the base-ui Storybook content variants treat. The Droppy
+// migration flow is excluded when listed: its design-system docs come from
+// the Droppy Storybook, not the base-ui one.
 const BASE_UI_APP_WORKFLOWS = AGENTIC_REF_EVALS.filter(
 	(evalName) => evalName !== '705-migrate-to-ds-flow',
 );
@@ -48,17 +49,18 @@ export interface AgenticRefCase {
 	overrides?: Partial<ExperimentConfig>;
 }
 
-// The design-system repo's Chromatic app id — the prefix of its build
-// permalinks (`<appId>-<buildHash>.chromatic.com`).
-const DESIGN_SYSTEM_CHROMATIC_APP_ID = '6a4e68f187e29b2ced28b17e';
+// Chromatic app ids for the two documented systems — the prefixes of their
+// build permalinks (`<appId>-<buildHash>.chromatic.com`).
+const BASE_UI_CHROMATIC_APP_ID = '6a4e68f187e29b2ced28b17e';
+export const DROPPY_CHROMATIC_APP_ID = '6a6b3f5765e7f685e7f73656';
 
 // Chromatic branch permalink: non-alphanumeric characters in the branch name
 // collapse to dashes. Unlike build permalinks these are mutable — they always
 // serve the branch's latest published build — so a run's exact Storybook is
 // pinned by `analysis.externalRepo`/`analysis.case`, not by this URL.
-function chromaticBranchPermalink(branchName: string): string {
+function chromaticBranchPermalink(branchName: string, appId: string): string {
 	const sanitized = branchName.replace(/[^a-zA-Z0-9]+/g, '-');
-	return `https://${sanitized}--${DESIGN_SYSTEM_CHROMATIC_APP_ID}.chromatic.com`;
+	return `https://${sanitized}--${appId}.chromatic.com`;
 }
 
 // Content-filter variants of the design-system Storybook, one per
@@ -84,7 +86,7 @@ function storybookVariantCases(): AgenticRefCase[] {
 			return {
 				name: `${prefix}-${variant}-${modelSuffix}`,
 				description: `Design-system Storybook MCP, content variant "${variant}".`,
-				storybookMcpUrl: chromaticBranchPermalink(branchName),
+				storybookMcpUrl: chromaticBranchPermalink(branchName, BASE_UI_CHROMATIC_APP_ID),
 				agent,
 				evals: BASE_UI_APP_WORKFLOWS,
 			};
@@ -94,13 +96,14 @@ function storybookVariantCases(): AgenticRefCase[] {
 
 export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	...storybookVariantCases(),
-	{
-		name: 'cc-droppy-ds-opus-high',
-		description:
-			'Droppy design-system Storybook MCP (main branch permalink); the migration flow runs with the docs of the system it migrates to.',
-		storybookMcpUrl: 'https://main--6a6b3f5765e7f685e7f73656.chromatic.com',
-		evals: ['705-migrate-to-ds-flow'],
-	},
+	// Parked with the 705 Droppy migration flow until the Droppy baseline round:
+	// {
+	// 	name: 'cc-droppy-ds-opus-high',
+	// 	description:
+	// 		'Droppy design-system Storybook MCP (main branch permalink); the migration flow runs with the docs of the system it migrates to.',
+	// 	storybookMcpUrl: chromaticBranchPermalink('main', DROPPY_CHROMATIC_APP_ID),
+	// 	evals: ['705-migrate-to-ds-flow'],
+	// },
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.
 	{
@@ -121,7 +124,16 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 		// The docs pointer is only usable if the agent may actually fetch it.
 		overrides: { webResearch: true },
 	},
+	// TODO: add the Base UI community control case once we've decided on how to do it.
 ];
+
+// Duplicate names would make agenticRefCaseExperiment always pick the first
+// match and collide generated stubs, results directories, and fingerprints.
+const caseNames = AGENTIC_REF_CASES.map((agenticRefCase) => agenticRefCase.name);
+const duplicateNames = [...new Set(caseNames.filter((name, i) => caseNames.indexOf(name) !== i))];
+if (duplicateNames.length > 0) {
+	throw new Error(`AGENTIC_REF_CASES: duplicate case names: ${duplicateNames.join(', ')}`);
+}
 
 // AGENTIC_REF_FLOW=<eval>[,<eval>] narrows every case to those workflows (the
 // standard EVAL_ONLY knows nothing about this eval line). A case whose eval
@@ -132,7 +144,15 @@ function applyEvalFilter(evals: string[]): string[] {
 	if (raw === undefined || raw === '') {
 		return evals;
 	}
-	const wanted = raw.split(',').map((name) => name.trim()).filter(Boolean);
+	const wanted = raw
+		.split(',')
+		.map((name) => name.trim())
+		.filter(Boolean);
+	if (wanted.length === 0) {
+		throw new Error(
+			`AGENTIC_REF_FLOW: no workflow names in "${raw}". Valid: ${AGENTIC_REF_EVALS.join(', ')}`,
+		);
+	}
 	const unknown = wanted.filter((name) => !AGENTIC_REF_EVALS.includes(name));
 	if (unknown.length > 0) {
 		throw new Error(
