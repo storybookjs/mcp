@@ -1,1 +1,1 @@
-This app's UI is entirely hand-rolled. The company has since decided to adopt Base UI, and its packages are already installed in this repo. Move the app onto it, starting with the cart and checkout experience.
+This app's UI is entirely hand-rolled. The company has since decided to adopt Base UI together with its own Droppy theme, and both packages are already installed in this repo. Move the app onto them, starting with the cart and checkout experience.
