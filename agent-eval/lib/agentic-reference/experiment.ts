@@ -192,7 +192,9 @@ export function agenticRefExperiment(
 		// Override per experiment to measure one case or prompt differently.
 		postAnalysis,
 		// The real dependency install outgrows the shared 900s default.
-		timeout: 1800,
+		// Some UI creation runs take longer than 1800s, and DS migration runs may
+		// take significantly longer, so the timeout is purposefully exagerated.
+		timeout: 10800,
 		// Research, not a CI gate: complete every repetition rather than aborting
 		// siblings once one passes.
 		runs: resolveRuns(),
