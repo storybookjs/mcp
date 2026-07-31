@@ -32,6 +32,8 @@ import { postAnalysis } from './post-analysis.ts';
 
 import type { PostAnalysisExperiment } from '../post-analysis/types.ts';
 
+const AGENTIC_REF_DEFAULT_RUN_COUNT = 10;
+
 interface AgenticRefExperimentOptions {
 	/** Case name; recorded in `result.analysis.case` for the offline analyzer. */
 	name: string;
@@ -82,12 +84,11 @@ export const AGENT_NAME_PARTS: Record<EvalAgent, { prefix: string; modelSuffix: 
 	codex: { prefix: 'codex', modelSuffix: 'gpt-5.5-medium' },
 };
 
-// TODO: ⚠️ Change the default to 10 once the eval is more concrete
-/** Research sample size, from AGENTIC_REF_RUNS (default 1). */
+/** Research sample size, from AGENTIC_REF_RUNS. */
 function resolveRuns(): number {
 	const raw = process.env.AGENTIC_REF_RUNS;
 	if (raw === undefined || raw === '') {
-		return 1;
+		return AGENTIC_REF_DEFAULT_RUN_COUNT;
 	}
 	const parsed = Number.parseInt(raw, 10);
 	if (!Number.isInteger(parsed) || parsed < 1) {

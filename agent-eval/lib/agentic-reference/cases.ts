@@ -68,11 +68,26 @@ function chromaticBranchPermalink(branchName: string, appId: string): string {
 // branch names and their facet lists). Every branch expands into one case per
 // agent in VARIANT_AGENTS, named `<agent>-<branch minus prefix>-<model>`.
 const EXPERIMENT_BRANCHES = [
-	'experiment/showcase-only',
-	'experiment/api-reference',
-	'experiment/keep-all',
-	'experiment/purge-component-jsdoc',
-	'experiment/purge-props-jsdoc',
+	'experiment/empty',
+	'experiment/base',
+	'experiment/full',
+	// TODO: uncomment after initial collection tests.
+	// 'experiment/basic-docs',
+	// 'experiment/product-examples',
+	// 'experiment/do-dont',
+	// 'experiment/when-to-use',
+	// 'experiment/history-issues',
+	// 'experiment/a11y',
+	// 'experiment/brand-animation',
+	// 'experiment/api-ref',
+	// 'experiment/docs-full',
+	// 'experiment/stories-api-ref',
+	// 'experiment/stories-showcase',
+	// 'experiment/stories-highlight',
+	// 'experiment/stories-examples',
+	// 'experiment/stories-full',
+	// 'experiment/purge-jsdoc',
+	// 'experiment/optimized',
 ] as const;
 
 const VARIANT_AGENTS: EvalAgent[] = ['claude-code'];
@@ -97,14 +112,14 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	...storybookVariantCases(),
 	// Parked with the 705 Droppy migration flow until the Droppy baseline round:
 	// {
-	// 	name: 'cc-droppy-ds-opus-high',
+	// name: 'cc-migration-droppy-opus-high',
 	// 	description:
 	// 		'Droppy design-system Storybook MCP (main branch permalink); the migration flow runs with the docs of the system it migrates to.',
 	// 	storybookMcpUrl: chromaticBranchPermalink('main', DROPPY_CHROMATIC_APP_ID),
 	// 	evals: ['705-migrate-to-ds-flow'],
 	// },
 	{
-		name: 'cc-base-ui-ds-opus-high',
+		name: 'cc-migration-base-ui-opus-high',
 		description:
 			'Base UI Storybook MCP (research branch permalink); the Base UI migration flow runs with the docs of the system it migrates to.',
 		storybookMcpUrl: chromaticBranchPermalink('research', BASE_UI_CHROMATIC_APP_ID),
@@ -113,11 +128,11 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.
 	{
-		name: 'control-none',
+		name: 'cc-control-none-opus-high',
 		description: 'Zero agent support: no MCP, no skills, no docs pointer.',
 	},
 	{
-		name: 'control-doc',
+		name: 'cc-control-doc-opus-high',
 		description: 'Official component-library docs referenced from AGENTS.md; no MCP, no skills.',
 		extraFiles: {
 			'AGENTS.md':
