@@ -7,7 +7,6 @@ import {
 	buildLocalMcpSetupScript,
 	packageTarballUrl,
 	resolveStorybookMcpPackage,
-	resolvedShaFor,
 } from './local-mcp.ts';
 
 const SPEC: StorybookMcpPackageSpec = {
@@ -75,7 +74,6 @@ describe('resolveStorybookMcpPackage', () => {
 			'https://api.github.com/repos/storybook-tmp/base-ui/commits/experiment%2Fresolve-test',
 			expect.anything(),
 		);
-		expect(resolvedShaFor(spec)).toBe(SHA);
 	});
 
 	it('caches per repo@branch so every run of an experiment pins the same sha', async () => {

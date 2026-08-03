@@ -73,15 +73,6 @@ function resolutionKey(spec: StorybookMcpPackageSpec): string {
 }
 
 /**
- * The sha a spec resolved to earlier in this process, for recording in run
- * results. Null before {@link resolveStorybookMcpPackage} has run (it always
- * has by the time a run completes — setup resolves before the agent starts).
- */
-export function resolvedShaFor(spec: StorybookMcpPackageSpec): string | null {
-	return resolutionCache.get(resolutionKey(spec)) ?? null;
-}
-
-/**
  * Resolve a spec's branch to its current head commit via the GitHub API,
  * host-side, before any sandbox time or agent tokens are spent.
  */

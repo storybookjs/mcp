@@ -57,7 +57,7 @@ export interface AgenticRefCase {
 // The design-system repo's MCP preview package: its storybook-mcp-preview
 // workflow publishes @storybook-tmp/baseui-mcp (the repo's MCP server with the
 // branch's Storybook manifests baked in) to pkg.pr.new on every push to
-// research and experiment/*. Cases select a branch; setup pins its head sha,
+// experiment/*. Cases select a branch; setup pins its head sha,
 // so each experiment runs against one immutable build — unlike the Chromatic
 // branch permalinks these cases previously pointed at.
 const BASE_UI_MCP_PACKAGE = {
@@ -128,8 +128,8 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// {
 	// 	name: 'cc-migration-base-ui-opus-high',
 	// 	description:
-	// 		'Base UI Storybook MCP (research branch, served in-sandbox); the Base UI migration flow runs with the docs of the system it migrates to.',
-	// 	storybookMcpPackage: baseUiMcpPackage('research'),
+	// 		'Base UI Storybook MCP (base branch, served in-sandbox); the Base UI migration flow runs with the docs of the system it migrates to.',
+	// storybookMcpPackage: baseUiMcpPackage('experiment/base'),
 	// 	evals: ['706-migrate-to-base-ui-flow'],
 	// },
 	// The controls run every workflow by default: they are the baseline each

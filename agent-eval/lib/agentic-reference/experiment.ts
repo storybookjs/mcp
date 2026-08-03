@@ -32,7 +32,6 @@ import { registerExternalStorybookMcp } from './external-mcp.ts';
 import {
 	type StorybookMcpPackageSpec,
 	resolveStorybookMcpPackage,
-	resolvedShaFor,
 	setupLocalStorybookMcp,
 } from './local-mcp.ts';
 import { postAnalysis } from './post-analysis.ts';
@@ -135,22 +134,6 @@ interface AgenticRefCaseRecord {
 	extraFiles?: string[];
 }
 
-// The sha is resolved lazily in setup() (the record itself is built when the
-// experiment config loads), so the hook re-reads the resolution cache at
-// run-complete time — by then setup has always run.
-function caseWithResolvedPin(record: AgenticRefCaseRecord): AgenticRefCaseRecord {
-	if (record.storybookMcpPackage === undefined) {
-		return record;
-	}
-	return {
-		...record,
-		storybookMcpPackage: {
-			...record.storybookMcpPackage,
-			sha: resolvedShaFor(record.storybookMcpPackage),
-		},
-	};
-}
-
 // Compose the shared usage hook with the case record so neither clobbers the
 // other (a bare override would drop token usage). Heavy metrics, including MCP
 // tool usage, are computed offline — see scripts/analyze-results.ts.
@@ -164,7 +147,7 @@ function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
 				analysis: {
 					...withUsage.result.analysis,
 					externalRepo: readExternalRepoPin(context.fixture.path),
-					case: caseWithResolvedPin(agenticRefCase),
+					case: agenticRefCase,
 				},
 			},
 		};
