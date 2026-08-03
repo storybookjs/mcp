@@ -1,7 +1,7 @@
 // Declarative registry of agentic-reference treatment/control cases. A case is
-// pure data — an MCP URL or none, an agent, a model, overrides — resolved into
-// an ExperimentConfig by agenticRefCaseExperiment. .agentic-ref/experiments/
-// holds one generated stub per case; see
+// pure data — a design-system MCP package or URL or none, an agent, a model,
+// overrides — resolved into an ExperimentConfig by agenticRefCaseExperiment.
+// .agentic-ref/experiments/ holds one generated stub per case; see
 // scripts/generate-agentic-ref-experiments.mts.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import type { ExperimentConfig } from '@vercel/agent-eval';
 import type { EvalAgent, EvalIntegration, McpServerSpec } from '../templates.ts';
 import { AGENT_NAME_PARTS, agenticRefExperiment } from './experiment.ts';
+import type { StorybookMcpPackageSpec } from './local-mcp.ts';
 
 /** The full agentic-reference workflow list; every case runs all of them unless it pins its own `evals`. */
 export const AGENTIC_REF_EVALS: string[] = [
@@ -33,7 +34,12 @@ export interface AgenticRefCase {
 	description: string;
 	/** Present = run with this URL registered as an external design-system Storybook MCP. */
 	storybookMcpUrl?: string;
-	/** Sandbox flavor. Defaults to 'mcp' with a storybookMcpUrl, bare ('none') without. */
+	/**
+	 * Present = serve the design-system Storybook MCP locally in the sandbox from
+	 * this pkg.pr.new preview package. Mutually exclusive with storybookMcpUrl.
+	 */
+	storybookMcpPackage?: StorybookMcpPackageSpec;
+	/** Sandbox flavor. Defaults to 'mcp' with an MCP package or URL, bare ('none') without. */
 	integration?: EvalIntegration;
 	/** Additional MCP servers to register, e.g. a component library's own server. */
 	mcpServers?: Record<string, McpServerSpec>;
@@ -48,18 +54,19 @@ export interface AgenticRefCase {
 	overrides?: Partial<ExperimentConfig>;
 }
 
-// Chromatic app ids for the two documented systems — the prefixes of their
-// build permalinks (`<appId>-<buildHash>.chromatic.com`).
-const BASE_UI_CHROMATIC_APP_ID = '6a4e68f187e29b2ced28b17e';
-export const DROPPY_CHROMATIC_APP_ID = '6a6b3f5765e7f685e7f73656';
+// The design-system repo's MCP preview package: its storybook-mcp-preview
+// workflow publishes @storybook-tmp/baseui-mcp (the repo's MCP server with the
+// branch's Storybook manifests baked in) to pkg.pr.new on every push to
+// research and experiment/*. Cases select a branch; setup pins its head sha,
+// so each experiment runs against one immutable build — unlike the Chromatic
+// branch permalinks these cases previously pointed at.
+const BASE_UI_MCP_PACKAGE = {
+	repo: 'storybook-tmp/base-ui',
+	packageName: '@storybook-tmp/baseui-mcp',
+} as const;
 
-// Chromatic branch permalink: non-alphanumeric characters in the branch name
-// collapse to dashes. Unlike build permalinks these are mutable — they always
-// serve the branch's latest published build — so a run's exact Storybook is
-// pinned by `analysis.externalRepo`/`analysis.case`, not by this URL.
-function chromaticBranchPermalink(branchName: string, appId: string): string {
-	const sanitized = branchName.replace(/[^a-zA-Z0-9]+/g, '-');
-	return `https://${sanitized}--${appId}.chromatic.com`;
+function baseUiMcpPackage(branch: string): StorybookMcpPackageSpec {
+	return { ...BASE_UI_MCP_PACKAGE, branch };
 }
 
 // Content-filter variants of the design-system Storybook, one per
@@ -98,8 +105,8 @@ function storybookVariantCases(): AgenticRefCase[] {
 			const { prefix, modelSuffix } = AGENT_NAME_PARTS[agent];
 			return {
 				name: `${prefix}-${variant}-${modelSuffix}`,
-				description: `Design-system Storybook MCP, content variant "${variant}".`,
-				storybookMcpUrl: chromaticBranchPermalink(branchName, BASE_UI_CHROMATIC_APP_ID),
+				description: `Design-system Storybook MCP served in-sandbox, content variant "${variant}".`,
+				storybookMcpPackage: baseUiMcpPackage(branchName),
 				agent,
 				evals: BASE_UI_APP_WORKFLOWS,
 			};
@@ -112,22 +119,19 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// TODO: Parked with the 705 Droppy migration flow until the Droppy baseline round
 	// TODO: Ensure this is parameterised for each selected control and treatment case
 	// {
-	// name: 'cc-migration-droppy-opus-high',
+	// 	name: 'cc-migration-droppy-opus-high',
 	// 	description:
-	// 		'Droppy design-system Storybook MCP (main branch permalink); the migration flow runs with the docs of the system it migrates to.',
-	// 	storybookMcpUrl: chromaticBranchPermalink('main', DROPPY_CHROMATIC_APP_ID),
+	// 		'Droppy design-system Storybook MCP; the migration flow runs with the docs of the system it migrates to.',
 	// 	evals: ['705-migrate-to-ds-flow'],
 	// },
-
 	// TODO: Ensure this is parameterised for each selected control and treatment case
 	// {
 	// 	name: 'cc-migration-base-ui-opus-high',
 	// 	description:
-	// 		'Base UI Storybook MCP (research branch permalink); the Base UI migration flow runs with the docs of the system it migrates to.',
-	// 	storybookMcpUrl: chromaticBranchPermalink('research', BASE_UI_CHROMATIC_APP_ID),
+	// 		'Base UI Storybook MCP (research branch, served in-sandbox); the Base UI migration flow runs with the docs of the system it migrates to.',
+	// 	storybookMcpPackage: baseUiMcpPackage('research'),
 	// 	evals: ['706-migrate-to-base-ui-flow'],
 	// },
-
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.
 	{
@@ -219,6 +223,7 @@ export function agenticRefCaseExperiment(name: string): ExperimentConfig {
 		evals: assertEvalsExist(name, applyEvalFilter(agenticRefCase.evals ?? AGENTIC_REF_EVALS)),
 		agent: agenticRefCase.agent,
 		storybookMcpUrl: agenticRefCase.storybookMcpUrl,
+		storybookMcpPackage: agenticRefCase.storybookMcpPackage,
 		integration: agenticRefCase.integration,
 		mcpServers: agenticRefCase.mcpServers,
 		skillDirs: agenticRefCase.skillDirs,
