@@ -297,17 +297,23 @@ describe('deltaToBaseline', () => {
 });
 
 describe('summarize', () => {
-	// summarize prints two tables — one per-run row, one grouped summary row —
-	// and returns the grouped rows for the runner to persist. These tests read
-	// the printed grouping, the second console.table call.
-	function groupedRows(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+	// summarize prints per-run and grouped vitals, then — only when a run
+	// carries a baseline delta — a per-run and a grouped complexity table, and
+	// returns the grouped rows for the runner to persist. These tests read the
+	// printed tables by console.table call order: vitals at 0 and 1, the
+	// complexity pair at 2 and 3.
+	function tables(rows: Array<Record<string, unknown>>): Array<Array<Record<string, unknown>>> {
 		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
 		try {
 			summarize(rows);
-			return spy.mock.calls[1]?.[0] as Array<Record<string, unknown>>;
+			return spy.mock.calls.map((call) => call[0] as Array<Record<string, unknown>>);
 		} finally {
 			spy.mockRestore();
 		}
+	}
+
+	function groupedRows(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+		return tables(rows)[1] ?? [];
 	}
 
 	// Returning these is what puts them in results/analysis-summary.json; a
@@ -344,46 +350,62 @@ describe('summarize', () => {
 		}
 	});
 
-	it('groups by experiment and eval, and reports means', () => {
-		const rows = [
+	/** Two runs of one arm carrying every complexity measure. */
+	function armRows(): Array<Record<string, unknown>> {
+		return [
 			{
 				experiment: 'x',
 				eval: 'e',
+				run: 1,
 				status: 'passed',
 				fixtureRef: 'r@1',
 				cost: { estimatedCostUsd: 1 },
 				speed: { durationSeconds: 10 },
 				toolUse: { buckets: { docs: 2, exploration: 4 } },
 				deltaToBaseline: {
-					diff: { sloc: { added: 10 } },
+					diff: { sloc: { added: 10, net: 8 } },
 					complexity: {
+						cyclomatic: { delta: 2 },
 						cognitive: { delta: 3 },
+						jsxCyclomatic: { delta: 4 },
 						jsxCognitive: { delta: 7 },
 						jsxLength: { delta: 4 },
+						jsxBindings: { delta: 2 },
 						jsxDepth: { delta: 1 },
+						densityPerSloc: 0.375,
+						parseFailures: [],
 					},
 				},
 			},
 			{
 				experiment: 'x',
 				eval: 'e',
+				run: 2,
 				status: 'failed',
 				fixtureRef: 'r@1',
 				cost: { estimatedCostUsd: 3 },
 				speed: { durationSeconds: 20 },
 				toolUse: { buckets: { docs: 0, exploration: 8 } },
 				deltaToBaseline: {
-					diff: { sloc: { added: 20 } },
+					diff: { sloc: { added: 20, net: 16 } },
 					complexity: {
+						cyclomatic: { delta: 4 },
 						cognitive: { delta: 5 },
+						jsxCyclomatic: { delta: 6 },
 						jsxCognitive: { delta: 11 },
 						jsxLength: { delta: 8 },
+						jsxBindings: { delta: 4 },
 						jsxDepth: { delta: 3 },
+						densityPerSloc: 0.3125,
+						parseFailures: ['src/broken.ts'],
 					},
 				},
 			},
 		];
-		const [group] = groupedRows(rows);
+	}
+
+	it('groups by experiment and eval, and reports means', () => {
+		const [group] = groupedRows(armRows());
 		expect(group).toMatchObject({
 			experiment: 'x',
 			fixtureRef: 'r@1',
@@ -393,13 +415,48 @@ describe('summarize', () => {
 			secondsMean: 15,
 			docsMean: 1,
 			slocMean: 15,
-			cognitiveMean: 4,
+		});
+		// Complexity moved to its own tables; the vitals stay lean.
+		expect(group).not.toHaveProperty('cognitiveMean');
+	});
+
+	it('prints a per-run complexity table with the whole family', () => {
+		const [, , perRun] = tables(armRows());
+		expect(perRun?.[0]).toEqual({
+			experiment: 'x',
+			run: 1,
+			slocNet: 8,
+			cyclo: 2,
+			cog: 3,
+			jsxCyclo: 4,
+			jsxCog: 7,
+			jsxLen: 4,
+			jsxBind: 2,
+			jsxDepth: 1,
+			density: 0.375,
+			parseFails: 0,
+		});
+		// A run whose delta skirted unparseable files is flagged, not hidden.
+		expect(perRun?.[1]).toMatchObject({ run: 2, parseFails: 1 });
+	});
+
+	it('prints a grouped complexity table with the family means', () => {
+		const [, , , grouped] = tables(armRows());
+		expect(grouped?.[0]).toEqual({
+			experiment: 'x',
+			cycloMean: 3,
+			cogMean: 4,
+			jsxCycloMean: 5,
 			jsxCogMean: 9,
+			jsxLenMean: 6,
+			jsxBindMean: 3,
 			jsxDepthMean: 2,
+			densityMean: 0.344,
+			parseFailRuns: 1,
 		});
 	});
 
-	it('returns the jsx means in the stored rows', () => {
+	it('returns the complexity means in the stored rows', () => {
 		const rows = [
 			{
 				experiment: 'x',
@@ -410,9 +467,14 @@ describe('summarize', () => {
 				speed: {},
 				deltaToBaseline: {
 					complexity: {
+						cyclomatic: { delta: 2 },
+						jsxCyclomatic: { delta: 5 },
 						jsxCognitive: { delta: 7 },
 						jsxLength: { delta: 4 },
+						jsxBindings: { delta: 3 },
 						jsxDepth: { delta: 1.5 },
+						densityPerSloc: 0.25,
+						parseFailures: ['a.tsx'],
 					},
 				},
 			},
@@ -420,9 +482,14 @@ describe('summarize', () => {
 		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
 		try {
 			expect(summarize(rows)[0]).toMatchObject({
+				cyclomaticDelta: { mean: 2 },
+				jsxCyclomaticDelta: { mean: 5 },
 				jsxCognitiveDelta: { mean: 7 },
 				jsxLengthDelta: { mean: 4 },
+				jsxBindingsDelta: { mean: 3 },
 				jsxDepthDelta: { mean: 1.5 },
+				densityPerSloc: { mean: 0.25 },
+				parseFailures: { runs: 1 },
 			});
 		} finally {
 			spy.mockRestore();
@@ -448,13 +515,10 @@ describe('summarize', () => {
 		const rows = [
 			{ experiment: 'x', eval: 'e', status: 'passed', fixtureRef: 'r@1', cost: {}, speed: {} },
 		];
-		expect(groupedRows(rows)[0]).toMatchObject({
-			runs: 1,
-			slocMean: null,
-			cognitiveMean: null,
-			jsxCogMean: null,
-			jsxDepthMean: null,
-		});
+		const printed = tables(rows);
+		// No baseline delta anywhere: the complexity tables are not printed.
+		expect(printed).toHaveLength(2);
+		expect(printed[1]?.[0]).toMatchObject({ runs: 1, slocMean: null });
 	});
 
 	it('flags a group spanning more than one fixture pin', () => {
