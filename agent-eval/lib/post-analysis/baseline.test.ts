@@ -93,6 +93,63 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
 	});
 
+	it('reuses a committed baseline whose metricsVersion matches the module', async () => {
+		const opts = options({
+			postAnalysis: {
+				analyzeRun: vi.fn(() => ({ files: { 'a.ts': 1 } })),
+				summarize: vi.fn(),
+				metricsVersion: 2,
+			} as unknown as PostAnalysis,
+		});
+		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
+		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
+		writeFileSync(
+			path,
+			JSON.stringify({
+				eval: 'eval-a',
+				...PIN,
+				metricsVersion: 2,
+				analysis: { files: { 'a.ts': 99 } },
+			}),
+		);
+
+		const loaded = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(loaded.analysis).toEqual({ files: { 'a.ts': 99 } });
+		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
+	});
+
+	// A stale baseline is worse than a missing one: its numbers look healthy but
+	// were measured under other definitions, skewing every delta against it.
+	it('rebuilds a committed baseline measured under another metricsVersion', async () => {
+		const opts = options({
+			postAnalysis: {
+				analyzeRun: vi.fn(() => ({ files: { 'a.ts': 1 } })),
+				summarize: vi.fn(),
+				metricsVersion: 2,
+			} as unknown as PostAnalysis,
+		});
+		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
+		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
+		// A legacy file, from before the module declared a version.
+		writeFileSync(
+			path,
+			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
+		);
+
+		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(rebuilt.analysis).toEqual({ files: { 'a.ts': 1 } });
+		// The overwritten file now carries the version it was measured under.
+		expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({
+			eval: 'eval-a',
+			repo: 'owner/name',
+			ref: 'deadbeef',
+			metricsVersion: 2,
+			analysis: { files: { 'a.ts': 1 } },
+		});
+	});
+
 	it('re-measures and overwrites the committed baseline when recompute is set', async () => {
 		const opts = options({ recompute: true });
 		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);

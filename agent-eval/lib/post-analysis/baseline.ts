@@ -31,6 +31,8 @@ interface CommittedBaseline {
 	eval: string;
 	repo: string;
 	ref: string;
+	/** The eval's metricsVersion at measuring time; absent for legacy files. */
+	metricsVersion?: number;
 	analysis: Analysis;
 }
 
@@ -82,9 +84,13 @@ export async function loadOrBuildBaselineAnalysis(
 	// needs both sides on disk.
 	const dir = prepareRef(options.refCacheDir ?? DEFAULT_REF_CACHE_DIR, pin.repo, pin.ref);
 
-	// A truncated baseline is worse than none, and readJson nulls one out.
+	// A truncated baseline is worse than none, and readJson nulls one out. One
+	// measured under another metricsVersion is worse still — its numbers look
+	// healthy and mean something else — so a version mismatch is a cache miss:
+	// the tree is already materialized above, and the rebuild below overwrites
+	// the stale file with numbers measured under the current definitions.
 	const committed = recompute ? null : readJson<CommittedBaseline>(path);
-	if (committed?.analysis) {
+	if (committed?.analysis && committed.metricsVersion === postAnalysis.metricsVersion) {
 		const loaded = { dir, analysis: committed.analysis };
 		memo.set(path, loaded);
 		return loaded;
@@ -105,7 +111,15 @@ export async function loadOrBuildBaselineAnalysis(
 	}
 
 	mkdirSync(dirname(path), { recursive: true });
-	const payload: CommittedBaseline = { eval: evalName, repo: pin.repo, ref: pin.ref, analysis };
+	// JSON.stringify drops an undefined metricsVersion, keeping legacy modules'
+	// files byte-identical to what they wrote before the field existed.
+	const payload: CommittedBaseline = {
+		eval: evalName,
+		repo: pin.repo,
+		ref: pin.ref,
+		metricsVersion: postAnalysis.metricsVersion,
+		analysis,
+	};
 	// Tab-indented because the file is committed, and `pnpm format:check` would
 	// otherwise fail on it the moment --recompute regenerates it.
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');

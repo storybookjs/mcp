@@ -41,5 +41,13 @@ export function postAnalysisFrom(
 	) {
 		throw new Error(`${where} carries a deltaToBaseline that is not a function`);
 	}
+	// Optional, but a malformed one would never match a committed baseline and
+	// would quietly re-measure the pinned tree on every invocation.
+	if (
+		postAnalysis.metricsVersion !== undefined &&
+		typeof postAnalysis.metricsVersion !== 'number'
+	) {
+		throw new Error(`${where} carries a metricsVersion that is not a number`);
+	}
 	return postAnalysis as unknown as PostAnalysis;
 }

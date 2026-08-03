@@ -150,8 +150,8 @@ describe('analyzeRun in baseline mode', () => {
 
 		expect(baseline).toEqual({
 			files: {
-				'src/a.ts': { cyclomatic: 2, cognitive: 1 },
-				'src/b.ts': { cyclomatic: 1, cognitive: 0 },
+				'src/a.ts': { cyclomatic: 2, cognitive: 1, jsxCyclomatic: 2, jsxCognitive: 1 },
+				'src/b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 },
 			},
 			parseFailures: [],
 		});
@@ -175,6 +175,26 @@ describe('deltaToBaseline', () => {
 			parseFailures: [],
 		});
 		expect((delta.diff as { files: string[] }).files).toEqual(['src/a.ts']);
+	});
+
+	it('prices grown markup through the jsx variants where the classic ones barely move', () => {
+		const delta = deltaToBaseline(
+			deltaContext(
+				{ 'src/C.tsx': 'export const C = () => <div>hi</div>;\n' },
+				{
+					'src/C.tsx': 'export const C = (x) => <div><section>{x ? <A/> : <B/>}</section></div>;\n',
+				},
+			),
+		);
+
+		// The classic metrics see one new ternary. The jsx variants also see three
+		// new tags and that the branch sits two elements deep.
+		expect(delta.complexity).toMatchObject({
+			cyclomatic: { before: 1, after: 2, delta: 1 },
+			cognitive: { before: 0, after: 1, delta: 1 },
+			jsxCyclomatic: { before: 2, after: 6, delta: 4 },
+			jsxCognitive: { before: 0, after: 4, delta: 4 },
+		});
 	});
 
 	it('scores a file the agent created as zero before', () => {
@@ -318,7 +338,7 @@ describe('summarize', () => {
 				toolUse: { buckets: { docs: 2, exploration: 4 } },
 				deltaToBaseline: {
 					diff: { sloc: { added: 10 } },
-					complexity: { cognitive: { delta: 3 } },
+					complexity: { cognitive: { delta: 3 }, jsxCognitive: { delta: 7 } },
 				},
 			},
 			{
@@ -331,7 +351,7 @@ describe('summarize', () => {
 				toolUse: { buckets: { docs: 0, exploration: 8 } },
 				deltaToBaseline: {
 					diff: { sloc: { added: 20 } },
-					complexity: { cognitive: { delta: 5 } },
+					complexity: { cognitive: { delta: 5 }, jsxCognitive: { delta: 11 } },
 				},
 			},
 		];
@@ -346,6 +366,7 @@ describe('summarize', () => {
 			docsMean: 1,
 			slocMean: 15,
 			cognitiveMean: 4,
+			jsxCogMean: 9,
 		});
 	});
 
@@ -368,7 +389,12 @@ describe('summarize', () => {
 		const rows = [
 			{ experiment: 'x', eval: 'e', status: 'passed', fixtureRef: 'r@1', cost: {}, speed: {} },
 		];
-		expect(groupedRows(rows)[0]).toMatchObject({ runs: 1, slocMean: null, cognitiveMean: null });
+		expect(groupedRows(rows)[0]).toMatchObject({
+			runs: 1,
+			slocMean: null,
+			cognitiveMean: null,
+			jsxCogMean: null,
+		});
 	});
 
 	it('flags a group spanning more than one fixture pin', () => {

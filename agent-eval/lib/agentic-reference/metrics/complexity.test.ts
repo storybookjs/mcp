@@ -35,8 +35,21 @@ describe('complexityForFiles', () => {
 		});
 		expect(complexityForFiles(dir, ['a.ts', 'b.ts'])).toEqual({
 			files: {
-				'a.ts': { cyclomatic: 2, cognitive: 1 },
-				'b.ts': { cyclomatic: 1, cognitive: 0 },
+				'a.ts': { cyclomatic: 2, cognitive: 1, jsxCyclomatic: 2, jsxCognitive: 1 },
+				'b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 },
+			},
+			parseFailures: [],
+		});
+	});
+
+	it('scores markup through the jsx variants, which the classic metrics miss', () => {
+		const dir = writeTree('src', {
+			'c.tsx': 'export const C = () => <div><span>hi</span></div>;\n',
+		});
+		expect(complexityForFiles(dir, ['c.tsx'])).toEqual({
+			files: {
+				// classic: one trivial function; jsx: two tags long, one level deep
+				'c.tsx': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 3, jsxCognitive: 1 },
 			},
 			parseFailures: [],
 		});
@@ -45,7 +58,7 @@ describe('complexityForFiles', () => {
 	it('skips a missing file without failing', () => {
 		const dir = writeTree('src', { 'a.ts': 'function a(){ return 1; }\n' });
 		expect(complexityForFiles(dir, ['a.ts', 'gone.ts'])).toEqual({
-			files: { 'a.ts': { cyclomatic: 1, cognitive: 0 } },
+			files: { 'a.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 } },
 			parseFailures: [],
 		});
 	});
@@ -72,8 +85,8 @@ describe('complexityForTree', () => {
 		});
 		expect(complexityForTree(dir)).toEqual({
 			files: {
-				'src/a.ts': { cyclomatic: 2, cognitive: 1 },
-				'src/nested/b.ts': { cyclomatic: 1, cognitive: 0 },
+				'src/a.ts': { cyclomatic: 2, cognitive: 1, jsxCyclomatic: 2, jsxCognitive: 1 },
+				'src/nested/b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 },
 			},
 			parseFailures: [],
 		});
@@ -94,7 +107,7 @@ describe('complexityForTree', () => {
 			'src/broken.ts': 'function ( { { {\n',
 		});
 		expect(complexityForTree(dir)).toEqual({
-			files: { 'src/ok.ts': { cyclomatic: 1, cognitive: 0 } },
+			files: { 'src/ok.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 } },
 			parseFailures: ['src/broken.ts'],
 		});
 	});
@@ -117,14 +130,14 @@ describe('complexityForTree', () => {
 });
 
 describe('sumComplexities', () => {
-	it('totals both measures across scored files', () => {
+	it('totals every measure across scored files', () => {
 		expect(
 			sumComplexities({
-				'a.ts': { cyclomatic: 2, cognitive: 1 },
-				'b.ts': { cyclomatic: 1, cognitive: 0 },
-				'c.ts': { cyclomatic: 4, cognitive: 7 },
+				'a.ts': { cyclomatic: 2, cognitive: 1, jsxCyclomatic: 2, jsxCognitive: 1 },
+				'b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 },
+				'c.tsx': { cyclomatic: 4, cognitive: 7, jsxCyclomatic: 9, jsxCognitive: 12 },
 			}),
-		).toEqual({ cyclomatic: 7, cognitive: 8 });
+		).toEqual({ cyclomatic: 7, cognitive: 8, jsxCyclomatic: 12, jsxCognitive: 13 });
 	});
 
 	it('totals a whole tree, so a baseline can be folded without rescoring it', () => {
@@ -135,10 +148,17 @@ describe('sumComplexities', () => {
 		expect(sumComplexities(complexityForTree(dir).files)).toEqual({
 			cyclomatic: 3,
 			cognitive: 1,
+			jsxCyclomatic: 3,
+			jsxCognitive: 1,
 		});
 	});
 
 	it('is zero for no files, rather than undefined', () => {
-		expect(sumComplexities({})).toEqual({ cyclomatic: 0, cognitive: 0 });
+		expect(sumComplexities({})).toEqual({
+			cyclomatic: 0,
+			cognitive: 0,
+			jsxCyclomatic: 0,
+			jsxCognitive: 0,
+		});
 	});
 });

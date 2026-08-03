@@ -82,11 +82,21 @@ function scoresFor(
 }
 
 function addComplexity(a: FileComplexity, b: FileComplexity): FileComplexity {
-	return { cyclomatic: a.cyclomatic + b.cyclomatic, cognitive: a.cognitive + b.cognitive };
+	return {
+		cyclomatic: a.cyclomatic + b.cyclomatic,
+		cognitive: a.cognitive + b.cognitive,
+		jsxCyclomatic: a.jsxCyclomatic + b.jsxCyclomatic,
+		jsxCognitive: a.jsxCognitive + b.jsxCognitive,
+	};
 }
 
 function subtractComplexity(a: FileComplexity, b: FileComplexity): FileComplexity {
-	return { cyclomatic: a.cyclomatic - b.cyclomatic, cognitive: a.cognitive - b.cognitive };
+	return {
+		cyclomatic: a.cyclomatic - b.cyclomatic,
+		cognitive: a.cognitive - b.cognitive,
+		jsxCyclomatic: a.jsxCyclomatic - b.jsxCyclomatic,
+		jsxCognitive: a.jsxCognitive - b.jsxCognitive,
+	};
 }
 
 export function deltaToBaseline({
@@ -126,6 +136,19 @@ export function deltaToBaseline({
 				after: after.cognitive,
 				delta: cognitiveDelta,
 			},
+			// JSX-aware variants (complexity-jsx.ts): the classic scores plus
+			// markup length, depth and conditional renders, so an agent bloating
+			// render trees moves these even when the branching logic stays flat.
+			jsxCyclomatic: {
+				before: before.jsxCyclomatic,
+				after: after.jsxCyclomatic,
+				delta: after.jsxCyclomatic - before.jsxCyclomatic,
+			},
+			jsxCognitive: {
+				before: before.jsxCognitive,
+				after: after.jsxCognitive,
+				delta: after.jsxCognitive - before.jsxCognitive,
+			},
 			// Complexity correlates ~0.9 with lines of code, so a bare delta partly
 			// re-measures verbosity. null rather than Infinity when nothing changed:
 			// a stored Infinity would poison every later mean.
@@ -138,7 +161,7 @@ export function deltaToBaseline({
 /** Comparative metrics, under the key analyze-results.ts nests them at. */
 function deltaOf(row: Record<string, unknown>): {
 	diff?: { sloc?: { added?: number } };
-	complexity?: { cognitive?: { delta?: number } };
+	complexity?: { cognitive?: { delta?: number }; jsxCognitive?: { delta?: number } };
 } {
 	return isRecord(row.deltaToBaseline) ? row.deltaToBaseline : {};
 }
@@ -178,6 +201,10 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 		);
 		const slocAdded = numbersAt(group, (row) => deltaOf(row).diff?.sloc?.added);
 		const cognitiveDelta = numbersAt(group, (row) => deltaOf(row).complexity?.cognitive?.delta);
+		const jsxCognitiveDelta = numbersAt(
+			group,
+			(row) => deltaOf(row).complexity?.jsxCognitive?.delta,
+		);
 
 		// An aggregate silently spanning two pins is not one measurement.
 		const fixtureRefs = [...new Set(group.map((row) => String(row.fixtureRef)))];
@@ -199,6 +226,7 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			explorationCalls: { mean: round(mean(exploration)) },
 			slocAdded: { mean: round(mean(slocAdded)) },
 			cognitiveDelta: { mean: round(mean(cognitiveDelta)) },
+			jsxCognitiveDelta: { mean: round(mean(jsxCognitiveDelta)) },
 		};
 	});
 }
@@ -230,6 +258,7 @@ export function summarize(
 				null,
 			slocAdded: deltaOf(row).diff?.sloc?.added ?? null,
 			cognitive: deltaOf(row).complexity?.cognitive?.delta ?? null,
+			jsxCog: deltaOf(row).complexity?.jsxCognitive?.delta ?? null,
 		})),
 	);
 
@@ -249,11 +278,24 @@ export function summarize(
 			exploreMean: (group.explorationCalls as { mean: number | null }).mean,
 			slocMean: (group.slocAdded as { mean: number | null }).mean,
 			cognitiveMean: (group.cognitiveDelta as { mean: number | null }).mean,
+			jsxCogMean: (group.jsxCognitiveDelta as { mean: number | null }).mean,
 		})),
 	);
 
 	return summary;
 }
 
-/** What every agentic-reference experiment hands to the offline analyzer. */
-export const postAnalysis: PostAnalysis = { analyzeRun, deltaToBaseline, summarize };
+/**
+ * What every agentic-reference experiment hands to the offline analyzer.
+ *
+ * metricsVersion invalidates committed baselines when a metric definition or
+ * its stored shape changes, so a baseline measured under old rules is rebuilt
+ * rather than silently compared against runs measured under new ones. Bumped
+ * to 2 when FileComplexity gained the jsxCyclomatic/jsxCognitive scores.
+ */
+export const postAnalysis: PostAnalysis = {
+	analyzeRun,
+	deltaToBaseline,
+	summarize,
+	metricsVersion: 2,
+};

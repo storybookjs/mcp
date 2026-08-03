@@ -10,12 +10,20 @@ import { join, relative, sep } from 'node:path';
 
 import { cognitiveForSource } from './complexity-cognitive.ts';
 import { complexityForSource } from './complexity-cyclomatic.ts';
+import { jsxCognitiveForSource, jsxCyclomaticForSource } from './complexity-jsx.ts';
 import { isExcludedPath, SCRIPT_EXTENSIONS, SKIP_DIRS } from '../tree/paths.ts';
 import { hasParseErrors } from './sloc.ts';
 
 export interface FileComplexity {
 	cyclomatic: number;
 	cognitive: number;
+	/**
+	 * The JSX-aware variants (see complexity-jsx.ts) also price markup length,
+	 * depth and conditional renders. For a file with no JSX they equal the
+	 * classic scores.
+	 */
+	jsxCyclomatic: number;
+	jsxCognitive: number;
 }
 
 export interface ComplexityResult {
@@ -51,6 +59,8 @@ function scoreFile(dir: string, path: string): FileComplexity | 'unparseable' | 
 	return {
 		cyclomatic: sumNodes(complexityForSource(path, source)),
 		cognitive: sumNodes(cognitiveForSource(path, source)),
+		jsxCyclomatic: sumNodes(jsxCyclomaticForSource(path, source)),
+		jsxCognitive: sumNodes(jsxCognitiveForSource(path, source)),
 	};
 }
 
@@ -81,8 +91,10 @@ export function sumComplexities(files: Record<string, FileComplexity>): FileComp
 		(totals, score) => ({
 			cyclomatic: totals.cyclomatic + score.cyclomatic,
 			cognitive: totals.cognitive + score.cognitive,
+			jsxCyclomatic: totals.jsxCyclomatic + score.jsxCyclomatic,
+			jsxCognitive: totals.jsxCognitive + score.jsxCognitive,
 		}),
-		{ cyclomatic: 0, cognitive: 0 },
+		{ cyclomatic: 0, cognitive: 0, jsxCyclomatic: 0, jsxCognitive: 0 },
 	);
 }
 
