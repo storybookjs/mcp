@@ -55,6 +55,7 @@ const VERIFICATION_BINARIES = new Set([
 	'git',
 	'node',
 	'tsx',
+	'vite',
 ]);
 
 const EDIT_BINARIES = new Set(['cp', 'mv', 'rm', 'mkdir', 'touch', 'tee', 'chmod', 'ln']);
@@ -70,6 +71,13 @@ const NOISE_BINARIES = new Set([
 	'wait',
 	'export',
 	'cd',
+	'timeout',
+	'wait-on',
+	'curl',
+	'which',
+	'id',
+	'apt-get',
+	'run',
 ]);
 
 /** Wrappers to step past to reach the binary that actually runs. */

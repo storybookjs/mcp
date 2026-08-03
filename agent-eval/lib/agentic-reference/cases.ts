@@ -71,23 +71,22 @@ const EXPERIMENT_BRANCHES = [
 	'experiment/empty',
 	'experiment/base',
 	'experiment/full',
-	// TODO: uncomment after initial collection tests.
-	// 'experiment/basic-docs',
-	// 'experiment/product-examples',
-	// 'experiment/do-dont',
-	// 'experiment/when-to-use',
-	// 'experiment/history-issues',
-	// 'experiment/a11y',
-	// 'experiment/brand-animation',
-	// 'experiment/api-ref',
-	// 'experiment/docs-full',
-	// 'experiment/stories-api-ref',
-	// 'experiment/stories-showcase',
-	// 'experiment/stories-highlight',
-	// 'experiment/stories-examples',
-	// 'experiment/stories-full',
-	// 'experiment/purge-jsdoc',
-	// 'experiment/optimized',
+	'experiment/basic-docs',
+	'experiment/product-examples',
+	'experiment/do-dont',
+	'experiment/when-to-use',
+	'experiment/history-issues',
+	'experiment/a11y',
+	'experiment/brand-animation',
+	'experiment/api-ref',
+	'experiment/docs-full',
+	'experiment/stories-api-ref',
+	'experiment/stories-showcase',
+	'experiment/stories-highlight',
+	'experiment/stories-examples',
+	'experiment/stories-full',
+	'experiment/purge-jsdoc',
+	'experiment/optimized',
 ] as const;
 
 const VARIANT_AGENTS: EvalAgent[] = ['claude-code'];
@@ -110,7 +109,8 @@ function storybookVariantCases(): AgenticRefCase[] {
 
 export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	...storybookVariantCases(),
-	// Parked with the 705 Droppy migration flow until the Droppy baseline round:
+	// TODO: Parked with the 705 Droppy migration flow until the Droppy baseline round
+	// TODO: Ensure this is parameterised for each selected control and treatment case
 	// {
 	// name: 'cc-migration-droppy-opus-high',
 	// 	description:
@@ -118,19 +118,23 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// 	storybookMcpUrl: chromaticBranchPermalink('main', DROPPY_CHROMATIC_APP_ID),
 	// 	evals: ['705-migrate-to-ds-flow'],
 	// },
-	{
-		name: 'cc-migration-base-ui-opus-high',
-		description:
-			'Base UI Storybook MCP (research branch permalink); the Base UI migration flow runs with the docs of the system it migrates to.',
-		storybookMcpUrl: chromaticBranchPermalink('research', BASE_UI_CHROMATIC_APP_ID),
-		evals: ['706-migrate-to-base-ui-flow'],
-	},
+
+	// TODO: Ensure this is parameterised for each selected control and treatment case
+	// {
+	// 	name: 'cc-migration-base-ui-opus-high',
+	// 	description:
+	// 		'Base UI Storybook MCP (research branch permalink); the Base UI migration flow runs with the docs of the system it migrates to.',
+	// 	storybookMcpUrl: chromaticBranchPermalink('research', BASE_UI_CHROMATIC_APP_ID),
+	// 	evals: ['706-migrate-to-base-ui-flow'],
+	// },
+
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.
 	{
 		name: 'cc-control-none-opus-high',
 		description: 'Zero agent support: no MCP, no skills, no docs pointer.',
 	},
+
 	{
 		name: 'cc-control-doc-opus-high',
 		description: 'Official component-library docs referenced from AGENTS.md; no MCP, no skills.',
@@ -142,6 +146,9 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 				'documentation lives at https://base-ui.com/react — consult it when\n' +
 				'working with these components.\n',
 		},
+
+		// TODO: Add Base UI community control case
+
 		// The docs pointer is only usable if the agent may actually fetch it.
 		overrides: { webResearch: true },
 	},
