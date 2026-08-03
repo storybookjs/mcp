@@ -37,10 +37,13 @@ function options(overrides: Partial<Parameters<typeof loadOrBuildBaselineAnalysi
 beforeEach(() => {
 	root = mkdtempSync(join(tmpdir(), 'baseline-lib-'));
 	vi.mocked(prepareRef).mockReturnValue(join(root, 'ref-tree'));
+	// Rebuilds announce themselves; the suite does not need to hear it.
+	vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
 afterEach(() => {
 	rmSync(root, { recursive: true, force: true });
+	vi.restoreAllMocks();
 	vi.clearAllMocks();
 });
 
@@ -167,6 +170,17 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 	it('builds once per pin however many runs ask for it', async () => {
 		const opts = options();
+		await loadOrBuildBaselineAnalysis(opts);
+		await loadOrBuildBaselineAnalysis(opts);
+		await loadOrBuildBaselineAnalysis(opts);
+
+		expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledTimes(1);
+	});
+
+	// --recompute means "measure fresh", not "measure per run": the second and
+	// third runs of an eval must reuse the tree measured moments ago.
+	it('re-measures a recomputed pin once, not once per run', async () => {
+		const opts = options({ recompute: true });
 		await loadOrBuildBaselineAnalysis(opts);
 		await loadOrBuildBaselineAnalysis(opts);
 		await loadOrBuildBaselineAnalysis(opts);

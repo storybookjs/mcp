@@ -69,6 +69,11 @@ export function baselinePath(baselinesDir: string, evalName: string, pin: Extern
 // a different baselinesDir gets its own entry.
 const memo = new Map<string, BaselineAnalysis>();
 
+// Paths already re-measured by this process. `--recompute` must rebuild a
+// baseline once, not once per run: without this, every run of a ten-run eval
+// re-measures the whole pinned tree, and the recompute pass crawls.
+const recomputedPaths = new Set<string>();
+
 export async function loadOrBuildBaselineAnalysis(
 	options: BaselineOptions,
 ): Promise<BaselineAnalysis> {
@@ -77,7 +82,7 @@ export async function loadOrBuildBaselineAnalysis(
 	const path = baselinePath(baselinesDir, evalName, pin);
 
 	const remembered = memo.get(path);
-	if (remembered && !recompute) return remembered;
+	if (remembered && (!recompute || recomputedPaths.has(path))) return remembered;
 
 	// The tree itself is materialized either way: a committed baseline saves the
 	// measuring, not the download, and a delta metric comparing file contents
@@ -95,6 +100,16 @@ export async function loadOrBuildBaselineAnalysis(
 		memo.set(path, loaded);
 		return loaded;
 	}
+
+	// Say why the tree is being measured: on a large tree a silent rebuild
+	// reads as a hang, and "did --recompute touch the baselines?" should be
+	// answerable from the output alone.
+	const reason = recompute
+		? 'recompute'
+		: committed?.analysis
+			? `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`
+			: 'no committed baseline';
+	console.log(`Measuring baseline for ${evalName}: ${pin.repo}@${pin.ref} (${reason})`);
 
 	const analysis = await postAnalysis.analyzeRun({
 		mode: 'baseline',
@@ -126,5 +141,6 @@ export async function loadOrBuildBaselineAnalysis(
 
 	const built = { dir, analysis };
 	memo.set(path, built);
+	if (recompute) recomputedPaths.add(path);
 	return built;
 }
