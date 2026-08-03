@@ -148,10 +148,11 @@ describe('analyzeRun in baseline mode', () => {
 			pin: PIN,
 		});
 
+		const noJsx = { jsxLength: 0, jsxBindings: 0, jsxDepthTotal: 0, jsxTrees: 0 };
 		expect(baseline).toEqual({
 			files: {
-				'src/a.ts': { cyclomatic: 2, cognitive: 1, jsxCyclomatic: 2, jsxCognitive: 1 },
-				'src/b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0 },
+				'src/a.ts': { cyclomatic: 2, cognitive: 1, jsxCyclomatic: 2, jsxCognitive: 1, ...noJsx },
+				'src/b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0, ...noJsx },
 			},
 			parseFailures: [],
 		});
@@ -177,7 +178,7 @@ describe('deltaToBaseline', () => {
 		expect((delta.diff as { files: string[] }).files).toEqual(['src/a.ts']);
 	});
 
-	it('prices grown markup through the jsx variants where the classic ones barely move', () => {
+	it('prices grown markup through the jsx family where the classic metrics barely move', () => {
 		const delta = deltaToBaseline(
 			deltaContext(
 				{ 'src/C.tsx': 'export const C = () => <div>hi</div>;\n' },
@@ -187,13 +188,30 @@ describe('deltaToBaseline', () => {
 			),
 		);
 
-		// The classic metrics see one new ternary. The jsx variants also see three
-		// new tags and that the branch sits two elements deep.
+		// The classic metrics see one new ternary. jsxCognitive sees it two
+		// elements deep; jsx-structure sees three new tags, a binding, and the
+		// tree going from depth 1 to depth 3.
 		expect(delta.complexity).toMatchObject({
 			cyclomatic: { before: 1, after: 2, delta: 1 },
 			cognitive: { before: 0, after: 1, delta: 1 },
-			jsxCyclomatic: { before: 2, after: 6, delta: 4 },
+			jsxCyclomatic: { before: 1, after: 2, delta: 1 },
 			jsxCognitive: { before: 0, after: 4, delta: 4 },
+			jsxLength: { before: 1, after: 4, delta: 3 },
+			jsxBindings: { before: 0, after: 1, delta: 1 },
+			jsxDepth: { before: 1, after: 3, delta: 2 },
+		});
+	});
+
+	it('nulls jsxDepth when a side has no markup at all', () => {
+		const delta = deltaToBaseline(
+			deltaContext(
+				{ 'src/a.ts': 'function a(){ return 0; }\n' },
+				{ 'src/a.ts': 'function a(x){ if (x) return 1; return 0; }\n' },
+			),
+		);
+
+		expect(delta.complexity).toMatchObject({
+			jsxDepth: { before: null, after: null, delta: null },
 		});
 	});
 
@@ -338,7 +356,12 @@ describe('summarize', () => {
 				toolUse: { buckets: { docs: 2, exploration: 4 } },
 				deltaToBaseline: {
 					diff: { sloc: { added: 10 } },
-					complexity: { cognitive: { delta: 3 }, jsxCognitive: { delta: 7 } },
+					complexity: {
+						cognitive: { delta: 3 },
+						jsxCognitive: { delta: 7 },
+						jsxLength: { delta: 4 },
+						jsxDepth: { delta: 1 },
+					},
 				},
 			},
 			{
@@ -351,7 +374,12 @@ describe('summarize', () => {
 				toolUse: { buckets: { docs: 0, exploration: 8 } },
 				deltaToBaseline: {
 					diff: { sloc: { added: 20 } },
-					complexity: { cognitive: { delta: 5 }, jsxCognitive: { delta: 11 } },
+					complexity: {
+						cognitive: { delta: 5 },
+						jsxCognitive: { delta: 11 },
+						jsxLength: { delta: 8 },
+						jsxDepth: { delta: 3 },
+					},
 				},
 			},
 		];
@@ -367,7 +395,38 @@ describe('summarize', () => {
 			slocMean: 15,
 			cognitiveMean: 4,
 			jsxCogMean: 9,
+			jsxDepthMean: 2,
 		});
+	});
+
+	it('returns the jsx means in the stored rows', () => {
+		const rows = [
+			{
+				experiment: 'x',
+				eval: 'e',
+				status: 'passed',
+				fixtureRef: 'r@1',
+				cost: {},
+				speed: {},
+				deltaToBaseline: {
+					complexity: {
+						jsxCognitive: { delta: 7 },
+						jsxLength: { delta: 4 },
+						jsxDepth: { delta: 1.5 },
+					},
+				},
+			},
+		];
+		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+		try {
+			expect(summarize(rows)[0]).toMatchObject({
+				jsxCognitiveDelta: { mean: 7 },
+				jsxLengthDelta: { mean: 4 },
+				jsxDepthDelta: { mean: 1.5 },
+			});
+		} finally {
+			spy.mockRestore();
+		}
 	});
 
 	it('reports null cost rather than zero when no run priced', () => {
@@ -394,6 +453,7 @@ describe('summarize', () => {
 			slocMean: null,
 			cognitiveMean: null,
 			jsxCogMean: null,
+			jsxDepthMean: null,
 		});
 	});
 

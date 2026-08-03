@@ -14,7 +14,12 @@
 // `baseline` mode) the pinned upstream tree the runner materialized for us.
 // Everything comparative lives in deltaToBaseline, which is therefore
 // the only entry point here that needs the external repo on disk.
-import { complexityForTree, complexityForFiles, sumComplexities } from './metrics/complexity.ts';
+import {
+	COMPLEXITY_KEYS,
+	complexityForTree,
+	complexityForFiles,
+	sumComplexities,
+} from './metrics/complexity.ts';
 import { computeChurn } from './metrics/churn.ts';
 import { readCost, readSpeed } from './metrics/run-signals.ts';
 import { classifyToolUse } from './metrics/tool-taxonomy.ts';
@@ -81,22 +86,19 @@ function scoresFor(
 	return Object.fromEntries(paths.flatMap((path) => (files[path] ? [[path, files[path]]] : [])));
 }
 
-function addComplexity(a: FileComplexity, b: FileComplexity): FileComplexity {
-	return {
-		cyclomatic: a.cyclomatic + b.cyclomatic,
-		cognitive: a.cognitive + b.cognitive,
-		jsxCyclomatic: a.jsxCyclomatic + b.jsxCyclomatic,
-		jsxCognitive: a.jsxCognitive + b.jsxCognitive,
-	};
+function combineComplexity(
+	a: FileComplexity,
+	b: FileComplexity,
+	combine: (left: number, right: number) => number,
+): FileComplexity {
+	return Object.fromEntries(
+		COMPLEXITY_KEYS.map((key) => [key, combine(a[key], b[key])]),
+	) as unknown as FileComplexity;
 }
 
-function subtractComplexity(a: FileComplexity, b: FileComplexity): FileComplexity {
-	return {
-		cyclomatic: a.cyclomatic - b.cyclomatic,
-		cognitive: a.cognitive - b.cognitive,
-		jsxCyclomatic: a.jsxCyclomatic - b.jsxCyclomatic,
-		jsxCognitive: a.jsxCognitive - b.jsxCognitive,
-	};
+/** Average tree depth for one side of the delta; null when the side has no trees. */
+function averageDepth(totals: FileComplexity): number | null {
+	return totals.jsxTrees === 0 ? null : totals.jsxDepthTotal / totals.jsxTrees;
 }
 
 export function deltaToBaseline({
@@ -117,37 +119,46 @@ export function deltaToBaseline({
 	// swapped for what the agent left behind" keeps both ends comparable across
 	// runs while leaving the delta exactly what it was.
 	const before = sumComplexities(baseline);
-	const after = addComplexity(
-		subtractComplexity(before, sumComplexities(scoresFor(baseline, diff.files))),
+	const removed = combineComplexity(
+		before,
+		sumComplexities(scoresFor(baseline, diff.files)),
+		(left, right) => left - right,
+	);
+	const after = combineComplexity(
+		removed,
 		sumComplexities(afterFiles.files),
+		(left, right) => left + right,
 	);
 	const cognitiveDelta = after.cognitive - before.cognitive;
+
+	const span = (measure: keyof FileComplexity) => ({
+		before: before[measure],
+		after: after[measure],
+		delta: after[measure] - before[measure],
+	});
+
+	// Tree depth is a ratio (jsxDepthTotal / jsxTrees), so its delta is a
+	// difference of averages, null-guarded for a side with no markup at all.
+	const depthBefore = averageDepth(before);
+	const depthAfter = averageDepth(after);
 
 	return {
 		diff,
 		complexity: {
-			cyclomatic: {
-				before: before.cyclomatic,
-				after: after.cyclomatic,
-				delta: after.cyclomatic - before.cyclomatic,
-			},
-			cognitive: {
-				before: before.cognitive,
-				after: after.cognitive,
-				delta: cognitiveDelta,
-			},
-			// JSX-aware variants (complexity-jsx.ts): the classic scores plus
-			// markup length, depth and conditional renders, so an agent bloating
-			// render trees moves these even when the branching logic stays flat.
-			jsxCyclomatic: {
-				before: before.jsxCyclomatic,
-				after: after.jsxCyclomatic,
-				delta: after.jsxCyclomatic - before.jsxCyclomatic,
-			},
-			jsxCognitive: {
-				before: before.jsxCognitive,
-				after: after.jsxCognitive,
-				delta: after.jsxCognitive - before.jsxCognitive,
+			cyclomatic: span('cyclomatic'),
+			cognitive: span('cognitive'),
+			// Render-path variants (complexity-jsx.ts): render loops counted, and
+			// branches weighted by markup depth on the cognitive side.
+			jsxCyclomatic: span('jsxCyclomatic'),
+			jsxCognitive: span('jsxCognitive'),
+			// Markup size (jsx-structure.ts): tags, dynamic bindings, and the
+			// average depth of a JSX tree.
+			jsxLength: span('jsxLength'),
+			jsxBindings: span('jsxBindings'),
+			jsxDepth: {
+				before: depthBefore,
+				after: depthAfter,
+				delta: depthBefore === null || depthAfter === null ? null : depthAfter - depthBefore,
 			},
 			// Complexity correlates ~0.9 with lines of code, so a bare delta partly
 			// re-measures verbosity. null rather than Infinity when nothing changed:
@@ -161,7 +172,12 @@ export function deltaToBaseline({
 /** Comparative metrics, under the key analyze-results.ts nests them at. */
 function deltaOf(row: Record<string, unknown>): {
 	diff?: { sloc?: { added?: number } };
-	complexity?: { cognitive?: { delta?: number }; jsxCognitive?: { delta?: number } };
+	complexity?: {
+		cognitive?: { delta?: number };
+		jsxCognitive?: { delta?: number };
+		jsxLength?: { delta?: number };
+		jsxDepth?: { delta?: number | null };
+	};
 } {
 	return isRecord(row.deltaToBaseline) ? row.deltaToBaseline : {};
 }
@@ -205,6 +221,8 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			group,
 			(row) => deltaOf(row).complexity?.jsxCognitive?.delta,
 		);
+		const jsxLengthDelta = numbersAt(group, (row) => deltaOf(row).complexity?.jsxLength?.delta);
+		const jsxDepthDelta = numbersAt(group, (row) => deltaOf(row).complexity?.jsxDepth?.delta);
 
 		// An aggregate silently spanning two pins is not one measurement.
 		const fixtureRefs = [...new Set(group.map((row) => String(row.fixtureRef)))];
@@ -227,6 +245,8 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			slocAdded: { mean: round(mean(slocAdded)) },
 			cognitiveDelta: { mean: round(mean(cognitiveDelta)) },
 			jsxCognitiveDelta: { mean: round(mean(jsxCognitiveDelta)) },
+			jsxLengthDelta: { mean: round(mean(jsxLengthDelta)) },
+			jsxDepthDelta: { mean: round(mean(jsxDepthDelta)) },
 		};
 	});
 }
@@ -259,6 +279,7 @@ export function summarize(
 			slocAdded: deltaOf(row).diff?.sloc?.added ?? null,
 			cognitive: deltaOf(row).complexity?.cognitive?.delta ?? null,
 			jsxCog: deltaOf(row).complexity?.jsxCognitive?.delta ?? null,
+			jsxDepth: deltaOf(row).complexity?.jsxDepth?.delta ?? null,
 		})),
 	);
 
@@ -279,6 +300,7 @@ export function summarize(
 			slocMean: (group.slocAdded as { mean: number | null }).mean,
 			cognitiveMean: (group.cognitiveDelta as { mean: number | null }).mean,
 			jsxCogMean: (group.jsxCognitiveDelta as { mean: number | null }).mean,
+			jsxDepthMean: (group.jsxDepthDelta as { mean: number | null }).mean,
 		})),
 	);
 
@@ -290,12 +312,14 @@ export function summarize(
  *
  * metricsVersion invalidates committed baselines when a metric definition or
  * its stored shape changes, so a baseline measured under old rules is rebuilt
- * rather than silently compared against runs measured under new ones. Bumped
- * to 2 when FileComplexity gained the jsxCyclomatic/jsxCognitive scores.
+ * rather than silently compared against runs measured under new ones.
+ * History: 2 added the jsx complexity variants; 3 split markup size into
+ * jsx-structure.ts (jsxLength/jsxBindings/jsxDepth) and absorbed inline
+ * callbacks into their enclosing function in all four walkers.
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,
 	deltaToBaseline,
 	summarize,
-	metricsVersion: 2,
+	metricsVersion: 3,
 };

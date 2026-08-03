@@ -11,6 +11,7 @@ import { join, relative, sep } from 'node:path';
 import { cognitiveForSource } from './complexity-cognitive.ts';
 import { complexityForSource } from './complexity-cyclomatic.ts';
 import { jsxCognitiveForSource, jsxCyclomaticForSource } from './complexity-jsx.ts';
+import { jsxStructureForSource } from './jsx-structure.ts';
 import { isExcludedPath, SCRIPT_EXTENSIONS, SKIP_DIRS } from '../tree/paths.ts';
 import { hasParseErrors } from './sloc.ts';
 
@@ -18,13 +19,36 @@ export interface FileComplexity {
 	cyclomatic: number;
 	cognitive: number;
 	/**
-	 * The JSX-aware variants (see complexity-jsx.ts) also price markup length,
-	 * depth and conditional renders. For a file with no JSX they equal the
+	 * The JSX-aware variants (complexity-jsx.ts) also price render loops and
+	 * weight branches by markup depth. For a file with no JSX they equal the
 	 * classic scores.
 	 */
 	jsxCyclomatic: number;
 	jsxCognitive: number;
+	/**
+	 * Markup size on axes of its own (jsx-structure.ts): tag count, dynamic
+	 * bindings, and tree depth as a summable numerator/denominator pair —
+	 * jsxDepthTotal / jsxTrees is the average tree depth.
+	 */
+	jsxLength: number;
+	jsxBindings: number;
+	jsxDepthTotal: number;
+	jsxTrees: number;
 }
+
+const ZERO_COMPLEXITY: FileComplexity = {
+	cyclomatic: 0,
+	cognitive: 0,
+	jsxCyclomatic: 0,
+	jsxCognitive: 0,
+	jsxLength: 0,
+	jsxBindings: 0,
+	jsxDepthTotal: 0,
+	jsxTrees: 0,
+};
+
+/** Every FileComplexity measure, for folds that treat them uniformly. */
+export const COMPLEXITY_KEYS = Object.keys(ZERO_COMPLEXITY) as Array<keyof FileComplexity>;
 
 export interface ComplexityResult {
 	/** Per-file scores, keyed by workspace-relative path. */
@@ -61,6 +85,7 @@ function scoreFile(dir: string, path: string): FileComplexity | 'unparseable' | 
 		cognitive: sumNodes(cognitiveForSource(path, source)),
 		jsxCyclomatic: sumNodes(jsxCyclomaticForSource(path, source)),
 		jsxCognitive: sumNodes(jsxCognitiveForSource(path, source)),
+		...jsxStructureForSource(path, source),
 	};
 }
 
@@ -87,15 +112,11 @@ function collectAllCodeFiles(dir: string): string[] {
 
 /** Total complexity across already-scored files. */
 export function sumComplexities(files: Record<string, FileComplexity>): FileComplexity {
-	return Object.values(files).reduce(
-		(totals, score) => ({
-			cyclomatic: totals.cyclomatic + score.cyclomatic,
-			cognitive: totals.cognitive + score.cognitive,
-			jsxCyclomatic: totals.jsxCyclomatic + score.jsxCyclomatic,
-			jsxCognitive: totals.jsxCognitive + score.jsxCognitive,
-		}),
-		{ cyclomatic: 0, cognitive: 0, jsxCyclomatic: 0, jsxCognitive: 0 },
-	);
+	const totals = { ...ZERO_COMPLEXITY };
+	for (const score of Object.values(files)) {
+		for (const key of COMPLEXITY_KEYS) totals[key] += score[key];
+	}
+	return totals;
 }
 
 /** Per-file complexity across a specific set of files in a tree. */

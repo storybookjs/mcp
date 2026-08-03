@@ -1,31 +1,32 @@
 // JSX-aware variants of the cyclomatic and cognitive complexity walkers.
 //
-// The classic metrics treat markup as invisible: a 40-element render tree eight
-// levels deep scores the same as `return null` unless it happens to contain a
-// ternary. For component-heavy code that under-measures exactly the structure
-// an agent is most likely to bloat. These variants make markup count, each in
-// its parent metric's own style:
+// The classic metrics treat markup as data: a conditional render or a list
+// render hidden behind a callback boundary never lands anywhere, and a branch
+// buried eight tags deep costs the same as one at the top of the function.
+// These variants price render *flow*, each in its parent metric's own style —
+// markup size lives elsewhere, in jsx-structure.ts (length, bindings, depth):
 //
 //   jsxCyclomaticForSource — flat counting, like cyclomatic.
-//     +1 per JSX element        markup length: every tag is output the reader
-//                               must account for (fragments render nothing and
-//                               are free)
-//     +1 per render callback    `{items.map((item) => <li/>)}` is the markup
-//                               analog of a `for` loop, which the classic
-//                               metric misses because the callback boundary
-//                               hides it
-//     Conditional renders (`?:`, `&&`) are decision points the classic core
-//     already counts, so the branch term comes built in.
+//     Conditional renders (`?:`, `&&`, per operator) are decision points the
+//     classic core already counts; what this variant adds is the render loop:
+//     +1 for `{items.map((item) => <li/>)}`, for any call with an inline
+//     markup-producing callback, and for a map/flatMap call inside JSX even
+//     when the callback is a named reference (`{items.map(renderRow)}`).
 //
 //   jsxCognitiveForSource — depth-weighted, like Sonar cognitive.
-//     JSX elements deepen nesting, so a branch buried in markup costs more
-//     than one at the top of the function. Structural elements — those with
-//     markup children — cost 1 + depth, making deep trees cost superlinearly
-//     exactly as nested ifs do; leaf elements are free (width is
-//     jsxCyclomatic's business, depth is this metric's). Render callbacks
-//     cost 1 + depth like any loop, and a conditional render in child
-//     position (`{cond && <A/>}`) is charged as a branch of the markup,
-//     1 + depth, rather than the flat operator cost of a boolean condition.
+//     One unified nesting depth: JSX elements and fragments deepen it, so a
+//     ternary in deep markup costs more than one at the top. Structural
+//     elements — those with markup children — cost 1 + depth, pricing deep
+//     trees superlinearly exactly as nested ifs; leaf elements are free
+//     (width is jsx-structure's business). Render loops cost 1 + depth like
+//     any loop, with the absorbed callback supplying the deeper level for its
+//     contents. Logical operator runs stay flat wherever they appear — child
+//     position, prop value, or plain code — per the Sonar rule; ternaries
+//     carry depth everywhere for the same reason.
+//
+// Inline anonymous callbacks are absorbed into the enclosing function exactly
+// as in the classic walkers (function-units.ts), so `{items.map((item) =>
+// <li/>)}` yields one entry for the component, not a stray `<anonymous>`.
 //
 // Both variants are strict supersets of their classic counterparts: on source
 // containing no JSX they produce identical scores, which complexity-jsx.test.ts
@@ -38,22 +39,11 @@
 // reads the names; only the summed scores are stored.
 import ts from 'typescript';
 
+import { isAbsorbedCallback, isFunctionLike } from './function-units.ts';
 import { scriptKindFor } from './sloc.ts';
 import type { FunctionComplexity } from '../types.ts';
 
 const SCRIPT_EXTENSIONS = /\.(?:tsx?|jsx?|mjs|cjs)$/;
-
-function isFunctionLike(node: ts.Node): boolean {
-	return (
-		ts.isFunctionDeclaration(node) ||
-		ts.isFunctionExpression(node) ||
-		ts.isArrowFunction(node) ||
-		ts.isMethodDeclaration(node) ||
-		ts.isConstructorDeclaration(node) ||
-		ts.isGetAccessorDeclaration(node) ||
-		ts.isSetAccessorDeclaration(node)
-	);
-}
 
 function enclosingClassName(node: ts.Node): string | undefined {
 	let current: ts.Node | undefined = node.parent;
@@ -106,9 +96,9 @@ function isJsxTag(node: ts.Node): boolean {
 /**
  * Whether an element hosts further markup: at least one element or fragment
  * among its direct children. An element holding only text or `{...}`
- * expressions is a leaf — when such an expression branches, the branch itself
- * is charged (at this element's depth), so charging the element too would
- * price the same structure twice.
+ * expressions is a leaf — when such an expression branches or loops, that is
+ * charged (at this element's depth), so charging the element too would price
+ * the same structure twice.
  */
 function hasMarkupChildren(node: ts.JsxElement): boolean {
 	return node.children.some((child) => isJsxTag(child) || ts.isJsxFragment(child));
@@ -116,7 +106,7 @@ function hasMarkupChildren(node: ts.JsxElement): boolean {
 
 /**
  * Whether a function builds markup in its own body — not through nested
- * functions, whose markup belongs to their own measurement.
+ * functions, whose markup is their own.
  */
 function containsOwnJsx(callback: ts.ArrowFunction | ts.FunctionExpression): boolean {
 	const scan = (node: ts.Node): true | undefined => {
@@ -128,23 +118,37 @@ function containsOwnJsx(callback: ts.ArrowFunction | ts.FunctionExpression): boo
 }
 
 /**
- * A call that produces markup through an inline callback, e.g.
- * `{items.map((item) => <li/>)}` or `return rows.map(renderRow)` with an
- * inline arrow. The classic metrics price this at zero: the callback is
- * measured as its own function, so the iteration never lands anywhere. The
- * charge goes to the enclosing function, exactly where a `for` loop writing
- * the same markup would land. A named callback (`.map(renderRow)`) carries no
- * inline markup to read past, so it is not charged.
+ * Iteration methods worth a loop charge even when the callback is a named
+ * reference, so `{items.map(renderRow)}` counts. A name list is a heuristic,
+ * but the alternative is a blind spot on the most common list-render idiom;
+ * matched only inside JSX so data-shaping maps in plain code stay uncharged
+ * (and JSX-free source keeps scoring exactly like the classic metrics).
  */
-function isRenderCallback(node: ts.Node): boolean {
-	return (
-		ts.isCallExpression(node) &&
-		node.arguments.some(
-			(argument) =>
-				(ts.isArrowFunction(argument) || ts.isFunctionExpression(argument)) &&
-				containsOwnJsx(argument),
-		)
+const RENDER_LOOP_CALLEES = new Set(['map', 'flatMap']);
+
+function calleeName(node: ts.CallExpression): string | undefined {
+	const callee = node.expression;
+	if (ts.isPropertyAccessExpression(callee)) return callee.name.text;
+	if (ts.isIdentifier(callee)) return callee.text;
+	return undefined;
+}
+
+/**
+ * A call that renders a collection — the markup analog of a `for` loop, which
+ * the classic metrics price at zero because the callback boundary hides it.
+ * Either the call carries an inline callback that builds markup (anywhere:
+ * `return items.map((item) => <li/>)` in a list component counts), or it is a
+ * map-like call written inside JSX, callback named or not.
+ */
+function isRenderLoop(node: ts.Node, insideJsx: boolean): boolean {
+	if (!ts.isCallExpression(node)) return false;
+	const hasInlineMarkupCallback = node.arguments.some(
+		(argument) =>
+			(ts.isArrowFunction(argument) || ts.isFunctionExpression(argument)) &&
+			containsOwnJsx(argument),
 	);
+	if (hasInlineMarkupCallback) return true;
+	return insideJsx && RENDER_LOOP_CALLEES.has(calleeName(node) ?? '');
 }
 
 const LOGICAL_OPERATORS = new Set<ts.SyntaxKind>([
@@ -164,26 +168,6 @@ function startsOperatorRun(node: ts.BinaryExpression): boolean {
 		parent &&
 		ts.isBinaryExpression(parent) &&
 		parent.operatorToken.kind === node.operatorToken.kind
-	);
-}
-
-/**
- * Whether a logical-operator run renders one of its operands: it is the
- * immediate expression of a `{...}` in child position, as in
- * `<div>{cond && <A/>}</div>`. An operator in an attribute value
- * (`disabled={a || b}`) stays a plain boolean condition, not a render branch.
- */
-function isConditionalRender(node: ts.BinaryExpression): boolean {
-	let current: ts.Node = node;
-	while (current.parent && ts.isParenthesizedExpression(current.parent)) {
-		current = current.parent;
-	}
-	const container = current.parent;
-	return (
-		container !== undefined &&
-		ts.isJsxExpression(container) &&
-		container.parent !== undefined &&
-		(ts.isJsxElement(container.parent) || ts.isJsxFragment(container.parent))
 	);
 }
 
@@ -234,14 +218,14 @@ function parse(filename: string, source: string): ts.SourceFile | null {
 	}
 }
 
-/** Per-function results for every function in a source file. */
+/** Per-function results for every measured unit in a source file. */
 function measureFunctions(
 	sourceFile: ts.SourceFile,
 	measure: (functionNode: ts.Node) => number,
 ): FunctionComplexity[] {
 	const results: FunctionComplexity[] = [];
 	const visit = (node: ts.Node): void => {
-		if (isFunctionLike(node)) {
+		if (isFunctionLike(node) && !isAbsorbedCallback(node)) {
 			results.push({ name: nameOfFunctionLike(node), complexity: measure(node) });
 		}
 		ts.forEachChild(node, visit);
@@ -257,23 +241,23 @@ export function jsxCyclomaticForSource(filename: string, source: string): Functi
 	return measureFunctions(sourceFile, (functionNode) => {
 		let complexity = 1;
 
-		const walk = (node: ts.Node): void => {
+		const walk = (node: ts.Node, insideJsx: boolean): void => {
 			if (DECISION_KINDS.has(node.kind)) {
 				complexity += 1;
 			} else if (ts.isBinaryExpression(node) && LOGICAL_OPERATORS.has(node.operatorToken.kind)) {
 				complexity += 1;
 			}
 
-			if (isJsxTag(node)) complexity += 1;
-			if (isRenderCallback(node)) complexity += 1;
+			if (isRenderLoop(node, insideJsx)) complexity += 1;
 
-			// Stop at nested function boundaries: each is measured separately, so
-			// counting its decisions or markup here would double-count them.
-			if (node !== functionNode && isFunctionLike(node)) return;
-			ts.forEachChild(node, walk);
+			// Stop at nested units: each is measured separately. An absorbed
+			// callback is not a unit — its decisions are this function's.
+			if (node !== functionNode && isFunctionLike(node) && !isAbsorbedCallback(node)) return;
+			const next = insideJsx || isJsxTag(node) || ts.isJsxFragment(node);
+			ts.forEachChild(node, (child) => walk(child, next));
 		};
 
-		walk(functionNode);
+		walk(functionNode, false);
 		return complexity;
 	});
 }
@@ -285,9 +269,16 @@ export function jsxCognitiveForSource(filename: string, source: string): Functio
 	return measureFunctions(sourceFile, (functionNode) => {
 		let complexity = 0;
 
-		const walk = (node: ts.Node, depth: number): void => {
-			// Nested functions are measured on their own, from depth 0.
-			if (node !== functionNode && isFunctionLike(node)) return;
+		const walk = (node: ts.Node, depth: number, insideJsx: boolean): void => {
+			// Nested units are measured on their own, from depth 0. An absorbed
+			// callback is no unit: per the lambda rule its contents count here, one
+			// nesting level deeper — which is also what lets a render loop's charge
+			// sit at the call while the looped markup sits one level in.
+			if (node !== functionNode && isFunctionLike(node)) {
+				if (!isAbsorbedCallback(node)) return;
+				ts.forEachChild(node, (child) => walk(child, depth + 1, insideJsx));
+				return;
+			}
 
 			if (ts.isIfStatement(node)) {
 				// An `else if` costs 1 flat; a fresh `if` costs 1 plus its depth.
@@ -295,16 +286,16 @@ export function jsxCognitiveForSource(filename: string, source: string): Functio
 				complexity += elseIf ? 1 : 1 + depth;
 				const branchDepth = elseIf ? depth : depth + 1;
 
-				walk(node.expression, depth);
-				walk(node.thenStatement, branchDepth);
+				walk(node.expression, depth, insideJsx);
+				walk(node.thenStatement, branchDepth, insideJsx);
 
 				if (node.elseStatement) {
 					if (ts.isIfStatement(node.elseStatement)) {
 						// Charged by its own visit as an else-if; keep the same depth.
-						walk(node.elseStatement, branchDepth);
+						walk(node.elseStatement, branchDepth, insideJsx);
 					} else {
 						complexity += 1; // a plain `else`, no nesting penalty
-						walk(node.elseStatement, branchDepth);
+						walk(node.elseStatement, branchDepth, insideJsx);
 					}
 				}
 				return;
@@ -312,31 +303,31 @@ export function jsxCognitiveForSource(filename: string, source: string): Functio
 
 			if (isNestingStructure(node)) {
 				complexity += 1 + depth;
-				ts.forEachChild(node, (child) => walk(child, depth + 1));
+				ts.forEachChild(node, (child) => walk(child, depth + 1, insideJsx));
 				return;
 			}
 
 			// Markup deepens nesting for everything it wraps — children and
 			// attributes alike — and structural elements are charged like nested
 			// blocks. Leaf elements deepen without charging: what their expressions
-			// cost is priced where those expressions branch. Fragments fall through
-			// to the plain walk below, rendering no node and adding no depth.
-			if (isJsxTag(node)) {
+			// cost is priced where those expressions branch or loop. Fragments
+			// deepen too (the reader's eye pays the level) but render no node, so
+			// they never charge.
+			if (isJsxTag(node) || ts.isJsxFragment(node)) {
 				if (ts.isJsxElement(node) && hasMarkupChildren(node)) complexity += 1 + depth;
-				ts.forEachChild(node, (child) => walk(child, depth + 1));
+				ts.forEachChild(node, (child) => walk(child, depth + 1, true));
 				return;
 			}
 
-			// The markup analog of a loop, charged like one.
-			if (isRenderCallback(node)) complexity += 1 + depth;
+			// The markup analog of a loop, charged like one. It does not deepen
+			// here: the absorbed callback provides the deeper level for the looped
+			// markup, so charging depth twice would price one construct as two.
+			if (isRenderLoop(node, insideJsx)) complexity += 1 + depth;
 
+			// Flat wherever it appears — child position, prop value or plain code —
+			// per the Sonar rule: operators count by run, never by nesting.
 			if (ts.isBinaryExpression(node) && LOGICAL_OPERATORS.has(node.operatorToken.kind)) {
-				// `{cond && <A/>}` forks what gets rendered, so it is charged as a
-				// branch of the markup rather than the flat cost of a boolean
-				// condition. Operands stay at the same depth: operators do not nest.
-				if (startsOperatorRun(node)) {
-					complexity += isConditionalRender(node) ? 1 + depth : 1;
-				}
+				if (startsOperatorRun(node)) complexity += 1;
 			}
 
 			// A labelled break or continue is a jump out of normal flow: +1 flat.
@@ -344,10 +335,10 @@ export function jsxCognitiveForSource(filename: string, source: string): Functio
 				complexity += 1;
 			}
 
-			ts.forEachChild(node, (child) => walk(child, depth));
+			ts.forEachChild(node, (child) => walk(child, depth, insideJsx));
 		};
 
-		walk(functionNode, 0);
+		walk(functionNode, 0, false);
 		return complexity;
 	});
 }

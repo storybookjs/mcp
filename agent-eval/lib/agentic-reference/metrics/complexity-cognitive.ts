@@ -7,24 +7,18 @@
 // Deliberately not implemented: recursion detection, which needs name
 // resolution the single-file parse does not have. It is rare in the component
 // code these evals touch.
+//
+// Inline anonymous callbacks follow the white paper's lambda rule: they are
+// not units of their own — their contents count toward the enclosing
+// function, one nesting level deeper. Name-bound functions are still measured
+// separately, from depth 0. See function-units.ts for the boundary.
 import ts from 'typescript';
 
+import { isAbsorbedCallback, isFunctionLike } from './function-units.ts';
 import { scriptKindFor } from './sloc.ts';
 import type { FunctionComplexity } from '../types.ts';
 
 const SCRIPT_EXTENSIONS = /\.(?:tsx?|jsx?|mjs|cjs)$/;
-
-function isFunctionLike(node: ts.Node): boolean {
-	return (
-		ts.isFunctionDeclaration(node) ||
-		ts.isFunctionExpression(node) ||
-		ts.isArrowFunction(node) ||
-		ts.isMethodDeclaration(node) ||
-		ts.isConstructorDeclaration(node) ||
-		ts.isGetAccessorDeclaration(node) ||
-		ts.isSetAccessorDeclaration(node)
-	);
-}
 
 function enclosingClassName(node: ts.Node): string | undefined {
 	let current: ts.Node | undefined = node.parent;
@@ -131,8 +125,14 @@ export function cognitiveForSource(filename: string, source: string): FunctionCo
 		let complexity = 0;
 
 		const walk = (node: ts.Node, depth: number): void => {
-			// Nested functions are measured on their own, from depth 0.
-			if (node !== functionNode && isFunctionLike(node)) return;
+			// Nested units are measured on their own, from depth 0. An absorbed
+			// callback is no unit: per the lambda rule its contents count here,
+			// one nesting level deeper.
+			if (node !== functionNode && isFunctionLike(node)) {
+				if (!isAbsorbedCallback(node)) return;
+				ts.forEachChild(node, (child) => walk(child, depth + 1));
+				return;
+			}
 
 			if (ts.isIfStatement(node)) {
 				// An `else if` costs 1 flat; a fresh `if` costs 1 plus its depth.
@@ -178,7 +178,9 @@ export function cognitiveForSource(filename: string, source: string): FunctionCo
 	};
 
 	const visit = (node: ts.Node): void => {
-		if (isFunctionLike(node)) measure(node, nameOfFunctionLike(node));
+		if (isFunctionLike(node) && !isAbsorbedCallback(node)) {
+			measure(node, nameOfFunctionLike(node));
+		}
 		ts.forEachChild(node, visit);
 	};
 
