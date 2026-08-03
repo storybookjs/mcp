@@ -1,9 +1,10 @@
 // Shared experiment shape for agentic-reference evals. A case's agent support
-// is whatever its options declare: the design-system Storybook MCP
-// (`storybookMcpUrl`), other MCP servers (`mcpServers`), skills (`skillDirs`),
-// extra sandbox files (`extraFiles`) — or nothing at all, the bare control.
-// Gated behind EVAL_AGENTIC_REFERENCE=1 so the default matrix never spends
-// on it.
+// is whatever its options declare: the design-system Storybook MCP — served
+// locally from a pkg.pr.new preview package (`storybookMcpPackage`) or at an
+// external URL (`storybookMcpUrl`) — other MCP servers (`mcpServers`), skills
+// (`skillDirs`), extra sandbox files (`extraFiles`) — or nothing at all, the
+// bare control. Gated behind EVAL_AGENTIC_REFERENCE=1 so the default matrix
+// never spends on it.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -28,6 +29,11 @@ import {
 	setupExternalRepo,
 } from './external-repo.ts';
 import { registerExternalStorybookMcp } from './external-mcp.ts';
+import {
+	type StorybookMcpPackageSpec,
+	resolveStorybookMcpPackage,
+	setupLocalStorybookMcp,
+} from './local-mcp.ts';
 import { postAnalysis } from './post-analysis.ts';
 
 import type { PostAnalysisExperiment } from '../post-analysis/types.ts';
@@ -43,10 +49,15 @@ interface AgenticRefExperimentOptions {
 	/** Present = run with the design-system Storybook MCP registered at this URL. */
 	storybookMcpUrl?: string;
 	/**
+	 * Present = serve the design-system Storybook MCP locally in the sandbox from
+	 * this pkg.pr.new preview package. Mutually exclusive with storybookMcpUrl.
+	 */
+	storybookMcpPackage?: StorybookMcpPackageSpec;
+	/**
 	 * Sandbox flavor recorded in the agent context: Storybook tooling only.
-	 * Defaults to 'mcp' with a storybookMcpUrl, bare ('none') without —
-	 * mcpServers and skillDirs deliberately do not affect it, since they carry
-	 * non-Storybook support.
+	 * Defaults to 'mcp' with a storybookMcpUrl or storybookMcpPackage, bare
+	 * ('none') without — mcpServers and skillDirs deliberately do not affect it,
+	 * since they carry non-Storybook support.
 	 */
 	integration?: EvalIntegration;
 	/** Additional MCP servers to register, e.g. a component library's own server. */
@@ -116,6 +127,8 @@ interface AgenticRefCaseRecord {
 	name: string;
 	integration: EvalIntegration;
 	storybookMcpUrl?: string;
+	/** The package spec plus the sha its branch resolved to for this experiment. */
+	storybookMcpPackage?: StorybookMcpPackageSpec & { sha: string | null };
 	mcpServers?: string[];
 	skillDirs?: string[];
 	extraFiles?: string[];
@@ -144,15 +157,37 @@ function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
 export function agenticRefExperiment(
 	options: AgenticRefExperimentOptions,
 ): ExperimentConfig & PostAnalysisExperiment {
-	const { name, evals, storybookMcpUrl, mcpServers, skillDirs, extraFiles, overrides } = options;
+	const {
+		name,
+		evals,
+		storybookMcpUrl,
+		storybookMcpPackage,
+		mcpServers,
+		skillDirs,
+		extraFiles,
+		overrides,
+	} = options;
+	// Config-load guard: a case declaring both would register the same server
+	// name twice, with whichever wrote last silently winning.
+	if (storybookMcpUrl !== undefined && storybookMcpPackage !== undefined) {
+		throw new Error(
+			`agenticRefExperiment: case "${name}" sets both storybookMcpUrl and storybookMcpPackage; ` +
+				'pick one design-system MCP source.',
+		);
+	}
 	const agent = options.agent ?? 'claude-code';
-	const integration = options.integration ?? (storybookMcpUrl ? 'mcp' : 'none');
+	const integration =
+		options.integration ?? (storybookMcpUrl || storybookMcpPackage ? 'mcp' : 'none');
 
 	async function setup(sandbox: Sandbox): Promise<void> {
 		await setupSandbox(sandbox, { agent, integration });
 		await setupExternalRepo(sandbox);
 		if (storybookMcpUrl) {
 			await registerExternalStorybookMcp(sandbox, storybookMcpUrl, agent);
+		}
+		if (storybookMcpPackage) {
+			const resolved = await resolveStorybookMcpPackage(storybookMcpPackage);
+			await setupLocalStorybookMcp(sandbox, resolved, agent);
 		}
 		for (const [serverName, spec] of Object.entries(mcpServers ?? {})) {
 			await registerMcpServer(sandbox, agent, serverName, spec);
@@ -170,6 +205,9 @@ export function agenticRefExperiment(
 		name,
 		integration,
 		...(storybookMcpUrl !== undefined && { storybookMcpUrl }),
+		...(storybookMcpPackage !== undefined && {
+			storybookMcpPackage: { ...storybookMcpPackage, sha: null },
+		}),
 		...(mcpServers && { mcpServers: Object.keys(mcpServers) }),
 		...(skillDirs && { skillDirs }),
 		...(extraFiles && { extraFiles: Object.keys(extraFiles) }),
