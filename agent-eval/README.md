@@ -228,9 +228,10 @@ A case declares whatever agent support its treatment or control needs: the
 design-system Storybook MCP (`storybookMcpPackage` for the in-sandbox package
 server, or `storybookMcpUrl` for an externally hosted one), any other MCP
 server (`mcpServers` — remote URL or local stdio command), skill directories
-(`skillDirs`), and extra sandbox files such as an AGENTS.md docs pointer
-(`extraFiles`). A case declaring none of these is a bare control: the sandbox
-records `integration: 'none'` and gets no Storybook tooling of any flavor.
+(`skillDirs`), and a prompt transform that rewrites each eval's PROMPT.md
+before the agent runs, e.g. to append a docs pointer (`transformPrompt`). A
+case declaring none of these is a bare control: the sandbox records
+`integration: 'none'` and gets no Storybook tooling of any flavor.
 
 To add a case, add one entry to `AGENTIC_REF_CASES` (or a branch name to
 `EXPERIMENT_BRANCHES`) and run:

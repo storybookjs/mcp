@@ -2,9 +2,9 @@
 // is whatever its options declare: the design-system Storybook MCP — served
 // locally from a pkg.pr.new preview package (`storybookMcpPackage`) or at an
 // external URL (`storybookMcpUrl`) — other MCP servers (`mcpServers`), skills
-// (`skillDirs`), extra sandbox files (`extraFiles`) — or nothing at all, the
-// bare control. Gated behind EVAL_AGENTIC_REFERENCE=1 so the default matrix
-// never spends on it.
+// (`skillDirs`), a prompt transform (`editPrompt`) — or nothing at all,
+// the bare control. Gated behind EVAL_AGENTIC_REFERENCE=1 so the default
+// matrix never spends on it.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -64,8 +64,11 @@ interface AgenticRefExperimentOptions {
 	mcpServers?: Record<string, McpServerSpec>;
 	/** Skill directories (relative to agent-eval/) installed into the agent's skills root. */
 	skillDirs?: string[];
-	/** Files written into the sandbox (path → content), e.g. an AGENTS.md docs pointer. */
-	extraFiles?: Record<string, string>;
+	/**
+	 * Rewrites each eval's PROMPT.md before the agent runs (the runner's
+	 * `editPrompt`), e.g. to append a docs pointer.
+	 */
+	editPrompt?: (prompt: string) => string;
 	overrides?: Partial<ExperimentConfig & PostAnalysisExperiment>;
 }
 
@@ -121,8 +124,9 @@ function readExternalRepoPin(fixturePath: string): ExternalRepoPin | null {
 }
 
 // The case record persisted into `result.analysis.case`: everything the
-// offline analyzer needs to group runs by treatment. Names and paths only —
-// file contents already live in the sandbox snapshot.
+// offline analyzer needs to group runs by treatment. Names, paths, and flags
+// only — file contents already live in the sandbox snapshot, and the prompt
+// the agent actually received in the run transcript.
 interface AgenticRefCaseRecord {
 	name: string;
 	integration: EvalIntegration;
@@ -131,7 +135,8 @@ interface AgenticRefCaseRecord {
 	storybookMcpPackage?: StorybookMcpPackageSpec & { sha: string | null };
 	mcpServers?: string[];
 	skillDirs?: string[];
-	extraFiles?: string[];
+	/** Present (true) when the case rewrote each eval's prompt before the run. */
+	editPrompt?: boolean;
 }
 
 // Compose the shared usage hook with the case record so neither clobbers the
@@ -164,7 +169,7 @@ export function agenticRefExperiment(
 		storybookMcpPackage,
 		mcpServers,
 		skillDirs,
-		extraFiles,
+		editPrompt,
 		overrides,
 	} = options;
 	// Config-load guard: a case declaring both would register the same server
@@ -195,10 +200,6 @@ export function agenticRefExperiment(
 		for (const skillDir of skillDirs ?? []) {
 			await installSkillDir(sandbox, agent, skillDir);
 		}
-		// After setupExternalRepo so the repo tarball cannot clobber them.
-		if (extraFiles && Object.keys(extraFiles).length > 0) {
-			await sandbox.writeFiles(extraFiles);
-		}
 	}
 
 	const caseRecord: AgenticRefCaseRecord = {
@@ -210,7 +211,7 @@ export function agenticRefExperiment(
 		}),
 		...(mcpServers && { mcpServers: Object.keys(mcpServers) }),
 		...(skillDirs && { skillDirs }),
-		...(extraFiles && { extraFiles: Object.keys(extraFiles) }),
+		...(editPrompt !== undefined && { editPrompt: true }),
 	};
 
 	const metricsHook = makeAgenticRefMetricsHook(caseRecord);
@@ -239,6 +240,7 @@ export function agenticRefExperiment(
 		earlyExit: false,
 		evals: process.env.EVAL_AGENTIC_REFERENCE === '1' ? evals : [],
 		setup,
+		editPrompt,
 		...overrides,
 		// In-sandbox vitest runs only the fixtures' transcript sanity gate, so a
 		// dead agent surfaces as a failed run; the real measurement is offline.

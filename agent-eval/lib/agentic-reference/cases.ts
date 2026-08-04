@@ -45,8 +45,11 @@ export interface AgenticRefCase {
 	mcpServers?: Record<string, McpServerSpec>;
 	/** Skill directories (relative to agent-eval/) installed into the agent's skills root. */
 	skillDirs?: string[];
-	/** Files written into the sandbox (path → content), e.g. an AGENTS.md docs pointer. */
-	extraFiles?: Record<string, string>;
+	/**
+	 * Rewrites each eval's PROMPT.md before the agent runs, e.g. to append a
+	 * docs pointer. Build appenders with appendToPrompt.
+	 */
+	editPrompt?: (prompt: string) => string;
 	/** Coding agent to evaluate. Default 'claude-code'. */
 	agent?: EvalAgent;
 	/** Workflow evals to run. Defaults to AGENTIC_REF_EVALS. */
@@ -67,6 +70,11 @@ const BASE_UI_MCP_PACKAGE = {
 
 function baseUiMcpPackage(branch: string): StorybookMcpPackageSpec {
 	return { ...BASE_UI_MCP_PACKAGE, branch };
+}
+
+/** Build a case `editPrompt` that appends eval-specific context after the fixture's task prompt. */
+function appendToPrompt(context: string): (prompt: string) => string {
+	return (prompt) => `${prompt.trimEnd()}\n\n${context.trim()}\n`;
 }
 
 // Content-filter variants of the design-system Storybook, one per
@@ -109,12 +117,9 @@ function storybookVariantCases(): AgenticRefCase[] {
 				storybookMcpPackage: baseUiMcpPackage(branchName),
 				agent,
 				evals: BASE_UI_APP_WORKFLOWS,
-				extraFiles: {
-					'AGENTS.md':
-						'# Mealdrop component documentation\n' +
-						'\n' +
-						'This app uses a Design System. Use the Storybook MCP first to fetch documentation and API reference for UI components. Abort with an error if the MCP is not reachable.\n',
-				},
+				editPrompt: appendToPrompt(
+					'This app uses a Design System. Use the Storybook MCP to fetch documentation and API reference for UI components. Abort with an error if the MCP is not reachable.',
+				),
 			};
 		});
 	});
@@ -147,15 +152,13 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 
 	{
 		name: 'cc-control-doc-opus-high',
-		description: 'Official component-library docs referenced from AGENTS.md; no MCP, no skills.',
-		extraFiles: {
-			'AGENTS.md':
-				'# Component library documentation\n' +
-				'\n' +
-				'This app builds its UI on Base UI (`@base-ui/react`). The official\n' +
-				'documentation lives at https://base-ui.com/react — consult it when\n' +
-				'working with these components.\n',
-		},
+		description:
+			'Official component-library docs pointer appended to the prompt; no MCP, no skills.',
+		editPrompt: appendToPrompt(
+			'This app builds its UI on Base UI (`@base-ui/react`). The official ' +
+				'documentation lives at https://base-ui.com/react — consult it when ' +
+				'working with these components.',
+		),
 
 		// TODO: Add Base UI community control case
 
@@ -233,7 +236,7 @@ export function agenticRefCaseExperiment(name: string): ExperimentConfig {
 		integration: agenticRefCase.integration,
 		mcpServers: agenticRefCase.mcpServers,
 		skillDirs: agenticRefCase.skillDirs,
-		extraFiles: agenticRefCase.extraFiles,
+		editPrompt: agenticRefCase.editPrompt,
 		overrides: agenticRefCase.overrides,
 	});
 }
