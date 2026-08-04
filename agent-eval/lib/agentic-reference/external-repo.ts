@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import type { Sandbox } from '@vercel/agent-eval';
 
 import { isRecord } from '../utils/type.ts';
+import { NODE_DOWNLOAD_SCRIPT } from './sandbox-fetch.ts';
 
 /** Keep interpolated values shell-safe (they land in a bash command). */
 const SAFE_GITHUB_PATH = /^[\w./-]+$/;
@@ -135,25 +136,6 @@ function harnessVersion(): string {
 	return version;
 }
 
-// Vercel Sandboxes run Amazon Linux 2023, whose base image ships node, tar and
-// gzip but *not* curl (and `dnf install curl` is not available to us), so the
-// tarball is fetched with node's own fetch.
-const DOWNLOAD_SCRIPT = [
-	'const { createWriteStream } = require("node:fs");',
-	'const { Readable } = require("node:stream");',
-	'const { pipeline } = require("node:stream/promises");',
-	'const [url, dest, timeoutMs] = process.argv.slice(1);',
-	'fetch(url, { signal: AbortSignal.timeout(Number(timeoutMs)) })',
-	'  .then(async (response) => {',
-	'    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);',
-	'    await pipeline(Readable.fromWeb(response.body), createWriteStream(dest));',
-	'  })',
-	'  .catch((error) => {',
-	'    console.error(error instanceof Error ? error.message : String(error));',
-	'    process.exit(1);',
-	'  });',
-].join('\n');
-
 // Outside the working directory, so the extraction cannot swallow it.
 const SANDBOX_TARBALL_PATH = '/tmp/external-repo.tar.gz';
 
@@ -226,7 +208,7 @@ export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
 	await runOrThrow(
 		sandbox,
 		'node',
-		['-e', DOWNLOAD_SCRIPT, tarballUrl, SANDBOX_TARBALL_PATH, String(FETCH_TIMEOUT_SECONDS * 1000)],
+		['-e', NODE_DOWNLOAD_SCRIPT, tarballUrl, SANDBOX_TARBALL_PATH, String(FETCH_TIMEOUT_SECONDS * 1000)],
 		`download ${repo}@${ref}`,
 	);
 	await runOrThrow(

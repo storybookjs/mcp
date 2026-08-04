@@ -1,12 +1,15 @@
+import type { Sandbox } from '@vercel/agent-eval';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	LOCAL_STORYBOOK_MCP_PORT,
+	type ResolvedStorybookMcpPackage,
 	type StorybookMcpPackageSpec,
 	assertStorybookMcpPackageSpec,
 	buildLocalMcpSetupScript,
 	packageTarballUrl,
 	resolveStorybookMcpPackage,
+	setupLocalStorybookMcp,
 } from './local-mcp.ts';
 
 const SPEC: StorybookMcpPackageSpec = {
@@ -16,6 +19,18 @@ const SPEC: StorybookMcpPackageSpec = {
 };
 
 const SHA = 'a'.repeat(40);
+
+const RESOLVED: ResolvedStorybookMcpPackage = { ...SPEC, sha: SHA };
+
+/** A sandbox whose `bash` invocation returns a fixed CommandResult. */
+function mockSandbox(result: { exitCode: number; stdout?: string; stderr?: string }) {
+	const runCommand = vi.fn().mockResolvedValue({ stdout: '', stderr: '', ...result });
+	const writeFiles = vi.fn().mockResolvedValue(undefined);
+	// Reject like a missing file, which config readers treat as "start fresh".
+	const readFile = vi.fn().mockRejectedValue(new Error('ENOENT'));
+	const sandbox = { runCommand, writeFiles, readFile } as unknown as Sandbox;
+	return { sandbox, runCommand, writeFiles };
+}
 
 // Every field is interpolated into a bash script, so malformed means
 // shell-unsafe as much as it means typo'd.
@@ -52,6 +67,54 @@ describe('buildLocalMcpSetupScript', () => {
 		expect(script).toContain(`--port ${LOCAL_STORYBOOK_MCP_PORT}`);
 		expect(script).toContain('$HOME/.storybook-mcp');
 		expect(script).toContain('"method":"initialize"');
+	});
+
+	it('fetches and probes with node, never curl (the sandbox has no curl)', () => {
+		const script = buildLocalMcpSetupScript(packageTarballUrl(SPEC, SHA), LOCAL_STORYBOOK_MCP_PORT);
+		expect(script).not.toContain('curl');
+		// Download and readiness probe both go through `node -e`.
+		expect(script).toContain('node -e');
+		expect(script).toContain('AbortSignal.timeout');
+	});
+});
+
+describe('setupLocalStorybookMcp', () => {
+	// A login shell (`bash -lc`) runs ~/.bash_logout on exit, whose
+	// `clear_console` step fails in the ttyless sandbox exec and masks the
+	// script's real exit code with a bare 1 and no output. The script must run in
+	// a non-login shell so its own exit status survives.
+	it('runs the setup script in a non-login shell', async () => {
+		const { sandbox, runCommand } = mockSandbox({ exitCode: 0 });
+		await setupLocalStorybookMcp(sandbox, RESOLVED, 'claude-code');
+
+		expect(runCommand).toHaveBeenCalledWith('bash', expect.any(Array));
+		const [command, args] = runCommand.mock.calls[0] as [string, string[]];
+		expect(command).toBe('bash');
+		expect(args[0]).toBe('-c');
+		expect(args).not.toContain('-lc');
+	});
+
+	it('surfaces the exit code and both output streams when the script fails', async () => {
+		const { sandbox } = mockSandbox({
+			exitCode: 137,
+			stdout: 'stdout-diagnostic',
+			stderr: 'stderr-diagnostic',
+		});
+
+		const error = await setupLocalStorybookMcp(sandbox, RESOLVED, 'claude-code').catch((e) => e);
+		const message = error instanceof Error ? error.message : String(error);
+		expect(message).toContain('exit code 137');
+		expect(message).toContain('stderr-diagnostic');
+		expect(message).toContain('stdout-diagnostic');
+		expect(message).toContain(`${SPEC.packageName}@${SHA}`);
+	});
+
+	it('says so explicitly when a failing script produced no output', async () => {
+		const { sandbox } = mockSandbox({ exitCode: 1 });
+		const error = await setupLocalStorybookMcp(sandbox, RESOLVED, 'claude-code').catch((e) => e);
+		const message = error instanceof Error ? error.message : String(error);
+		expect(message).toContain('exit code 1');
+		expect(message).toMatch(/no output/i);
 	});
 });
 
