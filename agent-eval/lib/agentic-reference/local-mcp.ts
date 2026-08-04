@@ -12,6 +12,7 @@
 import type { Sandbox } from '@vercel/agent-eval';
 
 import { type EvalAgent, writeStorybookMcpConfig } from '../templates.ts';
+import { NODE_DOWNLOAD_SCRIPT } from './sandbox-fetch.ts';
 
 /** A design-system MCP preview package published to pkg.pr.new, selected by branch. */
 export interface StorybookMcpPackageSpec {
@@ -116,6 +117,26 @@ export async function resolveStorybookMcpPackage(
 
 const DOWNLOAD_ATTEMPTS = 3;
 const READY_TIMEOUT_SECONDS = 60;
+// Generous for a ~few-MB bundle on a slow link, still far short of a hang.
+const FETCH_TIMEOUT_MS = 300_000;
+
+// A `node -e` program that POSTs a single MCP initialize request and exits 0
+// only when the server answers with an ok status — the readiness probe, in
+// place of `curl -fsS`, since the sandbox has no curl. Invoke as:
+//   node -e '<READY_SCRIPT>' <url> <body>
+// Both argv values are read positionally; the script body has no single quotes,
+// so it stays safe single-quoted inside the bash script.
+const READY_SCRIPT = [
+	'const [url, body] = process.argv.slice(1);',
+	'fetch(url, {',
+	'  method: "POST",',
+	'  headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },',
+	'  body,',
+	'  signal: AbortSignal.timeout(5000),',
+	'})',
+	'  .then((response) => process.exit(response.ok ? 0 : 1))',
+	'  .catch(() => process.exit(1));',
+].join('\n');
 
 const INITIALIZE_BODY = JSON.stringify({
 	jsonrpc: '2.0',
@@ -144,7 +165,8 @@ export function buildLocalMcpSetupScript(tarballUrl: string, port: number): stri
 		'dir="$HOME/.storybook-mcp"',
 		'mkdir -p "$dir"',
 		`for attempt in $(seq 1 ${DOWNLOAD_ATTEMPTS}); do`,
-		`	if curl -fsSL --connect-timeout 30 --max-time 300 -o "$dir/package.tgz" '${tarballUrl}'; then`,
+		// The sandbox has no curl, so fetch with node (see NODE_DOWNLOAD_SCRIPT).
+		`	if node -e '${NODE_DOWNLOAD_SCRIPT}' '${tarballUrl}' "$dir/package.tgz" ${FETCH_TIMEOUT_MS}; then`,
 		'		break',
 		'	fi',
 		`	if [ "$attempt" -eq ${DOWNLOAD_ATTEMPTS} ]; then`,
@@ -159,10 +181,8 @@ export function buildLocalMcpSetupScript(tarballUrl: string, port: number): stri
 		`nohup node "$dir/package/dist/cli.js" --port ${port} > "$dir/server.log" 2>&1 &`,
 		'disown',
 		`for _ in $(seq 1 ${READY_TIMEOUT_SECONDS}); do`,
-		`	if curl -fsS -o /dev/null -X POST "http://127.0.0.1:${port}/mcp" \\`,
-		"		-H 'Content-Type: application/json' \\",
-		"		-H 'Accept: application/json, text/event-stream' \\",
-		`		--data '${INITIALIZE_BODY}'; then`,
+		// The sandbox has no curl, so probe with node (see READY_SCRIPT).
+		`	if node -e '${READY_SCRIPT}' 'http://127.0.0.1:${port}/mcp' '${INITIALIZE_BODY}'; then`,
 		'		exit 0',
 		'	fi',
 		'	sleep 1',
@@ -171,6 +191,26 @@ export function buildLocalMcpSetupScript(tarballUrl: string, port: number): stri
 		'tail -n 50 "$dir/server.log" >&2',
 		'exit 1',
 	].join('\n');
+}
+
+/**
+ * Render both output streams of a failed sandbox command for an error message.
+ * Both are shown (labelled) rather than one-or-the-other, and the "no output"
+ * case is called out explicitly — an empty stderr on a non-zero exit is a
+ * finding in itself, not something to paper over with a blank line. The setup
+ * script already bounds its own noisiest output (`tail -n 50` of the server
+ * log), so no further truncation is applied here.
+ */
+function describeCommandOutput(result: { stdout: string; stderr: string }): string {
+	const stderr = result.stderr.trim();
+	const stdout = result.stdout.trim();
+	const sections: string[] = [];
+	if (stderr) sections.push(`stderr:\n${stderr}`);
+	if (stdout) sections.push(`stdout:\n${stdout}`);
+	if (sections.length === 0) {
+		return 'The command produced no output on stdout or stderr.';
+	}
+	return sections.join('\n');
 }
 
 /**
@@ -192,12 +232,17 @@ export async function setupLocalStorybookMcp(
 
 	const tarballUrl = packageTarballUrl(resolved, resolved.sha);
 	const script = buildLocalMcpSetupScript(tarballUrl, LOCAL_STORYBOOK_MCP_PORT);
-	const result = await sandbox.runCommand('bash', ['-lc', script]);
+	// `-c`, not `-lc`: a login shell runs ~/.bash_logout on exit, which on the
+	// Docker sandbox image runs `clear_console`. That exits non-zero in the
+	// ttyless sandbox exec, and because the script runs under `set -e` (see
+	// buildLocalMcpSetupScript) that status overrides the script's real `exit 0`
+	// — turning a boot that actually succeeded into an opaque exit-1-with-no-output.
+	const result = await sandbox.runCommand('bash', ['-c', script]);
 	if (result.exitCode !== 0) {
-		const tail = (result.stderr || result.stdout).trim().split('\n').slice(-20).join('\n');
 		throw new Error(
 			`setupLocalStorybookMcp: failed to serve ${resolved.packageName}@${resolved.sha} ` +
-				`(${resolved.branch}) in the sandbox:\n${tail}`,
+				`(${resolved.branch}) in the sandbox (exit code ${result.exitCode}). ` +
+				describeCommandOutput(result),
 		);
 	}
 
