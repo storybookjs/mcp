@@ -109,6 +109,12 @@ function storybookVariantCases(): AgenticRefCase[] {
 				storybookMcpPackage: baseUiMcpPackage(branchName),
 				agent,
 				evals: BASE_UI_APP_WORKFLOWS,
+				extraFiles: {
+					'AGENTS.md':
+						'# Mealdrop component documentation\n' +
+						'\n' +
+						'This app uses a Design System. Use the Storybook MCP first to fetch documentation and API reference for UI components. Abort with an error if the MCP is not reachable.\n',
+				},
 			};
 		});
 	});
