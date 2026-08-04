@@ -31,6 +31,8 @@ interface CommittedBaseline {
 	eval: string;
 	repo: string;
 	ref: string;
+	/** The eval's metricsVersion at measuring time; absent for legacy files. */
+	metricsVersion?: number;
 	analysis: Analysis;
 }
 
@@ -67,6 +69,11 @@ export function baselinePath(baselinesDir: string, evalName: string, pin: Extern
 // a different baselinesDir gets its own entry.
 const memo = new Map<string, BaselineAnalysis>();
 
+// Paths already re-measured by this process. `--recompute` must rebuild a
+// baseline once, not once per run: without this, every run of a ten-run eval
+// re-measures the whole pinned tree, and the recompute pass crawls.
+const recomputedPaths = new Set<string>();
+
 export async function loadOrBuildBaselineAnalysis(
 	options: BaselineOptions,
 ): Promise<BaselineAnalysis> {
@@ -75,20 +82,34 @@ export async function loadOrBuildBaselineAnalysis(
 	const path = baselinePath(baselinesDir, evalName, pin);
 
 	const remembered = memo.get(path);
-	if (remembered && !recompute) return remembered;
+	if (remembered && (!recompute || recomputedPaths.has(path))) return remembered;
 
 	// The tree itself is materialized either way: a committed baseline saves the
 	// measuring, not the download, and a delta metric comparing file contents
 	// needs both sides on disk.
 	const dir = prepareRef(options.refCacheDir ?? DEFAULT_REF_CACHE_DIR, pin.repo, pin.ref);
 
-	// A truncated baseline is worse than none, and readJson nulls one out.
+	// A truncated baseline is worse than none, and readJson nulls one out. One
+	// measured under another metricsVersion is worse still — its numbers look
+	// healthy and mean something else — so a version mismatch is a cache miss:
+	// the tree is already materialized above, and the rebuild below overwrites
+	// the stale file with numbers measured under the current definitions.
 	const committed = recompute ? null : readJson<CommittedBaseline>(path);
-	if (committed?.analysis) {
+	if (committed?.analysis && committed.metricsVersion === postAnalysis.metricsVersion) {
 		const loaded = { dir, analysis: committed.analysis };
 		memo.set(path, loaded);
 		return loaded;
 	}
+
+	// Say why the tree is being measured: on a large tree a silent rebuild
+	// reads as a hang, and "did --recompute touch the baselines?" should be
+	// answerable from the output alone.
+	const reason = recompute
+		? 'recompute'
+		: committed?.analysis
+			? `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`
+			: 'no committed baseline';
+	console.log(`Measuring baseline for ${evalName}: ${pin.repo}@${pin.ref} (${reason})`);
 
 	const analysis = await postAnalysis.analyzeRun({
 		mode: 'baseline',
@@ -105,12 +126,21 @@ export async function loadOrBuildBaselineAnalysis(
 	}
 
 	mkdirSync(dirname(path), { recursive: true });
-	const payload: CommittedBaseline = { eval: evalName, repo: pin.repo, ref: pin.ref, analysis };
+	// JSON.stringify drops an undefined metricsVersion, keeping legacy modules'
+	// files byte-identical to what they wrote before the field existed.
+	const payload: CommittedBaseline = {
+		eval: evalName,
+		repo: pin.repo,
+		ref: pin.ref,
+		metricsVersion: postAnalysis.metricsVersion,
+		analysis,
+	};
 	// Tab-indented because the file is committed, and `pnpm format:check` would
 	// otherwise fail on it the moment --recompute regenerates it.
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 
 	const built = { dir, analysis };
 	memo.set(path, built);
+	if (recompute) recomputedPaths.add(path);
 	return built;
 }

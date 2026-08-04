@@ -63,4 +63,20 @@ describe('postAnalysisFrom', () => {
 			),
 		).toThrow(/deltaToBaseline that is not a function/);
 	});
+
+	it('accepts a numeric metricsVersion', () => {
+		const versioned = { ...COMPLETE, metricsVersion: 2 };
+		expect(postAnalysisFrom(experiment({ postAnalysis: versioned }), 'arm-a')).toBe(versioned);
+	});
+
+	// A malformed version would never match a committed baseline, quietly
+	// re-measuring the pinned tree on every invocation.
+	it('rejects a non-number metricsVersion', () => {
+		expect(() =>
+			postAnalysisFrom(
+				experiment({ postAnalysis: { ...COMPLETE, metricsVersion: 'v2' } }),
+				'arm-a',
+			),
+		).toThrow(/metricsVersion that is not a number/);
+	});
 });

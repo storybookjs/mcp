@@ -6,24 +6,18 @@
 // Two defects were fixed on port: the original parsed every file as TSX, so
 // generic arrows in .ts mis-parsed as JSX; and it omitted constructors and
 // accessors from its notion of a function, so their bodies were misattributed.
+//
+// One deliberate deviation from the port: inline anonymous callbacks are not
+// units of their own — their decision points count toward the enclosing
+// function, and they charge no base 1 for merely existing. See
+// function-units.ts for the rule and its rationale.
 import ts from 'typescript';
 
+import { isAbsorbedCallback, isFunctionLike } from './function-units.ts';
 import { scriptKindFor } from './sloc.ts';
 import type { FunctionComplexity } from '../types.ts';
 
 const SCRIPT_EXTENSIONS = /\.(?:tsx?|jsx?|mjs|cjs)$/;
-
-function isFunctionLike(node: ts.Node): boolean {
-	return (
-		ts.isFunctionDeclaration(node) ||
-		ts.isFunctionExpression(node) ||
-		ts.isArrowFunction(node) ||
-		ts.isMethodDeclaration(node) ||
-		ts.isConstructorDeclaration(node) ||
-		ts.isGetAccessorDeclaration(node) ||
-		ts.isSetAccessorDeclaration(node)
-	);
-}
 
 function enclosingClassName(node: ts.Node): string | undefined {
 	let current: ts.Node | undefined = node.parent;
@@ -122,9 +116,10 @@ export function complexityForSource(filename: string, source: string): FunctionC
 				complexity += 1;
 			}
 
-			// Stop at nested function boundaries: each is measured separately, so
-			// counting its decisions here would double-count them.
-			if (node !== functionNode && isFunctionLike(node)) return;
+			// Stop at nested units: each is measured separately, so counting their
+			// decisions here would double-count them. An absorbed callback is not a
+			// unit — its decisions are this function's.
+			if (node !== functionNode && isFunctionLike(node) && !isAbsorbedCallback(node)) return;
 			ts.forEachChild(node, walk);
 		};
 
@@ -133,7 +128,9 @@ export function complexityForSource(filename: string, source: string): FunctionC
 	};
 
 	const visit = (node: ts.Node): void => {
-		if (isFunctionLike(node)) measure(node, nameOfFunctionLike(node) ?? '<anonymous>');
+		if (isFunctionLike(node) && !isAbsorbedCallback(node)) {
+			measure(node, nameOfFunctionLike(node) ?? '<anonymous>');
+		}
 		ts.forEachChild(node, visit);
 	};
 

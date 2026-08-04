@@ -182,10 +182,7 @@ async function loadPostAnalysis(
 	let postAnalysis: PostAnalysis | null = null;
 	if (definition) {
 		try {
-			postAnalysis = postAnalysisFrom(
-				await import(pathToFileURL(definition).href),
-				experiment,
-			);
+			postAnalysis = postAnalysisFrom(await import(pathToFileURL(definition).href), experiment);
 		} catch (error) {
 			// A definition that will not import, or names a malformed module, must
 			// not cost every other arm its analysis. Reported once: the outcome is

@@ -92,6 +92,18 @@ describe('cognitiveForSource', () => {
 		expect(scoreOf(source, 'inner')).toBe(3);
 	});
 
+	it('absorbs an inline callback one nesting level deep, per the lambda rule', () => {
+		const source = 'function process(items){ items.forEach((item) => { if (item) use(item); }); }';
+		// the forEach lambda increments nesting, so the if costs 1 + 1
+		expect(cognitiveForSource('a.ts', source)).toEqual([{ name: 'process', complexity: 2 }]);
+	});
+
+	it('keeps a top-level callback, with nothing to absorb into, as a unit', () => {
+		const source = "test('x', () => { if (a) { if (b) c(); } });";
+		// measured on its own from depth 0: if +1, nested if +2
+		expect(cognitiveForSource('a.ts', source)).toEqual([{ name: '<anonymous>', complexity: 3 }]);
+	});
+
 	it('returns [] for non-script files', () => {
 		expect(cognitiveForSource('a.md', '# hi')).toEqual([]);
 	});

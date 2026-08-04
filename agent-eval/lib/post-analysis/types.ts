@@ -85,6 +85,15 @@ export interface PostAnalysis {
 	/** Optional. Its presence is what makes the external repo a requirement. */
 	deltaToBaseline?: (context: DeltaToBaselineContext) => Awaitable<Analysis | null>;
 	/**
+	 * Optional version of the module's metric definitions. A committed baseline
+	 * is only reused when the version it was measured under matches this one, so
+	 * bumping it after changing what analyzeRun measures (or the shape it stores)
+	 * rebuilds stale baselines instead of comparing across definitions. Absent
+	 * both here and in the committed file counts as a match, which is what keeps
+	 * modules that never declare one on the old behavior.
+	 */
+	metricsVersion?: number;
+	/**
 	 * Aggregate one eval directory's runs — every run-* under a single
 	 * results/<experiment>/<model>/<timestamp>/<eval>/, so run-1 through run-N of
 	 * one arm at one point in time.

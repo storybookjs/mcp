@@ -76,6 +76,27 @@ describe('complexityForSource', () => {
 		]);
 	});
 
+	// --- inline-callback absorption (function-units.ts) ---
+	it('absorbs an inline callback into the enclosing function, with no base of its own', () => {
+		const source = 'function firstOdd(items){ return items.find((n) => n % 2 ? true : false); }';
+		// one entry: base 1 + the callback's ternary
+		expect(complexityForSource('a.ts', source)).toEqual([{ name: 'firstOdd', complexity: 2 }]);
+	});
+
+	it('keeps a name-bound arrow a unit of its own', () => {
+		const source = 'function f(){ const pick = (x) => x ? 1 : 0; return pick; }';
+		const result = complexityForSource('a.ts', source).sort((a, b) => a.name.localeCompare(b.name));
+		expect(result).toEqual([
+			{ name: 'f', complexity: 1 },
+			{ name: 'pick', complexity: 2 },
+		]);
+	});
+
+	it('keeps a top-level callback, with nothing to absorb into, as a unit', () => {
+		const source = "test('x', () => { if (a) b(); });";
+		expect(complexityForSource('a.ts', source)).toEqual([{ name: '<anonymous>', complexity: 2 }]);
+	});
+
 	it('counts ?? alongside && and ||', () => {
 		expect(complexityForSource('a.ts', 'function f(a,b){ return a ?? b; }')).toEqual([
 			{ name: 'f', complexity: 2 },
