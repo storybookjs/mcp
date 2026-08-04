@@ -208,7 +208,13 @@ export async function setupExternalRepo(sandbox: Sandbox): Promise<void> {
 	await runOrThrow(
 		sandbox,
 		'node',
-		['-e', NODE_DOWNLOAD_SCRIPT, tarballUrl, SANDBOX_TARBALL_PATH, String(FETCH_TIMEOUT_SECONDS * 1000)],
+		[
+			'-e',
+			NODE_DOWNLOAD_SCRIPT,
+			tarballUrl,
+			SANDBOX_TARBALL_PATH,
+			String(FETCH_TIMEOUT_SECONDS * 1000),
+		],
 		`download ${repo}@${ref}`,
 	);
 	await runOrThrow(
