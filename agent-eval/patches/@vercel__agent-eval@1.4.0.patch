@@ -50,7 +50,7 @@ index 98f8c98..cd314fc 100644
    const sessionTranscript = captureCodexSessionTranscript(threadId);
 -  const observedModel = extractObservedModelFromCodexSession(sessionTranscript) ?? null;
 +  const transcript = stdoutTranscript ?? sessionTranscript ?? null;
-+  const observedModel = extractObservedModelFromCodexSession(sessionTranscript ?? stdoutTranscript) ?? null;
++  const observedModel = extractObservedModelFromCodexSession(transcript) ?? null;
  
    if (res.error || agentExitCode !== 0) {
      // Mirror the old error string: last 5 lines of output, else a coded fallback.
@@ -64,7 +64,7 @@ diff --git a/dist/lib/agents/shared.js b/dist/lib/agents/shared.js
 -        const testResult = await sandbox.runCommand('npx', ['vitest', 'run', evalFile], env ? { env } : undefined);
 +        // NO_COLOR: these outputs are captured to outputs/*.txt, never shown on a
 +        // live terminal — ANSI codes only make the saved artifacts unreadable.
-+        const outputEnv = { NO_COLOR: '1', ...env };
++        const outputEnv = { ...env, NO_COLOR: '1' };
 +        const testResult = await sandbox.runCommand('npx', ['vitest', 'run', evalFile], { env: outputEnv });
          results.test = {
              success: testResult.exitCode === 0,
@@ -116,7 +116,7 @@ index 5a6cf9b..df8b19f 100644
 - * Classify a failure using AI via the Vercel AI Gateway.
 - * Requires AI_GATEWAY_API_KEY in the environment.
 + * Classify a failure using AI via the Anthropic API or the Vercel AI Gateway.
-+ * Requires ANTHROPIC_API_KEY or AI_GATEWAY_API_KEY in the environment.
++ * Requires ANTHROPIC_API_KEY, AI_GATEWAY_API_KEY, or VERCEL_OIDC_TOKEN in the environment.
   *
   * Throws on AI gateway / network errors so the caller can surface them.
   * Returns null only when the model itself failed to call classify() within
@@ -159,7 +159,7 @@ index 5a6cf9b..df8b19f 100644
  /**
   * Classify a failed eval result using AI.
 - * Requires AI_GATEWAY_API_KEY in the environment.
-+ * Requires ANTHROPIC_API_KEY or AI_GATEWAY_API_KEY in the environment.
++ * Requires ANTHROPIC_API_KEY, AI_GATEWAY_API_KEY, or VERCEL_OIDC_TOKEN in the environment.
   *
   * Caches results in classification.json within the eval result directory.
   * Throws if the AI gateway call itself fails — callers must handle.

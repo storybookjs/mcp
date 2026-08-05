@@ -33,7 +33,7 @@
 		"@types/node": "24.10.1",
 		"@types/react": "19.2.6",
 		"@types/react-dom": "19.2.3",
-		"@vercel/agent-eval": "1.2.0",
+		"@vercel/agent-eval": "1.4.0",
 		"@vitejs/plugin-react-swc": "4.2.2",
 		"@vitest/browser-playwright": "4.1.10",
 		"eslint": "9.39.1",
