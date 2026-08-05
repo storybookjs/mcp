@@ -36,7 +36,7 @@
 		"@changesets/cli": "^2.29.6",
 		"@codecov/rollup-plugin": "^2.0.1",
 		"@modelcontextprotocol/inspector": "^1.0.0",
-		"@modelcontextprotocol/sdk": "^1.29.0",
+		"@modelcontextprotocol/sdk": "^1.30.0",
 		"@storybook/addon-mcp": "workspace:*",
 		"@storybook/mcp": "workspace:*",
 		"@types/node": "20.19.0",

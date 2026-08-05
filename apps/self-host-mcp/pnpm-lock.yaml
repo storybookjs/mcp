@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@vercel/agent-eval@1.4.0':
-    hash: 250b47a14e82527fedada934e67becc8bce9a367c59d8292224989b159b7c7b0
+    hash: e21eb57c13aefe143d9029bce9788905d13f3f542e98c662f925796b1e1e661e
     path: ../../agent-eval/patches/@vercel__agent-eval@1.4.0.patch
 
 importers:

@@ -54,6 +54,30 @@ index 98f8c98..cd314fc 100644
  
    if (res.error || agentExitCode !== 0) {
      // Mirror the old error string: last 5 lines of output, else a coded fallback.
+diff --git a/dist/lib/agents/shared.js b/dist/lib/agents/shared.js
+--- a/dist/lib/agents/shared.js
++++ b/dist/lib/agents/shared.js
+@@ -62,7 +62,10 @@ env) {
+         // Detect which eval file exists (EVAL.ts or EVAL.tsx)
+         const evalFile = await detectEvalFile(sandbox);
+         // Always run vitest for the eval file (explicitly specify the file)
+-        const testResult = await sandbox.runCommand('npx', ['vitest', 'run', evalFile], env ? { env } : undefined);
++        // NO_COLOR: these outputs are captured to outputs/*.txt, never shown on a
++        // live terminal — ANSI codes only make the saved artifacts unreadable.
++        const outputEnv = { NO_COLOR: '1', ...env };
++        const testResult = await sandbox.runCommand('npx', ['vitest', 'run', evalFile], { env: outputEnv });
+         results.test = {
+             success: testResult.exitCode === 0,
+             output: testResult.stdout + testResult.stderr,
+@@ -73,7 +76,7 @@ env) {
+     }
+     // Run configured scripts
+     for (const script of scripts) {
+-        const scriptResult = await sandbox.runCommand('npm', ['run', script]);
++        const scriptResult = await sandbox.runCommand('npm', ['run', script], { env: { NO_COLOR: '1' } });
+         const result = {
+             success: scriptResult.exitCode === 0,
+             output: scriptResult.stdout + scriptResult.stderr,
 diff --git a/dist/lib/classifier.js b/dist/lib/classifier.js
 index 5a6cf9b..df8b19f 100644
 --- a/dist/lib/classifier.js
