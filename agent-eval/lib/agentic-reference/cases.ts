@@ -20,6 +20,10 @@ export const AGENTIC_REF_EVALS: string[] = [
 	'704-fix-a11y-flow',
 	// Parked until the Droppy baseline round: '705-migrate-to-ds-flow'.
 	'706-migrate-to-base-ui-flow',
+	'707-new-ui-flow-specific-instructions',
+	'708-new-ui-flow-component-bias',
+	'709-new-ui-flow-specific-instructions-constraints',
+	'710-new-ui-flow-component-bias-constraints',
 ];
 
 // The workflows the base-ui Storybook content variants treat; the migration
@@ -83,25 +87,26 @@ function appendToPrompt(context: string): (prompt: string) => string {
 // branch names and their facet lists). Every branch expands into one case per
 // agent in VARIANT_AGENTS, named `<agent>-<branch minus prefix>-<model>`.
 const EXPERIMENT_BRANCHES = [
-	'experiment/empty',
-	'experiment/base',
-	'experiment/full',
-	'experiment/basic-docs',
-	'experiment/product-examples',
+	// FIXME/TEMP: disabled to assess what triggers MCP to be called with the new UI prompts
+	// 'experiment/empty',
+	// 'experiment/base',
+	// 'experiment/full',
+	// 'experiment/basic-docs',
+	// 'experiment/product-examples',
 	'experiment/do-dont',
-	'experiment/when-to-use',
-	'experiment/history-issues',
-	'experiment/a11y',
-	'experiment/brand-animation',
-	'experiment/api-ref',
-	'experiment/docs-full',
-	'experiment/stories-api-ref',
-	'experiment/stories-showcase',
-	'experiment/stories-highlight',
-	'experiment/stories-examples',
-	'experiment/stories-full',
-	'experiment/purge-jsdoc',
-	'experiment/optimized',
+	// 'experiment/when-to-use',
+	// 'experiment/history-issues',
+	// 'experiment/a11y',
+	// 'experiment/brand-animation',
+	// 'experiment/api-ref',
+	// 'experiment/docs-full',
+	// 'experiment/stories-api-ref',
+	// 'experiment/stories-showcase',
+	// 'experiment/stories-highlight',
+	// 'experiment/stories-examples',
+	// 'experiment/stories-full',
+	// 'experiment/purge-jsdoc',
+	// 'experiment/optimized',
 ] as const;
 
 const VARIANT_AGENTS: EvalAgent[] = ['claude-code'];
@@ -117,9 +122,10 @@ function storybookVariantCases(): AgenticRefCase[] {
 				storybookMcpPackage: baseUiMcpPackage(branchName),
 				agent,
 				evals: BASE_UI_APP_WORKFLOWS,
-				editPrompt: appendToPrompt(
-					'This app uses a Design System. Use the Storybook MCP to fetch documentation and API reference for UI components. Abort with an error if the MCP is not reachable.',
-				),
+				// FIXME/TEMP: disabled to assess what triggers MCP to be called with the new UI prompts
+				// editPrompt: appendToPrompt(
+				// 	'This app uses a Design System. Use the Storybook MCP to fetch documentation and API reference for UI components. Abort with an error if the MCP is not reachable.',
+				// ),
 			};
 		});
 	});
@@ -145,26 +151,29 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// },
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.
-	{
-		name: 'cc-control-none-opus-high',
-		description: 'Zero agent support: no MCP, no skills, no docs pointer.',
-	},
 
-	{
-		name: 'cc-control-doc-opus-high',
-		description:
-			'Official component-library docs pointer appended to the prompt; no MCP, no skills.',
-		editPrompt: appendToPrompt(
-			'This app builds its UI on Base UI (`@base-ui/react`). The official ' +
-				'documentation lives at https://base-ui.com/react — consult it when ' +
-				'working with these components.',
-		),
+	// FIXME/TEMP: disabled to assess what triggers MCP to be called with the new UI prompts
+	// {
+	// 	name: 'cc-control-none-opus-high',
+	// 	description: 'Zero agent support: no MCP, no skills, no docs pointer.',
+	// },
 
-		// TODO: Add Base UI community control case
+	// FIXME/TEMP: disabled to assess what triggers MCP to be called with the new UI prompts
+	// {
+	// 	name: 'cc-control-doc-opus-high',
+	// 	description:
+	// 		'Official component-library docs pointer appended to the prompt; no MCP, no skills.',
+	// 	editPrompt: appendToPrompt(
+	// 		'This app builds its UI on Base UI (`@base-ui/react`). The official ' +
+	// 			'documentation lives at https://base-ui.com/react — consult it when ' +
+	// 			'working with these components.',
+	// 	),
 
-		// The docs pointer is only usable if the agent may actually fetch it.
-		overrides: { webResearch: true },
-	},
+	// 	// TODO: Add Base UI community control case
+
+	// 	// The docs pointer is only usable if the agent may actually fetch it.
+	// 	overrides: { webResearch: true },
+	// },
 	// TODO: add the Base UI community control case once we've decided on how to do it.
 ];
 

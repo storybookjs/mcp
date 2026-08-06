@@ -15,7 +15,7 @@ import type {
  * Mapping from standard model names to ai-tokenizer model keys.
  */
 const TOKENIZER_MODEL_MAP: Record<ClaudeModel, keyof typeof models> = {
-	'claude-opus-4.6': 'anthropic/claude-opus-4.5',
+	'claude-opus-5': 'anthropic/claude-opus-4.5',
 	// tokenizer doesn't support 4.6 models yet
 	'claude-sonnet-4.6': 'anthropic/claude-sonnet-4.5',
 	'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
@@ -353,7 +353,7 @@ export const claudeCodeCli: Agent = {
 						clackLog.error(
 							`MCP server "${server.name}" failed to connect (status: ${server.status})`,
 						);
-						process.exit(1);
+						// process.exit(1);
 					}
 				}
 			}

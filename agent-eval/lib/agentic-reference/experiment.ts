@@ -38,7 +38,7 @@ import { postAnalysis } from './post-analysis.ts';
 
 import type { PostAnalysisExperiment } from '../post-analysis/types.ts';
 
-const AGENTIC_REF_DEFAULT_RUN_COUNT = 10;
+const AGENTIC_REF_DEFAULT_RUN_COUNT = 3;
 
 interface AgenticRefExperimentOptions {
 	/** Case name; recorded in `result.analysis.case` for the offline analyzer. */

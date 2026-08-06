@@ -5,6 +5,7 @@ import * as v from 'valibot';
  * These names are used consistently across agents - each agent maps them to their native format.
  */
 export const SUPPORTED_MODELS = [
+	'claude-opus-5',
 	'claude-opus-4.6',
 	'claude-opus-4.5',
 	'claude-sonnet-4.6',
@@ -25,7 +26,7 @@ export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
  * Models that are supported by the Claude Code CLI.
  */
 export const CLAUDE_MODELS = [
-	'claude-opus-4.6',
+	'claude-opus-5',
 	'claude-sonnet-4.6',
 	'claude-haiku-4.5',
 ] as const satisfies readonly SupportedModel[];
@@ -34,7 +35,7 @@ export const CLAUDE_MODELS = [
  * Mapping from our standard model names to Claude CLI --model flag values.
  */
 export const CLAUDE_MODEL_MAP: Record<(typeof CLAUDE_MODELS)[number], string> = {
-	'claude-opus-4.6': 'Opus',
+	'claude-opus-5': 'Opus',
 	'claude-sonnet-4.6': 'Sonnet',
 	'claude-haiku-4.5': 'Haiku',
 };

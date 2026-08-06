@@ -1,0 +1,11 @@
+{
+	"name": "708-new-ui-flow-component-bias",
+	"description": "Agentic reference, new-UI workflow  with wording that biases the agent towards component development.",
+	"type": "module",
+	"evals": {
+		"externalRepo": {
+			"repo": "yannbf/mealdrop",
+			"ref": "refs/tags/agentic-reference/base-ui-v1"
+		}
+	}
+}
