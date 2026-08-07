@@ -31,12 +31,20 @@
 // definition to force every matched run to be recomputed.
 //
 // Usage: pnpm results:analyze [--experiment=<name>] [--since=<ISO date>] [--latest] [--recompute]
+//                             [--general] [--complexity] [--coverage]
 //
 //   --experiment=<name>  only runs under results/<name>/
 //   --since=<ISO date>   only runs whose result directory is stamped on or after
 //   --latest             only the newest result directory per experiment
 //   --recompute          recompute analysis, and rebuild committed baselines,
 //                        even where a cached result exists
+//   --general            print the per-run vitals and grouped summary tables
+//   --complexity         print the complexity tables
+//   --coverage           print the design-system coverage tables
+//
+// The three table flags select what is *printed*; everything is measured and
+// written either way. Passing any of them prints exactly that set; passing none
+// falls back to DEFAULT_TABLES below.
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -48,18 +56,36 @@ import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
 
-import type { Analysis, PostAnalysis, RunContext } from '#lib/post-analysis/types';
+import type {
+	Analysis,
+	PostAnalysis,
+	RunContext,
+	SummarizeOptions,
+} from '#lib/post-analysis/types';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(ROOT, 'results');
 const EVALS_DIR = join(ROOT, 'evals');
 
 // --- options ---
+const TABLE_SECTIONS = ['general', 'complexity', 'coverage'] as const;
+type TableSection = (typeof TABLE_SECTIONS)[number];
+
+// What prints when no table flag is passed. Coverage alone for now: it is the
+// number the agentic-reference round is actually reading, and the other two
+// families push it off the bottom of a terminal.
+const DEFAULT_TABLES: TableSection[] = ['coverage'];
+
 interface PostAnalysisOptions {
 	experiment: string | null;
 	since: string | null;
 	latest: boolean;
 	recompute: boolean;
+	tables: SummarizeOptions;
+}
+
+function isTableSection(name: string): name is TableSection {
+	return (TABLE_SECTIONS as readonly string[]).includes(name);
 }
 
 function parseArgs(argv: string[]) {
@@ -68,17 +94,29 @@ function parseArgs(argv: string[]) {
 		since: null,
 		latest: false,
 		recompute: false,
+		tables: { general: false, complexity: false, coverage: false },
 	};
+	const sections = new Set<TableSection>();
 	for (const arg of argv) {
 		const [flag, value] = arg.split('=');
 		if (flag === '--latest') options.latest = true;
 		else if (flag === '--recompute') options.recompute = true;
 		else if (flag === '--experiment' && value) options.experiment = value;
 		else if (flag === '--since' && value) options.since = value;
-		else
+		else if (flag?.startsWith('--') && isTableSection(flag.slice(2))) {
+			sections.add(flag.slice(2) as TableSection);
+		} else
 			throw new Error(
 				`Unknown argument "${arg}". See the usage comment in scripts/analyze-results.ts.`,
 			);
+	}
+
+	// Naming any section selects exactly that set, so `--complexity` means "just
+	// the complexity tables" rather than "the default plus complexity" — no
+	// --no-<section> negation needed to get back to one family.
+	const chosen = sections.size === 0 ? DEFAULT_TABLES : [...sections];
+	for (const section of TABLE_SECTIONS) {
+		options.tables[section] = chosen.includes(section);
 	}
 	return options;
 }
@@ -383,7 +421,7 @@ async function main() {
 	const summary: Analysis[] = [];
 	for (const [evalDir, analyses] of byEvalDir) {
 		console.log(`\n===  ${relative(RESULTS_DIR, evalDir)}  ===\n`);
-		const rows = analyses[0]!.__postAnalysis.summarize(analyses.map(strip));
+		const rows = analyses[0]!.__postAnalysis.summarize(analyses.map(strip), options.tables);
 		mergeIntoEvalSummary(evalDir, rows);
 		summary.push(...rows);
 	}
