@@ -136,7 +136,9 @@ export async function loadOrBuildBaselineAnalysis(
 		analysis,
 	};
 	// Tab-indented because the file is committed, and `pnpm format:check` would
-	// otherwise fail on it the moment --recompute regenerates it.
+	// otherwise fail on it the moment --recompute regenerates it. The match is
+	// close but not exact — JSON.stringify always expands an array the formatter
+	// would keep on one line — so run `pnpm format` after a rebuild.
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 
 	const built = { dir, analysis };

@@ -1,5 +1,6 @@
 node_modules/
 .eval-cache/
+coverage/
 dist/
 .next/
 next-env.d.ts

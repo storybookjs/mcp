@@ -12,6 +12,7 @@ import type {
 	BaselineContext,
 	DeltaToBaselineContext,
 	RunContext,
+	SummarizeOptions,
 } from '../post-analysis/types.ts';
 
 const PIN = { repo: 'yannbf/mealdrop', ref: 'ce507b345666ea8678101fccac580186b2b69b1f' };
@@ -27,6 +28,17 @@ function writeTree(name: string, files: Record<string, string>): string {
 		writeFileSync(full, content);
 	}
 	return dir;
+}
+
+/**
+ * The eval fixture `readDsPackages` consults. Written at the path `runContext`
+ * defaults `fixtureDir` to, so a test that wants coverage measured only has to
+ * call this first; without it the fixture is absent and coverage stays null.
+ */
+function writeFixture(dsPackages: string[] | null): string {
+	return writeTree('fixture', {
+		'package.json': JSON.stringify({ evals: dsPackages === null ? {} : { dsPackages } }),
+	});
 }
 
 function runContext(overrides: Partial<RunContext> = {}): RunContext {
@@ -49,21 +61,26 @@ function runContext(overrides: Partial<RunContext> = {}): RunContext {
 	};
 }
 
-/** A run tree plus the baseline analysis the runner would have loaded for it. */
+/**
+ * A run tree plus the baseline analysis the runner would have loaded for it.
+ * `runAnalysis` is the real thing rather than a stub: coverageDelta reads the
+ * run's own coverage out of it instead of re-measuring the tree.
+ */
 function deltaContext(
 	baselineFiles: Record<string, string>,
 	projectFiles: Record<string, string>,
 ): DeltaToBaselineContext {
 	const baselineDir = writeTree('baseline', baselineFiles);
+	const context = runContext({ projectDir: writeTree('after', projectFiles) });
 	return {
-		...runContext({ projectDir: writeTree('after', projectFiles) }),
+		...context,
 		pin: PIN,
-		runAnalysis: {},
+		runAnalysis: analyzeRun(context),
 		baselineDir,
 		baselineAnalysis: analyzeRun({
 			mode: 'baseline',
 			projectDir: baselineDir,
-			fixtureDir: join(root, 'fixture'),
+			fixtureDir: context.fixtureDir,
 			evalName: '701-agentic-ref-reuse-component-mcp',
 			pin: PIN,
 		} satisfies BaselineContext),
@@ -131,6 +148,41 @@ describe('analyzeRun in run mode', () => {
 		const row = analyzeRun(runContext());
 		expect(row.diff).toBeUndefined();
 		expect(row.complexity).toBeUndefined();
+		expect(row.coverageDelta).toBeUndefined();
+	});
+
+	it('measures the DS coverage of the tree the run left behind', () => {
+		writeFixture(['@ds/*']);
+		const row = analyzeRun(
+			runContext({
+				projectDir: writeTree('project-ds', {
+					'src/C.tsx':
+						"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
+				}),
+			}),
+		);
+
+		expect(row.dsCoverage).toMatchObject({
+			dsPackages: ['@ds/*'],
+			files: 1,
+			nodes: { all: 2, host: 1, component: 1, ds: 1, external: 0, local: 0, unresolved: 0 },
+			dsShareOfAllNodes: 0.5,
+			dsShareOfComponentNodes: 1,
+		});
+	});
+
+	// Nothing else in the analysis needs the fixture, so an eval that declares no
+	// DS must still get every other metric rather than failing outright.
+	it('nulls dsCoverage when the fixture declares no DS packages', () => {
+		writeFixture(null);
+		const row = analyzeRun(runContext());
+		expect(row.dsCoverage).toBeNull();
+		expect(row.speed).toEqual({ durationSeconds: 403.365, turns: 12 });
+	});
+
+	it('rejects a malformed dsPackages marker rather than measuring nothing', () => {
+		writeTree('fixture', { 'package.json': JSON.stringify({ evals: { dsPackages: [] } }) });
+		expect(() => analyzeRun(runContext())).toThrow(/dsPackages/);
 	});
 });
 
@@ -155,6 +207,30 @@ describe('analyzeRun in baseline mode', () => {
 				'src/b.ts': { cyclomatic: 1, cognitive: 0, jsxCyclomatic: 1, jsxCognitive: 0, ...noJsx },
 			},
 			parseFailures: [],
+			dsCoverage: null,
+		});
+	});
+
+	// This is what gets committed under baselines/ and reused across every run of
+	// every arm on the pin, so the pinned tree is measured once rather than N times.
+	it('stores the pinned tree’s coverage for the committed baseline to carry', () => {
+		writeFixture(['@ds/*']);
+		const baseline = analyzeRun({
+			mode: 'baseline',
+			projectDir: writeTree('ref-ds', {
+				'src/C.tsx': 'export const C = () => <div><button /></div>;\n',
+			}),
+			fixtureDir: join(root, 'fixture'),
+			evalName: '701-agentic-ref-reuse-component-mcp',
+			pin: PIN,
+		});
+
+		expect(baseline.dsCoverage).toMatchObject({
+			dsPackages: ['@ds/*'],
+			nodes: { all: 2, host: 2, component: 0, ds: 0 },
+			dsShareOfAllNodes: 0,
+			// No component-typed element at all, so the ratio has no denominator.
+			dsShareOfComponentNodes: null,
 		});
 	});
 });
@@ -282,6 +358,103 @@ describe('deltaToBaseline', () => {
 		expect((delta.diff as { sloc: { net: number } }).sloc.net).toBe(0);
 	});
 
+	it('reports how the DS share moved between the two trees', () => {
+		writeFixture(['@ds/*']);
+		const delta = deltaToBaseline(
+			deltaContext(
+				{ 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' },
+				{
+					'src/C.tsx':
+						"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
+				},
+			),
+		);
+
+		expect(delta.coverageDelta).toMatchObject({
+			dsPackages: ['@ds/*'],
+			nodes: {
+				all: { before: 2, after: 2, delta: 0 },
+				host: { before: 2, after: 1, delta: -1 },
+				component: { before: 0, after: 1, delta: 1 },
+				ds: { before: 0, after: 1, delta: 1 },
+			},
+			dsShareOfAllNodes: { before: 0, after: 0.5, delta: 0.5 },
+			// The baseline has no component-typed element, so its share of them is
+			// undefined and so is the movement — 1 is not "up from zero" here.
+			dsShareOfComponentNodes: { before: null, after: 1, delta: null },
+		});
+	});
+
+	it('nulls coverageDelta when the eval declares no DS packages', () => {
+		const identical = { 'src/C.tsx': 'export const C = () => <div />;\n' };
+		expect(deltaToBaseline(deltaContext(identical, identical)).coverageDelta).toBeNull();
+	});
+
+	// metricsVersion invalidates a baseline when a metric definition moves, but
+	// the DS patterns live in the fixture and can move without it.
+	it('re-measures the baseline when its stored coverage counted other packages', () => {
+		writeFixture(['@ds/*']);
+		const context = deltaContext(
+			{ 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' },
+			{
+				'src/C.tsx':
+					"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
+			},
+		);
+		const stale = {
+			...context,
+			baselineAnalysis: {
+				dsCoverage: {
+					dsPackages: ['@other/*'],
+					files: 1,
+					nodes: { all: 99, host: 99, component: 0, ds: 0, external: 0, local: 0, unresolved: 0 },
+					dsShareOfAllNodes: 0,
+					dsShareOfComponentNodes: null,
+					parseFailures: [],
+					readFailures: [],
+				},
+			},
+		};
+
+		// 2, not 99: the stale numbers were discarded and baselineDir re-measured.
+		expect(deltaToBaseline(stale).coverageDelta).toMatchObject({
+			nodes: { all: { before: 2, after: 2 } },
+		});
+	});
+
+	// The whole point of committing baselines: measuring the pinned tree once per
+	// pin rather than once per run of every arm.
+	it('reuses the committed baseline coverage when it counted the same packages', () => {
+		writeFixture(['@ds/*']);
+		const context = deltaContext(
+			{ 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' },
+			{
+				'src/C.tsx':
+					"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
+			},
+		);
+		const committed = {
+			...context,
+			baselineAnalysis: {
+				dsCoverage: {
+					dsPackages: ['@ds/*'],
+					files: 1,
+					nodes: { all: 8, host: 6, component: 2, ds: 1, external: 1, local: 0, unresolved: 0 },
+					dsShareOfAllNodes: 0.125,
+					dsShareOfComponentNodes: 0.5,
+					parseFailures: [],
+					readFailures: [],
+				},
+			},
+		};
+
+		expect(deltaToBaseline(committed).coverageDelta).toMatchObject({
+			nodes: { all: { before: 8, after: 2, delta: -6 } },
+			dsShareOfAllNodes: { before: 0.125, after: 0.5, delta: 0.375 },
+			dsShareOfComponentNodes: { before: 0.5, after: 1, delta: 0.5 },
+		});
+	});
+
 	it('never stores Infinity or NaN', () => {
 		const serialised = JSON.stringify(
 			deltaToBaseline(
@@ -298,14 +471,18 @@ describe('deltaToBaseline', () => {
 
 describe('summarize', () => {
 	// summarize prints per-run and grouped vitals, then — only when a run
-	// carries a baseline delta — a per-run and a grouped complexity table, and
-	// returns the grouped rows for the runner to persist. These tests read the
-	// printed tables by console.table call order: vitals at 0 and 1, the
-	// complexity pair at 2 and 3.
-	function tables(rows: Array<Record<string, unknown>>): Array<Array<Record<string, unknown>>> {
+	// carries a baseline delta — a per-run and a grouped complexity table, then
+	// — only when a run measured DS coverage — a per-run and a grouped coverage
+	// table, and returns the grouped rows for the runner to persist. These tests
+	// read the printed tables by console.table call order: vitals at 0 and 1,
+	// the complexity pair at 2 and 3, the coverage pair after whichever ran.
+	function tables(
+		rows: Array<Record<string, unknown>>,
+		options?: SummarizeOptions,
+	): Array<Array<Record<string, unknown>>> {
 		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
 		try {
-			summarize(rows);
+			summarize(rows, options);
 			return spy.mock.calls.map((call) => call[0] as Array<Record<string, unknown>>);
 		} finally {
 			spy.mockRestore();
@@ -494,6 +671,199 @@ describe('summarize', () => {
 		} finally {
 			spy.mockRestore();
 		}
+	});
+
+	/** Two runs of one arm carrying absolute coverage and its delta. */
+	function coverageRows(): Array<Record<string, unknown>> {
+		const coverage = (ds: number, component: number, all: number) => ({
+			dsPackages: ['@ds/*'],
+			files: 3,
+			nodes: {
+				all,
+				host: all - component,
+				component,
+				ds,
+				external: 0,
+				local: component - ds,
+				unresolved: 0,
+			},
+			dsShareOfAllNodes: ds / all,
+			dsShareOfComponentNodes: ds / component,
+			parseFailures: [],
+			readFailures: [],
+		});
+		const row = (run: number, ds: number, component: number, all: number, dsBefore: number) => ({
+			experiment: 'x',
+			eval: 'e',
+			run,
+			status: 'passed',
+			fixtureRef: 'r@1',
+			cost: {},
+			speed: {},
+			dsCoverage: coverage(ds, component, all),
+			deltaToBaseline: {
+				coverageDelta: {
+					dsPackages: ['@ds/*'],
+					nodes: { ds: { before: dsBefore, after: ds, delta: ds - dsBefore } },
+					dsShareOfAllNodes: {
+						before: dsBefore / all,
+						after: ds / all,
+						delta: (ds - dsBefore) / all,
+					},
+					dsShareOfComponentNodes: {
+						before: dsBefore / component,
+						after: ds / component,
+						delta: (ds - dsBefore) / component,
+					},
+				},
+			},
+		});
+		return [row(1, 6, 8, 20, 4), row(2, 10, 12, 20, 4)];
+	}
+
+	// Shares print as percentages and their deltas as percentage points: the
+	// difference between two percentages is not itself a percentage, and `+10%`
+	// against a shareAll of `30%` would read as a relative change.
+	it('prints a per-run coverage table with absolutes beside the delta', () => {
+		const [, , perRun] = tables(coverageRows());
+		expect(perRun?.[0]).toEqual({
+			experiment: 'x',
+			run: 1,
+			nodes: 20,
+			dsNodes: 6,
+			compNodes: 8,
+			shareAll: '30%',
+			shareComp: '75%',
+			unres: 0,
+			dsNodesD: 2,
+			shareAllD: '+10pp',
+			shareCompD: '+25pp',
+		});
+	});
+
+	it('prints a grouped coverage table with the family means', () => {
+		const [, , , grouped] = tables(coverageRows());
+		expect(grouped?.[0]).toEqual({
+			experiment: 'x',
+			dsNodesMean: 8,
+			compNodesMean: 10,
+			shareAllMean: '40%',
+			shareCompMean: '79.17%',
+			unresMean: 0,
+			dsNodesDMean: 4,
+			shareAllDMean: '+20pp',
+			shareCompDMean: '+37.5pp',
+		});
+	});
+
+	// The percentages are for reading; what gets persisted stays the fraction it
+	// was measured as, so a later reader can do arithmetic on it.
+	it('returns the coverage means in the stored rows', () => {
+		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+		try {
+			expect(summarize(coverageRows())[0]).toMatchObject({
+				dsNodes: { mean: 8 },
+				componentNodes: { mean: 10 },
+				dsShareOfAllNodes: { mean: 0.4 },
+				dsShareOfComponentNodes: { mean: 0.7917 },
+				dsNodesDelta: { mean: 4 },
+				dsShareOfAllNodesDelta: { mean: 0.2 },
+				dsShareOfComponentNodesDelta: { mean: 0.375 },
+			});
+		} finally {
+			spy.mockRestore();
+		}
+	});
+
+	it('signs a coverage share that fell', () => {
+		const [fallen] = coverageRows();
+		const delta = (fallen as { deltaToBaseline: { coverageDelta: Record<string, unknown> } })
+			.deltaToBaseline.coverageDelta;
+		delta.dsShareOfAllNodes = { before: 0.4, after: 0.3, delta: -0.1 };
+		const [, , perRun] = tables([fallen!]);
+		expect(perRun?.[0]?.shareAllD).toBe('-10pp');
+	});
+
+	it('skips the coverage tables for an eval that measures no DS', () => {
+		// armRows carries complexity deltas but no dsCoverage: vitals pair plus
+		// complexity pair, and nothing more.
+		expect(tables(armRows())).toHaveLength(4);
+	});
+
+	describe('table selection', () => {
+		/** Rows carrying every family, so only the options decide what prints. */
+		function everything(): Array<Record<string, unknown>> {
+			return coverageRows().map((row, index) => ({
+				...row,
+				...armRows()[index],
+				dsCoverage: row.dsCoverage,
+				deltaToBaseline: {
+					...(armRows()[index]?.deltaToBaseline as Record<string, unknown>),
+					...(row.deltaToBaseline as Record<string, unknown>),
+				},
+			}));
+		}
+
+		it('prints every family when the caller asks for none in particular', () => {
+			expect(tables(everything())).toHaveLength(6);
+		});
+
+		it('prints only the families the runner selected', () => {
+			expect(
+				tables(everything(), { general: false, complexity: false, coverage: true }),
+			).toHaveLength(2);
+			expect(
+				tables(everything(), { general: true, complexity: false, coverage: false }),
+			).toHaveLength(2);
+			expect(
+				tables(everything(), { general: false, complexity: true, coverage: true }),
+			).toHaveLength(4);
+		});
+
+		// A bare eval-directory header with nothing under it reads as a broken
+		// analysis rather than "this eval measures none of what you asked for".
+		it('says why nothing printed when the selected family has no data', () => {
+			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+			const table = vi.spyOn(console, 'table').mockImplementation(() => {});
+			try {
+				// armRows carries complexity but no coverage.
+				summarize(armRows(), { general: false, complexity: false, coverage: true });
+				expect(table).not.toHaveBeenCalled();
+				expect(log).toHaveBeenCalledWith(expect.stringContaining('coverage'));
+			} finally {
+				log.mockRestore();
+				table.mockRestore();
+			}
+		});
+
+		it('stays quiet when a selected family does have data', () => {
+			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+			const table = vi.spyOn(console, 'table').mockImplementation(() => {});
+			try {
+				summarize(coverageRows(), { general: false, complexity: false, coverage: true });
+				expect(log).not.toHaveBeenCalled();
+			} finally {
+				log.mockRestore();
+				table.mockRestore();
+			}
+		});
+
+		// The rows are what lands in summary.json and analysis-summary.json; which
+		// tables were printed must not touch them.
+		it('returns the same rows whatever prints', () => {
+			const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+			try {
+				const all = summarize(everything(), { general: true, complexity: true, coverage: true });
+				const none = summarize(everything(), {
+					general: false,
+					complexity: false,
+					coverage: false,
+				});
+				expect(none).toEqual(all);
+			} finally {
+				spy.mockRestore();
+			}
+		});
 	});
 
 	it('reports null cost rather than zero when no run priced', () => {
