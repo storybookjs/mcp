@@ -1,12 +1,3 @@
-// Shared contracts of the ds-share analyzer.
-//
-// The split mirrors the two layers of the measurement plus the facade:
-// - the *identification layer* (identify.ts) resolves names through the module
-//   graph and is framework-agnostic;
-// - the *census layer* is framework-specific (react/), reached only through
-//   `FrameworkImplementation`, so a future Vite-compatible framework slots in
-//   beside React without touching the shared layers;
-// - the report is what analyzeDsShare hands back.
 import type ts from 'typescript';
 
 import type { ModuleFile, ModuleGraph } from './module-graph.ts';
@@ -22,16 +13,14 @@ export interface DeclaredAt {
 }
 
 /**
- * What a JSX tag ultimately is, after chasing every import, re-export, styled
- * wrapper, and subsetting wrapper to its target:
+ * What an element tag ultimately is, after chasing every import, re-export
+ * styled wrapper, and subsetting wrapper to its target:
  *
  * - `host`: an intrinsic element, or a chain ending in one (`styled.div`)
  * - `ds`: a component of a package matching the DS pattern
  * - `external`: a component of any other package
  * - `local`: a component the project defines itself
- * - `unresolved`: statically unresolvable — reported explicitly, never guessed
- *   (`circular` marks the placeholder handed to a resolution that re-entered
- *   itself; it must never be cached as a final answer)
+ * - `unresolved`: statically unresolvable
  */
 export type Identity =
 	| ({ category: 'host'; tag: string } & DeclaredAt)
@@ -42,8 +31,11 @@ export type Identity =
 
 /**
  * An intermediate resolution: an identity, or a value that is not itself a
- * renderable — a module namespace (`import * as Forms`) or an object literal
- * of components — which a member access can still project an identity out of.
+ * renderable e.g. a module namespace (`import * as Forms`) or an object literal
+ * of components.
+ *
+ * Those intermediate resolutions help chain resolutions from imports all the
+ * way to element representations in the framework.
  */
 export type Resolution =
 	| Identity
@@ -63,6 +55,13 @@ export interface IdentityResolver {
 	resolveModule(file: ModuleFile, specifier: string, exportName: string): Resolution;
 	/** Project a member (`Dialog.Root`, `Forms.Input`, `Card.Header`) out of a resolution. */
 	memberOf(resolution: Resolution, property: string): Resolution;
+	/** Resolve a name bound by a destructuring pattern. */
+	resolveDestructured(
+		file: ModuleFile,
+		declaration: ts.VariableDeclaration,
+		path: string[],
+		name: string,
+	): Resolution;
 	/** Analyze a declaration or expression node via the framework, memoized. */
 	analyzeDeclaration(file: ModuleFile, node: ts.Node, name: string): Resolution;
 }
@@ -110,22 +109,25 @@ export interface CensusResult {
 /** What a framework plugs into the facade. */
 export interface FrameworkImplementation {
 	createDeclarationAnalyzer(): DeclarationAnalyzer;
-	census(graph: ModuleGraph, resolver: IdentityResolver): CensusResult;
+	createCensus(): (graph: ModuleGraph, resolver: IdentityResolver) => CensusResult;
 }
 
-export interface DsShareOptions {
-	/** DS package patterns, e.g. `['@ds/*']` or `['@base-ui/react', '@droppy/*']`. */
+export interface DsCoverageOptions {
+	/** Root directory of the project to analyze. */
+	projectDir: string;
+	/** DS package patterns, e.g. `['@ds/*']` or `['@base-ui/react']`. */
 	dsPackages: string[];
-	/** Only `react` exists today. */
+	/** Framework name (only 'react' is supported for now). */
 	framework?: 'react';
 }
 
-export interface DsShareReport {
+export interface DsCoverageReport {
 	framework: string;
 	dsPackages: string[];
 	/** Files the census walked. */
 	files: number;
 	parseFailures: string[];
+	readFailures: string[];
 	nodes: NodeTotals;
 	/** ds / all, or null when the tree has no JSX at all. */
 	dsShareOfAllNodes: number | null;

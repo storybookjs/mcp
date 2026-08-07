@@ -1,28 +1,15 @@
 // React declaration analysis: what a local declaration ultimately renders.
 //
-// This is the framework-specific half of the identification layer. Everything
-// here embodies one rule from the metric's definition — classification always
-// resolves to the *target* component:
-//
-// - `styled.div` is `div`; `styled(X)` is X — through `.attrs`/`.withConfig`
-//   chains, generic type arguments, and both the template and call forms;
-//   `.withComponent(Y)` replaces the target with Y
-// - `memo(X)` and `forwardRef(fn)` are transparent
+// - `styled.div` is `div`
+// - `styled(X)` is X, including `.attrs`/`.withConfig` chains and generics
+// - `styled(X).withComponent(Y)` replaces the target with Y
+// - `memo(X)` and `forwardRef(X)` are X
 // - `lazy(() => import('./x'))` is x's default export
 // - a wrapper that *merely subsets* a DS component counts as that DS
-//   component. "Merely subsets" is read as: a single unconditional return of
-//   one JSX element that forwards the rest of its props (a spread attribute)
-//   to a root resolving to a DS component — the `App.Button` hard-coding
-//   `size=small` shape. A component that hard-codes its whole subtree under a
-//   DS root is a composition, not a subset, and stays `local`; reaching
-//   non-DS targets is also out, because that would dissolve every page into
-//   its root `div`.
-//
-// Identifier lookups are scope-aware: parameters and function-scope
-// declarations shadow module scope, so a component arriving through props or
-// a hook result is reported `unresolved` rather than resolved to whatever
-// module-level import shares its name.
+//   component (i.e. forward props to a single DS root, with no hardcoded children)
 import ts from 'typescript';
+
+import { boundNames } from '../module-graph.ts';
 
 import type { ModuleFile } from '../module-graph.ts';
 import type { DeclarationAnalyzer, IdentityResolver, Resolution } from '../types.ts';
@@ -46,30 +33,33 @@ function unwrapExpression(expression: ts.Expression): ts.Expression {
 }
 
 /** Whether a binding name (identifier or destructuring pattern) binds `name`. */
-function bindingNameBinds(binding: ts.BindingName, name: string): boolean {
-	if (ts.isIdentifier(binding)) return binding.text === name;
-	return binding.elements.some(
-		(element) => ts.isBindingElement(element) && bindingNameBinds(element.name, name),
-	);
+function binds(binding: ts.BindingName, name: string): boolean {
+	return boundNames(binding).some((bound) => bound.name === name);
 }
 
-function declarationsOf(node: ts.Node): readonly ts.VariableDeclaration[] | null {
-	if (ts.isVariableStatement(node)) return node.declarationList.declarations;
-	if (
-		(ts.isForOfStatement(node) || ts.isForInStatement(node) || ts.isForStatement(node)) &&
-		node.initializer !== undefined &&
-		ts.isVariableDeclarationList(node.initializer)
-	) {
-		return node.initializer.declarations;
-	}
-	return null;
+/** The declarations a statement introduces into the block that contains it. */
+function statementDeclarations(node: ts.Node): readonly ts.VariableDeclaration[] | null {
+	return ts.isVariableStatement(node) ? node.declarationList.declarations : null;
+}
+
+type LoopStatement = ts.ForOfStatement | ts.ForInStatement | ts.ForStatement;
+
+/**
+ * The declarations a loop header introduces. They belong to the loop, not to
+ * the block containing it, which is why this is separate from `statementDeclarations`.
+ */
+function loopDeclarations(node: LoopStatement): readonly ts.VariableDeclaration[] | null {
+	return node.initializer && ts.isVariableDeclarationList(node.initializer)
+		? node.initializer.declarations
+		: null;
 }
 
 /**
- * Resolve `name` as the innermost binding visible at `site`. Parameters and
- * destructured bindings shadow module scope but have no statically knowable
- * value, so they resolve to `unresolved`; sibling function-scope declarations
- * are analyzed like any other declaration.
+ * Resolve `name` as the innermost binding visible at `site`. Parameters shadow
+ * module scope but have no statically knowable value, so they resolve to
+ * `unresolved`; sibling function-scope declarations are analyzed like any other
+ * declaration, and a function-scope destructuring resolves through its
+ * initializer exactly as a module-scope one does.
  */
 export function resolveScopedName(
 	file: ModuleFile,
@@ -81,20 +71,28 @@ export function resolveScopedName(
 		if (ts.isFunctionLike(scope)) {
 			const parameters = (scope as ts.SignatureDeclaration).parameters ?? [];
 			for (const parameter of parameters) {
-				if (bindingNameBinds(parameter.name, name)) {
+				if (binds(parameter.name, name)) {
 					return unresolved(`'${name}' is a parameter in ${file.path}`);
 				}
 			}
 		}
 		const statements = ts.isBlock(scope) ? scope.statements : null;
 		for (const statement of statements ?? []) {
-			for (const declaration of declarationsOf(statement) ?? []) {
-				if (ts.isIdentifier(declaration.name) && declaration.name.text === name) {
-					return resolver.analyzeDeclaration(file, declaration, name);
+			for (const declaration of statementDeclarations(statement) ?? []) {
+				if (ts.isIdentifier(declaration.name)) {
+					if (declaration.name.text === name) {
+						return resolver.analyzeDeclaration(file, declaration, name);
+					}
+					continue;
 				}
-				if (!ts.isIdentifier(declaration.name) && bindingNameBinds(declaration.name, name)) {
-					return unresolved(`'${name}' is destructured in a local scope in ${file.path}`);
+				const bound = boundNames(declaration.name).find((entry) => entry.name === name);
+				if (bound === undefined) continue;
+				if (bound.path === null) {
+					return unresolved(
+						`'${name}' is destructured from an unattributable pattern in ${file.path}`,
+					);
 				}
+				return resolver.resolveDestructured(file, declaration, bound.path, name);
 			}
 			if (
 				(ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) &&
@@ -104,10 +102,18 @@ export function resolveScopedName(
 			}
 		}
 		if (ts.isForOfStatement(scope) || ts.isForInStatement(scope) || ts.isForStatement(scope)) {
-			for (const declaration of declarationsOf(scope) ?? []) {
-				if (bindingNameBinds(declaration.name, name)) {
+			for (const declaration of loopDeclarations(scope) ?? []) {
+				const bound = boundNames(declaration.name).find((entry) => entry.name === name);
+				if (bound === undefined) continue;
+				// Only `for…of` names the value its binding reads, and only through
+				// the elements it iterates — which is why this defers to
+				// `resolveDestructured` rather than answering here. A `for…in` key
+				// is a property name, and a `for (;;)` counter is whatever the
+				// update expression last made it: neither has a value to attribute.
+				if (!ts.isForOfStatement(scope) || bound.path === null) {
 					return unresolved(`'${name}' is a loop binding in ${file.path}`);
 				}
+				return resolver.resolveDestructured(file, declaration, bound.path, name);
 			}
 		}
 	}
@@ -157,6 +163,7 @@ function styledTargetOf(
 			current = current.tag;
 			continue;
 		}
+
 		if (ts.isCallExpression(current)) {
 			const callee = unwrapExpression(current.expression);
 			if (
@@ -179,6 +186,7 @@ function styledTargetOf(
 			current = callee;
 			continue;
 		}
+
 		if (ts.isPropertyAccessExpression(current)) {
 			const base = unwrapExpression(current.expression);
 			if (
@@ -199,7 +207,10 @@ function styledTargetOf(
 
 /** The `X` of `lazy(() => import('./x'))`, or null. */
 function lazyImportSpecifier(argument: ts.Expression | undefined): string | null {
-	if (argument === undefined) return null;
+	if (argument === undefined) {
+		return null;
+	}
+
 	const body =
 		ts.isArrowFunction(argument) && ts.isExpression(argument.body)
 			? unwrapExpression(argument.body)
@@ -213,21 +224,24 @@ function lazyImportSpecifier(argument: ts.Expression | undefined): string | null
 	) {
 		return body.arguments[0].text;
 	}
+
 	return null;
 }
 
 /**
  * Every returned value of a function, ignoring returns of nested functions
- * (those are someone else's render). A bare `return;` appears as null: a
- * guard clause makes the render conditional, which disqualifies the
- * subsetting-wrapper reading just like a second returned element would.
+ * (those are someone else's render). A bare `return;` appears as null.
  */
 function returnedExpressions(
 	fn: ts.SignatureDeclaration & { body?: ts.Node },
 ): Array<ts.Expression | null> {
-	const body = fn.body;
-	if (body === undefined) return [];
-	if (ts.isExpression(body as ts.Node)) return [unwrapExpression(body as ts.Expression)];
+	if (fn.body === undefined) {
+		return [];
+	}
+
+	if (ts.isExpression(fn.body)) {
+		return [unwrapExpression(fn.body as ts.Expression)];
+	}
 
 	const returns: Array<ts.Expression | null> = [];
 	const walk = (node: ts.Node): void => {
@@ -235,25 +249,34 @@ function returnedExpressions(
 			returns.push(node.expression ? unwrapExpression(node.expression) : null);
 			return;
 		}
-		if (ts.isFunctionLike(node)) return;
+
+		if (ts.isFunctionLike(node)) {
+			return;
+		}
+
 		ts.forEachChild(node, walk);
 	};
-	ts.forEachChild(body, walk);
+
+	ts.forEachChild(fn.body, walk);
+
 	return returns;
 }
 
-/** Resolve a JSX tag name to what it is. Shared by census and wrapper analysis. */
+/** Resolve a JSX tag name. Shared by census and wrapper analysis. */
 export function resolveJsxTag(
 	file: ModuleFile,
 	tag: ts.JsxTagNameExpression,
 	resolver: IdentityResolver,
 ): Resolution {
 	if (ts.isIdentifier(tag)) {
-		// The JSX rule: lowercase tags are host elements, everything else is a
-		// component reference into scope.
-		if (/^[a-z]/.test(tag.text)) return { category: 'host', tag: tag.text };
+		// As per JSX, lowercase tags are host elements, the rest is components.
+		if (/^[a-z]/.test(tag.text)) {
+			return { category: 'host', tag: tag.text };
+		}
+
 		return resolveScopedName(file, tag, tag.text, resolver);
 	}
+
 	if (ts.isPropertyAccessExpression(tag)) {
 		const properties: string[] = [];
 		let base: ts.Node = tag;
@@ -261,19 +284,84 @@ export function resolveJsxTag(
 			properties.unshift(base.name.text);
 			base = base.expression;
 		}
-		if (!ts.isIdentifier(base)) return unresolved(`unresolvable tag base '${tag.getText()}'`);
+		if (!ts.isIdentifier(base)) {
+			return unresolved(`unresolvable tag base '${tag.getText()}'`);
+		}
+
 		let resolution = resolveScopedName(file, base, base.text, resolver);
 		for (const property of properties) {
 			resolution = resolver.memberOf(resolution, property);
 		}
+
 		return resolution;
 	}
 	// `<this.X>` (legacy class idiom) and namespaced tags (`<svg:rect>`, host
 	// markup by construction).
-	if (tag.kind === ts.SyntaxKind.ThisKeyword) return unresolved('tag on `this`');
+	if (tag.kind === ts.SyntaxKind.ThisKeyword) {
+		return unresolved('tag on `this`');
+	}
+
 	return { category: 'host', tag: tag.getText() };
 }
 
+/**
+ * The path into the component's own props that an expression reads, or null if
+ * it reads anything else: `[]` for the props parameter itself, `['children']`
+ * for `props.children` and for a `{ children }` destructuring, renamed or not.
+ */
+function propPath(fn: ts.SignatureDeclaration, expression: ts.Expression): string[] | null {
+	const expr = unwrapExpression(expression);
+	const parameter = fn.parameters[0];
+	if (parameter === undefined) {
+		return null;
+	}
+
+	if (ts.isIdentifier(expr)) {
+		return boundNames(parameter.name).find((bound) => bound.name === expr.text)?.path ?? null;
+	}
+
+	if (ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.name)) {
+		const base = propPath(fn, expr.expression);
+		return base === null ? null : [...base, expr.name.text];
+	}
+
+	return null;
+}
+
+/**
+ * Whether an element hands its subtree straight through: it renders either
+ * nothing of its own, or nothing but the component's own `children` prop.
+ */
+function forwardsChildren(fn: ts.SignatureDeclaration, element: ts.JsxElement): boolean {
+	const children = element.children.filter((child) => {
+		// Indentation between tags, and `{/* comment */}`, render nothing.
+		if (ts.isJsxText(child)) return !child.containsOnlyTriviaWhiteSpaces;
+		return !ts.isJsxExpression(child) || child.expression !== undefined;
+	});
+	if (children.length === 0) {
+		return true;
+	}
+
+	if (
+		children.length === 1 &&
+		children[0] &&
+		ts.isJsxExpression(children[0]) &&
+		children[0].expression
+	) {
+		const path = propPath(fn, children[0].expression);
+		return path?.length === 1 && path[0] === 'children';
+	}
+
+	return false;
+}
+
+/**
+ * Resolve a React component. Here we make the decision to treat prop-wrapping
+ * local components as DS components, e.g. if the app defines a Button that
+ * hardcodes `size="small"` on a DS Button, we still wanna count that as DS.
+ * If the local function forwards props *and* its subtree to a single DS
+ * component, it's evidence of a DS override and we return "DS".
+ */
 function analyzeFunctionComponent(
 	file: ModuleFile,
 	fn: ts.SignatureDeclaration & { body?: ts.Node },
@@ -284,12 +372,14 @@ function analyzeFunctionComponent(
 	const root = returns.length === 1 ? returns[0] : undefined;
 	if (root != null && (ts.isJsxElement(root) || ts.isJsxSelfClosingElement(root))) {
 		const opening = ts.isJsxElement(root) ? root.openingElement : root;
-		// The spread is what separates "the DS component with some props fixed"
-		// from "a component of our own that happens to sit on a DS root".
+		// Condition 1: we must forward props to the root DS component.
+		// Condition 2: no children, or direct children forwarding.
 		const forwardsProps = opening.attributes.properties.some(ts.isJsxSpreadAttribute);
-		if (forwardsProps) {
+		if (forwardsProps && (!ts.isJsxElement(root) || forwardsChildren(fn, root))) {
 			const target = resolveJsxTag(file, opening.tagName, resolver);
-			if (target.category === 'ds') return target;
+			if (target.category === 'ds') {
+				return target;
+			}
 		}
 	}
 	return { category: 'local', module: file.path, name };
@@ -303,81 +393,99 @@ function analyzeExpression(
 ): Resolution {
 	const expr = unwrapExpression(expression);
 
-	if (ts.isIdentifier(expr)) return resolveScopedName(file, expr, expr.text, resolver);
+	if (ts.isIdentifier(expr)) {
+		return resolveScopedName(file, expr, expr.text, resolver);
+	}
+
+	// Handle styled() wrappers earlier to avoid duplicate code.
+	if (
+		ts.isPropertyAccessExpression(expr) ||
+		ts.isCallExpression(expr) ||
+		ts.isTaggedTemplateExpression(expr)
+	) {
+		const styled = styledTargetOf(file, expr, resolver);
+		if (styled !== null) {
+			return resolveStyledTarget(file, styled, name, resolver);
+		}
+	}
 
 	if (ts.isPropertyAccessExpression(expr)) {
-		const styled = styledTargetOf(file, expr, resolver);
-		if (styled !== null) return resolveStyledTarget(file, styled, name, resolver);
-		if (!ts.isIdentifier(expr.name)) return unresolved(`unanalyzable member '${expr.getText()}'`);
-		return resolver.memberOf(
-			analyzeExpression(file, expr.expression, name, resolver),
-			expr.name.text,
-		);
+		if (ts.isIdentifier(expr.name)) {
+			return resolver.memberOf(
+				analyzeExpression(file, expr.expression, name, resolver),
+				expr.name.text,
+			);
+		}
+
+		return unresolved(`unanalyzable member '${expr.getText()}'`);
 	}
 
 	if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
 		return analyzeFunctionComponent(file, expr, name, resolver);
 	}
 
-	if (ts.isObjectLiteralExpression(expr)) return { category: 'object', file, node: expr };
+	if (ts.isObjectLiteralExpression(expr)) {
+		return { category: 'object', file, node: expr };
+	}
 
-	if (ts.isCallExpression(expr) || ts.isTaggedTemplateExpression(expr)) {
-		const styled = styledTargetOf(file, expr, resolver);
-		if (styled !== null) return resolveStyledTarget(file, styled, name, resolver);
+	if (ts.isCallExpression(expr)) {
+		const callee = unwrapExpression(expr.expression);
+		const calleeResolution = ts.isIdentifier(callee)
+			? resolveScopedName(file, callee, callee.text, resolver)
+			: ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression)
+				? resolver.memberOf(
+						resolveScopedName(file, callee.expression, callee.expression.text, resolver),
+						callee.name.text,
+					)
+				: null;
 
-		if (ts.isCallExpression(expr)) {
-			const callee = unwrapExpression(expr.expression);
-			const calleeResolution = ts.isIdentifier(callee)
-				? resolveScopedName(file, callee, callee.text, resolver)
-				: ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression)
-					? resolver.memberOf(
-							resolveScopedName(file, callee.expression, callee.expression.text, resolver),
-							callee.name.text,
-						)
-					: null;
-
-			if (calleeResolution !== null) {
-				if (
-					isReactHelper(calleeResolution, 'memo') ||
-					isReactHelper(calleeResolution, 'forwardRef')
-				) {
-					const wrapped = expr.arguments[0];
-					if (wrapped === undefined) return unresolved(`${name}: empty memo/forwardRef`);
+		if (calleeResolution !== null) {
+			if (
+				isReactHelper(calleeResolution, 'memo') ||
+				isReactHelper(calleeResolution, 'forwardRef')
+			) {
+				const wrapped = expr.arguments[0];
+				if (wrapped !== undefined) {
 					return analyzeExpression(file, wrapped, name, resolver);
 				}
-				if (isReactHelper(calleeResolution, 'lazy')) {
-					const specifier = lazyImportSpecifier(expr.arguments[0]);
-					if (specifier !== null) return resolver.resolveModule(file, specifier, 'default');
-					return unresolved(`${name}: dynamic lazy()`);
+
+				return unresolved(`${name}: empty memo/forwardRef`);
+			}
+			if (isReactHelper(calleeResolution, 'lazy')) {
+				const specifier = lazyImportSpecifier(expr.arguments[0]);
+				if (specifier !== null) {
+					return resolver.resolveModule(file, specifier, 'default');
 				}
-				// `createGlobalStyle(...)` builds a style-injecting component from a
-				// css template, not from a wrapped component — unlike an HOC call,
-				// there is no hidden target to find, so the call form resolves like
-				// the tagged-template form below.
-				if (
-					calleeResolution.category === 'external' &&
-					calleeResolution.name === 'createGlobalStyle'
-				) {
-					return calleeResolution;
-				}
+
+				return unresolved(`${name}: dynamic lazy()`);
+			}
+			// `createGlobalStyle(...)` builds a style-injecting component from a
+			// css template. Unlike an HOC call, there is no hidden target to find,
+			// so the call form resolves like the tagged-template form below.
+			if (
+				calleeResolution.category === 'external' &&
+				calleeResolution.name === 'createGlobalStyle'
+			) {
+				return calleeResolution;
 			}
 		}
 
-		// A tagged template over a package import (`createGlobalStyle`, a css-in-js
-		// `keyframes` cousin, an i18n tag) hides no target component the way an
-		// HOC call can, so the result *is* the package's construct.
-		if (ts.isTaggedTemplateExpression(expr)) {
-			const tag = unwrapExpression(expr.tag);
-			const tagResolution = ts.isIdentifier(tag)
-				? resolveScopedName(file, tag, tag.text, resolver)
-				: null;
-			if (tagResolution?.category === 'ds' || tagResolution?.category === 'external') {
-				return tagResolution;
-			}
+		return unresolved(`unrecognized call binding '${name}' in ${file.path}`);
+	}
+
+	// A tagged template over a package import (`createGlobalStyle`, a css-in-js
+	// `keyframes` cousin, an i18n tag) hides no target component the way an
+	// HOC call can, so the result *is* the package's construct.
+	if (ts.isTaggedTemplateExpression(expr)) {
+		const tag = unwrapExpression(expr.tag);
+		const tagResolution = ts.isIdentifier(tag)
+			? resolveScopedName(file, tag, tag.text, resolver)
+			: null;
+
+		if (tagResolution?.category === 'ds' || tagResolution?.category === 'external') {
+			return tagResolution;
 		}
-		// Any other factory (`connect(...)`, `withRouter(X)`, custom HOCs) is a
-		// transformation this analyzer does not understand; guessing would
-		// misattribute, so it is reported, not classified.
+
 		return unresolved(`unrecognized call binding '${name}' in ${file.path}`);
 	}
 
@@ -398,24 +506,35 @@ function resolveStyledTarget(
 	name: string,
 	resolver: IdentityResolver,
 ): Resolution {
-	if (target.kind === 'intrinsic') return { category: 'host', tag: target.tag };
+	if (target.kind === 'intrinsic') {
+		return { category: 'host', tag: target.tag };
+	}
+
 	return analyzeExpression(file, target.node, name, resolver);
 }
 
-/** The React `DeclarationAnalyzer` plugged into the identification layer. */
 export const analyzeReactDeclaration: DeclarationAnalyzer = (file, node, name, resolver) => {
 	if (ts.isVariableDeclaration(node)) {
-		if (node.initializer === undefined) return unresolved(`'${name}' has no initializer`);
+		if (node.initializer === undefined) {
+			return unresolved(`'${name}' has no initializer`);
+		}
+
 		return analyzeExpression(file, node.initializer, name, resolver);
 	}
+
 	if (ts.isFunctionDeclaration(node)) {
 		return analyzeFunctionComponent(file, node, name, resolver);
 	}
+
 	if (ts.isClassDeclaration(node)) {
 		// Class components exist but subsetting wrappers written as classes are
 		// vanishingly rare; a class is its own component.
 		return { category: 'local', module: file.path, name };
 	}
-	if (ts.isExpression(node)) return analyzeExpression(file, node, name, resolver);
+
+	if (ts.isExpression(node)) {
+		return analyzeExpression(file, node, name, resolver);
+	}
+
 	return unresolved(`unanalyzable declaration '${name}' in ${file.path}`);
 };

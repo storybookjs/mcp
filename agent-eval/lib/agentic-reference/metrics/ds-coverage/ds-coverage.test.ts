@@ -1,32 +1,22 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { vol } from 'memfs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { analyzeDsCoverage } from './index.ts';
 
-import { analyzeDsShare } from './index.ts';
-
-let root: string;
-
-function tree(files: Record<string, string>): string {
-	for (const [path, content] of Object.entries(files)) {
-		const full = join(root, path);
-		mkdirSync(dirname(full), { recursive: true });
-		writeFileSync(full, content);
-	}
-	return root;
-}
-
-function analyze(files: Record<string, string>, dsPackages = ['@ds/*']) {
-	return analyzeDsShare(tree(files), { dsPackages });
-}
-
-beforeEach(() => {
-	root = mkdtempSync(join(tmpdir(), 'ds-share-'));
+vi.mock('node:fs', async () => {
+	const memfs = await vi.importActual<typeof import('memfs')>('memfs');
+	return { ...memfs.fs, default: memfs.fs };
 });
 
+const ROOT = '/project';
+
+function analyze(files: Record<string, string>, dsPackages = ['@ds/*']) {
+	vol.fromJSON(files, ROOT);
+	return analyzeDsCoverage({ projectDir: ROOT, dsPackages });
+}
+
 afterEach(() => {
-	rmSync(root, { recursive: true, force: true });
+	vol.reset();
 });
 
 describe('identification through the module graph', () => {
@@ -99,11 +89,9 @@ describe('identification through the module graph', () => {
 			].join('\n'),
 		});
 		for (const order of ['cycle-first', 'provider-first'] as const) {
-			const report = analyzeDsShare(tree(files(order)), { dsPackages: ['@ds/*'] });
+			const report = analyze(files(order));
 			expect(report.components['@ds/core#Button'], order).toEqual({ category: 'ds', count: 1 });
 			expect(report.nodes.unresolved, order).toBe(0);
-			rmSync(root, { recursive: true, force: true });
-			mkdirSync(root, { recursive: true });
 		}
 	});
 
@@ -132,6 +120,33 @@ describe('identification through the module graph', () => {
 			}),
 			'src/ui/index.ts': "export { Button } from '@ds/core'",
 			'src/App.tsx': ["import { Button } from '@/ui'", 'export const App = () => <Button />'].join(
+				'\n',
+			),
+		});
+		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.nodes.unresolved).toBe(0);
+	});
+
+	it('credits the DS when an alias maps straight onto its package', () => {
+		const report = analyze({
+			'package.json': JSON.stringify({ dependencies: { '@ds/core': '^1.0.0' } }),
+			'tsconfig.json': JSON.stringify({ compilerOptions: { paths: { '@/ds': ['@ds/core'] } } }),
+			'src/App.tsx': ["import { Button } from '@/ds'", 'export const App = () => <Button />'].join(
+				'\n',
+			),
+		});
+		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.nodes.unresolved).toBe(0);
+		expect(report.dsShareOfComponentNodes).toBe(1);
+	});
+
+	it('credits the DS when a subpath import maps onto its package', () => {
+		const report = analyze({
+			'package.json': JSON.stringify({
+				dependencies: { '@ds/core': '^1.0.0' },
+				imports: { '#ds': { browser: '@ds/core', default: '@ds/core' } },
+			}),
+			'src/App.tsx': ["import { Button } from '#ds'", 'export const App = () => <Button />'].join(
 				'\n',
 			),
 		});
@@ -225,6 +240,251 @@ describe('identification through the module graph', () => {
 		});
 		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
 		expect(report.nodes.local).toBe(1);
+	});
+});
+
+// Destructuring is aliased member access: `const { Root } = Checkbox` says
+// exactly what `<Checkbox.Root>` says, so it resolves the same way — and
+// degrades to `unresolved` wherever the value it reads from does.
+describe('destructured bindings', () => {
+	it('resolves a destructured DS namespace in a function scope', () => {
+		const report = analyze(
+			{
+				'src/ExampleCheckbox.tsx': [
+					"import { Checkbox } from '@base-ui/react/checkbox'",
+					"import styles from './index.module.css'",
+					'export default function ExampleCheckbox() {',
+					'	const { Root, Indicator } = Checkbox',
+					'	return (',
+					'		<label className={styles.Label}>',
+					'			<Root defaultChecked className={styles.Checkbox}>',
+					'				<Indicator className={styles.Indicator} />',
+					'			</Root>',
+					'			Enable notifications',
+					'		</label>',
+					'	)',
+					'}',
+				].join('\n'),
+			},
+			['@base-ui/react'],
+		);
+		expect(report.components['@base-ui/react/checkbox#Checkbox.Root']).toEqual({
+			category: 'ds',
+			count: 1,
+		});
+		expect(report.components['@base-ui/react/checkbox#Checkbox.Indicator']).toEqual({
+			category: 'ds',
+			count: 1,
+		});
+		expect(report.nodes).toMatchObject({ ds: 2, host: 1, unresolved: 0 });
+	});
+
+	it('resolves a module-scope destructuring, an alias, and a nested pattern', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox, Menu } from '@ds/core'",
+				'const { Root, Indicator: Mark } = Checkbox',
+				'const { Item: { Label } } = Menu',
+				'export const App = () => <Root><Mark /><Label /></Root>',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Checkbox.Indicator']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Menu.Item.Label']).toEqual({ category: 'ds', count: 1 });
+	});
+
+	it('resolves a destructured namespace import and object literal', () => {
+		const report = analyze({
+			'src/app-ui.ts': [
+				"import { Button } from '@ds/core'",
+				'export const AppUI = { Button, Plain: () => null }',
+			].join('\n'),
+			'src/App.tsx': [
+				"import * as Forms from '@ds/forms'",
+				"import { AppUI } from './app-ui'",
+				'const { Input } = Forms',
+				'const { Button, Plain } = AppUI',
+				'export const App = () => <main><Input /><Button /><Plain /></main>',
+			].join('\n'),
+		});
+		expect(report.components['@ds/forms#Input']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['src/app-ui.ts#Plain']).toEqual({ category: 'local', count: 1 });
+	});
+
+	it('follows a destructured re-export through a barrel', () => {
+		const report = analyze({
+			'src/ui/index.ts': [
+				"import { Checkbox } from '@ds/core'",
+				'export const { Root } = Checkbox',
+			].join('\n'),
+			'src/App.tsx': ["import { Root } from './ui'", 'export const App = () => <Root />'].join(
+				'\n',
+			),
+		});
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+	});
+
+	it('lets a locally attached member win over the destructured base identity', () => {
+		const report = analyze({
+			'src/Card.tsx': [
+				"import { DS } from '@ds/core'",
+				'export const { Card } = DS',
+				'const Header = () => <header>h</header>',
+				'Card.Header = Header',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Card } from './Card'",
+				'export const App = () => <Card.Header />',
+			].join('\n'),
+		});
+		expect(report.components['src/Card.tsx#Header']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['@ds/core#DS.Card.Header']).toBeUndefined();
+	});
+
+	it('leaves rest, computed, array, defaulted, and loop bindings unresolved', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox, key, items } from '@ds/core'",
+				'const { ...Rest } = Checkbox',
+				'const { [key]: Computed } = Checkbox',
+				'const [Positional] = Checkbox',
+				'const { Defaulted = Checkbox } = Checkbox',
+				'export const App = () => {',
+				'	for (const { Item } of items) return <Item />',
+				'	return <main><Rest /><Computed /><Positional /><Defaulted /></main>',
+				'}',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 5 });
+	});
+
+	// A loop pattern has an attributable path but no initializer to read it
+	// from. Referencing it from outside the loop is not valid JS, but it parses,
+	// and the census walks whatever the tree contains.
+	it('survives a loop pattern referenced outside the loop', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { items } from '@ds/core'",
+				'export const App = () => {',
+				'	for (const { Item } of items) { void Item }',
+				'	return <Item />',
+				'}',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 1 });
+	});
+
+	// Spelling the elements out must not widen where the binding is visible:
+	// the loop scopes its own declaration, so a reference after the loop is
+	// out of scope and stays unattributed.
+	it('does not resolve a loop binding referenced outside the loop', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox } from '@ds/core'",
+				'export const App = () => {',
+				'\tfor (const { Root } of [Checkbox]) { void Root }',
+				'\treturn <Root />',
+				'}',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#Checkbox.Root']).toBeUndefined();
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 1 });
+	});
+
+	// A `for…of` pattern binds an *element* of the iterated value, so the value
+	// it reads is only knowable when the loop spells its elements out.
+	it('resolves a loop binding over an array literal', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox } from '@ds/core'",
+				'export const App = () => {',
+				'	for (const { Root } of [Checkbox]) return <Root />',
+				'	return null',
+				'}',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+		expect(report.nodes).toMatchObject({ ds: 1, unresolved: 0 });
+	});
+
+	it('resolves a loop binding when every element agrees on the identity', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox } from '@ds/core'",
+				"import { Checkbox as Same } from '@ds/core'",
+				'export const App = () => {',
+				'	for (const { Root } of [Checkbox, Same]) return <Root />',
+				'	return null',
+				'}',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+		expect(report.nodes).toMatchObject({ ds: 1, unresolved: 0 });
+	});
+
+	it('leaves a loop binding unresolved when the elements disagree', () => {
+		// Each iteration would attribute `Root` to a different component, so no
+		// single identity is true of the body.
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox, Menu } from '@ds/core'",
+				'export const App = () => {',
+				'	for (const { Root } of [Checkbox, Menu]) return <Root />',
+				'	return null',
+				'}',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 1 });
+		expect(report.unresolvedElements[0]?.reason).toMatch(/disagree/);
+	});
+
+	it('leaves a loop binding over a spread or a non-literal iterable unresolved', () => {
+		// Neither names its elements: reading `items.Item` off the iterable
+		// would fabricate a component the package does not export.
+		const report = analyze({
+			'src/App.tsx': [
+				"import { Checkbox, extra, items } from '@ds/core'",
+				'export const App = () => {',
+				'	for (const { Root } of [Checkbox, ...extra]) return <Root />',
+				'	for (const { Item } of items) return <Item />',
+				'	return null',
+				'}',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 2 });
+		expect(report.components['@ds/core#items.Item']).toBeUndefined();
+		for (const element of report.unresolvedElements) {
+			expect(element.reason).toMatch(/not statically known/);
+		}
+	});
+
+	it('leaves a loop binding over an empty array unresolved', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				'export const App = () => {',
+				'	for (const { Root } of []) return <Root />',
+				'	return null',
+				'}',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 1 });
+		expect(report.unresolvedElements[0]?.reason).toMatch(/empty array/);
+	});
+
+	it('leaves a destructured prop and a destructured call result unresolved', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { useParts } from './parts'",
+				'export const App = ({ slots }: { slots: { Icon: () => null } }) => {',
+				'	const { Icon } = slots',
+				'	const { Tooltip } = useParts()',
+				'	return <main><Icon /><Tooltip /></main>',
+				'}',
+			].join('\n'),
+			'src/parts.ts': 'export const useParts = () => ({ Tooltip: () => null })',
+		});
+		expect(report.nodes).toMatchObject({ ds: 0, unresolved: 2 });
 	});
 });
 
@@ -322,6 +582,71 @@ describe('wrapper and styled attribution', () => {
 			count: 1,
 		});
 		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1 });
+	});
+
+	it('keeps a prop-forwarding wrapper local when it hard-codes its children', () => {
+		// The spread says "same props", but the hard-coded subtree says this is
+		// content of the app's own, not the DS component with props fixed.
+		const report = analyze({
+			'src/Banner.tsx': [
+				"import { Card } from '@ds/core'",
+				'export const Banner = (props: object) => <Card {...props}>Welcome back!</Card>',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Banner } from './Banner'",
+				'export const App = () => <Banner />',
+			].join('\n'),
+		});
+		expect(report.components['src/Banner.tsx#Banner']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1 });
+	});
+
+	it('counts a prop-forwarding wrapper that passes children through as the DS component', () => {
+		const report = analyze({
+			'src/Panel.tsx': [
+				"import { Card } from '@ds/core'",
+				'export const Panel = ({ children, ...rest }: { children?: unknown }) => (',
+				'	<Card padding="sm" {...rest}>{children}</Card>',
+				')',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Panel } from './Panel'",
+				'export const App = () => <Panel>hi</Panel>',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2 });
+	});
+
+	it('counts a wrapper that forwards props.children through as the DS component', () => {
+		const report = analyze({
+			'src/Panel.tsx': [
+				"import { Card } from '@ds/core'",
+				'export const Panel = (props: { children?: unknown }) => (',
+				'	<Card padding="sm" {...props}>{props.children}</Card>',
+				')',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Panel } from './Panel'",
+				'export const App = () => <Panel>hi</Panel>',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2 });
+	});
+
+	it('keeps a wrapper local when it decorates the forwarded children', () => {
+		const report = analyze({
+			'src/Panel.tsx': [
+				"import { Card } from '@ds/core'",
+				'export const Panel = ({ children, ...rest }: { children?: unknown }) => (',
+				'	<Card {...rest}><header>Panel</header>{children}</Card>',
+				')',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Panel } from './Panel'",
+				'export const App = () => <Panel>hi</Panel>',
+			].join('\n'),
+		});
+		expect(report.components['src/Panel.tsx#Panel']).toEqual({ category: 'local', count: 1 });
 	});
 
 	it('keeps a component with a bare-return guard local', () => {

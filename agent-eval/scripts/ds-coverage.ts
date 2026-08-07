@@ -1,17 +1,17 @@
-// Run the ds-share analyzer against a checked-out tree, for humans.
+// Run the ds-coverage analyzer against a checked-out tree, for humans.
 //
-//   node scripts/ds-share.ts <dir> --ds '@base-ui/react' --ds '@droppy/*' [--json] [--per-file]
+//   node scripts/ds-coverage.ts <dir> --ds '@base-ui/react' --ds '@droppy/*' [--json] [--per-file]
 //
-// The analyzer itself lives in lib/agentic-reference/metrics/ds-share/; this
-// wrapper only parses arguments and renders tables. `--json` prints the full
-// report (including every unresolved element) for piping into jq.
+// The analyzer itself lives in lib/agentic-reference/metrics/ds-coverage/.
+// This wrapper only parses arguments and renders tables.
+// `--json` prints the full report for piping into jq.
 import { statSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 
-import { analyzeDsShare } from '../lib/agentic-reference/metrics/ds-share/index.ts';
+import { analyzeDsCoverage } from '../lib/agentic-reference/metrics/ds-coverage/index.ts';
 
 const USAGE =
-	'usage: node scripts/ds-share.ts <dir> --ds <pattern> [--ds <pattern>...] [--json] [--per-file] [--top <n>]';
+	'usage: node scripts/ds-coverage.ts <dir> --ds <pattern> [--ds <pattern>...] [--json] [--per-file] [--top <n>]';
 
 const { values, positionals } = parseArgs({
 	options: {
@@ -38,25 +38,27 @@ try {
 	isDirectory = false;
 }
 if (!isDirectory) {
-	console.error(`ds-share: not a directory: ${dir}`);
+	console.error(`ds-coverage: not a directory: ${dir}`);
 	process.exit(2);
 }
 const top = Number(values.top);
 if (!Number.isInteger(top) || top < 1) {
-	console.error(`ds-share: --top must be a positive integer, got '${values.top}'\n${USAGE}`);
+	console.error(`ds-coverage: --top must be a positive integer, got '${values.top}'\n${USAGE}`);
 	process.exit(2);
 }
 
-const report = analyzeDsShare(dir, { dsPackages });
+const report = analyzeDsCoverage({ projectDir: dir, dsPackages });
 
 if (values.json) {
 	console.log(JSON.stringify(report, null, 2));
 	process.exit(0);
 }
 
-console.log(`ds-share of ${dir}`);
+console.log(`ds-coverage of ${dir}`);
 console.log(`  DS packages:  ${report.dsPackages.join(', ')}`);
-console.log(`  files:        ${report.files} (${report.parseFailures.length} unparseable)`);
+console.log(
+	`  files:        ${report.files} (${report.parseFailures.length} unparseable, ${report.readFailures.length} unreadable)`,
+);
 console.log(`  JSX nodes:    ${report.nodes.all} weighted`);
 console.table({
 	host: report.nodes.host,

@@ -1,23 +1,10 @@
-// The census layer: every JSX element in the tree, classified and weighted.
+// The census layer
 //
-// Elements are counted one by one — a subtree never inherits its parent's
-// classification; a DS Card full of raw divs contributes one DS node and many
-// host nodes. Raw `createElement` calls are deliberately ignored: the census
-// reads JSX syntax only.
-//
-// Conditionals weight, they do not exclude: a render choosing between two JSX
-// subtrees counts each side's elements at half weight (nesting halves again),
-// while a choice between a subtree and a falsy value or literal counts the
-// subtree in full — the element renders whenever anything does.
-//
-// Two deliberate boundaries of that rule, both from its syntactic definition:
-// halving applies to conditional *expressions* (`?:`, `&&`, `||`, `??`) whose
-// branches contain JSX. Statement-level forks (`if (x) return <A/>; return
-// <B/>`) count both returns in full — each is that component's own written
-// render, not a branch of one expression — and a branch that hides its JSX
-// behind a helper call is not a JSX subtree, so the visible side keeps full
-// weight. Extending either would mean whole-program render analysis, which is
-// exactly what this static census is not.
+// - Every JSX element in the tree is resolved to DS or not DS
+// - Elements are counted one by one, e.g. a DS Card full of raw divs contributes
+//   one DS node and many host nodes
+// - Raw `createElement` calls are not supported yet
+// - Conditional renders cause element counts on each branch to be weighted
 import ts from 'typescript';
 
 import { resolveJsxTag } from './resolve.ts';

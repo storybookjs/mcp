@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { finiteNumbers, mean, round, sum } from './math.ts';
+import { finiteNumbers, mean, round, share, sum } from './math.ts';
 
 describe('mean', () => {
 	it('averages the values', () => {
@@ -64,5 +64,16 @@ describe('finiteNumbers', () => {
 	// A stored Infinity or NaN would poison every later mean.
 	it('drops NaN and Infinity', () => {
 		expect(finiteNumbers([Number.NaN, Number.POSITIVE_INFINITY, -Infinity, 4])).toEqual([4]);
+	});
+});
+
+describe('share', () => {
+	it('returns the share of numerator over denominator', () => {
+		expect(share(1, 4)).toBe(0.25);
+		expect(share(1, 3)).toBeCloseTo(0.3333, 4);
+	});
+
+	it('returns null for a zero denominator', () => {
+		expect(share(1, 0)).toBeNull();
 	});
 });
