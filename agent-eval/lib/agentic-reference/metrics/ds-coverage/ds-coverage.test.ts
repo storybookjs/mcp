@@ -19,6 +19,119 @@ afterEach(() => {
 	vol.reset();
 });
 
+describe('censusFilters', () => {
+	function analyzeExcluding(files: Record<string, string>, censusFilters: string[]) {
+		vol.fromJSON(files, ROOT);
+		return analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'], censusFilters });
+	}
+
+	// The whole point of the option: a monorepo that vendors its own design
+	// system should not count the DS implementing itself as application UI,
+	// but dropping those files from the graph would strand every import into
+	// them. Both halves are asserted here — the count loses the directory, the
+	// resolution does not.
+	const VENDORED = {
+		'packages/ui/src/Button.tsx': 'export const Button = () => <button><span /></button>',
+		'src/App.tsx': [
+			"import { Button } from '../packages/ui/src/Button'",
+			'export const App = () => <main><Button /></main>',
+		].join('\n'),
+	};
+
+	it('counts a vendored design system’s own markup by default', () => {
+		const report = analyzeExcluding(VENDORED, []);
+		expect(report.nodes).toMatchObject({ all: 4, host: 3, component: 1, unresolved: 0 });
+		expect(report.censusFilters).toEqual([]);
+	});
+
+	it('drops a negated glob from the count while still resolving into it', () => {
+		const report = analyzeExcluding(VENDORED, ['!packages/ui/**']);
+		// App.tsx's two elements only; Button.tsx's <button><span/> are gone.
+		expect(report.nodes).toMatchObject({ all: 2, host: 1, component: 1, unresolved: 0 });
+		// Still attributed to the file it came from, which is the half that
+		// would break if the filter had gone through the module graph.
+		expect(report.components['packages/ui/src/Button.tsx#Button']).toEqual({
+			category: 'local',
+			count: 1,
+		});
+		expect(report.censusFilters).toEqual(['!packages/ui/**']);
+		expect(report.perFile['packages/ui/src/Button.tsx']).toBeUndefined();
+	});
+
+	// The other half of the filter list: name what you want rather than what
+	// you don't, and everything unnamed drops out.
+	it('counts only what a positive glob selects', () => {
+		const report = analyzeExcluding(VENDORED, ['src/**']);
+		expect(report.nodes).toMatchObject({ all: 2, host: 1, component: 1 });
+		expect(report.perFile['packages/ui/src/Button.tsx']).toBeUndefined();
+	});
+
+	it('lets a negative glob carve out of a positive one', () => {
+		const report = analyzeExcluding(
+			{
+				'src/App.tsx': 'export const App = () => <div />',
+				'src/debug/Panel.tsx': 'export const Panel = () => <div />',
+				'other/Thing.tsx': 'export const Thing = () => <div />',
+			},
+			['src/**', '!src/debug/**'],
+		);
+		expect(report.nodes.all).toBe(1);
+		expect(report.perFile['src/App.tsx']).toBeDefined();
+	});
+
+	it('reports files as the number the census actually walked', () => {
+		expect(analyzeExcluding(VENDORED, []).files).toBe(2);
+		expect(analyzeExcluding(VENDORED, ['!packages/ui/**']).files).toBe(1);
+	});
+
+	// ROOT is what the caller passed as projectDir, so this is the path you
+	// would paste from a shell rather than the one the report prints.
+	it('accepts an absolute glob inside the analyzed tree', () => {
+		const report = analyzeExcluding(VENDORED, [`!${ROOT}/packages/ui/**`]);
+		expect(report.nodes).toMatchObject({ all: 2, host: 1, component: 1, unresolved: 0 });
+		expect(report.components['packages/ui/src/Button.tsx#Button']).toEqual({
+			category: 'local',
+			count: 1,
+		});
+	});
+
+	it('refuses an absolute glob pointing outside the tree', () => {
+		expect(() => analyzeExcluding(VENDORED, ['!/elsewhere/**'])).toThrow(
+			/outside the analyzed tree/,
+		);
+	});
+
+	// `*` stopping at a separator is the whole reason `**` exists, and getting
+	// this backwards silently counts a nested directory you meant to drop.
+	it('does not let a single * cross a directory boundary', () => {
+		const nested = {
+			'packages/ui/Flat.tsx': 'export const Flat = () => <div />',
+			'packages/ui/deep/Nested.tsx': 'export const Nested = () => <div />',
+		};
+		expect(analyzeExcluding(nested, ['!packages/ui/*']).nodes.all).toBe(1);
+		expect(analyzeExcluding(nested, ['!packages/ui/**']).nodes.all).toBe(0);
+	});
+
+	it('excludes a DS-consuming directory without losing its DS attribution elsewhere', () => {
+		const report = analyzeExcluding(
+			{
+				'internal/Debug.tsx': [
+					"import { Button } from '@ds/core'",
+					'export const Debug = () => <Button />',
+				].join('\n'),
+				'src/App.tsx': [
+					"import { Button } from '@ds/core'",
+					'export const App = () => <Button />',
+				].join('\n'),
+			},
+			['!internal/**'],
+		);
+		expect(report.nodes).toMatchObject({ all: 1, ds: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.dsShareOfComponentNodes).toBe(1);
+	});
+});
+
 describe('identification through the module graph', () => {
 	it('classifies a direct DS import, a renamed one, and an external package', () => {
 		const report = analyze({
@@ -499,6 +612,37 @@ describe('wrapper and styled attribution', () => {
 		});
 		expect(report.nodes).toMatchObject({ all: 1, host: 1, component: 0 });
 		expect(report.components.div).toEqual({ category: 'host', count: 1 });
+	});
+
+	// `styled('div')` is the same construction as `styled.div`, and the only
+	// spelling for a tag the property form cannot express. Storybook's own
+	// components are written this way throughout, so missing it left every one
+	// of them unattributed.
+	it("counts styled('div') as its host element, like the property form", () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import styled from 'styled-components'",
+				"const Box = styled('div')({ margin: 0 })",
+				"const Custom = styled('my-element')`margin: 0`",
+				'export const App = () => <main><Box /><Custom /></main>',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ all: 3, host: 3, component: 0, unresolved: 0 });
+		expect(report.components.div).toEqual({ category: 'host', count: 1 });
+		expect(report.components['my-element']).toEqual({ category: 'host', count: 1 });
+	});
+
+	it("counts styled('div') wrapped again as the same host element", () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import styled from 'styled-components'",
+				"const Base = styled('span')({ margin: 0 })",
+				'const Bigger = styled(Base)({ fontSize: 20 })',
+				'export const App = () => <Bigger />',
+			].join('\n'),
+		});
+		expect(report.components.span).toEqual({ category: 'host', count: 1 });
+		expect(report.nodes).toMatchObject({ host: 1, unresolved: 0 });
 	});
 
 	it('counts styled(X) as X, through .attrs chains and generic double calls', () => {
@@ -982,6 +1126,57 @@ describe('census weights and coverage', () => {
 			local: 0,
 			unresolved: 0,
 		});
+	});
+
+	// A context Provider renders only its children, exactly like a Fragment.
+	// Counted, it would pad the component total with elements no design system
+	// could ever have supplied, quietly depressing the DS share.
+	it('ignores a context Provider and Consumer', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { createContext } from 'react'",
+				"import { Button } from '@ds/core'",
+				'const Ctx = createContext(null)',
+				'export const App = () => (',
+				'	<Ctx.Provider value={null}>',
+				'		<Ctx.Consumer>{() => <Button />}</Ctx.Consumer>',
+				'	</Ctx.Provider>',
+				')',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ all: 1, component: 1, ds: 1, unresolved: 0 });
+		expect(report.dsShareOfComponentNodes).toBe(1);
+	});
+
+	// The context object is reached through a file boundary here, so this also
+	// pins that the identity survives a re-export rather than only working when
+	// createContext sits in the rendering file.
+	it('ignores a context Provider imported from another module', () => {
+		const report = analyze({
+			'src/ctx.ts': [
+				"import { createContext } from 'react'",
+				'export const Ctx = createContext(null)',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Ctx } from './ctx'",
+				"import { Button } from '@ds/core'",
+				'export const App = () => <Ctx.Provider value={null}><Button /></Ctx.Provider>',
+			].join('\n'),
+		});
+		expect(report.nodes).toMatchObject({ all: 1, ds: 1, unresolved: 0 });
+	});
+
+	// A design system's own ThemeProvider is a real exported component, not a
+	// member of a createContext result, and must keep counting.
+	it('still counts a design system’s own Provider component', () => {
+		const report = analyze({
+			'src/App.tsx': [
+				"import { ThemeProvider, Button } from '@ds/core'",
+				'export const App = () => <ThemeProvider><Button /></ThemeProvider>',
+			].join('\n'),
+		});
+		expect(report.components['@ds/core#ThemeProvider']).toEqual({ category: 'ds', count: 1 });
+		expect(report.nodes).toMatchObject({ all: 2, ds: 2, unresolved: 0 });
 	});
 
 	it('ignores raw createElement calls', () => {

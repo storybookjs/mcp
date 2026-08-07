@@ -1,8 +1,11 @@
 // Which bare import specifiers belong to the design system.
 //
-// The DS is named by package *patterns* (`@ds/*`, `@base-ui/react`), matched
-// against the package name of a specifier — not the full specifier — so that
-// subpath imports (`@base-ui/react/button`) classify with their package.
+// The DS is named by import *patterns* (`@ds/*`, `@base-ui/react`,
+// `storybook/internal/components`), matched against a specifier as a prefix
+// ending on a path boundary. That covers both shapes a design system ships in:
+// a package whose subpaths are all DS (`@base-ui/react/button`), and a package
+// that exposes its DS at one subpath among many — `storybook/internal/components`
+// is the design system, `storybook/internal/types` is not.
 
 /** The package-name half of a bare specifier: `@scope/name` or `name`. */
 export function packageNameOf(specifier: string): string {
@@ -11,9 +14,16 @@ export function packageNameOf(specifier: string): string {
 }
 
 /**
- * A predicate over bare specifiers for a list of package patterns. `*` matches
+ * A predicate over bare specifiers for a list of import patterns. `*` matches
  * within one path segment (`@ds/*` matches `@ds/button`, not `@dsx/button`);
  * everything else is literal.
+ *
+ * A pattern matches a specifier that *is* it, or that continues it after a `/`:
+ * `@base-ui/react` covers `@base-ui/react/button` but not `@base-ui/react-extras`.
+ * Anchoring on the boundary rather than reducing the specifier to its package
+ * name is what lets a pattern name a subpath at all — reduced first, a
+ * `storybook/internal/components` pattern would be compared against the bare
+ * `storybook` and never match anything, including itself.
  */
 export function createPackageMatcher(patterns: string[]): (specifier: string) => boolean {
 	const matchers = patterns.map((pattern) => {
@@ -21,11 +31,8 @@ export function createPackageMatcher(patterns: string[]): (specifier: string) =>
 			.split('*')
 			.map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
 			.join('[^/]*');
-		return new RegExp(`^${source}$`);
+		return new RegExp(`^${source}(?:/|$)`);
 	});
 
-	return (specifier) => {
-		const packageName = packageNameOf(specifier);
-		return matchers.some((matcher) => matcher.test(packageName));
-	};
+	return (specifier) => matchers.some((matcher) => matcher.test(specifier));
 }

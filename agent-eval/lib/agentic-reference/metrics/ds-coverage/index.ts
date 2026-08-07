@@ -12,6 +12,7 @@ import { share } from '#lib/utils/math';
 import { createResolver } from './identify.ts';
 import { buildModuleGraph } from './module-graph.ts';
 import { createPackageMatcher } from './package-pattern.ts';
+import { createPathFilter, describeUnmatchedGlob } from './path-filter.ts';
 import { censusReactTree } from './react/census.ts';
 import { analyzeReactDeclaration } from './react/resolve.ts';
 import type {
@@ -52,15 +53,31 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 		throw new Error(`Project directory is not a directory: ${options.projectDir}`);
 	}
 
+	const censusFilters = options.censusFilters ?? [];
 	const graph = buildModuleGraph(options.projectDir);
 	const isDsPackage = createPackageMatcher(options.dsPackages);
 	const resolver = createResolver(graph, isDsPackage, framework.createDeclarationAnalyzer());
-	const census = framework.createCensus()(graph, resolver);
+	// Checked against the graph rather than the disk, because that is the set
+	// the census would have walked: a glob aimed at files the graph already
+	// leaves out (tests, stories, node_modules) matched nothing that counts.
+	const filter = createPathFilter(censusFilters, options.projectDir);
+	const unmatched = filter.unmatched(graph.files.keys());
+	if (unmatched.length > 0) {
+		throw new Error(
+			`ds-coverage: ${unmatched
+				.map((glob) => describeUnmatchedGlob(glob, options.projectDir))
+				.join('\n  ')}`,
+		);
+	}
+
+	const isCounted = filter.isCounted;
+	const census = framework.createCensus()(graph, resolver, isCounted);
 
 	return {
 		framework: options.framework ?? 'react',
 		dsPackages: options.dsPackages,
-		files: graph.files.size,
+		censusFilters,
+		files: [...graph.files.keys()].filter(isCounted).length,
 		parseFailures: graph.parseFailures,
 		readFailures: graph.readFailures,
 		nodes: census.totals,

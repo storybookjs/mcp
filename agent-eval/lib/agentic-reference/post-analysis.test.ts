@@ -15,7 +15,18 @@ import type {
 	SummarizeOptions,
 } from '../post-analysis/types.ts';
 
+// A pin DS_PACKAGES_BY_PIN maps to ['@base-ui/react', '@droppy/*'], so these
+// tests exercise the real table rather than a stand-in for it.
 const PIN = { repo: 'yannbf/mealdrop', ref: 'ce507b345666ea8678101fccac580186b2b69b1f' };
+/** A pin nobody has mapped: the "this tree has no design system" case. */
+const UNMAPPED_PIN = { repo: 'example/app', ref: '0000000000000000000000000000000000000000' };
+/** A tree whose only component element comes from the mapped DS. */
+const DS_TREE = {
+	'src/C.tsx':
+		"import { Button } from '@base-ui/react';\nexport const C = () => <div><Button /></div>;\n",
+};
+/** The same shape with no DS in it at all. */
+const HOST_TREE = { 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' };
 
 let root: string;
 
@@ -28,17 +39,6 @@ function writeTree(name: string, files: Record<string, string>): string {
 		writeFileSync(full, content);
 	}
 	return dir;
-}
-
-/**
- * The eval fixture `readDsPackages` consults. Written at the path `runContext`
- * defaults `fixtureDir` to, so a test that wants coverage measured only has to
- * call this first; without it the fixture is absent and coverage stays null.
- */
-function writeFixture(dsPackages: string[] | null): string {
-	return writeTree('fixture', {
-		'package.json': JSON.stringify({ evals: dsPackages === null ? {} : { dsPackages } }),
-	});
 }
 
 function runContext(overrides: Partial<RunContext> = {}): RunContext {
@@ -152,18 +152,10 @@ describe('analyzeRun in run mode', () => {
 	});
 
 	it('measures the DS coverage of the tree the run left behind', () => {
-		writeFixture(['@ds/*']);
-		const row = analyzeRun(
-			runContext({
-				projectDir: writeTree('project-ds', {
-					'src/C.tsx':
-						"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
-				}),
-			}),
-		);
+		const row = analyzeRun(runContext({ projectDir: writeTree('project-ds', DS_TREE) }));
 
 		expect(row.dsCoverage).toMatchObject({
-			dsPackages: ['@ds/*'],
+			dsPackages: ['@base-ui/react', '@droppy/*'],
 			files: 1,
 			nodes: { all: 2, host: 1, component: 1, ds: 1, external: 0, local: 0, unresolved: 0 },
 			dsShareOfAllNodes: 0.5,
@@ -171,18 +163,28 @@ describe('analyzeRun in run mode', () => {
 		});
 	});
 
-	// Nothing else in the analysis needs the fixture, so an eval that declares no
-	// DS must still get every other metric rather than failing outright.
-	it('nulls dsCoverage when the fixture declares no DS packages', () => {
-		writeFixture(null);
-		const row = analyzeRun(runContext());
+	// The pin, not the fixture: this eval's directory no longer exists under
+	// evals/, and its runs are still measured.
+	it('measures coverage from the pin even when the eval fixture is gone', () => {
+		const row = analyzeRun(
+			runContext({
+				projectDir: writeTree('project-ds', DS_TREE),
+				fixtureDir: join(root, 'evals', 'deleted-eval'),
+			}),
+		);
+		expect((row.dsCoverage as { nodes: { ds: number } }).nodes.ds).toBe(1);
+	});
+
+	// Nothing else in the analysis needs the pin's DS list, so a tree with no
+	// design system still gets every other metric rather than failing outright.
+	it('nulls dsCoverage for a pin that declares no DS packages', () => {
+		const row = analyzeRun(runContext({ pin: UNMAPPED_PIN }));
 		expect(row.dsCoverage).toBeNull();
 		expect(row.speed).toEqual({ durationSeconds: 403.365, turns: 12 });
 	});
 
-	it('rejects a malformed dsPackages marker rather than measuring nothing', () => {
-		writeTree('fixture', { 'package.json': JSON.stringify({ evals: { dsPackages: [] } }) });
-		expect(() => analyzeRun(runContext())).toThrow(/dsPackages/);
+	it('nulls dsCoverage for a run that recorded no pin at all', () => {
+		expect(analyzeRun(runContext({ pin: null })).dsCoverage).toBeNull();
 	});
 });
 
@@ -197,7 +199,7 @@ describe('analyzeRun in baseline mode', () => {
 			projectDir,
 			fixtureDir: join(root, 'fixture'),
 			evalName: '701-agentic-ref-reuse-component-mcp',
-			pin: PIN,
+			pin: UNMAPPED_PIN,
 		});
 
 		const noJsx = { jsxLength: 0, jsxBindings: 0, jsxDepthTotal: 0, jsxTrees: 0 };
@@ -214,19 +216,16 @@ describe('analyzeRun in baseline mode', () => {
 	// This is what gets committed under baselines/ and reused across every run of
 	// every arm on the pin, so the pinned tree is measured once rather than N times.
 	it('stores the pinned tree’s coverage for the committed baseline to carry', () => {
-		writeFixture(['@ds/*']);
 		const baseline = analyzeRun({
 			mode: 'baseline',
-			projectDir: writeTree('ref-ds', {
-				'src/C.tsx': 'export const C = () => <div><button /></div>;\n',
-			}),
+			projectDir: writeTree('ref-ds', HOST_TREE),
 			fixtureDir: join(root, 'fixture'),
 			evalName: '701-agentic-ref-reuse-component-mcp',
 			pin: PIN,
 		});
 
 		expect(baseline.dsCoverage).toMatchObject({
-			dsPackages: ['@ds/*'],
+			dsPackages: ['@base-ui/react', '@droppy/*'],
 			nodes: { all: 2, host: 2, component: 0, ds: 0 },
 			dsShareOfAllNodes: 0,
 			// No component-typed element at all, so the ratio has no denominator.
@@ -359,19 +358,10 @@ describe('deltaToBaseline', () => {
 	});
 
 	it('reports how the DS share moved between the two trees', () => {
-		writeFixture(['@ds/*']);
-		const delta = deltaToBaseline(
-			deltaContext(
-				{ 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' },
-				{
-					'src/C.tsx':
-						"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
-				},
-			),
-		);
+		const delta = deltaToBaseline(deltaContext(HOST_TREE, DS_TREE));
 
 		expect(delta.coverageDelta).toMatchObject({
-			dsPackages: ['@ds/*'],
+			dsPackages: ['@base-ui/react', '@droppy/*'],
 			nodes: {
 				all: { before: 2, after: 2, delta: 0 },
 				host: { before: 2, after: 1, delta: -1 },
@@ -385,22 +375,18 @@ describe('deltaToBaseline', () => {
 		});
 	});
 
-	it('nulls coverageDelta when the eval declares no DS packages', () => {
+	it('nulls coverageDelta for a pin that declares no DS packages', () => {
 		const identical = { 'src/C.tsx': 'export const C = () => <div />;\n' };
-		expect(deltaToBaseline(deltaContext(identical, identical)).coverageDelta).toBeNull();
+		const context = { ...deltaContext(identical, identical), pin: UNMAPPED_PIN };
+		expect(
+			deltaToBaseline({ ...context, runAnalysis: analyzeRun(context) }).coverageDelta,
+		).toBeNull();
 	});
 
 	// metricsVersion invalidates a baseline when a metric definition moves, but
-	// the DS patterns live in the fixture and can move without it.
+	// DS_PACKAGES_BY_PIN can gain or change an entry without it.
 	it('re-measures the baseline when its stored coverage counted other packages', () => {
-		writeFixture(['@ds/*']);
-		const context = deltaContext(
-			{ 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' },
-			{
-				'src/C.tsx':
-					"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
-			},
-		);
+		const context = deltaContext(HOST_TREE, DS_TREE);
 		const stale = {
 			...context,
 			baselineAnalysis: {
@@ -425,19 +411,12 @@ describe('deltaToBaseline', () => {
 	// The whole point of committing baselines: measuring the pinned tree once per
 	// pin rather than once per run of every arm.
 	it('reuses the committed baseline coverage when it counted the same packages', () => {
-		writeFixture(['@ds/*']);
-		const context = deltaContext(
-			{ 'src/C.tsx': 'export const C = () => <div><button /></div>;\n' },
-			{
-				'src/C.tsx':
-					"import { Button } from '@ds/react';\nexport const C = () => <div><Button /></div>;\n",
-			},
-		);
+		const context = deltaContext(HOST_TREE, DS_TREE);
 		const committed = {
 			...context,
 			baselineAnalysis: {
 				dsCoverage: {
-					dsPackages: ['@ds/*'],
+					dsPackages: ['@base-ui/react', '@droppy/*'],
 					files: 1,
 					nodes: { all: 8, host: 6, component: 2, ds: 1, external: 1, local: 0, unresolved: 0 },
 					dsShareOfAllNodes: 0.125,
@@ -829,7 +808,9 @@ describe('summarize', () => {
 				// armRows carries complexity but no coverage.
 				summarize(armRows(), { general: false, complexity: false, coverage: true });
 				expect(table).not.toHaveBeenCalled();
-				expect(log).toHaveBeenCalledWith(expect.stringContaining('coverage'));
+				// The one thing that stops a run being measured is an unmapped pin,
+				// so the note names the table to edit rather than shrugging.
+				expect(log).toHaveBeenCalledWith(expect.stringContaining('DS_PACKAGES_BY_PIN'));
 			} finally {
 				log.mockRestore();
 				table.mockRestore();

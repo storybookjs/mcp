@@ -5,17 +5,32 @@
 // The analyzer itself lives in lib/agentic-reference/metrics/ds-coverage/.
 // This wrapper only parses arguments and renders tables.
 // `--json` prints the full report for piping into jq.
+//
+// `--filter <glob>` selects which files are counted, and is repeatable. Globs
+// are picomatch patterns, written relative to <dir> or as an absolute path
+// inside it, and a `!` prefix excludes:
+//
+//   --filter '!core/src/components/**'   everything but that directory
+//   --filter 'src/**'                    only that directory
+//   --filter 'src/**' --filter '!src/debug/**'   that directory, less a corner
+//
+// A filtered-out file still resolves — it leaves the count, not the module
+// graph — which is what makes it usable on a monorepo that vendors its own
+// design system without stranding every import into it.
 import { statSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 
 import { analyzeDsCoverage } from '../lib/agentic-reference/metrics/ds-coverage/index.ts';
 
 const USAGE =
-	'usage: node scripts/ds-coverage.ts <dir> --ds <pattern> [--ds <pattern>...] [--json] [--per-file] [--top <n>]';
+	'usage: node scripts/ds-coverage.ts <dir> --ds <pattern> [--ds <pattern>...] ' +
+	'[--filter <glob>...] [--json] [--per-file] [--top <n>]\n' +
+	"       globs are relative to <dir>; prefix with ! to exclude, e.g. --filter '!core/src/components/**'";
 
 const { values, positionals } = parseArgs({
 	options: {
 		ds: { type: 'string', multiple: true },
+		filter: { type: 'string', multiple: true },
 		json: { type: 'boolean', default: false },
 		'per-file': { type: 'boolean', default: false },
 		top: { type: 'string', default: '25' },
@@ -47,7 +62,16 @@ if (!Number.isInteger(top) || top < 1) {
 	process.exit(2);
 }
 
-const report = analyzeDsCoverage({ projectDir: dir, dsPackages });
+// A bad --filter is a usage mistake like the ones above, so it reads as one
+// rather than as a stack trace out of the analyzer.
+const censusFilters = values.filter ?? [];
+let report;
+try {
+	report = analyzeDsCoverage({ projectDir: dir, dsPackages, censusFilters });
+} catch (error) {
+	console.error(error instanceof Error ? error.message : String(error));
+	process.exit(2);
+}
 
 if (values.json) {
 	console.log(JSON.stringify(report, null, 2));
@@ -56,6 +80,10 @@ if (values.json) {
 
 console.log(`ds-coverage of ${dir}`);
 console.log(`  DS packages:  ${report.dsPackages.join(', ')}`);
+if (report.censusFilters.length > 0) {
+	// Named on its own line because it changes what the shares below mean.
+	console.log(`  filters:      ${report.censusFilters.join(', ')} (unmatched files still resolve)`);
+}
 console.log(
 	`  files:        ${report.files} (${report.parseFailures.length} unparseable, ${report.readFailures.length} unreadable)`,
 );

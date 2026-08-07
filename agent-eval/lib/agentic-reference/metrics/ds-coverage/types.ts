@@ -106,10 +106,20 @@ export interface CensusResult {
 	unresolved: UnresolvedElement[];
 }
 
+/**
+ * Whether a file's own JSX counts toward the census. A file that fails this is
+ * still parsed and still resolves imports — it leaves the count, not the graph.
+ */
+export type IsCountedFile = (path: string) => boolean;
+
 /** What a framework plugs into the facade. */
 export interface FrameworkImplementation {
 	createDeclarationAnalyzer(): DeclarationAnalyzer;
-	createCensus(): (graph: ModuleGraph, resolver: IdentityResolver) => CensusResult;
+	createCensus(): (
+		graph: ModuleGraph,
+		resolver: IdentityResolver,
+		isCounted: IsCountedFile,
+	) => CensusResult;
 }
 
 export interface DsCoverageOptions {
@@ -119,12 +129,29 @@ export interface DsCoverageOptions {
 	dsPackages: string[];
 	/** Framework name (only 'react' is supported for now). */
 	framework?: 'react';
+	/**
+	 * Glob patterns selecting which files' JSX is counted, `!`-prefixed to
+	 * exclude — see createPathFilter for how the two kinds compose and what
+	 * syntax picomatch gives you. Each may be written relative to `projectDir`
+	 * or as an absolute path inside it. Matched files are measured; unmatched
+	 * ones are still parsed and still resolve.
+	 *
+	 * This is how you keep a vendored design system out of an app's UI total:
+	 * `!core/src/components/**` stops the DS implementing itself from counting,
+	 * where dropping it from the graph would strand every import into it.
+	 *
+	 * Distinct from the tests/stories/mocks rule in module-graph.ts, which drops
+	 * files from the graph as well — nothing imports a test for its components.
+	 */
+	censusFilters?: string[];
 }
 
 export interface DsCoverageReport {
 	framework: string;
 	dsPackages: string[];
-	/** Files the census walked. */
+	/** The globs that selected what was counted, so a share is readable alone. */
+	censusFilters: string[];
+	/** Files the census walked, after those globs. */
 	files: number;
 	parseFailures: string[];
 	readFailures: string[];

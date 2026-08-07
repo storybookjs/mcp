@@ -141,6 +141,14 @@ function isReactHelper(resolution: Resolution, helper: string): boolean {
 	);
 }
 
+/**
+ * The identity name `createContext(...)` resolves to, so that `<Ctx.Provider>`
+ * projects to a stable `react#Context.Provider` the census can recognise.
+ * React exports no value called `Context`, so the name cannot collide with a
+ * real import.
+ */
+export const REACT_CONTEXT = 'Context';
+
 type StyledTarget =
 	| { kind: 'intrinsic'; tag: string }
 	| { kind: 'expression'; node: ts.Expression };
@@ -181,7 +189,13 @@ function styledTargetOf(
 				isStyledFactory(resolveScopedName(file, callee, callee.text, resolver))
 			) {
 				const target = current.arguments[0];
-				return target ? { kind: 'expression', node: target } : null;
+				if (target === undefined) return null;
+				// `styled('div')` is `styled.div` spelled the other way, and the only
+				// spelling available for a tag the property form cannot express
+				// (`styled('my-element')`). Both libraries accept it, and Storybook's
+				// own components are written this way throughout.
+				if (ts.isStringLiteral(target)) return { kind: 'intrinsic', tag: target.text };
+				return { kind: 'expression', node: target };
 			}
 			current = callee;
 			continue;
@@ -467,6 +481,12 @@ function analyzeExpression(
 				calleeResolution.name === 'createGlobalStyle'
 			) {
 				return calleeResolution;
+			}
+			// `createContext(...)` yields the context object, not a renderable —
+			// what gets rendered is its `.Provider`/`.Consumer`, which memberOf
+			// projects off this identity and the census then skips as plumbing.
+			if (isReactHelper(calleeResolution, 'createContext')) {
+				return { category: 'external', module: 'react', name: REACT_CONTEXT };
 			}
 		}
 
