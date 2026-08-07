@@ -80,6 +80,22 @@ export interface DeltaToBaselineContext extends Omit<RunContext, 'pin'> {
 	baselineAnalysis: Analysis;
 }
 
+/**
+ * Which families of tables `summarize` should print, straight from the runner's
+ * own flags. A module prints the families it has and ignores the rest.
+ *
+ * Only the console view is selectable: the returned rows are what gets
+ * persisted, and are the same whatever prints.
+ */
+export interface SummarizeOptions {
+	/** Per-run vitals and the grouped summary. */
+	general: boolean;
+	/** The complexity family, where a module measures one. */
+	complexity: boolean;
+	/** The design-system coverage family, where a module measures one. */
+	coverage: boolean;
+}
+
 export interface PostAnalysis {
 	analyzeRun: (context: PostAnalysisContext) => Awaitable<Analysis | null>;
 	/** Optional. Its presence is what makes the external repo a requirement. */
@@ -102,8 +118,12 @@ export interface PostAnalysis {
 	 * rows worth keeping. The runner writes those into that directory's
 	 * summary.json under `postAnalysis`, beside the harness's own pass rate and
 	 * mean duration, and collects them all into results/analysis-summary.json.
+	 *
+	 * `options` says which table families to print; omitted means "all of them",
+	 * which is what a direct programmatic call wants. The runner always passes
+	 * its own selection.
 	 */
-	summarize: (analyses: Analysis[]) => Analysis[];
+	summarize: (analyses: Analysis[], options?: SummarizeOptions) => Analysis[];
 }
 
 /**
