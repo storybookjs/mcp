@@ -53,6 +53,10 @@ describe('resolveTreatments', () => {
 	it('rejects the control in the treatment list', () => {
 		expect(() => resolveTreatments('control-none,full', control, [])).toThrow(/control/);
 	});
+
+	it('deduplicates explicit treatment list by caseName', () => {
+		expect(resolveTreatments('full,full', control, []).map((c) => c.shortName)).toEqual(['full']);
+	});
 });
 
 describe('workflows', () => {

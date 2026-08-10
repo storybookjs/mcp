@@ -61,7 +61,13 @@ export function resolveTreatments(
 	if (treatments.some((c) => c.caseName === control.caseName)) {
 		throw new Error(`The control case "${control.shortName}" cannot also be a treatment.`);
 	}
-	return treatments;
+	// Deduplicate by caseName, keeping first occurrence and preserving order
+	const seen = new Set<string>();
+	return treatments.filter((c) => {
+		if (seen.has(c.caseName)) return false;
+		seen.add(c.caseName);
+		return true;
+	});
 }
 
 export function knownWorkflows(evalsDir: string): string[] {
