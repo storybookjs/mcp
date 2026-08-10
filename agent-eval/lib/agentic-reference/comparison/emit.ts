@@ -15,9 +15,14 @@ export interface ComparisonSpec {
 
 function orderedCells(cells: Cell[], spec: ComparisonSpec): Cell[] {
 	const caseRank = (c: ResolvedCase) => (c.caseName === spec.control.caseName ? '' : c.caseName);
+	const workflowNumericId = (workflow: string): number => {
+		const match = workflow.match(/^(\d+)/);
+		return match?.[1] ? Number.parseInt(match[1], 10) : 0;
+	};
 	return [...cells].sort(
 		(a, b) =>
 			caseRank(a.case).localeCompare(caseRank(b.case)) ||
+			workflowNumericId(a.workflow) - workflowNumericId(b.workflow) ||
 			a.workflow.localeCompare(b.workflow) ||
 			a.batch.localeCompare(b.batch),
 	);

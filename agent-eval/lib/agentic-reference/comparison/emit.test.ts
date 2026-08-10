@@ -25,19 +25,23 @@ const SPEC: ComparisonSpec = {
 	allBatches: false,
 };
 
-function cell(resolvedCase: ResolvedCase, values: number[]): Cell {
+function cell(
+	resolvedCase: ResolvedCase,
+	values: number[],
+	workflow: string = '703-fix-bug-flow',
+): Cell {
 	return {
 		case: resolvedCase,
-		workflow: '703-fix-bug-flow',
+		workflow,
 		batch: '2026-08-05T00-00-00.000Z',
 		runs: values.map((v, i) => ({
 			run: {
-				runDir: `/root/results/${resolvedCase.experiment}/2026-08-05T00-00-00.000Z/703-fix-bug-flow/run-${i + 1}`,
+				runDir: `/root/results/${resolvedCase.experiment}/2026-08-05T00-00-00.000Z/${workflow}/run-${i + 1}`,
 				projectDir: '',
 				experiment: resolvedCase.experiment,
 				model: '',
 				timestamp: '2026-08-05T00-00-00.000Z',
-				evalName: '703-fix-bug-flow',
+				evalName: workflow,
 				run: i + 1,
 			},
 			analysis: { speed: { durationSeconds: v } },
@@ -66,6 +70,27 @@ describe('datasetCsv', () => {
 		expect(csv.endsWith('\n')).toBe(true);
 		// durationSeconds filled, every other metric column empty
 		expect(lines[1]!.split(',').filter((v) => v !== '')).toHaveLength(5);
+	});
+
+	it('orders workflows numerically, not lexicographically', () => {
+		const spec = {
+			control: CONTROL,
+			treatments: [TREATMENT],
+			workflows: ['703-fix-bug-flow', '1701-wide-flow'],
+			mode: 'single-workflow' as const,
+			minRuns: 1,
+			allBatches: false,
+		};
+		const csv = datasetCsv(
+			[cell(CONTROL, [7], '1701-wide-flow'), cell(CONTROL, [8], '703-fix-bug-flow')],
+			COMPARISON_METRICS,
+			spec,
+		);
+		const lines = csv.split('\n').filter((line) => line !== '');
+		// Numeric order: 703 < 1701, so 703-fix-bug-flow rows should come before 1701-wide-flow
+		const controlRows = lines.slice(1).filter((line) => line.startsWith('control-none'));
+		expect(controlRows[0]!.includes('703-fix-bug-flow')).toBe(true);
+		expect(controlRows[1]!.includes('1701-wide-flow')).toBe(true);
 	});
 });
 
