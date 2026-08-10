@@ -111,7 +111,9 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 						? 'stale-analysis'
 						: cell.unanalyzed >= shortfall
 							? 'unanalyzed'
-							: 'missing-runs';
+							: cell.stale + cell.unanalyzed >= shortfall
+								? 'stale-analysis'
+								: 'missing-runs';
 				gaps.push({
 					case: resolvedCase,
 					workflow,

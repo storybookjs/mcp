@@ -131,6 +131,23 @@ describe('buildCells', () => {
 		]);
 	});
 
+	it('falls back to stale-analysis when stale and unanalyzed only cover the shortfall together', () => {
+		mkRun(CONTROL.experiment, TS2, 1, 'usable');
+		mkRun(CONTROL.experiment, TS2, 2, 'stale');
+		mkRun(CONTROL.experiment, TS2, 3, 'stale');
+		mkRun(CONTROL.experiment, TS2, 4, 'unanalyzed');
+		mkRun(CONTROL.experiment, TS2, 5, 'unanalyzed');
+		for (let i = 1; i <= 4; i++) mkRun(TREATMENT.experiment, TS2, i, 'usable');
+		// minRuns=4, usable=1 -> shortfall=3; stale=2 and unanalyzed=2 each fall
+		// short alone, but their sum (4) covers it, so --recompute (which
+		// re-analyzes both) is the right remediation, not a fingerprint-cache
+		// no-op eval command.
+		const { gaps } = build({ minRuns: 4 });
+		expect(gaps).toEqual([
+			{ case: CONTROL, workflow: WF, have: 1, need: 4, reason: 'stale-analysis' },
+		]);
+	});
+
 	it('treats malformed analysis.json as excluded, not usable', () => {
 		mkRun(CONTROL.experiment, TS2, 1, 'usable');
 		mkRun(CONTROL.experiment, TS2, 2, 'malformed');

@@ -33,6 +33,13 @@ export function remediationCommands(gaps: CellGap[]): string[] {
 			recompute.add(experiment);
 		}
 	}
+	// Freshly collected runs land unanalyzed, so every experiment earning a
+	// collection command also needs an analyze follow-up — unless it already
+	// has a recompute command, whose --recompute re-analyzes stale AND
+	// unanalyzed runs (including the ones just collected) in one pass.
+	for (const experiment of collect.keys()) {
+		if (!recompute.has(experiment)) analyze.add(experiment);
+	}
 	return [
 		...[...collect.entries()]
 			.sort(([a], [b]) => a.localeCompare(b))

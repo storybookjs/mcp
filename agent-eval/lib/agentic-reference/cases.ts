@@ -160,6 +160,35 @@ if (duplicateNames.length > 0) {
 	throw new Error(`AGENTIC_REF_CASES: duplicate case names: ${duplicateNames.join(', ')}`);
 }
 
+// comparison/resolve.ts derives each case's shortName the same way (strip any
+// agent's prefix/suffix pair); duplicated locally rather than imported
+// because resolve.ts imports AGENTIC_REF_CASES from this module, and pulling
+// shortNameOf back in here would create a cycle.
+function shortNameOf(caseName: string): string {
+	for (const { prefix, modelSuffix } of Object.values(AGENT_NAME_PARTS)) {
+		const head = `${prefix}-`;
+		const tail = `-${modelSuffix}`;
+		if (caseName.startsWith(head) && caseName.endsWith(tail)) {
+			return caseName.slice(head.length, -tail.length);
+		}
+	}
+	return caseName;
+}
+
+// Two cases sharing a derived shortName would be indistinguishable in
+// results:compare's CSV/manifest output — commands.ts, cells.ts, and the
+// stats stage all key on shortName, so a collision would silently conflate
+// two different experiments under one label.
+const shortNamesByCase = new Map(caseNames.map((name) => [name, shortNameOf(name)]));
+const shortNameCollisions = [...new Set(shortNamesByCase.values())]
+	.map((shortName) => caseNames.filter((name) => shortNamesByCase.get(name) === shortName))
+	.filter((group) => group.length > 1);
+if (shortNameCollisions.length > 0) {
+	throw new Error(
+		`AGENTIC_REF_CASES: cases share a derived short name: ${shortNameCollisions.map((group) => group.join(', ')).join('; ')}`,
+	);
+}
+
 // AGENTIC_REF_EVALS=<eval>[,<eval>] narrows every case's supported workflow evals
 // to the ones matching the environment variable. This is a filtering mechanism
 // rather than an overriding one.
