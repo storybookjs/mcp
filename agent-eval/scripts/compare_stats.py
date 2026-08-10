@@ -76,10 +76,20 @@ def analyze(manifest, data):
     treatments = [t["shortName"] for t in manifest["spec"]["treatments"]]
     workflows = manifest["spec"]["workflows"]
     pooled = manifest["spec"]["mode"] == "aggregate"
-    rows, skipped = [], []
+    rows, skipped, anomaly_lines = [], [], []
 
     for metric in manifest["metrics"]:
         series, anomalies = transform_series(data[metric["key"]], metric["transform"])
+        if anomalies.any():
+            # log requires y > 0 (values <= 0 are anomalies); log0 maps 0 to 0 and
+            # only rejects negatives. Named per-run so the report points straight
+            # at the offending run instead of leaving a bare count.
+            detail = "value <= 0 dropped" if metric["transform"] == "log" else "value < 0 dropped"
+            for idx in data.index[anomalies]:
+                row = data.loc[idx]
+                anomaly_lines.append(
+                    f'- {metric["key"]}: {row["case"]}/{row["workflow"]}/run-{row["run"]} ({detail})'
+                )
         frame = pd.DataFrame(
             {"y": series, "case": data["case"], "workflow": data["workflow"]}
         ).dropna(subset=["y"])
@@ -97,7 +107,7 @@ def analyze(manifest, data):
                 )
                 continue
             stats = fit_pair(pair, control, treatment, pooled)
-            if not math.isfinite(stats["p"]):
+            if not all(math.isfinite(v) for v in (stats["beta"], stats["se"], stats["ciLow"], stats["ciHigh"], stats["p"])):
                 skipped.append(
                     {
                         "metric": metric["key"],
@@ -133,7 +143,16 @@ def analyze(manifest, data):
                     if (sub["case"] == control).sum() < 2 or (sub["case"] == treatment).sum() < 2:
                         continue
                     context_stats = fit_pair(sub, control, treatment, pooled=False)
-                    if not math.isfinite(context_stats["p"]):
+                    if not all(
+                        math.isfinite(v)
+                        for v in (
+                            context_stats["beta"],
+                            context_stats["se"],
+                            context_stats["ciLow"],
+                            context_stats["ciHigh"],
+                            context_stats["p"],
+                        )
+                    ):
                         # Degenerate per-workflow fit (e.g. zero variance within this
                         # workflow slice); drop silently, context rows aren't part of
                         # the BH family or the "Skipped metrics" report section.
@@ -168,7 +187,7 @@ def analyze(manifest, data):
         for row, q in zip(headline, q_values):
             row["q"] = float(q)
             row["verdict"] = "significant" if q <= ALPHA else "not-significant"
-    return rows, skipped
+    return rows, skipped, anomaly_lines
 
 
 ESTIMATE_FIELDS = [
@@ -179,12 +198,12 @@ ESTIMATE_FIELDS = [
 
 
 def write_estimates(out_dir, rows):
-    with open(out_dir / "estimates.csv", "w", newline="") as handle:
+    with open(out_dir / "estimates.csv", "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(ESTIMATE_FIELDS)
         for row in rows:
             writer.writerow([fmt(row[field]) if not isinstance(row[field], bool) else str(row[field]).lower() for field in ESTIMATE_FIELDS])
-    (out_dir / "estimates.json").write_text(json.dumps(rows, indent=2) + "\n")
+    (out_dir / "estimates.json").write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
 
 
 def draw_curves(out_dir, manifest, data, rows):
@@ -237,7 +256,7 @@ def draw_curves(out_dir, manifest, data, rows):
             plt.close(fig)
 
 
-def write_report(out_dir, manifest, rows, skipped):
+def write_report(out_dir, manifest, rows, skipped, anomaly_lines):
     spec = manifest["spec"]
     lines = [
         f'# Comparison: {spec["control"]["shortName"]} vs {"+".join(t["shortName"] for t in spec["treatments"])}',
@@ -271,6 +290,9 @@ def write_report(out_dir, manifest, rows, skipped):
     if skipped:
         lines += ["", "## Skipped metrics", ""]
         lines += [f'- {s["metric"]} × {s["treatment"]}: {s["reason"]}' for s in skipped]
+    if anomaly_lines:
+        lines += ["", "## Anomalous values", ""]
+        lines += anomaly_lines
     if manifest.get("excludedRuns"):
         lines += ["", "## Excluded runs", ""]
         lines += [f'- `{e["path"]}` — {e["reason"]}' for e in manifest["excludedRuns"]]
@@ -281,17 +303,23 @@ def write_report(out_dir, manifest, rows, skipped):
             f'| {cell["passed"]} | {cell["failed"]} | {cell["unanalyzed"]} | {cell["stale"]} |'
         )
     lines += ["", "Curves: see `curves/<metric>@<workflow>.svg`.", ""]
-    (out_dir / "report.md").write_text("\n".join(lines))
+    (out_dir / "report.md").write_text("\n".join(lines), encoding="utf-8")
 
 
 def main():
     out_dir = Path(sys.argv[1])
-    manifest = json.loads((out_dir / "manifest.json").read_text())
+    manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     data = pd.read_csv(out_dir / "dataset.csv", dtype={"case": str, "workflow": str, "batch": str})
-    rows, skipped = analyze(manifest, data)
+    rows, skipped, anomaly_lines = analyze(manifest, data)
     write_estimates(out_dir, rows)
     draw_curves(out_dir, manifest, data, rows)
-    write_report(out_dir, manifest, rows, skipped)
+    write_report(out_dir, manifest, rows, skipped, anomaly_lines)
+    # Replace the declared metrics×treatments grid with the family actually
+    # corrected against: pairs skipped (too few values, degenerate fit) never
+    # entered the BH correction, so the manifest must not claim they did.
+    manifest["family"] = [
+        {"metric": r["metric"], "treatment": r["treatment"]} for r in rows if not r["context"]
+    ]
     manifest["provenance"] = {
         **manifest.get("provenance", {}),
         "python": sys.version.split()[0],
@@ -299,7 +327,7 @@ def main():
         "statsmodels": statsmodels.__version__,
         "matplotlib": matplotlib.__version__,
     }
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     significant = sum(1 for row in rows if row["verdict"] == "significant")
     headline = sum(1 for row in rows if not row["context"])
     print(f"{headline} headline tests, {significant} significant at FDR 5%.")
