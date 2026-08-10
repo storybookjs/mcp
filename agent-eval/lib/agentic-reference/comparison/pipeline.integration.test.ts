@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,8 +85,10 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		for (const file of ['dataset.csv', 'estimates.csv', 'estimates.json', 'report.md']) {
 			expect(readFileSync(join(a, file))).toEqual(readFileSync(join(b, file)));
 		}
-		for (const file of [`curves/durationSeconds@${WF}.svg`, `curves/durationSeconds@${WF}.png`]) {
-			expect(readFileSync(join(a, file))).toEqual(readFileSync(join(b, file)));
+		const curveFiles = (dir: string) => readdirSync(join(dir, 'curves')).sort();
+		expect(curveFiles(a)).toEqual(curveFiles(b));
+		for (const file of curveFiles(a)) {
+			expect(readFileSync(join(a, 'curves', file))).toEqual(readFileSync(join(b, 'curves', file)));
 		}
 		const stripProvenance = (dir: string) => {
 			const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
@@ -98,21 +100,24 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 
 	it('early-exits with remediation commands when a cell is short', () => {
 		rmSync(join(resultsDir, TREATMENT_EXP, TS, WF, 'run-10'), { recursive: true });
-		let output = '';
 		try {
-			runCompare(join(root, 'comparisons', 'short'));
-			expect.unreachable('should have exited non-zero');
-		} catch (error) {
-			const failed = error as { status: number; stderr: Buffer };
-			expect(failed.status).toBe(1);
-			output = failed.stderr.toString();
+			let output = '';
+			try {
+				runCompare(join(root, 'comparisons', 'short'));
+				expect.unreachable('should have exited non-zero');
+			} catch (error) {
+				const failed = error as { status: number; stderr: Buffer };
+				expect(failed.status).toBe(1);
+				output = failed.stderr.toString();
+			}
+			expect(output).toContain('9/10');
+			expect(output).toContain(
+				`AGENTIC_REF_FLOW=${WF} AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref ${TREATMENT_EXP}`,
+			);
+		} finally {
+			// Restore for any later test ordering, even if an assertion above failed.
+			plantRun(TREATMENT_EXP, 10, CONTROL_DURATIONS[9]! * 2, CACHE_HIT_RATES[9]!);
 		}
-		expect(output).toContain('9/10');
-		expect(output).toContain(
-			`AGENTIC_REF_FLOW=${WF} AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref ${TREATMENT_EXP}`,
-		);
-		// Restore for any later test ordering.
-		plantRun(TREATMENT_EXP, 10, CONTROL_DURATIONS[9]! * 2, CACHE_HIT_RATES[9]!);
 	}, 300_000);
 });
 
