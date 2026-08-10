@@ -7,7 +7,7 @@
 // - Conditional renders cause element counts on each branch to be weighted
 import ts from 'typescript';
 
-import { REACT_CONTEXT, resolveJsxTag } from './resolve.ts';
+import { resolveJsxTag } from './resolve.ts';
 
 import type { ModuleGraph } from '../module-graph.ts';
 import type {
@@ -26,7 +26,7 @@ function emptyTotals(): NodeTotals {
 /**
  * Whether the subtree contains an element the census would count. A
  * non-rendering element (see NON_RENDERING_REACT) is not itself countable, but
- * elements inside it are — so `cond ? <A/> : <Fragment/>` keeps full weight
+ * elements inside it are, so `cond ? <A/> : <Fragment/>` keeps full weight
  * while `cond ? <A/> : <Fragment><B/></Fragment>` halves, exactly matching
  * the equivalent `<>` spellings.
  */
@@ -59,19 +59,10 @@ const LOGICAL_OPERATORS = new Set<ts.SyntaxKind>([
 
 /**
  * React elements that render no UI of their own, only their children:
- * `<React.Fragment>` (the same thing as `<>`) and a context `<Ctx.Provider>` or
- * `<Ctx.Consumer>`. All three are plumbing, so counting them would pad the
- * component total with elements no design system could ever have supplied and
- * quietly depress the DS share.
- *
- * A DS's own `<ThemeProvider>` is a different thing — a real exported component,
- * not a member of a `createContext` result — and still counts.
+ * `<React.Fragment>` (`<>`) and `<Ctx.Provider>` or `<Ctx.Consumer>`
+ * Counting them would skew component total against DS coverage.
  */
-const NON_RENDERING_REACT = new Set([
-	'Fragment',
-	`${REACT_CONTEXT}.Provider`,
-	`${REACT_CONTEXT}.Consumer`,
-]);
+const NON_RENDERING_REACT = new Set(['Fragment', 'Context.Provider', 'Context.Consumer']);
 
 function isNonRenderingIdentity(resolution: Resolution): boolean {
 	return (
@@ -95,9 +86,10 @@ export function censusReactTree(
 	const unresolved: UnresolvedElement[] = [];
 
 	for (const file of graph.files.values()) {
-		// Skipping the walk, not the file: it stays in `graph.files`, so a tag
-		// elsewhere that resolves into it still resolves.
-		if (!isCounted(file.path)) continue;
+		// Skipping the walk for filtered out files.
+		if (!isCounted(file.path)) {
+			continue;
+		}
 
 		const fileTotals = emptyTotals();
 

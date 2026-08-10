@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { createPathFilter, describeUnmatchedGlob } from './path-filter.ts';
+import { createPathFilter } from './path-filter.ts';
 
 const ROOT = '/home/dev/storybook/code';
 
 /** Filters are always built against a root; most tests do not care which. */
 function filter(globs: string[], projectDir = ROOT) {
-	return createPathFilter(globs, projectDir).isCounted;
+	return createPathFilter(globs, projectDir);
 }
 
 describe('createPathFilter', () => {
@@ -118,7 +118,7 @@ describe('createPathFilter', () => {
 		});
 
 		it('resolves against a relative projectDir too', () => {
-			const isCounted = createPathFilter([`${process.cwd()}/src/**`], '.').isCounted;
+			const isCounted = createPathFilter([`${process.cwd()}/src/**`], '.');
 			expect(isCounted('src/App.tsx')).toBe(true);
 			expect(isCounted('other/App.tsx')).toBe(false);
 		});
@@ -139,60 +139,5 @@ describe('createPathFilter', () => {
 		it('throws on an absolute glob that is the tree itself', () => {
 			expect(() => filter([`!${ROOT}`])).toThrow(/outside the analyzed tree/);
 		});
-	});
-
-	// A glob matching nothing fails in two disguises — a negative one excludes
-	// nothing and looks like "nothing to exclude", a positive one excludes
-	// everything and looks like an empty tree. Neither announces itself.
-	describe('unmatched', () => {
-		const PATHS = ['core/src/components/Button.tsx', 'core/src/manager/App.tsx'];
-
-		it('reports nothing when every glob found a file', () => {
-			const found = createPathFilter(['!core/src/components/**'], ROOT).unmatched(PATHS);
-			expect(found).toEqual([]);
-		});
-
-		it('reports a glob that matched no file, as it was written', () => {
-			const found = createPathFilter(['!code/core/src/components/**'], ROOT).unmatched(PATHS);
-			expect(found).toEqual(['!code/core/src/components/**']);
-		});
-
-		it('reports only the globs that missed', () => {
-			const found = createPathFilter(
-				['core/src/manager/**', 'nope/**', '!core/src/components/**', '!also-nope/**'],
-				ROOT,
-			).unmatched(PATHS);
-			expect(found).toEqual(['nope/**', '!also-nope/**']);
-		});
-
-		it('reports nothing for an empty filter list', () => {
-			expect(createPathFilter([], ROOT).unmatched(PATHS)).toEqual([]);
-		});
-	});
-});
-
-describe('describeUnmatchedGlob', () => {
-	// The mistake worth naming: the path you would type from outside the tree,
-	// one segment longer than the paths the census keys on.
-	it('names the project directory when it was used as the first segment', () => {
-		const message = describeUnmatchedGlob('!code/core/src/components/**', ROOT);
-		expect(message).toContain("already 'code'");
-		expect(message).toContain("Did you mean '!core/src/components/**'?");
-	});
-
-	it('keeps the ! off a suggestion for a positive glob', () => {
-		const message = describeUnmatchedGlob('code/core/src/!(components)/**', ROOT);
-		expect(message).toContain("Did you mean 'core/src/!(components)/**'?");
-	});
-
-	it('says only that it matched nothing when the cause is not guessable', () => {
-		const message = describeUnmatchedGlob('!nonsense/**', ROOT);
-		expect(message).toBe("filter '!nonsense/**' matched no files.");
-	});
-
-	// `code` alone is a plausible directory *inside* a project called code, so
-	// there is nothing to strip and no suggestion to make.
-	it('makes no suggestion for a single-segment glob', () => {
-		expect(describeUnmatchedGlob('code', ROOT)).toBe("filter 'code' matched no files.");
 	});
 });

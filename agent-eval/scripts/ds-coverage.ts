@@ -14,9 +14,8 @@
 //   --filter 'src/**'                    only that directory
 //   --filter 'src/**' --filter '!src/debug/**'   that directory, less a corner
 //
-// A filtered-out file still resolves — it leaves the count, not the module
-// graph — which is what makes it usable on a monorepo that vendors its own
-// design system without stranding every import into it.
+// A filtered-out file still resolves and is part of the module graph,
+// but its own imports are not counted in the census.
 import { statSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 
@@ -62,8 +61,6 @@ if (!Number.isInteger(top) || top < 1) {
 	process.exit(2);
 }
 
-// A bad --filter is a usage mistake like the ones above, so it reads as one
-// rather than as a stack trace out of the analyzer.
 const censusFilters = values.filter ?? [];
 let report;
 try {
@@ -81,7 +78,6 @@ if (values.json) {
 console.log(`ds-coverage of ${dir}`);
 console.log(`  DS packages:  ${report.dsPackages.join(', ')}`);
 if (report.censusFilters.length > 0) {
-	// Named on its own line because it changes what the shares below mean.
 	console.log(`  filters:      ${report.censusFilters.join(', ')} (unmatched files still resolve)`);
 }
 console.log(

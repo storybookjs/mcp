@@ -1,11 +1,10 @@
 // Which bare import specifiers belong to the design system.
 //
-// The DS is named by import *patterns* (`@ds/*`, `@base-ui/react`,
-// `storybook/internal/components`), matched against a specifier as a prefix
-// ending on a path boundary. That covers both shapes a design system ships in:
+// The DS is named by import patterns (`@base-ui/react`, `storybook/internal/components`)
+// matched against a specifier as a prefix. That covers both shapes a DS ships in:
 // a package whose subpaths are all DS (`@base-ui/react/button`), and a package
-// that exposes its DS at one subpath among many — `storybook/internal/components`
-// is the design system, `storybook/internal/types` is not.
+// that exposes its DS at one subpath among many (`storybook/internal/components`
+// is one of many folders of a monorepo).
 
 /** The package-name half of a bare specifier: `@scope/name` or `name`. */
 export function packageNameOf(specifier: string): string {
@@ -18,12 +17,8 @@ export function packageNameOf(specifier: string): string {
  * within one path segment (`@ds/*` matches `@ds/button`, not `@dsx/button`);
  * everything else is literal.
  *
- * A pattern matches a specifier that *is* it, or that continues it after a `/`:
+ * A pattern matches exact matches and prefix matches e.g. `^${pattern}/`:
  * `@base-ui/react` covers `@base-ui/react/button` but not `@base-ui/react-extras`.
- * Anchoring on the boundary rather than reducing the specifier to its package
- * name is what lets a pattern name a subpath at all — reduced first, a
- * `storybook/internal/components` pattern would be compared against the bare
- * `storybook` and never match anything, including itself.
  */
 export function createPackageMatcher(patterns: string[]): (specifier: string) => boolean {
 	const matchers = patterns.map((pattern) => {

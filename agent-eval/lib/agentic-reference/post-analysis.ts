@@ -582,13 +582,14 @@ export function summarize(
  * metricsVersion invalidates committed baselines when a metric definition or
  * its stored shape changes, so a baseline measured under old rules is rebuilt
  * rather than silently compared against runs measured under new ones.
- * History: 2 added the jsx complexity variants; 3 split markup size into
- * jsx-structure.ts (jsxLength/jsxBindings/jsxDepth) and absorbed inline
- * callbacks into their enclosing function in all four walkers; 4 added DS
- * coverage, which the baseline now stores beside its complexity map; 5 moved
- * the DS package patterns from the eval fixture to the external-repo pin, so a
- * baseline whose fixture was missing no longer stores a null coverage; 6 taught
- * the census subpath DS patterns, `styled('div')`, and context providers.
+ * History:
+ * - 2 added the jsx complexity variants
+ * - 3 split markup size into jsx-structure.ts (jsxLength/jsxBindings/jsxDepth)
+ *     and absorbed inline callbacks into their enclosing function in all walkers
+ * - 4 added DS coverage, which the baseline now stores beside its complexity map
+ * - 5 moved the DS package patterns from the eval fixture to the external-repo pin,
+ *     so a baseline whose fixture was missing no longer stores a null coverage
+ * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,

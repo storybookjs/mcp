@@ -141,14 +141,6 @@ function isReactHelper(resolution: Resolution, helper: string): boolean {
 	);
 }
 
-/**
- * The identity name `createContext(...)` resolves to, so that `<Ctx.Provider>`
- * projects to a stable `react#Context.Provider` the census can recognise.
- * React exports no value called `Context`, so the name cannot collide with a
- * real import.
- */
-export const REACT_CONTEXT = 'Context';
-
 type StyledTarget =
 	| { kind: 'intrinsic'; tag: string }
 	| { kind: 'expression'; node: ts.Expression };
@@ -482,11 +474,9 @@ function analyzeExpression(
 			) {
 				return calleeResolution;
 			}
-			// `createContext(...)` yields the context object, not a renderable —
-			// what gets rendered is its `.Provider`/`.Consumer`, which memberOf
-			// projects off this identity and the census then skips as plumbing.
+			// `createContext(...)` yields the context object, not a renderable.
 			if (isReactHelper(calleeResolution, 'createContext')) {
-				return { category: 'external', module: 'react', name: REACT_CONTEXT };
+				return { category: 'external', module: 'react', name: 'Context' };
 			}
 		}
 
