@@ -92,7 +92,7 @@ describe('buildCells', () => {
 		expect(cells.find((c) => c.case === CONTROL)!.batch).toBe('all');
 	});
 
-	it('excludes infra failures and reports missing-runs gaps with commands data', () => {
+	it('excludes infra failures and reports missing-runs gaps', () => {
 		mkRun(CONTROL.experiment, TS2, 1, 'usable');
 		mkRun(CONTROL.experiment, TS2, 2, 'infra');
 		mkRun(TREATMENT.experiment, TS2, 1, 'usable');
@@ -115,6 +115,19 @@ describe('buildCells', () => {
 		expect(gaps).toEqual([
 			{ case: CONTROL, workflow: WF, have: 1, need: 2, reason: 'unanalyzed' },
 			{ case: TREATMENT, workflow: WF, have: 1, need: 2, reason: 'stale-analysis' },
+		]);
+	});
+
+	it('prefers stale-analysis over unanalyzed when both individually cover the shortfall', () => {
+		mkRun(CONTROL.experiment, TS2, 1, 'usable');
+		mkRun(CONTROL.experiment, TS2, 2, 'stale');
+		mkRun(CONTROL.experiment, TS2, 3, 'stale');
+		mkRun(CONTROL.experiment, TS2, 4, 'unanalyzed');
+		mkRun(CONTROL.experiment, TS2, 5, 'unanalyzed');
+		for (let i = 1; i <= 3; i++) mkRun(TREATMENT.experiment, TS2, i, 'usable');
+		const { gaps } = build({ minRuns: 3 });
+		expect(gaps).toEqual([
+			{ case: CONTROL, workflow: WF, have: 1, need: 3, reason: 'stale-analysis' },
 		]);
 	});
 

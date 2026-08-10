@@ -129,10 +129,11 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 export function autoSelectWorkflows(
 	options: Omit<BuildOptions, 'workflows'> & { candidates: string[] },
 ) {
+	const { candidates, ...rest } = options;
 	const selected: string[] = [];
 	const skipped: { workflow: string; gaps: CellGap[] }[] = [];
-	for (const workflow of options.candidates) {
-		const { gaps } = buildCells({ ...options, workflows: [workflow] });
+	for (const workflow of candidates) {
+		const { gaps } = buildCells({ ...rest, workflows: [workflow] });
 		if (gaps.length === 0) selected.push(workflow);
 		else skipped.push({ workflow, gaps });
 	}
