@@ -97,6 +97,15 @@ def analyze(manifest, data):
                 )
                 continue
             stats = fit_pair(pair, control, treatment, pooled)
+            if not math.isfinite(stats["p"]):
+                skipped.append(
+                    {
+                        "metric": metric["key"],
+                        "treatment": treatment,
+                        "reason": "degenerate fit (zero variance): p-value is not finite",
+                    }
+                )
+                continue
             rows.append(
                 {
                     "metric": metric["key"],
@@ -124,6 +133,11 @@ def analyze(manifest, data):
                     if (sub["case"] == control).sum() < 2 or (sub["case"] == treatment).sum() < 2:
                         continue
                     context_stats = fit_pair(sub, control, treatment, pooled=False)
+                    if not math.isfinite(context_stats["p"]):
+                        # Degenerate per-workflow fit (e.g. zero variance within this
+                        # workflow slice); drop silently, context rows aren't part of
+                        # the BH family or the "Skipped metrics" report section.
+                        continue
                     rows.append(
                         {
                             "metric": metric["key"],
