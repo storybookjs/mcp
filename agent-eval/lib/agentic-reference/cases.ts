@@ -149,6 +149,9 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	},
 ];
 
+/** The single control every comparison runs against unless --control overrides it. */
+export const DEFAULT_CONTROL_CASE = 'cc-control-none-opus-high';
+
 // Duplicate names would make agenticRefCaseExperiment always pick the first
 // match and collide generated stubs, results directories, and fingerprints.
 const caseNames = AGENTIC_REF_CASES.map((agenticRefCase) => agenticRefCase.name);
