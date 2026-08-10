@@ -19,10 +19,19 @@ afterEach(() => {
 	vol.reset();
 });
 
-describe('censusFilters', () => {
-	function analyzeExcluding(files: Record<string, string>, censusFilters: string[]) {
+describe('census include and exclude', () => {
+	function analyzeFiltered(
+		files: Record<string, string>,
+		censusInclude: string[],
+		censusExclude: string[] = [],
+	) {
 		vol.fromJSON(files, ROOT);
-		return analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'], censusFilters });
+		return analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			censusInclude,
+			censusExclude,
+		});
 	}
 
 	// The whole point of the option: a monorepo that vendors its own design
@@ -39,13 +48,14 @@ describe('censusFilters', () => {
 	};
 
 	it('counts a vendored design system’s own markup by default', () => {
-		const report = analyzeExcluding(VENDORED, []);
+		const report = analyzeFiltered(VENDORED, []);
 		expect(report.nodes).toMatchObject({ all: 4, host: 3, component: 1, unresolved: 0 });
-		expect(report.censusFilters).toEqual([]);
+		expect(report.censusInclude).toEqual([]);
+		expect(report.censusExclude).toEqual([]);
 	});
 
-	it('drops a negated glob from the count while still resolving into it', () => {
-		const report = analyzeExcluding(VENDORED, ['!packages/ui/**']);
+	it('drops an excluded glob from the count while still resolving into it', () => {
+		const report = analyzeFiltered(VENDORED, [], ['packages/ui/**']);
 		// App.tsx's two elements only; Button.tsx's <button><span/> are gone.
 		expect(report.nodes).toMatchObject({ all: 2, host: 1, component: 1, unresolved: 0 });
 		// Still attributed to the file it came from, which is the half that
@@ -54,40 +64,39 @@ describe('censusFilters', () => {
 			category: 'local',
 			count: 1,
 		});
-		expect(report.censusFilters).toEqual(['!packages/ui/**']);
+		expect(report.censusExclude).toEqual(['packages/ui/**']);
 		expect(report.perFile['packages/ui/src/Button.tsx']).toBeUndefined();
 	});
 
-	// The other half of the filter list: name what you want rather than what
-	// you don't, and everything unnamed drops out.
-	it('counts only what a positive glob selects', () => {
-		const report = analyzeExcluding(VENDORED, ['src/**']);
+	it('counts only what an include glob selects', () => {
+		const report = analyzeFiltered(VENDORED, ['src/**']);
 		expect(report.nodes).toMatchObject({ all: 2, host: 1, component: 1 });
 		expect(report.perFile['packages/ui/src/Button.tsx']).toBeUndefined();
 	});
 
-	it('lets a negative glob carve out of a positive one', () => {
-		const report = analyzeExcluding(
+	it('lets an exclude carve out of an include', () => {
+		const report = analyzeFiltered(
 			{
 				'src/App.tsx': 'export const App = () => <div />',
 				'src/debug/Panel.tsx': 'export const Panel = () => <div />',
 				'other/Thing.tsx': 'export const Thing = () => <div />',
 			},
-			['src/**', '!src/debug/**'],
+			['src/**'],
+			['src/debug/**'],
 		);
 		expect(report.nodes.all).toBe(1);
 		expect(report.perFile['src/App.tsx']).toBeDefined();
 	});
 
 	it('reports files as the number the census actually walked', () => {
-		expect(analyzeExcluding(VENDORED, []).files).toBe(2);
-		expect(analyzeExcluding(VENDORED, ['!packages/ui/**']).files).toBe(1);
+		expect(analyzeFiltered(VENDORED, []).files).toBe(2);
+		expect(analyzeFiltered(VENDORED, [], ['packages/ui/**']).files).toBe(1);
 	});
 
 	// ROOT is what the caller passed as projectDir, so this is the path you
 	// would paste from a shell rather than the one the report prints.
 	it('accepts an absolute glob inside the analyzed tree', () => {
-		const report = analyzeExcluding(VENDORED, [`!${ROOT}/packages/ui/**`]);
+		const report = analyzeFiltered(VENDORED, [], [`${ROOT}/packages/ui/**`]);
 		expect(report.nodes).toMatchObject({ all: 2, host: 1, component: 1, unresolved: 0 });
 		expect(report.components['packages/ui/src/Button.tsx#Button']).toEqual({
 			category: 'local',
@@ -96,7 +105,7 @@ describe('censusFilters', () => {
 	});
 
 	it('refuses an absolute glob pointing outside the tree', () => {
-		expect(() => analyzeExcluding(VENDORED, ['!/elsewhere/**'])).toThrow(
+		expect(() => analyzeFiltered(VENDORED, [], ['/elsewhere/**'])).toThrow(
 			/outside the analyzed tree/,
 		);
 	});
@@ -108,12 +117,12 @@ describe('censusFilters', () => {
 			'packages/ui/Flat.tsx': 'export const Flat = () => <div />',
 			'packages/ui/deep/Nested.tsx': 'export const Nested = () => <div />',
 		};
-		expect(analyzeExcluding(nested, ['!packages/ui/*']).nodes.all).toBe(1);
-		expect(analyzeExcluding(nested, ['!packages/ui/**']).nodes.all).toBe(0);
+		expect(analyzeFiltered(nested, [], ['packages/ui/*']).nodes.all).toBe(1);
+		expect(analyzeFiltered(nested, [], ['packages/ui/**']).nodes.all).toBe(0);
 	});
 
 	it('excludes a DS-consuming directory without losing its DS attribution elsewhere', () => {
-		const report = analyzeExcluding(
+		const report = analyzeFiltered(
 			{
 				'internal/Debug.tsx': [
 					"import { Button } from '@ds/core'",
@@ -124,7 +133,8 @@ describe('censusFilters', () => {
 					'export const App = () => <Button />',
 				].join('\n'),
 			},
-			['!internal/**'],
+			[],
+			['internal/**'],
 		);
 		expect(report.nodes).toMatchObject({ all: 1, ds: 1 });
 		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });

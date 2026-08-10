@@ -53,18 +53,20 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 		throw new Error(`Project directory is not a directory: ${options.projectDir}`);
 	}
 
-	const censusFilters = options.censusFilters ?? [];
+	const censusInclude = options.censusInclude ?? [];
+	const censusExclude = options.censusExclude ?? [];
 	const graph = buildModuleGraph(options.projectDir);
 	const isDsPackage = createPackageMatcher(options.dsPackages);
 	const resolver = createResolver(graph, isDsPackage, framework.createDeclarationAnalyzer());
 	// We use the projectDir as a working directory to resolve relative paths in filters.
-	const isCounted = createPathFilter(censusFilters, options.projectDir);
+	const isCounted = createPathFilter(censusInclude, censusExclude, options.projectDir);
 	const census = framework.createCensus()(graph, resolver, isCounted);
 
 	return {
 		framework: options.framework ?? 'react',
 		dsPackages: options.dsPackages,
-		censusFilters,
+		censusInclude,
+		censusExclude,
 		files: [...graph.files.keys()].filter(isCounted).length,
 		parseFailures: graph.parseFailures,
 		readFailures: graph.readFailures,

@@ -1,14 +1,14 @@
-// Which files' JSX the census counts, from a list of glob patterns.
+// Which files' JSX the census counts, from include and exclude glob lists.
 //
 // Separate from package-pattern.ts because the two match different things: that
 // one matches bare import specifiers against package patterns, this one matches
-// file paths and so wants real glob semantics — globstars, braces, extglobs —
+// file paths and so wants real glob semantics (globstars, braces, extglobs),
 // which is picomatch's job rather than ours.
 //
-// A filtered-out file is still parsed and still resolves imports — it leaves the
-// count, not the module graph. That is the whole point: a monorepo vendoring its
-// own design system wants `!core/src/components/**` out of the app's UI total
-// while every relative import into it keeps resolving.
+// A filtered-out file is still parsed and still resolves imports; it only
+// leaves the count. That is the whole point: a monorepo vendoring its own
+// design system wants `core/src/components/**` excluded from the app's UI
+// total while every relative import into it keeps resolving.
 import path from 'node:path';
 
 import picomatch from 'picomatch';
@@ -37,34 +37,29 @@ function toProjectRelative(glob: string, root: string): string {
 }
 
 /**
- * A predicate over workspace-relative paths for a list of globs, matched by
- * picomatch.  A glob prefixed with `!` is negative. The two kinds compose
- * the way every filter list does:
+ * A predicate over workspace-relative paths, matched by picomatch.
  *
- * - no globs at all, and every file counts
- * - any positive glob, and a file has to match one of them
- * - any negative glob a file matches, and it is out regardless
+ * - a file counts when it matches at least one include glob (every file counts
+ *   when the include list is empty)
+ * - a file matching any exclude glob is out regardless
  *
- * Negation is handled here rather than handed to picomatch: picomatch treats a
- * pattern list as a plain OR, under which one `!` pattern would match every
- * path the others excluded instead of vetoing them.
+ * Globs are taken verbatim, so a leading `!(...)` extglob is an extglob.
  */
-export function createPathFilter(globs: string[], projectDir: string): IsCountedFile {
+export function createPathFilter(
+	include: string[],
+	exclude: string[],
+	projectDir: string,
+): IsCountedFile {
 	const root = path.resolve(projectDir);
-	const compiled = globs.map((glob) => {
-		const negated = glob.startsWith('!');
-		const pattern = toProjectRelative(negated ? glob.slice(1) : glob, root);
-		return { glob, negated, matches: picomatch(pattern, MATCH_OPTIONS) };
-	});
-
-	const positive = compiled.filter((entry) => !entry.negated);
-	const negative = compiled.filter((entry) => entry.negated);
+	const compile = (glob: string) => picomatch(toProjectRelative(glob, root), MATCH_OPTIONS);
+	const included = include.map(compile);
+	const excluded = exclude.map(compile);
 
 	return (candidate) => {
-		if (negative.some((entry) => entry.matches(candidate))) {
+		if (excluded.some((matches) => matches(candidate))) {
 			return false;
 		}
 
-		return positive.length === 0 || positive.some((entry) => entry.matches(candidate));
+		return included.length === 0 || included.some((matches) => matches(candidate));
 	};
 }

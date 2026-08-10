@@ -6,13 +6,14 @@
 // This wrapper only parses arguments and renders tables.
 // `--json` prints the full report for piping into jq.
 //
-// `--filter <glob>` selects which files are counted, and is repeatable. Globs
-// are picomatch patterns, written relative to <dir> or as an absolute path
-// inside it, and a `!` prefix excludes:
+// `--include <glob>` and `--exclude <glob>` select which files are counted;
+// both repeat. Globs are picomatch patterns, written relative to <dir> or as
+// an absolute path inside it. A file is counted when it matches at least one
+// --include (every file when none is given) and matches no --exclude:
 //
-//   --filter '!core/src/components/**'   everything but that directory
-//   --filter 'src/**'                    only that directory
-//   --filter 'src/**' --filter '!src/debug/**'   that directory, less a corner
+//   --exclude 'core/src/components/**'   everything but that directory
+//   --include 'src/**'                   only that directory
+//   --include 'src/**' --exclude 'src/debug/**'   that directory, less a corner
 //
 // A filtered-out file still resolves and is part of the module graph,
 // but its own imports are not counted in the census.
@@ -23,13 +24,14 @@ import { analyzeDsCoverage } from '../lib/agentic-reference/metrics/ds-coverage/
 
 const USAGE =
 	'usage: node scripts/ds-coverage.ts <dir> --ds <pattern> [--ds <pattern>...] ' +
-	'[--filter <glob>...] [--json] [--per-file] [--top <n>]\n' +
-	"       globs are relative to <dir>; prefix with ! to exclude, e.g. --filter '!core/src/components/**'";
+	'[--include <glob>...] [--exclude <glob>...] [--json] [--per-file] [--top <n>]\n' +
+	'       globs are relative to <dir>; counted files match any --include (all when none) and no --exclude';
 
 const { values, positionals } = parseArgs({
 	options: {
 		ds: { type: 'string', multiple: true },
-		filter: { type: 'string', multiple: true },
+		include: { type: 'string', multiple: true },
+		exclude: { type: 'string', multiple: true },
 		json: { type: 'boolean', default: false },
 		'per-file': { type: 'boolean', default: false },
 		top: { type: 'string', default: '25' },
@@ -61,10 +63,11 @@ if (!Number.isInteger(top) || top < 1) {
 	process.exit(2);
 }
 
-const censusFilters = values.filter ?? [];
+const censusInclude = values.include ?? [];
+const censusExclude = values.exclude ?? [];
 let report;
 try {
-	report = analyzeDsCoverage({ projectDir: dir, dsPackages, censusFilters });
+	report = analyzeDsCoverage({ projectDir: dir, dsPackages, censusInclude, censusExclude });
 } catch (error) {
 	console.error(error instanceof Error ? error.message : String(error));
 	process.exit(2);
@@ -77,8 +80,11 @@ if (values.json) {
 
 console.log(`ds-coverage of ${dir}`);
 console.log(`  DS packages:  ${report.dsPackages.join(', ')}`);
-if (report.censusFilters.length > 0) {
-	console.log(`  filters:      ${report.censusFilters.join(', ')} (unmatched files still resolve)`);
+if (report.censusInclude.length > 0) {
+	console.log(`  include:      ${report.censusInclude.join(', ')}`);
+}
+if (report.censusExclude.length > 0) {
+	console.log(`  exclude:      ${report.censusExclude.join(', ')} (excluded files still resolve)`);
 }
 console.log(
 	`  files:        ${report.files} (${report.parseFailures.length} unparseable, ${report.readFailures.length} unreadable)`,

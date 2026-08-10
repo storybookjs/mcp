@@ -127,19 +127,24 @@ export interface DsCoverageOptions {
 	/** Framework name (only 'react' is supported for now). */
 	framework?: 'react';
 	/**
-	 * Glob patterns selecting which files' JSX is counted, picomatch syntax.
-	 * Matched files are measured. Unmatched files are parsed and still resolve.
+	 * Include globs selecting which files' JSX is counted, picomatch syntax.
+	 * A file counts when it matches at least one include (every file when the
+	 * list is empty) and matches no exclude. Uncounted files are still parsed
+	 * and still resolve.
 	 *
 	 * Distinct from the tests/stories/mocks rule in module-graph.ts, which drops
 	 * files from the graph as well, and does not parse them at all.
 	 */
-	censusFilters?: string[];
+	censusInclude?: string[];
+	/** Exclude globs; a matching file's JSX is never counted. */
+	censusExclude?: string[];
 }
 
 export interface DsCoverageReport {
 	framework: string;
 	dsPackages: string[];
-	censusFilters: string[];
+	censusInclude: string[];
+	censusExclude: string[];
 	files: number;
 	parseFailures: string[];
 	readFailures: string[];
