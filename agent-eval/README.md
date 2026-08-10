@@ -387,6 +387,26 @@ Completed (experiment, eval) cells are fingerprint-cached: re-running a
 partially completed selection only executes what is missing (`--force`
 overrides).
 
+## Comparing cases (results:compare)
+
+Compares a control case against treatment cases over recorded run artifacts:
+per-metric OLS estimates with HC3 robust errors, Benjamini–Hochberg FDR
+verdicts at 5%, and ECDF curves. Reproducible: everything derives from
+`results/` alone. Design: `docs/superpowers/specs/2026-08-10-agentic-ref-analysis-pipeline-design.md`.
+
+```shell
+pnpm results:compare:setup                  # one-time: installs uv + Python deps
+pnpm results:compare                        # control-none vs all cases, auto workflows
+pnpm results:compare --cases=do-dont --workflows=701          # one pair, one workflow
+pnpm results:compare --cases=do-dont,full --workflows=701,703 # aggregation mode
+pnpm results:compare --min-runs=5 --all-batches               # quick look, pooled batches
+```
+
+Output lands in `comparisons/<slug>/`: `report.md`, `estimates.csv|json`,
+`curves/`, `dataset.csv`, `manifest.json`. When data is missing or analyzed
+by an older metrics version, the command exits and prints the exact
+`pnpm eval:agentic-ref` / `pnpm results:analyze` commands to run.
+
 ### View Results
 
 ```bash
