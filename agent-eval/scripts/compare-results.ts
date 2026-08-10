@@ -5,7 +5,7 @@
 // Spec: docs/superpowers/specs/2026-08-10-agentic-ref-analysis-pipeline-design.md
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { DEFAULT_CONTROL_CASE } from '#lib/agentic-reference/cases';
@@ -37,6 +37,10 @@ const STATS_SCRIPT = join(ROOT, 'scripts', 'compare_stats.py');
 function fail(message: string): never {
 	console.error(message);
 	process.exit(1);
+}
+
+function messageOf(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
 }
 
 async function main() {
@@ -110,8 +114,9 @@ async function main() {
 		minRuns: options.minRuns,
 		allBatches: options.allBatches,
 	};
-	const outDir =
-		options.out ?? join(ROOT, 'comparisons', comparisonSlug(control, treatments, workflows));
+	const outDir = resolve(
+		options.out ?? join(ROOT, 'comparisons', comparisonSlug(control, treatments, workflows)),
+	);
 	const stagingDir = `${outDir}.staging`;
 	rmSync(stagingDir, { recursive: true, force: true });
 	mkdirSync(stagingDir, { recursive: true });
@@ -163,4 +168,7 @@ async function main() {
 	console.log(`Report: ${join(outDir, 'report.md')}`);
 }
 
-await main();
+main().catch((error) => {
+	console.error(messageOf(error));
+	process.exit(1);
+});
