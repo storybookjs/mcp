@@ -13,6 +13,7 @@ import type { ModuleGraph } from '../module-graph.ts';
 import type {
 	CensusResult,
 	IdentityResolver,
+	IsCountedFile,
 	NodeTotals,
 	Resolution,
 	UnresolvedElement,
@@ -23,9 +24,9 @@ function emptyTotals(): NodeTotals {
 }
 
 /**
- * Whether the subtree contains an element the census would count. A named
- * `<Fragment>` is not itself countable (it renders nothing, like `<>`), but
- * elements inside it are — so `cond ? <A/> : <Fragment/>` keeps full weight
+ * Whether the subtree contains an element the census would count. A
+ * non-rendering element (see NON_RENDERING_REACT) is not itself countable, but
+ * elements inside it are, so `cond ? <A/> : <Fragment/>` keeps full weight
  * while `cond ? <A/> : <Fragment><B/></Fragment>` halves, exactly matching
  * the equivalent `<>` spellings.
  */
@@ -56,16 +57,26 @@ const LOGICAL_OPERATORS = new Set<ts.SyntaxKind>([
 	ts.SyntaxKind.QuestionQuestionToken,
 ]);
 
-/** `<React.Fragment>` renders nothing, like `<>`; both are syntax, not UI. */
-function isFragmentIdentity(resolution: Resolution): boolean {
+/**
+ * React elements that render no UI of their own, only their children:
+ * `<React.Fragment>` (`<>`) and `<Ctx.Provider>` or `<Ctx.Consumer>`
+ * Counting them would skew component total against DS coverage.
+ */
+const NON_RENDERING_REACT = new Set(['Fragment', 'Context.Provider', 'Context.Consumer']);
+
+function isNonRenderingIdentity(resolution: Resolution): boolean {
 	return (
 		resolution.category === 'external' &&
 		resolution.module === 'react' &&
-		resolution.name === 'Fragment'
+		NON_RENDERING_REACT.has(resolution.name)
 	);
 }
 
-export function censusReactTree(graph: ModuleGraph, resolver: IdentityResolver): CensusResult {
+export function censusReactTree(
+	graph: ModuleGraph,
+	resolver: IdentityResolver,
+	isCounted: IsCountedFile,
+): CensusResult {
 	const totals = emptyTotals();
 	const perFile = new Map<string, NodeTotals>();
 	const components = new Map<
@@ -75,18 +86,23 @@ export function censusReactTree(graph: ModuleGraph, resolver: IdentityResolver):
 	const unresolved: UnresolvedElement[] = [];
 
 	for (const file of graph.files.values()) {
+		// Skipping the walk for filtered out files.
+		if (!isCounted(file.path)) {
+			continue;
+		}
+
 		const fileTotals = emptyTotals();
 
 		// Tag resolutions are memoized in the resolver, so asking again inside the
 		// halving predicate costs a map lookup.
 		const containsCountableJsx = makeContainsCountableJsx((element) => {
 			const tag = ts.isJsxElement(element) ? element.openingElement.tagName : element.tagName;
-			return !isFragmentIdentity(resolveJsxTag(file, tag, resolver));
+			return !isNonRenderingIdentity(resolveJsxTag(file, tag, resolver));
 		});
 
 		const count = (tag: ts.JsxTagNameExpression, element: ts.Node, weight: number): void => {
 			const resolution = resolveJsxTag(file, tag, resolver);
-			if (isFragmentIdentity(resolution)) return;
+			if (isNonRenderingIdentity(resolution)) return;
 
 			totals.all += weight;
 			fileTotals.all += weight;

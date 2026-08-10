@@ -181,7 +181,13 @@ function styledTargetOf(
 				isStyledFactory(resolveScopedName(file, callee, callee.text, resolver))
 			) {
 				const target = current.arguments[0];
-				return target ? { kind: 'expression', node: target } : null;
+				if (target === undefined) return null;
+				// `styled('div')` is `styled.div` spelled the other way, and the only
+				// spelling available for a tag the property form cannot express
+				// (`styled('my-element')`). Both libraries accept it, and Storybook's
+				// own components are written this way throughout.
+				if (ts.isStringLiteral(target)) return { kind: 'intrinsic', tag: target.text };
+				return { kind: 'expression', node: target };
 			}
 			current = callee;
 			continue;
@@ -467,6 +473,10 @@ function analyzeExpression(
 				calleeResolution.name === 'createGlobalStyle'
 			) {
 				return calleeResolution;
+			}
+			// `createContext(...)` yields the context object, not a renderable.
+			if (isReactHelper(calleeResolution, 'createContext')) {
+				return { category: 'external', module: 'react', name: 'Context' };
 			}
 		}
 

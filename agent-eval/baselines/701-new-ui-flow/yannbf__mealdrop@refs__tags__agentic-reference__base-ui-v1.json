@@ -2,7 +2,7 @@
 	"eval": "701-new-ui-flow",
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/base-ui-v1",
-	"metricsVersion": 3,
+	"metricsVersion": 5,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
@@ -1296,6 +1296,23 @@
 				"jsxTrees": 0
 			}
 		},
-		"parseFailures": []
+		"parseFailures": [],
+		"dsCoverage": {
+			"dsPackages": ["@base-ui/react", "@droppy/*"],
+			"files": 127,
+			"nodes": {
+				"all": 365.5,
+				"host": 152.5,
+				"component": 213,
+				"ds": 18,
+				"external": 27,
+				"local": 168,
+				"unresolved": 0
+			},
+			"dsShareOfAllNodes": 0.0492,
+			"dsShareOfComponentNodes": 0.0845,
+			"parseFailures": [],
+			"readFailures": []
+		}
 	}
 }

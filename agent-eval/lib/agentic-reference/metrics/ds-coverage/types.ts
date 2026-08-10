@@ -106,10 +106,17 @@ export interface CensusResult {
 	unresolved: UnresolvedElement[];
 }
 
+/** Whether a file's own JSX counts toward the census. */
+export type IsCountedFile = (path: string) => boolean;
+
 /** What a framework plugs into the facade. */
 export interface FrameworkImplementation {
 	createDeclarationAnalyzer(): DeclarationAnalyzer;
-	createCensus(): (graph: ModuleGraph, resolver: IdentityResolver) => CensusResult;
+	createCensus(): (
+		graph: ModuleGraph,
+		resolver: IdentityResolver,
+		isCounted: IsCountedFile,
+	) => CensusResult;
 }
 
 export interface DsCoverageOptions {
@@ -119,12 +126,25 @@ export interface DsCoverageOptions {
 	dsPackages: string[];
 	/** Framework name (only 'react' is supported for now). */
 	framework?: 'react';
+	/**
+	 * Include globs selecting which files' JSX is counted, picomatch syntax.
+	 * A file counts when it matches at least one include (every file when the
+	 * list is empty) and matches no exclude. Uncounted files are still parsed
+	 * and still resolve.
+	 *
+	 * Distinct from the tests/stories/mocks rule in module-graph.ts, which drops
+	 * files from the graph as well, and does not parse them at all.
+	 */
+	censusInclude?: string[];
+	/** Exclude globs; a matching file's JSX is never counted. */
+	censusExclude?: string[];
 }
 
 export interface DsCoverageReport {
 	framework: string;
 	dsPackages: string[];
-	/** Files the census walked. */
+	censusInclude: string[];
+	censusExclude: string[];
 	files: number;
 	parseFailures: string[];
 	readFailures: string[];

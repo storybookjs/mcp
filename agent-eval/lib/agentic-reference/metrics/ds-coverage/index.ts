@@ -12,6 +12,7 @@ import { share } from '#lib/utils/math';
 import { createResolver } from './identify.ts';
 import { buildModuleGraph } from './module-graph.ts';
 import { createPackageMatcher } from './package-pattern.ts';
+import { createPathFilter } from './path-filter.ts';
 import { censusReactTree } from './react/census.ts';
 import { analyzeReactDeclaration } from './react/resolve.ts';
 import type {
@@ -52,15 +53,21 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 		throw new Error(`Project directory is not a directory: ${options.projectDir}`);
 	}
 
+	const censusInclude = options.censusInclude ?? [];
+	const censusExclude = options.censusExclude ?? [];
 	const graph = buildModuleGraph(options.projectDir);
 	const isDsPackage = createPackageMatcher(options.dsPackages);
 	const resolver = createResolver(graph, isDsPackage, framework.createDeclarationAnalyzer());
-	const census = framework.createCensus()(graph, resolver);
+	// We use the projectDir as a working directory to resolve relative paths in filters.
+	const isCounted = createPathFilter(censusInclude, censusExclude, options.projectDir);
+	const census = framework.createCensus()(graph, resolver, isCounted);
 
 	return {
 		framework: options.framework ?? 'react',
 		dsPackages: options.dsPackages,
-		files: graph.files.size,
+		censusInclude,
+		censusExclude,
+		files: [...graph.files.keys()].filter(isCounted).length,
 		parseFailures: graph.parseFailures,
 		readFailures: graph.readFailures,
 		nodes: census.totals,

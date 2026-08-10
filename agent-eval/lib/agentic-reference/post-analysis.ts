@@ -23,9 +23,9 @@ import {
 import { computeChurn } from './metrics/churn.ts';
 import {
 	coverageDelta,
+	dsPackagesForPin,
 	isDsCoverage,
 	measureDsCoverage,
-	readDsPackages,
 	sameDsPackages,
 } from './metrics/coverage.ts';
 import { readCost, readSpeed } from './metrics/run-signals.ts';
@@ -50,13 +50,17 @@ function transcriptEvents(transcript: unknown): unknown[] | null {
 }
 
 /**
- * The tree's DS coverage, or null when the eval declares no DS packages.
+ * The tree's DS coverage, or null when the run's pin declares no DS packages.
  * Measured on both sides of a delta the same way — whole tree, same patterns —
  * so the baseline's copy can be committed and reused rather than recomputed per
  * run, exactly like the complexity map beside it.
+ *
+ * The pin is what selects the patterns, so a run whose eval fixture has since
+ * been renamed or deleted is still measured: what the tree is made of did not
+ * change when the fixture did.
  */
 function dsCoverageOf(context: PostAnalysisContext): DsCoverage | null {
-	const dsPackages = readDsPackages(context.fixtureDir);
+	const dsPackages = dsPackagesForPin(context.pin);
 	return dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages);
 }
 
@@ -132,9 +136,9 @@ function averageDepth(totals: FileComplexity): number | null {
 /**
  * The pinned tree's coverage, re-measured when the committed baseline cannot
  * serve it. metricsVersion invalidates a baseline when a metric *definition*
- * moves, but the DS patterns live in the fixture and can move without it — and
- * a delta whose two sides counted different packages is not a delta at all.
- * The same path catches a baseline committed before coverage existed.
+ * moves, but DS_PACKAGES_BY_PIN can gain or change an entry without it — and a
+ * delta whose two sides counted different packages is not a delta at all. The
+ * same path catches a baseline committed before coverage existed.
  */
 function baselineCoverage(
 	baselineAnalysis: Analysis,
@@ -553,18 +557,20 @@ export function summarize(
 	}
 
 	// A selected family this eval has no data for prints nothing at all, leaving
-	// a bare header that reads as a broken analysis rather than "you asked for
-	// coverage and this eval declares no DS packages".
+	// a bare header that reads as a broken analysis. Coverage gets a pointer
+	// rather than a shrug: the one thing that stops a run being measured is a
+	// pin nobody has mapped, and the fix is a one-line edit.
 	if (!options.general && !printedComplexity && !printedCoverage) {
-		const asked = [
-			options.complexity ? 'complexity' : null,
-			options.coverage ? 'coverage' : null,
-		].filter(Boolean);
-		console.log(
-			asked.length === 0
-				? 'No table families selected.'
-				: `Nothing to show: these runs carry no ${asked.join(' or ')} measurements.`,
-		);
+		if (options.coverage && withCoverage.length === 0) {
+			console.log(
+				'No DS coverage for these runs: their external-repo pin declares no DS packages. ' +
+					'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
+			);
+		} else if (options.complexity) {
+			console.log('Nothing to show: these runs carry no baseline delta.');
+		} else {
+			console.log('No table families selected.');
+		}
 	}
 
 	return summary;
@@ -576,14 +582,18 @@ export function summarize(
  * metricsVersion invalidates committed baselines when a metric definition or
  * its stored shape changes, so a baseline measured under old rules is rebuilt
  * rather than silently compared against runs measured under new ones.
- * History: 2 added the jsx complexity variants; 3 split markup size into
- * jsx-structure.ts (jsxLength/jsxBindings/jsxDepth) and absorbed inline
- * callbacks into their enclosing function in all four walkers; 4 added DS
- * coverage, which the baseline now stores beside its complexity map.
+ * History:
+ * - 2 added the jsx complexity variants
+ * - 3 split markup size into jsx-structure.ts (jsxLength/jsxBindings/jsxDepth)
+ *     and absorbed inline callbacks into their enclosing function in all walkers
+ * - 4 added DS coverage, which the baseline now stores beside its complexity map
+ * - 5 moved the DS package patterns from the eval fixture to the external-repo pin,
+ *     so a baseline whose fixture was missing no longer stores a null coverage
+ * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,
 	deltaToBaseline,
 	summarize,
-	metricsVersion: 4,
+	metricsVersion: 6,
 };

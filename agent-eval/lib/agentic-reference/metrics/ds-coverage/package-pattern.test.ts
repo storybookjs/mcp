@@ -49,4 +49,31 @@ describe('createPackageMatcher', () => {
 		expect(isDs('a+b')).toBe(true);
 		expect(isDs('aab')).toBe(false);
 	});
+
+	// A design system is not always a whole package. Storybook ships one at
+	// `storybook/internal/components` while the rest of `storybook` is not UI at
+	// all, so a pattern has to be able to name a subpath.
+	it('matches a pattern that names a subpath rather than a package', () => {
+		const isDs = createPackageMatcher(['storybook/internal/components']);
+		expect(isDs('storybook/internal/components')).toBe(true);
+		expect(isDs('storybook/internal/components/Button')).toBe(true);
+		expect(isDs('storybook/internal/theming')).toBe(false);
+		expect(isDs('storybook/internal/types')).toBe(false);
+		expect(isDs('storybook')).toBe(false);
+	});
+
+	it('holds a subpath pattern to a path boundary', () => {
+		const isDs = createPackageMatcher(['storybook/internal/components']);
+		expect(isDs('storybook/internal/components-legacy')).toBe(false);
+		expect(isDs('storybook/internal/componentsx')).toBe(false);
+	});
+
+	// A pattern naming the package still covers everything under it, which is
+	// what the `@base-ui/react` cases above rely on.
+	it('lets a package pattern cover every subpath of that package', () => {
+		const isDs = createPackageMatcher(['storybook']);
+		expect(isDs('storybook')).toBe(true);
+		expect(isDs('storybook/internal/components')).toBe(true);
+		expect(isDs('storybook-addon-x')).toBe(false);
+	});
 });
