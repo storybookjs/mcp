@@ -25,6 +25,7 @@ import {
 	resolveTreatments,
 	resolveWorkflows,
 } from '#lib/agentic-reference/comparison/resolve';
+import { ansiStyle } from '#lib/agentic-reference/comparison/style';
 import { findUv } from '#lib/agentic-reference/comparison/uv';
 import { postAnalysis } from '#lib/agentic-reference/post-analysis';
 import { findRuns } from '#lib/post-analysis/runs';
@@ -33,6 +34,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = process.env.AGENT_EVAL_RESULTS_DIR ?? join(ROOT, 'results');
 const EVALS_DIR = process.env.AGENT_EVAL_EVALS_DIR ?? join(ROOT, 'evals');
 const STATS_SCRIPT = join(ROOT, 'scripts', 'compare_stats.py');
+const errStyle = ansiStyle(process.stderr);
+const outStyle = ansiStyle(process.stdout);
 
 function fail(message: string): never {
 	console.error(message);
@@ -71,21 +74,20 @@ async function main() {
 			allBatches: options.allBatches,
 			metricsVersion,
 		});
-		for (const { workflow, gaps } of auto.skipped) {
-			console.log(
-				`Skipping ${workflow}: ${gaps.map((g) => `${g.case.shortName} ${g.have}/${g.need} (${g.reason})`).join(', ')}`,
-			);
+		if (auto.skipped.length > 0) {
+			console.log(outStyle.bold('Skipping the following workflows:'));
+			for (const { workflow } of auto.skipped) console.log(`  ${workflow}`);
 		}
 		if (auto.selected.length === 0) {
 			const gaps = auto.skipped.flatMap((s) => s.gaps);
-			console.error('No workflow has enough data for every selected case.\n');
-			console.error(formatGapTable(gaps));
+			console.error(`${errStyle.bold('No workflow has enough data for every selected case.')}\n`);
+			console.error(formatGapTable(gaps, errStyle));
 			console.error('\nCollect the missing data:\n');
 			for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
 			process.exit(1);
 		}
 		workflows = auto.selected;
-		console.log(`Auto-selected workflows: ${workflows.join(', ')}`);
+		console.log(`${outStyle.bold('Auto-selected workflows:')} ${workflows.join(', ')}`);
 	} else {
 		workflows = explicit;
 	}
@@ -99,9 +101,9 @@ async function main() {
 		metricsVersion,
 	});
 	if (gaps.length > 0) {
-		console.error('Comparison impossible: insufficient usable data.\n');
-		console.error(formatGapTable(gaps));
-		console.error('\nCollect the missing data, then re-run this command:\n');
+		console.error(`${errStyle.bold('Comparison impossible: insufficient usable data.')}\n`);
+		console.error(formatGapTable(gaps, errStyle));
+		console.error(`\n${errStyle.bold('Collect the missing data, then re-run this command:')}\n`);
 		for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
 		process.exit(1);
 	}

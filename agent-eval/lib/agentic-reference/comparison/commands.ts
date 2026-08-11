@@ -1,18 +1,33 @@
 import type { CellGap } from './cells.ts';
+import { PLAIN_STYLE, type OutputStyle } from './style.ts';
 
-export function formatGapTable(gaps: CellGap[]): string {
+export function formatGapTable(gaps: CellGap[], style: OutputStyle = PLAIN_STYLE): string {
 	const rows = [
 		['case', 'workflow', 'runs', 'reason'],
 		...gaps.map((gap) => [gap.case.shortName, gap.workflow, `${gap.have}/${gap.need}`, gap.reason]),
 	];
 	const widths = rows[0]!.map((_, col) => Math.max(...rows.map((row) => row[col]!.length)));
+	// Column widths are computed from plain text above; styling is applied
+	// only after padding, so ANSI escapes never inflate `.length` and skew
+	// alignment. The last column is never padded (nothing follows it on the
+	// line), which is also what the original .trimEnd()-per-row behavior
+	// amounted to — so no separate trim step is needed here.
+	const lastCol = widths.length - 1;
 	return rows
-		.map((row) =>
-			row
-				.map((value, col) => value.padEnd(widths[col]!))
-				.join('  ')
-				.trimEnd(),
-		)
+		.map((row, rowIndex) => {
+			const padded = row.map((value, col) =>
+				col === lastCol ? value : value.padEnd(widths[col]!),
+			);
+			if (rowIndex === 0) return padded.map((cell) => style.bold(cell)).join('  ');
+			const gap = gaps[rowIndex - 1]!;
+			return padded
+				.map((cell, col) => {
+					if (col === 0) return style.caseName(cell);
+					if (col === lastCol) return style.reason(gap.reason, cell);
+					return cell;
+				})
+				.join('  ');
+		})
 		.join('\n');
 }
 

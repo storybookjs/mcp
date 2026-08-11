@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import type { ResolvedCase } from './resolve.ts';
 import { formatGapTable, remediationCommands } from './commands.ts';
+import { PLAIN_STYLE, type OutputStyle } from './style.ts';
+
+/** Distinct, greppable markers (not ANSI) so alignment assertions are deterministic. */
+const MARKER_STYLE: OutputStyle = {
+	bold: (s) => `[B]${s}[/B]`,
+	caseName: (s) => `[C]${s}[/C]`,
+	reason: (r, s) => `[R:${r}]${s}[/R]`,
+};
 
 const DO_DONT: ResolvedCase = {
 	caseName: 'cc-do-dont-opus-high',
@@ -82,5 +90,41 @@ describe('formatGapTable', () => {
 		expect(table).toContain('do-dont');
 		expect(table).toContain('0/10');
 		expect(table).toContain('missing-runs');
+	});
+
+	it('defaults to PLAIN_STYLE, so an unstyled call matches an explicit one', () => {
+		const gaps = [
+			{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
+			{ case: FULL, workflow: '701-new-ui-flow', have: 4, need: 10, reason: 'unanalyzed' },
+		] as const;
+		expect(formatGapTable([...gaps])).toBe(formatGapTable([...gaps], PLAIN_STYLE));
+	});
+
+	it('bolds the header row, wraps case and reason cells, and preserves column alignment', () => {
+		const gaps = [
+			{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
+			{ case: FULL, workflow: '701-new-ui-flow', have: 4, need: 10, reason: 'unanalyzed' },
+		] as const;
+		const plain = formatGapTable([...gaps]);
+		const styled = formatGapTable([...gaps], MARKER_STYLE);
+
+		// Stripping every marker recovers exactly the plain table: styling never
+		// disturbs the column widths computed from plain text.
+		const stripped = styled.replace(/\[\/?[A-Z](?::[a-z-]+)?\]/g, '');
+		expect(stripped).toBe(plain);
+
+		const [header, doDontRow, fullRow] = styled.split('\n');
+		// Header: every cell individually bolded, not one wrap around the whole line.
+		expect(header).toMatch(
+			/^\[B\]case\s*\[\/B\]  \[B\]workflow\s*\[\/B\]  \[B\]runs\[\/B\]  \[B\]reason\[\/B\]$/,
+		);
+		// Data rows: case cell wrapped, workflow/runs cells left plain, reason cell
+		// wrapped with the gap's own reason (not the header's).
+		expect(doDontRow).toMatch(
+			/^\[C\]do-dont\s*\[\/C\]  703-fix-bug-flow\s*  0\/10\s*  \[R:missing-runs\]missing-runs\[\/R\]$/,
+		);
+		expect(fullRow).toMatch(
+			/^\[C\]full\s*\[\/C\]  701-new-ui-flow\s*  4\/10\s*  \[R:unanalyzed\]unanalyzed\[\/R\]$/,
+		);
 	});
 });
