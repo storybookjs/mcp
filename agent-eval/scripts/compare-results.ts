@@ -82,7 +82,7 @@ async function main() {
 			const gaps = auto.skipped.flatMap((s) => s.gaps);
 			console.error(`${errStyle.bold('No workflow has enough data for every selected case.')}\n`);
 			console.error(formatGapTable(gaps, errStyle));
-			console.error('\nCollect the missing data:\n');
+			console.error(`\n${errStyle.bold('Collect the missing data:')}\n`);
 			for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
 			process.exit(1);
 		}
