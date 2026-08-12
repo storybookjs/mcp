@@ -18,14 +18,15 @@ export const AGENTIC_REF_EVALS: string[] = [
 	'702-rework-ui-flow',
 	'703-fix-bug-flow',
 	'704-fix-a11y-flow',
-	// Parked until the Droppy baseline round: '705-migrate-to-ds-flow'.
-	'706-migrate-to-base-ui-flow',
+	// Parked for later.
+	// '705-migrate-to-ds-flow',
+	'706-new-ui-scheduled-flow',
 ];
 
 // The workflows the base-ui Storybook content variants treat; the migration
 // flows are excluded.
 const BASE_UI_APP_WORKFLOWS = AGENTIC_REF_EVALS.filter(
-	(evalName) => !['705-migrate-to-ds-flow', '706-migrate-to-base-ui-flow'].includes(evalName),
+	(evalName) => !['705-migrate-to-ds-flow'].includes(evalName),
 );
 
 export interface AgenticRefCase {
@@ -134,14 +135,6 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// 	description:
 	// 		'Droppy design-system Storybook MCP; the migration flow runs with the docs of the system it migrates to.',
 	// 	evals: ['705-migrate-to-ds-flow'],
-	// },
-	// TODO: Ensure this is parameterised for each selected control and treatment case
-	// {
-	// 	name: 'cc-migration-base-ui-opus-high',
-	// 	description:
-	// 		'Base UI Storybook MCP (base branch, served in-sandbox); the Base UI migration flow runs with the docs of the system it migrates to.',
-	// storybookMcpPackage: baseUiMcpPackage('experiment/base'),
-	// 	evals: ['706-migrate-to-base-ui-flow'],
 	// },
 	// The controls run every workflow by default: they are the baseline each
 	// treatment is compared against, so they must span the same eval set.

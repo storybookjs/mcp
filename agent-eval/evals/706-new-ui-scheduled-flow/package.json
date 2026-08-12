@@ -1,6 +1,6 @@
 {
-	"name": "702-rework-ui-flow",
-	"description": "Agentic reference, rework workflow (prescribed variant)",
+	"name": "706-new-ui-scheduled-flow",
+	"description": "Agentic reference, new-UI workflow (scheduled delivery).",
 	"type": "module",
 	"evals": {
 		"externalRepo": {
