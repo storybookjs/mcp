@@ -1,1 +1,3 @@
-Adjusting dish quantities works differently depending on where you are in the app. When adding a dish in a restaurant page, you tap plus and minus, but in the cart, you pick a number from a dropdown list. Make it work the same way everywhere.
+There are several places in MealDrop where you can order dish quantities: when you browse dishes on a restaurant, and in your basket before you check out. The interaction modalities used in both places are different.
+
+Review the relevant UIs and change the interaction modality to ensure it is consistent, and aligns with the design system's guidelines.
