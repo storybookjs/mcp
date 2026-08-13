@@ -94,6 +94,10 @@ jobs:
           FORCE: ${{ inputs.force }}
           AGENTIC_REF_FLOW: ${{ inputs.flows }}
           AGENTIC_REF_RUNS: ${{ inputs.runs }}
+          # The runner drives coding agents through Vercel AI Gateway and skips
+          # an experiment with exit 0 when this is unset — the job goes green
+          # having run nothing.
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
