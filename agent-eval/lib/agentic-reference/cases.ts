@@ -95,7 +95,7 @@ const EXPERIMENT_BRANCHES = [
 	// 'experiment/a11y',
 	// 'experiment/brand-animation',
 	// 'experiment/api-ref',
-	// 'experiment/docs-full',
+	'experiment/docs-full',
 	// 'experiment/stories-api-ref',
 	// 'experiment/stories-showcase',
 	// 'experiment/stories-highlight',

@@ -17,7 +17,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Workflows upload either the bare name (agent-eval.yml) or a per-dispatch
+// name suffixed with the run id (agentic-ref-eval.yml); both carry the same
+// agent-eval-results.tgz payload.
 const ARTIFACT_NAME = 'agent-eval-results';
+const ARTIFACT_PREFIX = `${ARTIFACT_NAME}-`;
 const agentEvalDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const resultsDir = path.join(agentEvalDir, 'results');
 
@@ -41,17 +45,23 @@ function gh(args, options = {}) {
 	}
 }
 
-const artifacts = JSON.parse(
-	gh(
-		[
-			'api',
-			`repos/{owner}/{repo}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=100`,
-			'--jq',
-			'.artifacts | map(select(.expired | not))',
-		],
-		{ encoding: 'utf8' },
-	),
+// Artifact names now vary per dispatch, so the API's exact-match `name=` filter
+// no longer selects them; page through everything and match the prefix here.
+// With --paginate, --jq runs per page and emits one JSON object per line.
+const artifacts = gh(
+	[
+		'api',
+		'--paginate',
+		'repos/{owner}/{repo}/actions/artifacts?per_page=100',
+		'--jq',
+		'.artifacts[] | select(.expired | not)',
+	],
+	{ encoding: 'utf8' },
 )
+	.split('\n')
+	.filter((line) => line.trim() !== '')
+	.map((line) => JSON.parse(line))
+	.filter(({ name }) => name === ARTIFACT_NAME || name.startsWith(ARTIFACT_PREFIX))
 	.sort((a, b) => b.created_at.localeCompare(a.created_at))
 	.slice(0, count);
 
@@ -69,15 +79,14 @@ for (const artifact of artifacts) {
 		continue;
 	}
 	console.log(
-		`- artifact ${artifact.id} (${artifact.created_at}, branch ${run.head_branch ?? 'unknown'}, run ${run.id})`,
+		`- ${artifact.name} (${artifact.created_at}, branch ${run.head_branch ?? 'unknown'}, run ${run.id})`,
 	);
 
 	const workDir = mkdtempSync(path.join(tmpdir(), 'agent-eval-artifact-'));
 	try {
 		// gh streams the artifact zip to disk and unpacks it, leaving the
-		// tarball produced by the "Archive eval results" step in
-		// .github/workflows/agent-eval.yml.
-		gh(['run', 'download', String(run.id), '--name', ARTIFACT_NAME, '--dir', workDir]);
+		// agent-eval-results.tgz that the eval workflows archive.
+		gh(['run', 'download', String(run.id), '--name', artifact.name, '--dir', workDir]);
 		// Extract inside the temp directory and only the results/ subtree, so
 		// an artifact tarball can never write outside it; then merge that
 		// subtree into agent-eval/results.
