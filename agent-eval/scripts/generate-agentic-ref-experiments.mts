@@ -10,6 +10,7 @@
 // Usage: node scripts/generate-agentic-ref-experiments.mts
 
 import {
+	existsSync,
 	lstatSync,
 	mkdirSync,
 	readdirSync,
@@ -107,6 +108,15 @@ function main(): void {
 
 	ensureRelativeSymlink(join(WORK_DIR, 'evals'), join(AGENT_EVAL_ROOT, 'evals'));
 	ensureRelativeSymlink(join(WORK_DIR, 'results'), join(AGENT_EVAL_ROOT, 'results'));
+
+	// The agent-eval CLI loads .env.local and .env from process.cwd(), which is
+	// this work directory when running agentic-ref evals — without these links a
+	// local run silently skips every experiment for missing API keys.
+	for (const envFile of ['.env', '.env.local']) {
+		if (existsSync(join(AGENT_EVAL_ROOT, envFile))) {
+			ensureRelativeSymlink(join(WORK_DIR, envFile), join(AGENT_EVAL_ROOT, envFile));
+		}
+	}
 
 	console.log(
 		`generate-agentic-ref-experiments: ${written} written, ${unchanged} unchanged, ${removed} removed.`,
