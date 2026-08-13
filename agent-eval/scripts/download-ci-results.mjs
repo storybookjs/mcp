@@ -20,8 +20,13 @@ import { fileURLToPath } from 'node:url';
 // Workflows upload either the bare name (agent-eval.yml) or a per-dispatch
 // name suffixed with the run id (agentic-ref-eval.yml); both carry the same
 // agent-eval-results.tgz payload.
+//
+// The run-id form is matched exactly rather than by prefix: a retired naming
+// scheme used agent-eval-results-<run id>-<run attempt> for artifacts holding
+// an unpacked results tree with no tarball in it, and extraction here would
+// fail on one.
 const ARTIFACT_NAME = 'agent-eval-results';
-const ARTIFACT_PREFIX = `${ARTIFACT_NAME}-`;
+const PER_RUN_ARTIFACT = /^agent-eval-results-\d+$/;
 const agentEvalDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const resultsDir = path.join(agentEvalDir, 'results');
 
@@ -61,7 +66,7 @@ const artifacts = gh(
 	.split('\n')
 	.filter((line) => line.trim() !== '')
 	.map((line) => JSON.parse(line))
-	.filter(({ name }) => name === ARTIFACT_NAME || name.startsWith(ARTIFACT_PREFIX))
+	.filter(({ name }) => name === ARTIFACT_NAME || PER_RUN_ARTIFACT.test(name))
 	.sort((a, b) => b.created_at.localeCompare(a.created_at))
 	.slice(0, count);
 
