@@ -3,6 +3,12 @@ name: Agentic-reference eval
 # Runs the agentic-reference (70x) case matrix. Dispatch-only: running these
 # evals is a spend decision, so there is no PR/label trigger — a human picks
 # the selection and repetition count each time.
+#
+# Dispatch this against a ref that carries the agentic-reference eval line —
+# the agent-eval eval:agentic-ref and results:analyze scripts and the case
+# registry they read. workflow_dispatch registers a workflow from the default
+# branch but runs the file from the selected ref, so this workflow lives here
+# while that line is still on a feature branch.
 
 on:
   workflow_dispatch:
@@ -41,10 +47,9 @@ jobs:
   eval:
     name: Run agentic-reference cases
     runs-on: ubuntu-latest
-    # Near the 360-minute ceiling for hosted runners; a single run may take up
-    # to 3 hours (see AGENTIC_REF timeout in lib/agentic-reference/experiment.ts),
-    # so a large matrix can outlast the job. Completed cells are
-    # fingerprint-cached, so re-dispatching the same selection resumes.
+    # Near the 360-minute ceiling for hosted runners, while a single eval run is
+    # allowed up to 3 hours, so a large matrix can outlast the job. Completed
+    # cells are fingerprint-cached, so re-dispatching the same selection resumes.
     timeout-minutes: 300
     permissions:
       contents: read
@@ -102,9 +107,15 @@ jobs:
 
           args=()
           [[ "$FORCE" == "true" ]] && args+=(--force)
-          # Unquoted on purpose: multiple cases arrive space-separated and each
-          # must reach run-all as its own argument.
-          [[ -n "$CASES" ]] && args+=($CASES)
+
+          # Split on whitespace so each case reaches run-all as its own
+          # argument, without the pathname expansion an unquoted $CASES would
+          # get: a case glob like agentic-ref-cc-* must stay literal for
+          # run-all to match it against experiment names.
+          if [[ -n "$CASES" ]]; then
+            read -r -a case_args <<< "$CASES"
+            args+=("${case_args[@]}")
+          fi
 
           pnpm --dir agent-eval run "$script" -- "${args[@]}"
 
