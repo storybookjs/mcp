@@ -68,18 +68,22 @@ jobs:
       - name: Type check agent eval config
         run: pnpm --dir agent-eval run typecheck
 
-      - name: Validate Vercel credentials
+      - name: Validate credentials
         shell: bash
         env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         run: |
           missing=0
 
-          for name in VERCEL_PROJECT_ID VERCEL_TOKEN VERCEL_TEAM_ID; do
+          # AI_GATEWAY_API_KEY must be validated here: the runner reacts to a
+          # missing gateway key by skipping the experiment with exit 0, which
+          # this job would report as success.
+          for name in AI_GATEWAY_API_KEY VERCEL_PROJECT_ID VERCEL_TOKEN VERCEL_TEAM_ID; do
             if [[ -z "${!name}" ]]; then
-              echo "::error title=Missing Vercel secret::$name is required for Vercel Sandbox evals."
+              echo "::error title=Missing secret::$name is required to run sandboxed evals."
               missing=1
             fi
           done
