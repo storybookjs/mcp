@@ -1,0 +1,144 @@
+name: Agentic-reference eval
+
+# Runs the agentic-reference (70x) case matrix. Dispatch-only: running these
+# evals is a spend decision, so there is no PR/label trigger — a human picks
+# the selection and repetition count each time.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: 'Space-separated case names or globs, e.g. agentic-ref-cc-control-none-opus-high agentic-ref-cc-docs-full-opus-high — empty runs every case'
+        type: string
+        default: ''
+      flows:
+        description: "Comma-separated workflow fixtures (AGENTIC_REF_FLOW), e.g. 703-fix-bug-flow — empty runs each case's full workflow set"
+        type: string
+        default: ''
+      runs:
+        description: 'Repetitions per (case, workflow) cell (AGENTIC_REF_RUNS)'
+        type: string
+        default: '1'
+      force:
+        description: 'Re-run cells the fingerprint cache already marks complete'
+        type: boolean
+        default: false
+      dry:
+        description: 'Dry run: resolve the selection and print the plan without spending'
+        type: boolean
+        default: false
+
+env:
+  TURBO_ENV_MODE: loose
+
+# Dispatches queue rather than cancel: each one is paid work, and a cancelled
+# run loses the cells it had already completed.
+concurrency:
+  group: agentic-ref-eval
+  cancel-in-progress: false
+
+jobs:
+  eval:
+    name: Run agentic-reference cases
+    runs-on: ubuntu-latest
+    # Near the 360-minute ceiling for hosted runners; a single run may take up
+    # to 3 hours (see AGENTIC_REF timeout in lib/agentic-reference/experiment.ts),
+    # so a large matrix can outlast the job. Completed cells are
+    # fingerprint-cached, so re-dispatching the same selection resumes.
+    timeout-minutes: 300
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js and Install Dependencies
+        uses: ./.github/actions/setup-node-and-install
+
+      - name: Build local MCP packages
+        run: pnpm --filter @storybook/addon-mcp... run build
+
+      - name: Type check agent eval config
+        run: pnpm --dir agent-eval run typecheck
+
+      - name: Validate Vercel credentials
+        shell: bash
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          missing=0
+
+          for name in VERCEL_PROJECT_ID VERCEL_TOKEN VERCEL_TEAM_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error title=Missing Vercel secret::$name is required for Vercel Sandbox evals."
+              missing=1
+            fi
+          done
+
+          exit "$missing"
+
+      - name: Run agentic-reference evals
+        shell: bash
+        env:
+          CASES: ${{ inputs.cases }}
+          DRY: ${{ inputs.dry }}
+          FORCE: ${{ inputs.force }}
+          AGENTIC_REF_FLOW: ${{ inputs.flows }}
+          AGENTIC_REF_RUNS: ${{ inputs.runs }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          # The :dry variant is a separate script rather than a --dry argument:
+          # pnpm consumes leading dashes before the script sees them.
+          script=eval:agentic-ref
+          [[ "$DRY" == "true" ]] && script=eval:agentic-ref:dry
+
+          args=()
+          [[ "$FORCE" == "true" ]] && args+=(--force)
+          # Unquoted on purpose: multiple cases arrive space-separated and each
+          # must reach run-all as its own argument.
+          [[ -n "$CASES" ]] && args+=($CASES)
+
+          pnpm --dir agent-eval run "$script" -- "${args[@]}"
+
+      - name: Compute metrics and archive results
+        if: ${{ always() && inputs.dry == false }}
+        # Metrics are best-effort; an analysis failure must still leave the raw
+        # results archivable. Missing results surface at upload instead.
+        continue-on-error: true
+        working-directory: agent-eval
+        run: |
+          # Writes analysis.json next to each run's result.json so the metrics
+          # ride along in the uploaded artifact.
+          pnpm results:analyze || echo "::warning title=Analysis failed::Archiving raw results without offline metrics."
+
+          # Tar before upload: result files may contain characters that
+          # actions/upload-artifact rejects.
+          tar -czf ../agent-eval-results.tgz results
+
+      - name: Upload eval results
+        if: ${{ always() && inputs.dry == false }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          # One artifact per dispatch, so every triggered run keeps its own
+          # downloadable snapshot. scripts/download-ci-results.mjs matches on
+          # the shared agent-eval-results prefix and merges them by experiment
+          # name and timestamp.
+          name: agent-eval-results-${{ github.run_id }}
+          path: agent-eval-results.tgz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write run summary
+        if: ${{ always() && inputs.dry == false }}
+        continue-on-error: true
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node agent-eval/scripts/render-results-summary.mjs >> "$GITHUB_STEP_SUMMARY"
