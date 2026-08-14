@@ -10,6 +10,14 @@
 // Each run's judgement is cached in its own directory as ds-misuse.json and
 // reused until the guidelines pin or the metrics version moves.
 //
+// The package script runs this under `node --env-file-if-exists=.env.local`.
+// Every other entry point into this suite goes through the agent-eval binary,
+// which loads .env.local itself; a plain `node scripts/...` is the odd one out,
+// and without the flag the ANTHROPIC_API_KEY abort would name a fix — "add it to
+// .env.local" — that does not actually work. The -if-exists form is deliberate:
+// plain --env-file is fatal when the file is absent, which would break every
+// invocation by anyone who exports the key instead.
+//
 // Usage: pnpm judge:ds-misuse [--experiment=<name>] [--since=<ISO date>] [--latest] [--recompute]
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
