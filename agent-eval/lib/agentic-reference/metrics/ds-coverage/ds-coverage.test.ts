@@ -1247,11 +1247,24 @@ describe('includeNodes', () => {
 		].join('\n'),
 	};
 
-	// Default-off is load-bearing: measureDsCoverage stores this report shape in
-	// every committed baseline, and a new key would change every one of them.
+	// Absent, not `undefined`: the report is a contract callers read fields off,
+	// and a key that exists holding nothing invites a truthiness check where the
+	// question is presence.
 	it('omits the nodeList key entirely when not asked', () => {
 		vol.fromJSON(FILES, ROOT);
 		const report = analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'] });
+		expect('nodeList' in report).toBe(false);
+	});
+
+	// The other spelling of "no", and the one that actually ships: a CLI flag
+	// defaulting to false passes it explicitly rather than omitting the option.
+	it('omits the nodeList key when includeNodes is explicitly false', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: false,
+		});
 		expect('nodeList' in report).toBe(false);
 	});
 

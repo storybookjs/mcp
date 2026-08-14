@@ -77,8 +77,11 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 		components: sortedComponents(census),
 		unresolvedElements: census.unresolved,
 		perFile: Object.fromEntries(census.perFile),
-		// Spread rather than assign: the key has to be *absent*, not undefined, or
-		// every stored baseline would gain a key it never had.
-		...(includeNodes ? { nodeList: census.nodes ?? [] } : {}),
+		// Spread rather than assign, so the key is absent rather than `undefined`:
+		// a key that exists and holds nothing invites callers to test truthiness
+		// where they mean presence. Stored baselines are not what is at stake here
+		// — measureDsCoverage in ../coverage.ts copies named fields off this
+		// report, so that whitelist, not this line, is what keeps a new key out.
+		...(includeNodes ? { nodeList: census.nodeList ?? [] } : {}),
 	};
 }
