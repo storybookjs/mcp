@@ -17,7 +17,7 @@
 		"playground:build": "next build --webpack",
 		"playground:check-routes": "node ./scripts/check-playground-routes.mjs",
 		"results:download": "node ./scripts/download-ci-results.mjs",
-		"results:analyze": "node ./scripts/analyze-results.ts",
+		"results:analyze": "pnpm gen:agentic-ref && node ./scripts/analyze-results.ts",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:coverage": "vitest run --coverage",
