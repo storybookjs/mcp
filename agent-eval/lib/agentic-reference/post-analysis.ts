@@ -21,6 +21,7 @@ import {
 	sumComplexities,
 } from './metrics/complexity.ts';
 import { computeChurn } from './metrics/churn.ts';
+import { analyzeDsCoverage } from './metrics/ds-coverage/index.ts';
 import {
 	coverageDelta,
 	dsPackagesForPin,
@@ -70,9 +71,19 @@ export function analyzeRun(context: PostAnalysisContext): Analysis {
 	// The pinned tree is measured whole: which of its files matter is not known
 	// until a run has been diffed against it, and by then it may be long gone.
 	if (context.mode === 'baseline') {
+		const dsPackages = dsPackagesForPin(context.pin);
 		return {
 			...complexityForTree(context.projectDir),
-			dsCoverage: dsCoverageOf(context),
+			dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
+			// Whole tree, once per pin: baseline.ts moves this into the sidecar.
+			nodeList:
+				dsPackages === null
+					? undefined
+					: analyzeDsCoverage({
+							projectDir: context.projectDir,
+							dsPackages,
+							includeNodes: true,
+						}).nodeList,
 		};
 	}
 

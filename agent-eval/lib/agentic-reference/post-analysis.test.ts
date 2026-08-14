@@ -226,6 +226,33 @@ describe('analyzeRun in baseline mode', () => {
 			dsShareOfComponentNodes: null,
 		});
 	});
+
+	// The judge compares a run's nodes against the pinned tree's, so the baseline
+	// half has to exist. baseline.ts splits this into baselines/ds-nodes/ rather
+	// than committing it inside the baseline file.
+	it('censuses the pinned tree’s nodes for the sidecar to carry', () => {
+		const baseline = analyzeRun({
+			mode: 'baseline',
+			projectDir: writeTree('ref-nodes', DS_TREE),
+			pin: PIN,
+		});
+
+		expect(baseline.nodeList).toMatchObject([
+			{ file: 'src/C.tsx', tag: 'Button', category: 'ds', module: '@base-ui/react' },
+		]);
+	});
+
+	// A pin declaring no DS packages has nothing to census, and an empty list
+	// would read as "measured, found nothing" rather than "not measured".
+	it('emits no node list for a pin with no design system', () => {
+		const baseline = analyzeRun({
+			mode: 'baseline',
+			projectDir: writeTree('ref-nodes-unmapped', DS_TREE),
+			pin: UNMAPPED_PIN,
+		});
+
+		expect(baseline.nodeList).toBeUndefined();
+	});
 });
 
 describe('deltaToBaseline', () => {
