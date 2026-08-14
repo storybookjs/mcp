@@ -5,7 +5,7 @@
 	"evals": {
 		"externalRepo": {
 			"repo": "yannbf/mealdrop",
-			"ref": "refs/tags/agentic-reference/droppy-70pc-v1"
+			"ref": "refs/tags/agentic-reference/droppy-70pc-v2"
 		}
 	}
 }
