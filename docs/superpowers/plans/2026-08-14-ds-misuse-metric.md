@@ -1258,3 +1258,472 @@ ls baselines baselines/ds-nodes
 ```
 Expected: `baselines/<pinSlug>.json` files and a matching `baselines/ds-nodes/<pinSlug>.json`.
 If there are no local results, skip this — CI covers it.
+
+---
+
+## Phase C — Diff and design-system docs
+
+### Task 8: `tree-patch.ts` — the run's diff against its baseline
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/tree-patch.ts`
+- Test: `lib/agentic-reference/metrics/ds-misuse/tree-patch.test.ts`
+
+Two facts about `git diff --no-index` that drive the implementation:
+- it **exits 1 when there are differences**, which is success here, not failure;
+- it emits the two absolute directory paths in every header, so without rewriting
+  the judge would see two cache paths instead of `src/components/Foo.tsx`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tree-patch.test.ts`:
+
+```ts
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { treePatch } from './tree-patch.ts';
+
+let root: string;
+
+function tree(name: string, files: Record<string, string>): string {
+	const dir = join(root, name);
+	for (const [path, contents] of Object.entries(files)) {
+		mkdirSync(dirname(join(dir, path)), { recursive: true });
+		writeFileSync(join(dir, path), contents);
+	}
+	mkdirSync(dir, { recursive: true });
+	return dir;
+}
+
+beforeEach(() => {
+	root = mkdtempSync(join(tmpdir(), 'tree-patch-'));
+});
+
+afterEach(() => {
+	rmSync(root, { recursive: true, force: true });
+});
+
+describe('treePatch', () => {
+	it('reports no change between identical trees', () => {
+		const files = { 'src/App.tsx': 'export const App = () => <div />\n' };
+		const patch = treePatch(tree('before', files), tree('after', files));
+		expect(patch).toEqual({ text: '', files: [], truncated: false, droppedFiles: 0 });
+	});
+
+	// Without rewriting, every header names two absolute cache directories and
+	// the judge cannot tell which repo file it is looking at.
+	it('rewrites both tree roots to workspace-relative paths', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n' }),
+			tree('after', { 'src/App.tsx': 'const a = 2\n' }),
+		);
+		expect(patch.files).toEqual(['src/App.tsx']);
+		expect(patch.text).toContain('diff --git a/src/App.tsx b/src/App.tsx');
+		expect(patch.text).not.toContain(root);
+	});
+
+	it('includes files added by the run', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n' }),
+			tree('after', { 'src/App.tsx': 'const a = 1\n', 'src/New.tsx': 'export const New = 1\n' }),
+		);
+		expect(patch.files).toEqual(['src/New.tsx']);
+	});
+
+	// The metric is about source the agent wrote. Lockfiles and harness scaffolding
+	// are neither, and a lockfile alone can blow the whole byte budget.
+	it('drops non-source and excluded paths', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n' }),
+			tree('after', {
+				'src/App.tsx': 'const a = 2\n',
+				'pnpm-lock.yaml': 'lockfileVersion: 9\n',
+				'notes.md': 'hello\n',
+				'__agent_eval__/test-utils.ts': 'export const x = 1\n',
+			}),
+		);
+		expect(patch.files).toEqual(['src/App.tsx']);
+	});
+
+	it('cuts at a file boundary when over the cap and says how many it dropped', () => {
+		const big = 'x'.repeat(4000) + '\n';
+		const patch = treePatch(
+			tree('before', { 'src/A.tsx': 'const a = 1\n', 'src/B.tsx': 'const b = 1\n' }),
+			tree('after', { 'src/A.tsx': big, 'src/B.tsx': big }),
+			{ maxBytes: 2000 },
+		);
+		expect(patch.truncated).toBe(true);
+		expect(patch.droppedFiles).toBeGreaterThan(0);
+		// Whole blocks only — a half-written hunk would read as a real edit.
+		expect(patch.text.split('diff --git').length - 1).toBe(patch.files.length);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/tree-patch.test.ts`
+Expected: FAIL — `Cannot find module './tree-patch.ts'`.
+
+- [ ] **Step 3: Write the implementation**
+
+Create `tree-patch.ts`:
+
+```ts
+// The unified diff between the pinned baseline tree and what a run left behind.
+//
+// tree-diff.ts already answers "which files changed" for the SLoC metrics, but
+// the judge needs the actual hunks: it has to see what the agent wrote to decide
+// whether a component was used correctly. That is a different question and a
+// different output, so this lives beside rather than inside it.
+//
+// git diff --no-index is the engine. Two of its behaviours drive the code below:
+// it exits 1 when the trees differ (success here), and it names both absolute
+// tree roots in every header, which would leave the judge staring at two cache
+// paths instead of the repo path it needs.
+import { execFileSync } from 'node:child_process';
+
+import { isExcludedPath, SOURCE_EXTENSIONS } from '../../tree/paths.ts';
+
+/** 512 KB ≈ 128k tokens, clear of the window alongside the ~95k-token doc corpus. */
+const DEFAULT_MAX_BYTES = 512 * 1024;
+
+const DIFF_TIMEOUT_SECONDS = 120;
+
+export interface TreePatch {
+	/** The unified diff, workspace-relative and filtered. */
+	text: string;
+	/** Workspace-relative paths present in `text`, in order. */
+	files: string[];
+	/** Whether the byte cap dropped anything. */
+	truncated: boolean;
+	/** How many whole file blocks the cap dropped. */
+	droppedFiles: number;
+}
+
+export interface TreePatchOptions {
+	maxBytes?: number;
+}
+
+/** The path a `diff --git a/<x> b/<y>` header names, or null if unparseable. */
+function pathOfBlock(block: string): string | null {
+	const header = /^diff --git a\/(\S+) b\/(\S+)/.exec(block);
+	if (header === null) return null;
+	// A rename would differ; take the post-image, which is what the run produced.
+	return header[2] ?? header[1] ?? null;
+}
+
+function isJudgeable(path: string): boolean {
+	return SOURCE_EXTENSIONS.test(path) && !isExcludedPath(path);
+}
+
+/**
+ * Diff two checked-out trees. Both roots are rewritten out of the output so the
+ * result reads as repo-relative, and the whole thing is capped — cutting at a
+ * file boundary, because half a hunk reads as a real edit rather than a cut.
+ */
+export function treePatch(
+	baselineDir: string,
+	projectDir: string,
+	options: TreePatchOptions = {},
+): TreePatch {
+	const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+
+	let raw = '';
+	try {
+		raw = execFileSync(
+			'git',
+			['diff', '--no-index', '--no-color', '--', baselineDir, projectDir],
+			{ encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout: DIFF_TIMEOUT_SECONDS * 1000 },
+		);
+	} catch (error) {
+		// Exit 1 is "the trees differ", which is the normal case here.
+		const failure = error as { status?: number; stdout?: string; stderr?: string };
+		if (failure.status !== 1) {
+			throw new Error(`ds-misuse: git diff failed: ${failure.stderr ?? String(error)}`);
+		}
+		raw = failure.stdout ?? '';
+	}
+
+	// Longest first, so a root that prefixes the other cannot leave a fragment.
+	const roots = [baselineDir, projectDir].sort((a, b) => b.length - a.length);
+	const relative = roots.reduce(
+		(text, root) => text.split(`${root}/`).join(''),
+		raw,
+	);
+
+	const blocks = relative
+		.split(/^(?=diff --git )/m)
+		.map((block) => block.trim())
+		.filter((block) => block.startsWith('diff --git '));
+
+	const kept: string[] = [];
+	const files: string[] = [];
+	let bytes = 0;
+	let droppedFiles = 0;
+
+	for (const block of blocks) {
+		const path = pathOfBlock(block);
+		if (path === null || !isJudgeable(path)) continue;
+
+		const size = Buffer.byteLength(block, 'utf8') + 1;
+		if (bytes + size > maxBytes) {
+			droppedFiles += 1;
+			continue;
+		}
+		bytes += size;
+		kept.push(block);
+		files.push(path);
+	}
+
+	return {
+		text: kept.join('\n'),
+		files,
+		truncated: droppedFiles > 0,
+		droppedFiles,
+	};
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/tree-patch.test.ts`
+Expected: PASS, 5 tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/tree-patch.ts \
+        lib/agentic-reference/metrics/ds-misuse/tree-patch.test.ts
+git commit -m "Produce the run's diff against its baseline for the judge
+
+git diff --no-index exits 1 on difference, which is the normal case, and names
+both absolute tree roots in every header — so the roots are rewritten out and
+the cap cuts at a file boundary, since half a hunk reads as a real edit."
+```
+
+---
+
+### Task 9: `ds-docs.ts` — the pinned guideline corpus
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/ds-docs.ts`
+- Test: `lib/agentic-reference/metrics/ds-misuse/ds-docs.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `ds-docs.test.ts`:
+
+```ts
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../external-repo.ts', async (importOriginal) => ({
+	...(await importOriginal<typeof import('../../external-repo.ts')>()),
+	prepareRef: vi.fn(),
+}));
+
+import { prepareRef } from '../../external-repo.ts';
+import { collectDsDocs, DS_DOCS_PIN, dsDocsRefLabel } from './ds-docs.ts';
+
+let root: string;
+
+beforeEach(() => {
+	root = mkdtempSync(join(tmpdir(), 'ds-docs-'));
+	vi.mocked(prepareRef).mockReturnValue(root);
+});
+
+afterEach(() => {
+	rmSync(root, { recursive: true, force: true });
+	vi.restoreAllMocks();
+});
+
+function write(path: string, contents: string): void {
+	mkdirSync(dirname(join(root, path)), { recursive: true });
+	writeFileSync(join(root, path), contents);
+}
+
+describe('DS_DOCS_PIN', () => {
+	// The whole point of a fixed ref: arms are served different documentation on
+	// purpose, and judging each against what it saw would score a degraded arm
+	// against a lowered bar.
+	it('is an immutable sha, not a branch', () => {
+		expect(DS_DOCS_PIN.ref).toMatch(/^[0-9a-f]{40}$/);
+		expect(DS_DOCS_PIN.repo).toBe('yannbf/droppy-ds');
+	});
+
+	it('labels itself repo@sha for the artifact', () => {
+		expect(dsDocsRefLabel()).toBe(`${DS_DOCS_PIN.repo}@${DS_DOCS_PIN.ref}`);
+	});
+});
+
+describe('collectDsDocs', () => {
+	it('collects mdx from components and docs, sorted for a stable cache prefix', () => {
+		write('src/components/Button/Button.mdx', '# Button\n');
+		write('src/components/Card/Card.mdx', '# Card\n');
+		write('src/docs/BrandGuidelines.mdx', '# Brand\n');
+		write('src/components/Button/Button.tsx', 'export const Button = 1\n');
+		write('README.md', '# nope\n');
+
+		expect(collectDsDocs('/cache').map((doc) => doc.path)).toEqual([
+			'src/components/Button/Button.mdx',
+			'src/components/Card/Card.mdx',
+			'src/docs/BrandGuidelines.mdx',
+		]);
+	});
+
+	it('carries each document's text', () => {
+		write('src/docs/BrandGuidelines.mdx', '# Brand\nUse tokens.\n');
+		expect(collectDsDocs('/cache')[0]).toEqual({
+			path: 'src/docs/BrandGuidelines.mdx',
+			text: '# Brand\nUse tokens.\n',
+		});
+	});
+
+	// A silent empty corpus would produce a confidently wrong judgement.
+	it('throws when the ref carries no mdx at all', () => {
+		expect(() => collectDsDocs('/cache')).toThrow(/no MDX/);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/ds-docs.test.ts`
+Expected: FAIL — `Cannot find module './ds-docs.ts'`.
+
+- [ ] **Step 3: Write the implementation**
+
+Create `ds-docs.ts`:
+
+```ts
+// The design system's own documentation, as the judge reads it.
+//
+// Pinned to one immutable sha, and deliberately NOT the branch the arm under
+// evaluation was served. Content variation between arms is the independent
+// variable of the whole agentic-reference round — several arms run against
+// deliberately degraded documentation, which is exactly the condition we expect
+// misuse to show up under. Judging each arm against the docs it happened to see
+// would make the arms incomparable and would score a degraded arm against a
+// lowered bar. Every arm is judged against the complete guidelines.
+//
+// Moving this pin is a deliberate, reviewable edit. Artifacts record the ref
+// they were judged against, so a moved pin invalidates them rather than silently
+// mixing two standards in one table.
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+import { prepareRef, type ExternalRepoPin } from '../../external-repo.ts';
+
+/**
+ * yannbf/droppy-ds at main, 2026-08-14. 43 MDX files: 33 component docs plus
+ * src/docs/, of which BrandGuidelines, ChoosingComponents, TechnicalGuidelines
+ * and AccessibilityGuidelines carry the rules the judge scores against.
+ */
+export const DS_DOCS_PIN: ExternalRepoPin = {
+	repo: 'yannbf/droppy-ds',
+	ref: 'dfe7e43eeb2ff25c95897e55e86a976ef3f7cb7d',
+};
+
+/** Directories under the DS repo whose MDX is guidance rather than scaffolding. */
+const DOC_ROOTS = ['src/components', 'src/docs'];
+
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'storybook-static']);
+
+export interface DsDoc {
+	/** Repo-relative path, for citing in the prompt. */
+	path: string;
+	text: string;
+}
+
+/** `repo@sha`, recorded in every artifact so a moved pin invalidates it. */
+export function dsDocsRefLabel(): string {
+	return `${DS_DOCS_PIN.repo}@${DS_DOCS_PIN.ref}`;
+}
+
+function mdxUnder(dir: string, root: string): string[] {
+	let entries;
+	try {
+		entries = readdirSync(dir, { withFileTypes: true });
+	} catch {
+		return [];
+	}
+	return entries.flatMap((entry) => {
+		const path = join(dir, entry.name);
+		if (entry.isDirectory()) return SKIP_DIRS.has(entry.name) ? [] : mdxUnder(path, root);
+		return entry.name.endsWith('.mdx') ? [relative(root, path)] : [];
+	});
+}
+
+/**
+ * Every guideline document at the pinned ref, sorted by path.
+ *
+ * Sorted because this block is the cached prefix of every judge request: a
+ * readdir-order corpus would reorder between machines and miss the cache on
+ * every first request.
+ */
+export function collectDsDocs(cacheDir: string): DsDoc[] {
+	const root = prepareRef(cacheDir, DS_DOCS_PIN.repo, DS_DOCS_PIN.ref);
+	const paths = DOC_ROOTS.flatMap((docRoot) => mdxUnder(join(root, docRoot), root)).sort();
+
+	if (paths.length === 0) {
+		throw new Error(
+			`ds-misuse: no MDX found under ${DOC_ROOTS.join(' or ')} at ${dsDocsRefLabel()}. ` +
+				'Judging against an empty corpus would produce confident nonsense; ' +
+				'check DS_DOCS_PIN in lib/agentic-reference/metrics/ds-misuse/ds-docs.ts.',
+		);
+	}
+
+	return paths.map((path) => ({ path, text: readFileSync(join(root, path), 'utf8') }));
+}
+```
+
+- [ ] **Step 4: Fix the test's apostrophe**
+
+The test name `carries each document's text` contains an unescaped apostrophe
+inside a single-quoted string. Change that line to:
+
+```ts
+	it('carries the text of each document', () => {
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/ds-docs.test.ts`
+Expected: PASS, 5 tests.
+
+- [ ] **Step 6: Verify the pin resolves for real (one network call)**
+
+Run:
+```bash
+node -e "
+const { collectDsDocs } = await import('./lib/agentic-reference/metrics/ds-misuse/ds-docs.ts');
+const docs = collectDsDocs('.eval-cache/refs');
+console.log(docs.length, 'docs,', docs.reduce((n, d) => n + d.text.length, 0), 'chars');
+console.log(docs.filter(d => d.path.startsWith('src/docs')).map(d => d.path).join('\n'));
+" --input-type=module
+```
+Expected: `43 docs, ~379842 chars`, and the `src/docs` list includes
+`BrandGuidelines.mdx`, `ChoosingComponents.mdx`, `TechnicalGuidelines.mdx`,
+`AccessibilityGuidelines.mdx`. If the count differs, the pin moved — stop and
+raise it rather than adjusting the assertion.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/ds-docs.ts \
+        lib/agentic-reference/metrics/ds-misuse/ds-docs.test.ts
+git commit -m "Pin the design-system guideline corpus the judge reads
+
+One immutable sha, not the arm's own served branch: content variation between
+arms is the round's independent variable, so judging each arm against what it
+saw would score a degraded arm against a lowered bar. Sorted, because this is
+the cached prefix of every request."
+```
