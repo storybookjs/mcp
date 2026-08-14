@@ -87,10 +87,10 @@ describe('includeNodes', () => {
 
 	// Default-off is load-bearing: measureDsCoverage stores this report shape in
 	// every committed baseline, and a new key would change every one of them.
-	it('omits the nodes key entirely when not asked', () => {
+	it('omits the nodeList key entirely when not asked', () => {
 		vol.fromJSON(FILES, ROOT);
 		const report = analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'] });
-		expect('nodes' in report).toBe(false);
+		expect('nodeList' in report).toBe(false);
 	});
 
 	it('emits one record per counted component element when asked', () => {
@@ -100,7 +100,7 @@ describe('includeNodes', () => {
 			dsPackages: ['@ds/*'],
 			includeNodes: true,
 		});
-		expect(report.nodes).toEqual([
+		expect(report.nodeList).toEqual([
 			{
 				path: 'App/Button[0]',
 				file: 'src/App.tsx',
@@ -120,7 +120,7 @@ describe('includeNodes', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts -t includeNodes`
-Expected: FAIL — `report.nodes` is `undefined`; TypeScript reports `includeNodes` is not in `DsCoverageOptions`.
+Expected: FAIL — `report.nodeList` is `undefined`; TypeScript reports `includeNodes` is not in `DsCoverageOptions`.
 
 - [ ] **Step 3: Add the types**
 
@@ -171,11 +171,13 @@ Add to `DsCoverageOptions`:
 	includeNodes?: boolean;
 ```
 
-Add to `DsCoverageReport`:
+Add to `DsCoverageReport`. **The key is `nodeList`, not `nodes`** — `nodes` on
+this interface already means `NodeTotals`, and shadowing it would change the
+stored shape of every committed baseline:
 
 ```ts
 	/** Present only when `includeNodes` was set. */
-	nodes?: NodeRecord[];
+	nodeList?: NodeRecord[];
 ```
 
 Change `FrameworkImplementation.createCensus` to accept the flag:
@@ -214,22 +216,14 @@ Replace the census call and return in `analyzeDsCoverage`:
 	};
 ```
 
-> **Naming collision — read this.** `DsCoverageReport.nodes` is already taken by `NodeTotals`. Do **not** overwrite it. Add the record list under a distinct key.
-
-Rename the new report key to `nodeList` in `types.ts` and everywhere below:
-
-```ts
-	/** Present only when `includeNodes` was set. */
-	nodeList?: NodeRecord[];
-```
-
-and append to the return object, after `perFile`:
+Note the `nodes: census.totals` line above is the pre-existing `NodeTotals` key
+and stays exactly as it is. Append the record list after `perFile` under its own
+key. Spreading conditionally is what keeps that key *absent* rather than
+`undefined` when the option is off, which is what the Step 1 test asserts:
 
 ```ts
 		...(includeNodes ? { nodeList: census.nodes ?? [] } : {}),
 ```
-
-Update the test written in Step 1 to assert on `report.nodeList` and `'nodeList' in report`.
 
 - [ ] **Step 5: Add a no-op census signature so the suite compiles**
 
