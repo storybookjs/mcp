@@ -10,6 +10,7 @@
 // tree roots in every header, which would leave the judge staring at two cache
 // paths instead of the repo path it needs.
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 import { isExcludedPath, SOURCE_EXTENSIONS } from '../../tree/paths.ts';
 
@@ -75,6 +76,14 @@ export function treePatch(
 	options: TreePatchOptions = {},
 ): TreePatch {
 	const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+
+	// git exits 1 for a path it cannot access exactly as it does for a difference,
+	// so an absent tree is indistinguishable from a clean one below: a run whose
+	// project directory never got copied out would return an empty patch and be
+	// judged as having written nothing, which scores as flawless.
+	for (const dir of [baselineDir, projectDir]) {
+		if (!existsSync(dir)) throw new Error(`ds-misuse: tree not found: ${dir}`);
+	}
 
 	let raw = '';
 	try {
