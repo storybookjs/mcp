@@ -33,6 +33,10 @@ on:
         description: 'Dry run: resolve the selection and print the plan without spending'
         type: boolean
         default: false
+      expect:
+        description: 'Spend guard: fail before running unless the resolved plan is exactly this many evals (leave empty to skip the check)'
+        type: string
+        default: ''
 
 env:
   TURBO_ENV_MODE: loose
@@ -89,6 +93,35 @@ jobs:
           done
 
           exit "$missing"
+
+      - name: Enforce the expected plan size
+        if: ${{ inputs.expect != '' }}
+        shell: bash
+        env:
+          CASES: ${{ inputs.cases }}
+          EXPECT: ${{ inputs.expect }}
+          AGENTIC_REF_FLOW: ${{ inputs.flows }}
+          AGENTIC_REF_RUNS: ${{ inputs.runs }}
+        run: |
+          args=()
+          if [[ -n "$CASES" ]]; then
+            read -r -a case_args <<< "$CASES"
+            args+=("${case_args[@]}")
+          fi
+
+          plan=$(pnpm --dir agent-eval run eval:agentic-ref:dry -- "${args[@]}")
+          echo "$plan"
+          resolved=$(grep -oE '[0-9]+ evals? to run' <<< "$plan" | grep -oE '^[0-9]+' | head -1)
+
+          if [[ -z "$resolved" ]]; then
+            echo "::error title=Spend guard::Could not read the resolved eval count from the dry-run plan."
+            exit 1
+          fi
+          if [[ "$resolved" != "$EXPECT" ]]; then
+            echo "::error title=Spend guard::The selection resolves to $resolved evals, but expect=$EXPECT. Nothing was run."
+            exit 1
+          fi
+          echo "Plan matches: $resolved evals."
 
       - name: Run agentic-reference evals
         shell: bash
