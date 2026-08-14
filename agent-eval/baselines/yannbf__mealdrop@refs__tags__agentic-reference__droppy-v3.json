@@ -1,8 +1,7 @@
 {
-	"eval": "701-new-ui-flow",
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/droppy-v3",
-	"metricsVersion": 6,
+	"metricsVersion": 7,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {

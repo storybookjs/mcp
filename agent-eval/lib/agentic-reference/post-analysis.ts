@@ -594,10 +594,11 @@ export function summarize(
  * - 5 moved the DS package patterns from the eval fixture to the external-repo pin,
  *     so a baseline whose fixture was missing no longer stores a null coverage
  * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
+ * - 7 re-keyed baselines on the pin alone and added the ds-misuse node sidecar
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,
 	deltaToBaseline,
 	summarize,
-	metricsVersion: 6,
+	metricsVersion: 7,
 };

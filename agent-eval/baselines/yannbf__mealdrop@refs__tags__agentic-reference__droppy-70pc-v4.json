@@ -1,8 +1,7 @@
 {
-	"eval": "701-new-ui-flow",
 	"repo": "yannbf/mealdrop",
-	"ref": "refs/tags/agentic-reference/base-ui-v1",
-	"metricsVersion": 6,
+	"ref": "refs/tags/agentic-reference/droppy-70pc-v4",
+	"metricsVersion": 7,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
@@ -16,13 +15,13 @@
 				"jsxTrees": 0
 			},
 			"src/App.tsx": {
-				"cyclomatic": 3,
-				"cognitive": 3,
-				"jsxCyclomatic": 3,
-				"jsxCognitive": 9,
-				"jsxLength": 5,
-				"jsxBindings": 2,
-				"jsxDepthTotal": 4,
+				"cyclomatic": 2,
+				"cognitive": 2,
+				"jsxCyclomatic": 2,
+				"jsxCognitive": 5,
+				"jsxLength": 4,
+				"jsxBindings": 1,
+				"jsxDepthTotal": 3,
 				"jsxTrees": 1
 			},
 			"src/Routes.tsx": {
@@ -175,95 +174,15 @@
 				"jsxDepthTotal": 0,
 				"jsxTrees": 0
 			},
-			"src/components/Badge/Badge.tsx": {
-				"cyclomatic": 2,
-				"cognitive": 0,
-				"jsxCyclomatic": 2,
-				"jsxCognitive": 1,
-				"jsxLength": 2,
-				"jsxBindings": 4,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/Badge/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Breadcrumb/Breadcrumb.tsx": {
-				"cyclomatic": 4,
-				"cognitive": 3,
-				"jsxCyclomatic": 5,
-				"jsxCognitive": 12,
-				"jsxLength": 6,
-				"jsxBindings": 7,
-				"jsxDepthTotal": 4,
-				"jsxTrees": 1
-			},
-			"src/components/Breadcrumb/index.ts": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Button/Button.tsx": {
-				"cyclomatic": 13,
-				"cognitive": 12,
-				"jsxCyclomatic": 13,
-				"jsxCognitive": 15,
-				"jsxLength": 3,
-				"jsxBindings": 13,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/Button/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Carousel/Carousel.tsx": {
-				"cyclomatic": 15,
-				"cognitive": 22,
-				"jsxCyclomatic": 16,
-				"jsxCognitive": 29,
-				"jsxLength": 6,
-				"jsxBindings": 14,
-				"jsxDepthTotal": 4,
-				"jsxTrees": 1
-			},
-			"src/components/Carousel/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
 			"src/components/Category/Category.tsx": {
-				"cyclomatic": 15,
-				"cognitive": 8,
-				"jsxCyclomatic": 15,
-				"jsxCognitive": 13,
+				"cyclomatic": 4,
+				"cognitive": 1,
+				"jsxCyclomatic": 4,
+				"jsxCognitive": 5,
 				"jsxLength": 9,
-				"jsxBindings": 16,
-				"jsxDepthTotal": 8,
-				"jsxTrees": 3
+				"jsxBindings": 15,
+				"jsxDepthTotal": 7,
+				"jsxTrees": 4
 			},
 			"src/components/Category/index.tsx": {
 				"cyclomatic": 0,
@@ -275,33 +194,13 @@
 				"jsxDepthTotal": 0,
 				"jsxTrees": 0
 			},
-			"src/components/ErrorBlock/ErrorBlock.tsx": {
-				"cyclomatic": 3,
-				"cognitive": 0,
-				"jsxCyclomatic": 3,
-				"jsxCognitive": 1,
-				"jsxLength": 5,
-				"jsxBindings": 6,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/ErrorBlock/index.ts": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
 			"src/components/Footer/Footer.tsx": {
-				"cyclomatic": 2,
+				"cyclomatic": 1,
 				"cognitive": 0,
-				"jsxCyclomatic": 2,
+				"jsxCyclomatic": 1,
 				"jsxCognitive": 15,
 				"jsxLength": 10,
-				"jsxBindings": 15,
+				"jsxBindings": 14,
 				"jsxDepthTotal": 6,
 				"jsxTrees": 1
 			},
@@ -316,13 +215,13 @@
 				"jsxTrees": 0
 			},
 			"src/components/FooterCard/FooterCard.tsx": {
-				"cyclomatic": 4,
-				"cognitive": 3,
-				"jsxCyclomatic": 5,
-				"jsxCognitive": 15,
-				"jsxLength": 7,
-				"jsxBindings": 13,
-				"jsxDepthTotal": 5,
+				"cyclomatic": 2,
+				"cognitive": 2,
+				"jsxCyclomatic": 3,
+				"jsxCognitive": 5,
+				"jsxLength": 2,
+				"jsxBindings": 5,
+				"jsxDepthTotal": 2,
 				"jsxTrees": 1
 			},
 			"src/components/FooterCard/index.tsx": {
@@ -336,13 +235,13 @@
 				"jsxTrees": 0
 			},
 			"src/components/Header/Header.tsx": {
-				"cyclomatic": 17,
+				"cyclomatic": 15,
 				"cognitive": 5,
-				"jsxCyclomatic": 17,
-				"jsxCognitive": 34,
-				"jsxLength": 21,
-				"jsxBindings": 40,
-				"jsxDepthTotal": 11,
+				"jsxCyclomatic": 15,
+				"jsxCognitive": 32,
+				"jsxLength": 17,
+				"jsxBindings": 38,
+				"jsxDepthTotal": 8,
 				"jsxTrees": 3
 			},
 			"src/components/Header/index.tsx": {
@@ -355,37 +254,17 @@
 				"jsxDepthTotal": 0,
 				"jsxTrees": 0
 			},
-			"src/components/Icon/Icon.tsx": {
-				"cyclomatic": 2,
-				"cognitive": 1,
-				"jsxCyclomatic": 2,
-				"jsxCognitive": 2,
-				"jsxLength": 2,
-				"jsxBindings": 5,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/Icon/index.tsx": {
-				"cyclomatic": 0,
+			"src/components/Link/Link.tsx": {
+				"cyclomatic": 1,
 				"cognitive": 0,
-				"jsxCyclomatic": 0,
+				"jsxCyclomatic": 1,
 				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/IconButton/IconButton.tsx": {
-				"cyclomatic": 5,
-				"cognitive": 3,
-				"jsxCyclomatic": 5,
-				"jsxCognitive": 6,
 				"jsxLength": 2,
-				"jsxBindings": 6,
+				"jsxBindings": 3,
 				"jsxDepthTotal": 2,
 				"jsxTrees": 1
 			},
-			"src/components/IconButton/index.tsx": {
+			"src/components/Link/index.tsx": {
 				"cyclomatic": 0,
 				"cognitive": 0,
 				"jsxCyclomatic": 0,
@@ -396,12 +275,12 @@
 				"jsxTrees": 0
 			},
 			"src/components/Logo/Logo.tsx": {
-				"cyclomatic": 10,
+				"cyclomatic": 9,
 				"cognitive": 5,
-				"jsxCyclomatic": 10,
+				"jsxCyclomatic": 9,
 				"jsxCognitive": 8,
 				"jsxLength": 10,
-				"jsxBindings": 28,
+				"jsxBindings": 22,
 				"jsxDepthTotal": 3,
 				"jsxTrees": 1
 			},
@@ -415,74 +294,14 @@
 				"jsxDepthTotal": 0,
 				"jsxTrees": 0
 			},
-			"src/components/Modal/Modal.styles.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Modal/Modal.tsx": {
-				"cyclomatic": 2,
-				"cognitive": 2,
-				"jsxCyclomatic": 2,
-				"jsxCognitive": 13,
-				"jsxLength": 6,
-				"jsxBindings": 16,
-				"jsxDepthTotal": 5,
-				"jsxTrees": 1
-			},
-			"src/components/Modal/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/PageSection/PageSection.tsx": {
-				"cyclomatic": 2,
-				"cognitive": 1,
-				"jsxCyclomatic": 2,
-				"jsxCognitive": 4,
-				"jsxLength": 4,
-				"jsxBindings": 8,
-				"jsxDepthTotal": 3,
-				"jsxTrees": 1
-			},
-			"src/components/PageSection/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Portal.tsx": {
-				"cyclomatic": 3,
-				"cognitive": 3,
-				"jsxCyclomatic": 3,
-				"jsxCognitive": 3,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
 			"src/components/RestaurantCard/RestaurantCard.tsx": {
-				"cyclomatic": 13,
+				"cyclomatic": 8,
 				"cognitive": 5,
-				"jsxCyclomatic": 14,
-				"jsxCognitive": 39,
-				"jsxLength": 24,
-				"jsxBindings": 32,
-				"jsxDepthTotal": 10,
+				"jsxCyclomatic": 9,
+				"jsxCognitive": 32,
+				"jsxLength": 23,
+				"jsxBindings": 35,
+				"jsxDepthTotal": 9,
 				"jsxTrees": 3
 			},
 			"src/components/RestaurantCard/index.tsx": {
@@ -515,30 +334,10 @@
 				"jsxDepthTotal": 4,
 				"jsxTrees": 2
 			},
-			"src/components/Review/Review.tsx": {
-				"cyclomatic": 9,
-				"cognitive": 6,
-				"jsxCyclomatic": 9,
-				"jsxCognitive": 7,
-				"jsxLength": 2,
-				"jsxBindings": 4,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/Review/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
 			"src/components/ShoppingCart/OrderSummary/OrderSummary.styles.tsx": {
-				"cyclomatic": 3,
+				"cyclomatic": 2,
 				"cognitive": 1,
-				"jsxCyclomatic": 3,
+				"jsxCyclomatic": 2,
 				"jsxCognitive": 1,
 				"jsxLength": 0,
 				"jsxBindings": 0,
@@ -551,7 +350,7 @@
 				"jsxCyclomatic": 3,
 				"jsxCognitive": 14,
 				"jsxLength": 8,
-				"jsxBindings": 7,
+				"jsxBindings": 9,
 				"jsxDepthTotal": 4,
 				"jsxTrees": 1
 			},
@@ -591,7 +390,7 @@
 				"jsxCyclomatic": 4,
 				"jsxCognitive": 10,
 				"jsxLength": 15,
-				"jsxBindings": 26,
+				"jsxBindings": 27,
 				"jsxDepthTotal": 9,
 				"jsxTrees": 3
 			},
@@ -599,136 +398,6 @@
 				"cyclomatic": 0,
 				"cognitive": 0,
 				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Sidebar/Sidebar.styles.tsx": {
-				"cyclomatic": 2,
-				"cognitive": 0,
-				"jsxCyclomatic": 2,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Sidebar/Sidebar.tsx": {
-				"cyclomatic": 4,
-				"cognitive": 4,
-				"jsxCyclomatic": 4,
-				"jsxCognitive": 20,
-				"jsxLength": 11,
-				"jsxBindings": 22,
-				"jsxDepthTotal": 7,
-				"jsxTrees": 1
-			},
-			"src/components/Sidebar/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/Spinner/Spinner.tsx": {
-				"cyclomatic": 1,
-				"cognitive": 0,
-				"jsxCyclomatic": 1,
-				"jsxCognitive": 20,
-				"jsxLength": 19,
-				"jsxBindings": 77,
-				"jsxDepthTotal": 4,
-				"jsxTrees": 1
-			},
-			"src/components/Spinner/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/TopBanner/TopBanner.tsx": {
-				"cyclomatic": 6,
-				"cognitive": 3,
-				"jsxCyclomatic": 6,
-				"jsxCognitive": 3,
-				"jsxLength": 2,
-				"jsxBindings": 4,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/TopBanner/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/components/forms/Input.tsx": {
-				"cyclomatic": 4,
-				"cognitive": 3,
-				"jsxCyclomatic": 4,
-				"jsxCognitive": 6,
-				"jsxLength": 4,
-				"jsxBindings": 11,
-				"jsxDepthTotal": 2,
-				"jsxTrees": 1
-			},
-			"src/components/forms/Select.tsx": {
-				"cyclomatic": 5,
-				"cognitive": 2,
-				"jsxCyclomatic": 6,
-				"jsxCognitive": 6,
-				"jsxLength": 4,
-				"jsxBindings": 13,
-				"jsxDepthTotal": 3,
-				"jsxTrees": 1
-			},
-			"src/components/typography/Body.tsx": {
-				"cyclomatic": 3,
-				"cognitive": 1,
-				"jsxCyclomatic": 3,
-				"jsxCognitive": 1,
-				"jsxLength": 1,
-				"jsxBindings": 7,
-				"jsxDepthTotal": 1,
-				"jsxTrees": 1
-			},
-			"src/components/typography/Heading.tsx": {
-				"cyclomatic": 4,
-				"cognitive": 2,
-				"jsxCyclomatic": 4,
-				"jsxCognitive": 2,
-				"jsxLength": 1,
-				"jsxBindings": 6,
-				"jsxDepthTotal": 1,
-				"jsxTrees": 1
-			},
-			"src/components/typography/index.tsx": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
-			"src/docs/utils.ts": {
-				"cyclomatic": 2,
-				"cognitive": 0,
-				"jsxCyclomatic": 2,
 				"jsxCognitive": 0,
 				"jsxLength": 0,
 				"jsxBindings": 0,
@@ -820,7 +489,7 @@
 				"cognitive": 5,
 				"jsxCyclomatic": 9,
 				"jsxCognitive": 21,
-				"jsxLength": 9,
+				"jsxLength": 10,
 				"jsxBindings": 18,
 				"jsxDepthTotal": 4,
 				"jsxTrees": 1
@@ -841,7 +510,7 @@
 				"jsxCyclomatic": 1,
 				"jsxCognitive": 3,
 				"jsxLength": 6,
-				"jsxBindings": 5,
+				"jsxBindings": 4,
 				"jsxDepthTotal": 3,
 				"jsxTrees": 1
 			},
@@ -876,19 +545,19 @@
 				"jsxTrees": 0
 			},
 			"src/pages/CheckoutPage/CheckoutPage.tsx": {
-				"cyclomatic": 3,
+				"cyclomatic": 1,
 				"cognitive": 0,
-				"jsxCyclomatic": 3,
-				"jsxCognitive": 13,
-				"jsxLength": 8,
-				"jsxBindings": 5,
-				"jsxDepthTotal": 5,
+				"jsxCyclomatic": 1,
+				"jsxCognitive": 18,
+				"jsxLength": 9,
+				"jsxBindings": 4,
+				"jsxDepthTotal": 6,
 				"jsxTrees": 1
 			},
 			"src/pages/CheckoutPage/components/registration-form/ContactDetails.tsx": {
-				"cyclomatic": 21,
+				"cyclomatic": 20,
 				"cognitive": 17,
-				"jsxCyclomatic": 21,
+				"jsxCyclomatic": 20,
 				"jsxCognitive": 28,
 				"jsxLength": 8,
 				"jsxBindings": 31,
@@ -906,9 +575,9 @@
 				"jsxTrees": 1
 			},
 			"src/pages/CheckoutPage/components/registration-form/MultiStepForm.tsx": {
-				"cyclomatic": 10,
+				"cyclomatic": 9,
 				"cognitive": 3,
-				"jsxCyclomatic": 10,
+				"jsxCyclomatic": 9,
 				"jsxCognitive": 4,
 				"jsxLength": 4,
 				"jsxBindings": 10,
@@ -916,12 +585,12 @@
 				"jsxTrees": 3
 			},
 			"src/pages/CheckoutPage/components/registration-form/StepIndicator.tsx": {
-				"cyclomatic": 5,
+				"cyclomatic": 2,
 				"cognitive": 0,
-				"jsxCyclomatic": 5,
+				"jsxCyclomatic": 2,
 				"jsxCognitive": 5,
 				"jsxLength": 6,
-				"jsxBindings": 8,
+				"jsxBindings": 9,
 				"jsxDepthTotal": 3,
 				"jsxTrees": 1
 			},
@@ -956,12 +625,12 @@
 				"jsxTrees": 1
 			},
 			"src/pages/HomePage/components/AwardWinningSection/AwardWinningSection.tsx": {
-				"cyclomatic": 2,
+				"cyclomatic": 1,
 				"cognitive": 0,
-				"jsxCyclomatic": 2,
+				"jsxCyclomatic": 1,
 				"jsxCognitive": 10,
 				"jsxLength": 8,
-				"jsxBindings": 3,
+				"jsxBindings": 2,
 				"jsxDepthTotal": 5,
 				"jsxTrees": 1
 			},
@@ -976,9 +645,9 @@
 				"jsxTrees": 0
 			},
 			"src/pages/HomePage/components/Banner/Banner.tsx": {
-				"cyclomatic": 4,
+				"cyclomatic": 2,
 				"cognitive": 0,
-				"jsxCyclomatic": 4,
+				"jsxCyclomatic": 2,
 				"jsxCognitive": 9,
 				"jsxLength": 7,
 				"jsxBindings": 3,
@@ -1056,22 +725,22 @@
 				"jsxTrees": 0
 			},
 			"src/pages/RestaurantDetailPage/RestaurantDetailPage.tsx": {
-				"cyclomatic": 14,
+				"cyclomatic": 11,
 				"cognitive": 7,
-				"jsxCyclomatic": 15,
-				"jsxCognitive": 26,
-				"jsxLength": 23,
-				"jsxBindings": 47,
-				"jsxDepthTotal": 13,
+				"jsxCyclomatic": 12,
+				"jsxCognitive": 29,
+				"jsxLength": 24,
+				"jsxBindings": 45,
+				"jsxDepthTotal": 14,
 				"jsxTrees": 4
 			},
 			"src/pages/RestaurantDetailPage/components/FoodItem/FoodItem.tsx": {
-				"cyclomatic": 5,
+				"cyclomatic": 2,
 				"cognitive": 1,
-				"jsxCyclomatic": 5,
+				"jsxCyclomatic": 2,
 				"jsxCognitive": 4,
 				"jsxLength": 6,
-				"jsxBindings": 11,
+				"jsxBindings": 10,
 				"jsxDepthTotal": 3,
 				"jsxTrees": 1
 			},
@@ -1086,12 +755,12 @@
 				"jsxTrees": 0
 			},
 			"src/pages/RestaurantDetailPage/components/FoodItemModal/FoodItemModal.tsx": {
-				"cyclomatic": 8,
+				"cyclomatic": 7,
 				"cognitive": 9,
-				"jsxCyclomatic": 8,
+				"jsxCyclomatic": 7,
 				"jsxCognitive": 21,
-				"jsxLength": 11,
-				"jsxBindings": 22,
+				"jsxLength": 9,
+				"jsxBindings": 13,
 				"jsxDepthTotal": 5,
 				"jsxTrees": 1
 			},
@@ -1136,12 +805,12 @@
 				"jsxTrees": 0
 			},
 			"src/pages/SuccessPage/SuccessPage.tsx": {
-				"cyclomatic": 3,
+				"cyclomatic": 2,
 				"cognitive": 0,
-				"jsxCyclomatic": 3,
+				"jsxCyclomatic": 2,
 				"jsxCognitive": 6,
-				"jsxLength": 8,
-				"jsxBindings": 6,
+				"jsxLength": 9,
+				"jsxBindings": 7,
 				"jsxDepthTotal": 4,
 				"jsxTrees": 1
 			},
@@ -1206,9 +875,9 @@
 				"jsxTrees": 0
 			},
 			"src/styles/GlobalStyle.tsx": {
-				"cyclomatic": 1,
+				"cyclomatic": 0,
 				"cognitive": 0,
-				"jsxCyclomatic": 1,
+				"jsxCyclomatic": 0,
 				"jsxCognitive": 0,
 				"jsxLength": 0,
 				"jsxBindings": 0,
@@ -1225,25 +894,15 @@
 				"jsxDepthTotal": 0,
 				"jsxTrees": 0
 			},
-			"src/styles/theme.ts": {
-				"cyclomatic": 0,
-				"cognitive": 0,
-				"jsxCyclomatic": 0,
-				"jsxCognitive": 0,
-				"jsxLength": 0,
-				"jsxBindings": 0,
-				"jsxDepthTotal": 0,
-				"jsxTrees": 0
-			},
 			"src/templates/PageTemplate.tsx": {
-				"cyclomatic": 3,
+				"cyclomatic": 2,
 				"cognitive": 1,
-				"jsxCyclomatic": 3,
-				"jsxCognitive": 1,
-				"jsxLength": 8,
-				"jsxBindings": 5,
-				"jsxDepthTotal": 6,
-				"jsxTrees": 3
+				"jsxCyclomatic": 2,
+				"jsxCognitive": 2,
+				"jsxLength": 5,
+				"jsxBindings": 6,
+				"jsxDepthTotal": 5,
+				"jsxTrees": 4
 			},
 			"src/types/index.ts": {
 				"cyclomatic": 0,
@@ -1299,21 +958,20 @@
 		"parseFailures": [],
 		"dsCoverage": {
 			"dsPackages": [
-				"@base-ui/react",
 				"@droppy/*"
 			],
-			"files": 127,
+			"files": 93,
 			"nodes": {
-				"all": 365.5,
-				"host": 152.5,
-				"component": 213,
-				"ds": 18,
-				"external": 27,
-				"local": 168,
+				"all": 279,
+				"host": 90,
+				"component": 189,
+				"ds": 130.5,
+				"external": 14,
+				"local": 44.5,
 				"unresolved": 0
 			},
-			"dsShareOfAllNodes": 0.0492,
-			"dsShareOfComponentNodes": 0.0845,
+			"dsShareOfAllNodes": 0.4677,
+			"dsShareOfComponentNodes": 0.6905,
 			"parseFailures": [],
 			"readFailures": []
 		}

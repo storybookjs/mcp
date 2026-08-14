@@ -1,8 +1,7 @@
 {
-	"eval": "701-new-ui-flow",
 	"repo": "yannbf/mealdrop",
-	"ref": "refs/tags/agentic-reference/droppy-70pc-v4",
-	"metricsVersion": 6,
+	"ref": "refs/tags/agentic-reference/droppy-70pc-v2",
+	"metricsVersion": 7,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
@@ -301,7 +300,7 @@
 				"jsxCyclomatic": 9,
 				"jsxCognitive": 32,
 				"jsxLength": 23,
-				"jsxBindings": 35,
+				"jsxBindings": 37,
 				"jsxDepthTotal": 9,
 				"jsxTrees": 3
 			},
@@ -396,6 +395,16 @@
 				"jsxTrees": 3
 			},
 			"src/components/ShoppingCartMenu/index.tsx": {
+				"cyclomatic": 0,
+				"cognitive": 0,
+				"jsxCyclomatic": 0,
+				"jsxCognitive": 0,
+				"jsxLength": 0,
+				"jsxBindings": 0,
+				"jsxDepthTotal": 0,
+				"jsxTrees": 0
+			},
+			"src/components/forms/Input.tsx": {
 				"cyclomatic": 0,
 				"cognitive": 0,
 				"jsxCyclomatic": 0,
@@ -549,10 +558,10 @@
 				"cyclomatic": 1,
 				"cognitive": 0,
 				"jsxCyclomatic": 1,
-				"jsxCognitive": 18,
-				"jsxLength": 9,
+				"jsxCognitive": 13,
+				"jsxLength": 8,
 				"jsxBindings": 4,
-				"jsxDepthTotal": 6,
+				"jsxDepthTotal": 5,
 				"jsxTrees": 1
 			},
 			"src/pages/CheckoutPage/components/registration-form/ContactDetails.tsx": {
@@ -961,18 +970,18 @@
 			"dsPackages": [
 				"@droppy/*"
 			],
-			"files": 93,
+			"files": 94,
 			"nodes": {
-				"all": 279,
-				"host": 90,
-				"component": 189,
-				"ds": 130.5,
+				"all": 278,
+				"host": 88,
+				"component": 190,
+				"ds": 131.5,
 				"external": 14,
 				"local": 44.5,
 				"unresolved": 0
 			},
-			"dsShareOfAllNodes": 0.4677,
-			"dsShareOfComponentNodes": 0.6905,
+			"dsShareOfAllNodes": 0.473,
+			"dsShareOfComponentNodes": 0.6921,
 			"parseFailures": [],
 			"readFailures": []
 		}
