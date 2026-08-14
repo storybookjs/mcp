@@ -1035,6 +1035,10 @@ stay readable in a diff, and thousands of records would end that.
 Append to `baseline.test.ts`:
 
 ```ts
+// Only `path` matters to a round-trip test; the census's own tests cover the
+// full record shape.
+const PARTIAL_NODES = [{ path: 'App/A[0]' }] as unknown as NodeRecord[];
+
 describe('node sidecar', () => {
 	it('writes the census beside the baseline, keyed on the pin', async () => {
 		const opts = options({
@@ -1077,7 +1081,7 @@ describe('node sidecar', () => {
 
 	it('reads back what it wrote', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, 7, [{ path: 'App/A[0]' }] as never);
+		writeNodeSidecar(dir, PIN, 7, PARTIAL_NODES);
 		expect(readNodeSidecar(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
 	});
 
@@ -1085,13 +1089,13 @@ describe('node sidecar', () => {
 	// healthy and mean something else.
 	it('treats a version mismatch as absent', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, 6, [{ path: 'App/A[0]' }] as never);
+		writeNodeSidecar(dir, PIN, 6, PARTIAL_NODES);
 		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
 	});
 });
 ```
 
-Extend the import at the top of the file:
+Extend the imports at the top of the file:
 
 ```ts
 import {
@@ -1101,6 +1105,8 @@ import {
 	readNodeSidecar,
 	writeNodeSidecar,
 } from './baseline.ts';
+
+import type { NodeRecord } from '../agentic-reference/metrics/ds-coverage/types.ts';
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
