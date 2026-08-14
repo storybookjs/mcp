@@ -737,3 +737,524 @@ git commit -m "Expose the node census through the ds-coverage CLI as --nodes"
 
 Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-coverage/ && pnpm exec tsc --noEmit && pnpm format:check`
 Expected: all green. Run `pnpm format` first if `format:check` complains.
+
+---
+
+## Phase B — Baseline re-key and node sidecar
+
+> **Why this is here at all:** `baselines/701-new-ui-flow/…base-ui-v1.json` and
+> `baselines/703-fix-bug-flow/…base-ui-v1.json` are byte-identical apart from
+> their `eval` field. The agentic-reference baseline branch reads only
+> `projectDir` and `pin`; the per-eval keying is contract generality that nothing
+> uses. Verify this yourself before starting — it is a one-command check:
+>
+> ```bash
+> diff <(python3 -c "import json;d=json.load(open('baselines/701-new-ui-flow/yannbf__mealdrop@refs__tags__agentic-reference__base-ui-v1.json'));d.pop('eval');print(json.dumps(d,sort_keys=True))") \
+>      <(python3 -c "import json;d=json.load(open('baselines/703-fix-bug-flow/yannbf__mealdrop@refs__tags__agentic-reference__base-ui-v1.json'));d.pop('eval');print(json.dumps(d,sort_keys=True))") \
+>   && echo "identical apart from eval"
+> ```
+
+### Task 5: Key baselines on the pin alone
+
+**Files:**
+- Modify: `lib/post-analysis/types.ts` (`BaselineContext`)
+- Modify: `lib/post-analysis/baseline.ts:29-148`
+- Modify: `scripts/analyze-results.ts` (the `loadOrBuildBaselineAnalysis` call)
+- Test: `lib/post-analysis/baseline.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+In `baseline.test.ts`, replace the `describe('baselinePath')` block with:
+
+```ts
+describe('baselinePath', () => {
+	it('keys on the pin alone, escaping separators in both halves', () => {
+		expect(baselinePath('/b', { repo: 'owner/name', ref: 'heads/main' })).toBe(
+			'/b/owner__name@heads__main.json',
+		);
+	});
+
+	// The point of the re-key: one pin backs many evals, and every one of them
+	// produced a byte-identical file under the old scheme.
+	it('gives two evals on one pin the same path', () => {
+		expect(baselinePath('/b', PIN)).toBe(baselinePath('/b', { ...PIN }));
+	});
+});
+```
+
+Update the shared `options()` helper to drop the two fields:
+
+```ts
+function options(overrides: Partial<Parameters<typeof loadOrBuildBaselineAnalysis>[0]> = {}) {
+	return {
+		pin: PIN,
+		baselinesDir: join(root, 'baselines'),
+		refCacheDir: join(root, 'refs'),
+		postAnalysis: {
+			analyzeRun: vi.fn(() => ({ files: { 'a.ts': 1 } })),
+			summarize: vi.fn(),
+		} as unknown as PostAnalysis,
+		...overrides,
+	};
+}
+```
+
+Add a test asserting the context no longer carries them:
+
+```ts
+it('hands analyzeRun a baseline context of pin and tree only', async () => {
+	const opts = options();
+	await loadOrBuildBaselineAnalysis(opts);
+	expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledWith({
+		mode: 'baseline',
+		projectDir: join(root, 'ref-tree'),
+		pin: PIN,
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/post-analysis/baseline.test.ts`
+Expected: FAIL — `baselinePath` still takes three arguments; TypeScript errors on the missing `evalName`/`fixtureDir`.
+
+- [ ] **Step 3: Narrow `BaselineContext`**
+
+In `lib/post-analysis/types.ts`, replace the `BaselineContext` interface. It no
+longer extends `TreeContext`:
+
+```ts
+/**
+ * `analyzeRun` against a pinned external repo's pristine tree.
+ *
+ * Deliberately carries no eval: what a pinned tree is made of does not depend on
+ * which eval is about to run against it, and a baseline that varied by eval
+ * would be measured — and committed — once per eval for identical numbers.
+ */
+export interface BaselineContext {
+	mode: 'baseline';
+	/** Absolute path to the tree being measured. */
+	projectDir: string;
+	/** The pin whose materialized tree `projectDir` points at. */
+	pin: ExternalRepoPin;
+}
+```
+
+- [ ] **Step 4: Re-key `baseline.ts`**
+
+Replace `baselinePath` and the `BaselineOptions` interface:
+
+```ts
+export interface BaselineOptions {
+	pin: ExternalRepoPin;
+	postAnalysis: PostAnalysis;
+	/** Re-measure the pinned tree and overwrite the committed baseline. */
+	recompute?: boolean;
+	/** Overridable for testing. */
+	baselinesDir?: string;
+	/** Overridable for testing. */
+	refCacheDir?: string;
+}
+
+/**
+ * Both halves of the pin have their separators escaped, so each stays a single
+ * path segment: a ref like `heads/main` would otherwise turn the filename into
+ * a nested path.
+ */
+export function baselinePath(baselinesDir: string, pin: ExternalRepoPin): string {
+	return join(baselinesDir, `${pinSlug(pin)}.json`);
+}
+```
+
+Drop `eval` from `CommittedBaseline`:
+
+```ts
+interface CommittedBaseline {
+	repo: string;
+	ref: string;
+	/** The eval's metricsVersion at measuring time; absent for legacy files. */
+	metricsVersion?: number;
+	analysis: Analysis;
+}
+```
+
+In `loadOrBuildBaselineAnalysis`, update the destructure, the path call, the log
+line, the `analyzeRun` call, and the payload:
+
+```ts
+	const { pin, postAnalysis, recompute = false } = options;
+	const baselinesDir = options.baselinesDir ?? DEFAULT_BASELINES_DIR;
+	const path = baselinePath(baselinesDir, pin);
+```
+
+```ts
+	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
+
+	const analysis = await postAnalysis.analyzeRun({ mode: 'baseline', projectDir: dir, pin });
+	if (analysis === null) {
+		throw new Error(
+			`analyzeRun returned no baseline for ${pin.repo}@${pin.ref}; ` +
+				'a postAnalysis providing deltaToBaseline must measure its pinned tree.',
+		);
+	}
+```
+
+```ts
+	const payload: CommittedBaseline = {
+		repo: pin.repo,
+		ref: pin.ref,
+		metricsVersion: postAnalysis.metricsVersion,
+		analysis,
+	};
+```
+
+- [ ] **Step 5: Update the caller**
+
+In `scripts/analyze-results.ts`, inside `analyzeOneRun`, replace the call:
+
+```ts
+	const baseline = await loadOrBuildBaselineAnalysis({
+		pin,
+		postAnalysis,
+		recompute: options.recompute,
+	});
+```
+
+- [ ] **Step 6: Run the tests**
+
+Run: `pnpm exec vitest run lib/post-analysis/`
+Expected: PASS.
+
+Run: `pnpm exec tsc --noEmit`
+Expected: no errors. If `post-analysis.ts` errors on `context.mode === 'baseline'` narrowing, that is Task 6.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/post-analysis/types.ts lib/post-analysis/baseline.ts \
+        lib/post-analysis/baseline.test.ts scripts/analyze-results.ts
+git commit -m "Key baselines on the external-repo pin rather than eval-plus-pin
+
+The agentic-reference baseline branch reads only projectDir and pin, so the
+per-eval keying committed one byte-identical file per eval on a pin. Dropping
+evalName and fixtureDir from BaselineContext means a module cannot quietly make
+a baseline eval-dependent again."
+```
+
+---
+
+### Task 6: Bump `metricsVersion` and migrate committed baselines
+
+**Files:**
+- Modify: `lib/agentic-reference/post-analysis.ts:579-599`
+- Move: `baselines/**`
+
+- [ ] **Step 1: Bump the version and its history note**
+
+In `post-analysis.ts`, append to the `metricsVersion` history comment and bump:
+
+```ts
+ * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
+ * - 7 re-keyed baselines on the pin alone and added the ds-misuse node sidecar
+ */
+export const postAnalysis: PostAnalysis = {
+	analyzeRun,
+	deltaToBaseline,
+	summarize,
+	metricsVersion: 7,
+};
+```
+
+- [ ] **Step 2: Move the committed baselines**
+
+Two evals share `base-ui-v1`, and the files are identical apart from `eval`, so
+one survives and the duplicate is deleted:
+
+```bash
+cd agent-eval
+git mv baselines/701-new-ui-flow/yannbf__mealdrop@refs__tags__agentic-reference__base-ui-v1.json \
+       baselines/yannbf__mealdrop@refs__tags__agentic-reference__base-ui-v1.json
+git rm baselines/703-fix-bug-flow/yannbf__mealdrop@refs__tags__agentic-reference__base-ui-v1.json
+git mv baselines/701-agentic-ref-reuse-component-mcp/yannbf__mealdrop@ce507b345666ea8678101fccac580186b2b69b1f.json \
+       baselines/yannbf__mealdrop@ce507b345666ea8678101fccac580186b2b69b1f.json
+rmdir baselines/701-new-ui-flow baselines/703-fix-bug-flow baselines/701-agentic-ref-reuse-component-mcp
+```
+
+- [ ] **Step 3: Drop the now-stale `eval` key from each moved file**
+
+```bash
+for f in baselines/*.json; do
+  python3 - "$f" <<'PY'
+import json, sys
+path = sys.argv[1]
+with open(path) as handle:
+    data = json.load(handle)
+data.pop("eval", None)
+with open(path, "w") as handle:
+    json.dump(data, handle, indent="\t")
+    handle.write("\n")
+PY
+done
+pnpm format
+```
+
+- [ ] **Step 4: Verify the version bump invalidates them**
+
+The `metricsVersion` bump to 7 makes every moved file a cache miss, so the next
+`--recompute`-free analyze run rebuilds them. Confirm the mismatch path is what
+fires rather than a silent reuse:
+
+Run: `pnpm exec vitest run lib/post-analysis/baseline.test.ts -t metricsVersion`
+Expected: PASS — the existing test covering version-mismatch rebuild.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A baselines lib/agentic-reference/post-analysis.ts
+git commit -m "Move committed baselines under the pin key and bump metricsVersion to 7
+
+The two base-ui-v1 files were identical apart from their eval field, so one is
+kept and the duplicate deleted. The version bump makes every moved file a cache
+miss, rebuilding it under the current definitions rather than comparing across."
+```
+
+---
+
+### Task 7: Pin-keyed node sidecar
+
+**Files:**
+- Modify: `lib/post-analysis/baseline.ts`
+- Test: `lib/post-analysis/baseline.test.ts`
+
+The sidecar holds the whole-tree node census for a pin. It lives beside the
+baseline rather than inside it because the baseline file's own comment asks it to
+stay readable in a diff, and thousands of records would end that.
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `baseline.test.ts`:
+
+```ts
+describe('node sidecar', () => {
+	it('writes the census beside the baseline, keyed on the pin', async () => {
+		const opts = options({
+			postAnalysis: {
+				analyzeRun: vi.fn(() => ({ files: {}, nodeList: [{ path: 'App/A[0]' }] })),
+				summarize: vi.fn(),
+				metricsVersion: 7,
+			} as unknown as PostAnalysis,
+		});
+		await loadOrBuildBaselineAnalysis(opts);
+
+		const sidecar = JSON.parse(
+			readFileSync(nodeSidecarPath(join(root, 'baselines'), PIN), 'utf8'),
+		) as Record<string, unknown>;
+		expect(sidecar).toMatchObject({
+			repo: PIN.repo,
+			ref: PIN.ref,
+			metricsVersion: 7,
+			nodes: [{ path: 'App/A[0]' }],
+		});
+	});
+
+	// The sidecar is the judge's baseline half; keeping it out of the committed
+	// baseline is what keeps that file reviewable.
+	it('keeps the node list out of the committed baseline', async () => {
+		const opts = options({
+			postAnalysis: {
+				analyzeRun: vi.fn(() => ({ files: {}, nodeList: [{ path: 'App/A[0]' }] })),
+				summarize: vi.fn(),
+				metricsVersion: 7,
+			} as unknown as PostAnalysis,
+		});
+		await loadOrBuildBaselineAnalysis(opts);
+
+		const committed = JSON.parse(
+			readFileSync(baselinePath(join(root, 'baselines'), PIN), 'utf8'),
+		) as { analysis: Record<string, unknown> };
+		expect('nodeList' in committed.analysis).toBe(false);
+	});
+
+	it('reads back what it wrote', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, 7, [{ path: 'App/A[0]' }] as never);
+		expect(readNodeSidecar(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
+	});
+
+	// A sidecar measured under other rules is worse than none: its numbers look
+	// healthy and mean something else.
+	it('treats a version mismatch as absent', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, 6, [{ path: 'App/A[0]' }] as never);
+		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+	});
+});
+```
+
+Extend the import at the top of the file:
+
+```ts
+import {
+	baselinePath,
+	loadOrBuildBaselineAnalysis,
+	nodeSidecarPath,
+	readNodeSidecar,
+	writeNodeSidecar,
+} from './baseline.ts';
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/post-analysis/baseline.test.ts -t sidecar`
+Expected: FAIL — `nodeSidecarPath` is not exported.
+
+- [ ] **Step 3: Implement the sidecar**
+
+In `baseline.ts`, add near the top:
+
+```ts
+import type { NodeRecord } from '../agentic-reference/metrics/ds-coverage/types.ts';
+
+/** Where the whole-tree node census for a pin lives. */
+const NODE_SIDECAR_DIR = 'ds-nodes';
+
+interface CommittedNodeSidecar {
+	repo: string;
+	ref: string;
+	metricsVersion?: number;
+	nodes: NodeRecord[];
+}
+
+export function nodeSidecarPath(baselinesDir: string, pin: ExternalRepoPin): string {
+	return join(baselinesDir, NODE_SIDECAR_DIR, `${pinSlug(pin)}.json`);
+}
+
+export function writeNodeSidecar(
+	baselinesDir: string,
+	pin: ExternalRepoPin,
+	metricsVersion: number | undefined,
+	nodes: NodeRecord[],
+): void {
+	const path = nodeSidecarPath(baselinesDir, pin);
+	mkdirSync(dirname(path), { recursive: true });
+	const payload: CommittedNodeSidecar = { repo: pin.repo, ref: pin.ref, metricsVersion, nodes };
+	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
+}
+
+/**
+ * The pin's node census, or null when absent or measured under other rules.
+ * A sidecar from another metricsVersion is worse than none: its records look
+ * healthy and were built by a different path format.
+ */
+export function readNodeSidecar(
+	baselinesDir: string,
+	pin: ExternalRepoPin,
+	metricsVersion: number | undefined,
+): NodeRecord[] | null {
+	const stored = readJson<CommittedNodeSidecar>(nodeSidecarPath(baselinesDir, pin));
+	if (!stored || !Array.isArray(stored.nodes) || stored.metricsVersion !== metricsVersion) {
+		return null;
+	}
+	return stored.nodes;
+}
+```
+
+Add `dirname` to the `node:path` import.
+
+In `loadOrBuildBaselineAnalysis`, after the `analysis === null` guard and before
+`mkdirSync(dirname(path), …)`, split the node list off the analysis:
+
+```ts
+	// The node list rides out to its own file: the committed baseline is meant to
+	// stay readable in a diff, and thousands of records would end that.
+	const { nodeList, ...analysisWithoutNodes } = analysis as Analysis & {
+		nodeList?: NodeRecord[];
+	};
+	if (nodeList !== undefined) {
+		writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList);
+	}
+```
+
+Use `analysisWithoutNodes` in the payload and in the returned/memoized value:
+
+```ts
+	const payload: CommittedBaseline = {
+		repo: pin.repo,
+		ref: pin.ref,
+		metricsVersion: postAnalysis.metricsVersion,
+		analysis: analysisWithoutNodes,
+	};
+	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
+
+	const built = { dir, analysis: analysisWithoutNodes };
+```
+
+- [ ] **Step 4: Make the baseline branch produce a node list**
+
+In `lib/agentic-reference/post-analysis.ts`, change the `baseline` branch of
+`analyzeRun` so the pinned tree is censused with nodes on:
+
+```ts
+	if (context.mode === 'baseline') {
+		const dsPackages = dsPackagesForPin(context.pin);
+		return {
+			...complexityForTree(context.projectDir),
+			dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
+			// Whole tree, once per pin: baseline.ts moves this into the sidecar.
+			nodeList:
+				dsPackages === null
+					? undefined
+					: analyzeDsCoverage({
+							projectDir: context.projectDir,
+							dsPackages,
+							includeNodes: true,
+						}).nodeList,
+		};
+	}
+```
+
+Add the import:
+
+```ts
+import { analyzeDsCoverage } from './metrics/ds-coverage/index.ts';
+```
+
+> `dsCoverageOf` takes a `PostAnalysisContext` and reads `context.pin`; it still
+> works for the run branch. The baseline branch now calls `measureDsCoverage`
+> directly because it needs the report twice with different options.
+
+- [ ] **Step 5: Run the tests**
+
+Run: `pnpm exec vitest run lib/post-analysis/ lib/agentic-reference/post-analysis.test.ts`
+Expected: PASS.
+
+Run: `pnpm exec tsc --noEmit`
+Expected: no errors.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/post-analysis/baseline.ts lib/post-analysis/baseline.test.ts \
+        lib/agentic-reference/post-analysis.ts
+git commit -m "Store the pinned tree's node census in a pin-keyed sidecar
+
+One baseline backs roughly 200 experiments, so the whole-tree census is
+measured once per pin. It rides beside the committed baseline rather than
+inside it: that file is meant to stay readable in a diff."
+```
+
+---
+
+**Phase B checkpoint.**
+
+Run: `pnpm exec vitest run && pnpm exec tsc --noEmit && pnpm format:check`
+Expected: all green.
+
+Then rebuild the baselines and confirm the sidecar appears:
+
+```bash
+pnpm results:analyze --recompute --latest
+ls baselines baselines/ds-nodes
+```
+Expected: `baselines/<pinSlug>.json` files and a matching `baselines/ds-nodes/<pinSlug>.json`.
+If there are no local results, skip this — CI covers it.
