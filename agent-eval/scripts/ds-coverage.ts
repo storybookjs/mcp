@@ -24,7 +24,7 @@ import { analyzeDsCoverage } from '../lib/agentic-reference/metrics/ds-coverage/
 
 const USAGE =
 	'usage: node scripts/ds-coverage.ts <dir> --ds <pattern> [--ds <pattern>...] ' +
-	'[--include <glob>...] [--exclude <glob>...] [--json] [--per-file] [--top <n>]\n' +
+	'[--include <glob>...] [--exclude <glob>...] [--nodes] [--json] [--per-file] [--top <n>]\n' +
 	'       globs are relative to <dir>; counted files match any --include (all when none) and no --exclude';
 
 const { values, positionals } = parseArgs({
@@ -32,6 +32,7 @@ const { values, positionals } = parseArgs({
 		ds: { type: 'string', multiple: true },
 		include: { type: 'string', multiple: true },
 		exclude: { type: 'string', multiple: true },
+		nodes: { type: 'boolean', default: false },
 		json: { type: 'boolean', default: false },
 		'per-file': { type: 'boolean', default: false },
 		top: { type: 'string', default: '25' },
@@ -67,7 +68,13 @@ const censusInclude = values.include ?? [];
 const censusExclude = values.exclude ?? [];
 let report;
 try {
-	report = analyzeDsCoverage({ projectDir: dir, dsPackages, censusInclude, censusExclude });
+	report = analyzeDsCoverage({
+		projectDir: dir,
+		dsPackages,
+		censusInclude,
+		censusExclude,
+		includeNodes: values.nodes,
+	});
 } catch (error) {
 	console.error(error instanceof Error ? error.message : String(error));
 	process.exit(2);
@@ -117,4 +124,16 @@ if (report.unresolvedElements.length > 0) {
 if (values['per-file']) {
 	console.log('\nPer-file:');
 	console.table(report.perFile);
+}
+
+// The node census is opt-in: without --nodes the analyzer omits nodeList
+// entirely, so this section is absent rather than empty.
+if (values.nodes && report.nodeList) {
+	console.log(`\nNodes (${report.nodeList.length}):`);
+	for (const node of report.nodeList.slice(0, top)) {
+		console.log(`  [${node.category}] ${node.file}:${node.line}  ${node.path}`);
+	}
+	if (report.nodeList.length > top) {
+		console.log(`  … ${report.nodeList.length - top} more (use --json for all)`);
+	}
 }
