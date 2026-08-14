@@ -1238,3 +1238,42 @@ describe('census weights and coverage', () => {
 		expect(Object.keys(report.components)).toEqual(['@ds/core#Button', 'div', 'span']);
 	});
 });
+
+describe('includeNodes', () => {
+	const FILES = {
+		'src/App.tsx': [
+			"import { Button } from '@ds/react'",
+			'export const App = () => <div><Button /></div>',
+		].join('\n'),
+	};
+
+	// Default-off is load-bearing: measureDsCoverage stores this report shape in
+	// every committed baseline, and a new key would change every one of them.
+	it('omits the nodeList key entirely when not asked', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'] });
+		expect('nodeList' in report).toBe(false);
+	});
+
+	it('emits one record per counted component element when asked', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		expect(report.nodeList).toEqual([
+			{
+				path: 'App/Button[0]',
+				file: 'src/App.tsx',
+				line: 2,
+				tag: 'Button',
+				category: 'ds',
+				module: '@ds/react',
+				name: 'Button',
+				weight: 1,
+				props: [],
+			},
+		]);
+	});
+});
