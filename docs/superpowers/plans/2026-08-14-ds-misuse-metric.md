@@ -1305,11 +1305,18 @@ Then rebuild the baselines and confirm the sidecar appears:
 
 ```bash
 pnpm results:analyze --recompute --latest
+# From the repo root: JSON.stringify puts every array element on its own line
+# and oxfmt collapses short ones. Every NodeRecord carries a `props` array, so
+# an unformatted sidecar fails format:check on essentially every record.
+pnpm format
 ls baselines baselines/ds-nodes
 ```
 
 Expected: `baselines/<pinSlug>.json` files and a matching `baselines/ds-nodes/<pinSlug>.json`.
 If there are no local results, skip this — CI covers it.
+
+> `pnpm format` and `pnpm format:check` are defined at the repo root, not in
+> `agent-eval/package.json`; run them from the root.
 
 ---
 

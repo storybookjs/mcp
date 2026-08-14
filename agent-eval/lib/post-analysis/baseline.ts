@@ -22,10 +22,15 @@
 //
 // One key is not opaque. A `nodeList` is split off into baselines/ds-nodes/ and
 // never lands in the committed baseline, because that file is meant to stay
-// readable in a diff and a whole-tree node census is thousands of records. The
-// two are written together and only together: a baseline that hits the cache
-// does not re-measure the tree, so its sidecar is whatever was committed beside
-// it, and `--recompute` is what rebuilds the pair.
+// readable in a diff and a whole-tree node census is thousands of records.
+//
+// The two are written together and only together, and that is enforced rather
+// than hoped for: a baseline records whether it had a sidecar, and one whose
+// sidecar has since gone missing is a cache miss like any other stale file. Half
+// a pair on disk would otherwise be permanent — a rebuild is the only thing that
+// writes a sidecar, and a current-looking baseline is exactly what suppresses
+// one. Anything reading a sidecar can therefore trust that a current baseline
+// implies a current sidecar.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
@@ -44,6 +49,15 @@ interface CommittedBaseline {
 	ref: string;
 	/** The eval's metricsVersion at measuring time; absent for legacy files. */
 	metricsVersion?: number;
+	/**
+	 * Whether a node sidecar was written beside this file. Recorded rather than
+	 * inferred because the two legitimate reasons for a missing sidecar have to
+	 * be told apart: a module that measures no nodes (or a pin declaring no
+	 * design system) never writes one and must still hit the cache, while a
+	 * baseline that had one and lost it has to be rebuilt. Absent for legacy
+	 * files, which counts as "never had one".
+	 */
+	nodeSidecar?: boolean;
 	analysis: Analysis;
 }
 
@@ -84,10 +98,15 @@ interface CommittedNodeSidecar {
 	nodes: NodeRecord[];
 }
 
+/**
+ * The sidecar for a pin, under its own directory so `ls baselines/` still shows
+ * one file per pin. Same slug as the baseline, so the pair is obvious on disk.
+ */
 export function nodeSidecarPath(baselinesDir: string, pin: ExternalRepoPin): string {
 	return join(baselinesDir, NODE_SIDECAR_DIR, `${pinSlug(pin)}.json`);
 }
 
+/** Commit a pin's node census, overwriting any sidecar already there. */
 export function writeNodeSidecar(
 	baselinesDir: string,
 	pin: ExternalRepoPin,
@@ -97,6 +116,11 @@ export function writeNodeSidecar(
 	const path = nodeSidecarPath(baselinesDir, pin);
 	mkdirSync(dirname(path), { recursive: true });
 	const payload: CommittedNodeSidecar = { repo: pin.repo, ref: pin.ref, metricsVersion, nodes };
+	// Tab-indented for the same reason the baseline is, and needing `pnpm format`
+	// afterwards for the same reason too — more urgently here: JSON.stringify puts
+	// every array element on its own line, oxfmt collapses short ones, and every
+	// NodeRecord carries a `props` array. Committing a generated sidecar without
+	// formatting it first fails `format:check` on essentially every record.
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 }
 
@@ -118,13 +142,22 @@ export function readNodeSidecar(
 }
 
 // Keyed by the resolved file path rather than the pin, so a caller pointed at
-// a different baselinesDir gets its own entry.
+// a different baselinesDir gets its own entry — and by metricsVersion too, since
+// postAnalysis is resolved per experiment while the path is not. Two experiments
+// on one pin whose modules disagree on the version must not read each other's
+// numbers: without the version in the key the second one takes a memo hit and
+// never reaches the comparison below that exists to stop exactly that.
 const memo = new Map<string, BaselineAnalysis>();
 
-// Paths already re-measured by this process. `--recompute` must rebuild a
-// baseline once, not once per run: without this, every run of a ten-run eval
-// re-measures the whole pinned tree, and the recompute pass crawls.
-const recomputedPaths = new Set<string>();
+// Baselines already re-measured by this process, same key. `--recompute` must
+// rebuild a baseline once, not once per run: without this, every run of a
+// ten-run eval re-measures the whole pinned tree, and the recompute pass crawls.
+const recomputedKeys = new Set<string>();
+
+/** The memo identity of a baseline: which file, measured under which rules. */
+function memoKeyFor(path: string, metricsVersion: number | undefined): string {
+	return `${path}#${metricsVersion ?? 'none'}`;
+}
 
 export async function loadOrBuildBaselineAnalysis(
 	options: BaselineOptions,
@@ -132,9 +165,12 @@ export async function loadOrBuildBaselineAnalysis(
 	const { pin, postAnalysis, recompute = false } = options;
 	const baselinesDir = options.baselinesDir ?? DEFAULT_BASELINES_DIR;
 	const path = baselinePath(baselinesDir, pin);
+	const memoKey = memoKeyFor(path, postAnalysis.metricsVersion);
 
-	const remembered = memo.get(path);
-	if (remembered && (!recompute || recomputedPaths.has(path))) return remembered;
+	// Anything in the memo already passed the checks below, so a hit cannot
+	// smuggle a stale version or a half-committed pair past them.
+	const remembered = memo.get(memoKey);
+	if (remembered && (!recompute || recomputedKeys.has(memoKey))) return remembered;
 
 	// The tree itself is materialized either way: a committed baseline saves the
 	// measuring, not the download, and a delta metric comparing file contents
@@ -147,9 +183,19 @@ export async function loadOrBuildBaselineAnalysis(
 	// the tree is already materialized above, and the rebuild below overwrites
 	// the stale file with numbers measured under the current definitions.
 	const committed = recompute ? null : readJson<CommittedBaseline>(path);
-	if (committed?.analysis && committed.metricsVersion === postAnalysis.metricsVersion) {
+	const versionMatches =
+		committed?.analysis !== undefined && committed.metricsVersion === postAnalysis.metricsVersion;
+	// A baseline that recorded a sidecar and no longer has one beside it is a
+	// cache miss too. Nothing else would ever write the missing half: the pair is
+	// only produced by a rebuild, and a current-looking baseline suppresses one
+	// forever. Rebuilding is what makes "written together and only together" true
+	// of the files on disk rather than just of this function.
+	const sidecarIntact =
+		committed?.nodeSidecar !== true ||
+		readNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion) !== null;
+	if (versionMatches && sidecarIntact) {
 		const loaded = { dir, analysis: committed.analysis };
-		memo.set(path, loaded);
+		memo.set(memoKey, loaded);
 		return loaded;
 	}
 
@@ -158,9 +204,11 @@ export async function loadOrBuildBaselineAnalysis(
 	// answerable from the output alone.
 	const reason = recompute
 		? 'recompute'
-		: committed?.analysis
-			? `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`
-			: 'no committed baseline';
+		: !committed?.analysis
+			? 'no committed baseline'
+			: versionMatches
+				? 'node sidecar missing'
+				: `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`;
 	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
 
 	const analysis = await postAnalysis.analyzeRun({ mode: 'baseline', projectDir: dir, pin });
@@ -172,12 +220,16 @@ export async function loadOrBuildBaselineAnalysis(
 	}
 
 	// The node list rides out to its own file: the committed baseline is meant to
-	// stay readable in a diff, and thousands of records would end that.
+	// stay readable in a diff, and thousands of records would end that. Guarded
+	// with Array.isArray rather than a presence check, because this is the one
+	// place the module looks inside an analysis it otherwise treats as opaque —
+	// the same guard readNodeSidecar applies at the other end.
 	const { nodeList, ...analysisWithoutNodes } = analysis as Analysis & {
-		nodeList?: NodeRecord[];
+		nodeList?: unknown;
 	};
-	if (nodeList !== undefined) {
-		writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList);
+	const hasNodeSidecar = Array.isArray(nodeList);
+	if (hasNodeSidecar) {
+		writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList as NodeRecord[]);
 	}
 
 	mkdirSync(dirname(path), { recursive: true });
@@ -187,6 +239,7 @@ export async function loadOrBuildBaselineAnalysis(
 		repo: pin.repo,
 		ref: pin.ref,
 		metricsVersion: postAnalysis.metricsVersion,
+		nodeSidecar: hasNodeSidecar,
 		analysis: analysisWithoutNodes,
 	};
 	// Tab-indented because the file is committed, and `pnpm format:check` would
@@ -196,7 +249,7 @@ export async function loadOrBuildBaselineAnalysis(
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 
 	const built = { dir, analysis: analysisWithoutNodes };
-	memo.set(path, built);
-	if (recompute) recomputedPaths.add(path);
+	memo.set(memoKey, built);
+	if (recompute) recomputedKeys.add(memoKey);
 	return built;
 }
