@@ -9,6 +9,23 @@
 // Fragments are transparent — they render nothing, so wrapping a subtree in one
 // must not renumber it. Member expressions keep their dotted source text; the
 // resolved identity travels beside the path in the record's module/name.
+//
+// Known shapes this does not chain through:
+//
+// - JSX reached through a non-JSX node — a `.map()` callback, an attribute value
+//   — starts a fresh chain instead of nesting under its container, so a mapped
+//   `<li>` reads `List/li[0]`, not `List/ul[0]/li[0]`. Looking through child
+//   expressions but not attribute ones is the only correct widening, and telling
+//   the two apart is real work; looking through both would let
+//   `<div icon={<A/>} />` claim a containment that does not exist. The damage is
+//   one link, not a subtree: `List/li[0]/Card[0]` below it still nests.
+// - A fragment-rooted set of siblings all index `[0]`, since there is no element
+//   container to number them within. They stay distinct by tag, or by `#n`.
+// - A class component is named by its nearest named declaration, which is
+//   `render` rather than the class.
+//
+// None of these break uniqueness or relocation-stability — that is the contract
+// — they only make a path less descriptive than the format above suggests.
 import ts from 'typescript';
 
 type JsxNode = ts.JsxElement | ts.JsxSelfClosingElement;
