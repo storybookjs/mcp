@@ -1268,6 +1268,9 @@ describe('includeNodes', () => {
 		expect('nodeList' in report).toBe(false);
 	});
 
+	// The wrapping `div` is not itself a record — hosts are not a DS decision —
+	// but it still names a segment of the path: the path describes where the node
+	// sits in the source, not which of its ancestors were worth judging.
 	it('emits one record per counted component element when asked', () => {
 		vol.fromJSON(FILES, ROOT);
 		const report = analyzeDsCoverage({
@@ -1277,7 +1280,7 @@ describe('includeNodes', () => {
 		});
 		expect(report.nodeList).toEqual([
 			{
-				path: 'App/Button[0]',
+				path: 'App/div[0]/Button[0]',
 				file: 'src/App.tsx',
 				line: 2,
 				tag: 'Button',
@@ -1288,5 +1291,45 @@ describe('includeNodes', () => {
 				props: [],
 			},
 		]);
+	});
+
+	it('omits host and unresolved elements', () => {
+		vol.fromJSON(
+			{
+				'src/App.tsx': [
+					"import { Button } from '@ds/react'",
+					"import Mystery from './missing'",
+					'export const App = () => <div><Button /><Mystery /></div>',
+				].join('\n'),
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		expect(report.nodeList?.map((node) => node.tag)).toEqual(['Button']);
+		expect(report.unresolvedElements.map((element) => element.tag)).toEqual(['Mystery']);
+	});
+
+	// censusInclude is how the judge keeps its treatment-side census small: the
+	// graph is still whole, so imports resolve, but only touched files are listed.
+	it('lists only files the census counts', () => {
+		vol.fromJSON(
+			{
+				'src/Kept.tsx': "import { Button } from '@ds/react'\nexport const Kept = () => <Button />",
+				'src/Skipped.tsx':
+					"import { Button } from '@ds/react'\nexport const Skipped = () => <Button />",
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+			censusInclude: ['src/Kept.tsx'],
+		});
+		expect(report.nodeList?.map((node) => node.file)).toEqual(['src/Kept.tsx']);
 	});
 });
