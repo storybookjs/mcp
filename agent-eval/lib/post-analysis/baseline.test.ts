@@ -11,8 +11,15 @@ vi.mock('../agentic-reference/external-repo.ts', async (importOriginal) => ({
 }));
 
 import { prepareRef } from '../agentic-reference/external-repo.ts';
-import { baselinePath, loadOrBuildBaselineAnalysis } from './baseline.ts';
+import {
+	baselinePath,
+	loadOrBuildBaselineAnalysis,
+	nodeSidecarPath,
+	readNodeSidecar,
+	writeNodeSidecar,
+} from './baseline.ts';
 
+import type { NodeRecord } from '../agentic-reference/metrics/ds-coverage/types.ts';
 import type { PostAnalysis } from './types.ts';
 
 const PIN = { repo: 'owner/name', ref: 'deadbeef' };
@@ -219,5 +226,68 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 		await expect(loadOrBuildBaselineAnalysis(opts)).rejects.toThrow(/owner\/name@deadbeef/);
 		expect(existsSync(baselinePath(opts.baselinesDir, PIN))).toBe(false);
+	});
+});
+
+// Only `path` matters to a round-trip test; the census's own tests cover the
+// full record shape.
+const PARTIAL_NODES = [{ path: 'App/A[0]' }] as unknown as NodeRecord[];
+
+/** A module that censuses nodes alongside its analysis, as v7 baselines do. */
+function withNodes() {
+	return {
+		analyzeRun: vi.fn(() => ({ files: {}, nodeList: [{ path: 'App/A[0]' }] })),
+		summarize: vi.fn(),
+		metricsVersion: 7,
+	} as unknown as PostAnalysis;
+}
+
+describe('node sidecar', () => {
+	it('writes the census beside the baseline, keyed on the pin', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		await loadOrBuildBaselineAnalysis(opts);
+
+		const sidecar = JSON.parse(
+			readFileSync(nodeSidecarPath(join(root, 'baselines'), PIN), 'utf8'),
+		) as Record<string, unknown>;
+		expect(sidecar).toMatchObject({
+			repo: PIN.repo,
+			ref: PIN.ref,
+			metricsVersion: 7,
+			nodes: [{ path: 'App/A[0]' }],
+		});
+	});
+
+	// The sidecar is the judge's baseline half; keeping it out of the committed
+	// baseline is what keeps that file reviewable.
+	it('keeps the node list out of the committed baseline', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		const built = await loadOrBuildBaselineAnalysis(opts);
+
+		const committed = JSON.parse(
+			readFileSync(baselinePath(join(root, 'baselines'), PIN), 'utf8'),
+		) as { analysis: Record<string, unknown> };
+		expect('nodeList' in committed.analysis).toBe(false);
+		// And the in-memory value callers get is the same one, not the fuller
+		// object it was split from.
+		expect('nodeList' in built.analysis).toBe(false);
+	});
+
+	it('reads back what it wrote', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, 7, PARTIAL_NODES);
+		expect(readNodeSidecar(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
+	});
+
+	// A sidecar measured under other rules is worse than none: its numbers look
+	// healthy and mean something else.
+	it('treats a version mismatch as absent', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, 6, PARTIAL_NODES);
+		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+	});
+
+	it('treats an absent sidecar as null rather than throwing', () => {
+		expect(readNodeSidecar(join(root, 'baselines'), PIN, 7)).toBeNull();
 	});
 });
