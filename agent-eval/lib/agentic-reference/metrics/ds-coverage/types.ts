@@ -131,7 +131,7 @@ export interface CensusResult {
 	components: Map<string, { category: 'host' | 'ds' | 'external' | 'local'; count: number }>;
 	unresolved: UnresolvedElement[];
 	/** Populated only when the census was asked for nodes. */
-	nodes?: NodeRecord[];
+	nodeList?: NodeRecord[];
 }
 
 /** Whether a file's own JSX counts toward the census. */
@@ -168,8 +168,9 @@ export interface DsCoverageOptions {
 	/** Exclude globs; a matching file's JSX is never counted. */
 	censusExclude?: string[];
 	/**
-	 * Emit a per-node list alongside the aggregates. Off by default so the stored
-	 * shape of every committed baseline is unchanged.
+	 * Emit a per-node list alongside the aggregates. Opt-in because the list is
+	 * one record per counted element and dwarfs the rest of the report, while
+	 * only the judge that reads individual nodes has any use for it.
 	 */
 	includeNodes?: boolean;
 }
