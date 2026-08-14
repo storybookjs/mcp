@@ -114,7 +114,7 @@ export interface NodeRecord {
 	path: string;
 	file: string;
 	line: number;
-	/** The tag exactly as written, including dots: `Card.Header`. */
+	/** The tag as written, including dots: `Card.Header`. Whitespace normalised. */
 	tag: string;
 	category: 'ds' | 'external' | 'local';
 	module: string;

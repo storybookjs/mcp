@@ -98,9 +98,12 @@ export function censusReactTree(
 		const fileTotals = emptyTotals();
 
 		// One builder per file: paths are disambiguated within a file, not across
-		// the tree. The builder must also see every counted element exactly once,
-		// in an order the baseline census reproduces — its `#n` suffix counts
-		// visit order, so a different walk renumbers every colliding path.
+		// the tree. The builder must see every element that becomes a record
+		// exactly once — a strict subset of what `count` counts, since hosts and
+		// unresolved tags return without recording, and deliberately so. Its `#n`
+		// suffix counts calls, not elements, so feeding it the wider set (or any
+		// other traversal) renumbers every colliding path and two censuses stop
+		// agreeing on which node is which.
 		const nextPath = createNodePathBuilder();
 
 		// Tag resolutions are memoized in the resolver, so asking again inside the
@@ -169,6 +172,11 @@ export function censusReactTree(
 			totals.unresolved += weight;
 			fileTotals.unresolved += weight;
 			const line = file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1;
+			// Raw source text here, where a record's `tag` above is rebuilt from the
+			// identifiers. The divergence is deliberate: a record's tag has to agree
+			// with its own `path`, which is normalised so reformatting cannot move a
+			// node, while this field is long-standing stored output whose spelling is
+			// not worth churning for a shape no path is derived from.
 			unresolved.push({ file: file.path, line, tag: tag.getText(), weight, reason });
 		};
 
