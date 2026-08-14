@@ -1727,3 +1727,405 @@ arms is the round's independent variable, so judging each arm against what it
 saw would score a degraded arm against a lowered bar. Sorted, because this is
 the cached prefix of every request."
 ```
+
+---
+
+## Phase D — The judge
+
+### Task 10: Result types and the output schema
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/types.ts`
+
+- [ ] **Step 1: Write the types and schema**
+
+Create `types.ts`:
+
+```ts
+// What the judge returns, and the schema that guarantees it.
+//
+// The schema is handed to the Messages API as output_config.format, so the model
+// cannot return a shape this file does not describe. That is why there is no
+// defensive parsing anywhere downstream.
+import type { NodeRecord } from '../ds-coverage/types.ts';
+
+/** Bump when the artifact's shape changes in a way a reader must notice. */
+export const DS_MISUSE_SCHEMA_VERSION = 1;
+
+/** 1 right, 0.5 ambiguous or debatable, 0 wrong. */
+export type JudgeScore = 0 | 0.5 | 1;
+
+export interface ScoredAnswer {
+	score: JudgeScore;
+	/** Why. A bare number is not reviewable, and this is the first thing anyone asks. */
+	reason: string;
+}
+
+export interface JudgedNode {
+	path: string;
+	file: string;
+	line: number;
+	tag: string;
+	kind: 'ds' | 'local';
+	/** DS nodes only. */
+	correctDsDecision?: ScoredAnswer;
+	/** DS nodes only. */
+	correctDsUsage?: ScoredAnswer;
+	/** Local nodes only. */
+	correctLocalDecision?: ScoredAnswer;
+}
+
+/** Exactly what the model is constrained to return. */
+export interface JudgeResponse {
+	nodes: JudgedNode[];
+}
+
+export interface DsMisuseSummary {
+	/** Mean over DS nodes, or null when none were evaluated. */
+	correctDsDecision: number | null;
+	correctDsUsage: number | null;
+	/** Mean over local nodes, or null when none were evaluated. */
+	correctLocalDecision: number | null;
+	evaluated: { ds: number; local: number };
+}
+
+export interface DsMisuseReport {
+	schemaVersion: number;
+	/** The metricsVersion the node census was built under. */
+	metricsVersion: number | undefined;
+	judgedAt: string;
+	model: string;
+	/** `repo@sha` of the guidelines. A moved pin invalidates this artifact. */
+	dsGuidelinesRef: string;
+	/** `repo@ref` of the tree the run worked on. */
+	fixtureRef: string;
+	diffTruncated: boolean;
+	summary: DsMisuseSummary;
+	nodes: JudgedNode[];
+}
+
+/** What the judge is given about one side of the comparison. */
+export interface NodeCensus {
+	nodes: NodeRecord[];
+}
+
+const SCORED_ANSWER = {
+	type: 'object',
+	properties: {
+		score: { type: 'number', enum: [0, 0.5, 1] },
+		reason: { type: 'string' },
+	},
+	required: ['score', 'reason'],
+	additionalProperties: false,
+} as const;
+
+/**
+ * The JSON schema handed to output_config.format.
+ *
+ * Written out rather than generated: `additionalProperties: false` is required
+ * on every object, recursion is unsupported, and the two per-kind score groups
+ * are deliberately optional rather than nullable — a local node has no
+ * correct-ds-decision to give, and a null there would read as a zero.
+ */
+export const JUDGE_OUTPUT_SCHEMA = {
+	type: 'object',
+	properties: {
+		nodes: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					path: { type: 'string' },
+					file: { type: 'string' },
+					line: { type: 'integer' },
+					tag: { type: 'string' },
+					kind: { type: 'string', enum: ['ds', 'local'] },
+					correctDsDecision: SCORED_ANSWER,
+					correctDsUsage: SCORED_ANSWER,
+					correctLocalDecision: SCORED_ANSWER,
+				},
+				required: ['path', 'file', 'line', 'tag', 'kind'],
+				additionalProperties: false,
+			},
+		},
+	},
+	required: ['nodes'],
+	additionalProperties: false,
+} as const;
+```
+
+- [ ] **Step 2: Verify it compiles**
+
+Run: `pnpm exec tsc --noEmit`
+Expected: no errors.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/types.ts
+git commit -m "Define the ds-misuse artifact shape and the judge's output schema
+
+The per-kind score groups are optional rather than nullable: a local node has
+no correct-ds-decision to give, and a null there would read as a zero."
+```
+
+---
+
+### Task 11: `score.ts` — summary arithmetic
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/score.ts`
+- Test: `lib/agentic-reference/metrics/ds-misuse/score.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `score.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+
+import { summariseJudgement } from './score.ts';
+
+import type { JudgedNode } from './types.ts';
+
+function dsNode(decision: 0 | 0.5 | 1, usage: 0 | 0.5 | 1): JudgedNode {
+	return {
+		path: 'App/Button[0]',
+		file: 'src/App.tsx',
+		line: 1,
+		tag: 'Button',
+		kind: 'ds',
+		correctDsDecision: { score: decision, reason: 'r' },
+		correctDsUsage: { score: usage, reason: 'r' },
+	};
+}
+
+function localNode(decision: 0 | 0.5 | 1): JudgedNode {
+	return {
+		path: 'App/Row[0]',
+		file: 'src/App.tsx',
+		line: 2,
+		tag: 'Row',
+		kind: 'local',
+		correctLocalDecision: { score: decision, reason: 'r' },
+	};
+}
+
+describe('summariseJudgement', () => {
+	it('means each score over the nodes that received it', () => {
+		expect(summariseJudgement([dsNode(1, 1), dsNode(0, 0.5), localNode(1)])).toEqual({
+			correctDsDecision: 0.5,
+			correctDsUsage: 0.75,
+			correctLocalDecision: 1,
+			evaluated: { ds: 2, local: 1 },
+		});
+	});
+
+	// null, not 0: "the run created no local components" and "every local
+	// decision was wrong" are different findings and must not read the same.
+	it('returns null for a score no node received', () => {
+		expect(summariseJudgement([dsNode(1, 1)])).toMatchObject({
+			correctLocalDecision: null,
+			evaluated: { ds: 1, local: 0 },
+		});
+	});
+
+	it('returns all nulls for an empty judgement', () => {
+		expect(summariseJudgement([])).toEqual({
+			correctDsDecision: null,
+			correctDsUsage: null,
+			correctLocalDecision: null,
+			evaluated: { ds: 0, local: 0 },
+		});
+	});
+
+	it('rounds to four decimals, matching how coverage stores shares', () => {
+		expect(summariseJudgement([dsNode(1, 1), dsNode(1, 1), dsNode(0, 0)]).correctDsDecision).toBe(
+			0.6667,
+		);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/score.test.ts`
+Expected: FAIL — `Cannot find module './score.ts'`.
+
+- [ ] **Step 3: Write the implementation**
+
+Create `score.ts`:
+
+```ts
+// Folding a judgement into the numbers that reach a comparison table.
+import { mean, round } from '../../../utils/math.ts';
+
+import type { DsMisuseSummary, JudgedNode } from './types.ts';
+
+/** Four decimals, matching coverage.ts: a mean rounded to two flattens a small move. */
+const SCORE_DIGITS = 4;
+
+function meanOf(nodes: JudgedNode[], read: (node: JudgedNode) => number | undefined): number | null {
+	const scores = nodes.flatMap((node) => {
+		const score = read(node);
+		return typeof score === 'number' ? [score] : [];
+	});
+	return round(mean(scores), SCORE_DIGITS);
+}
+
+/**
+ * Each score is a mean over the nodes that received it, or null when none did.
+ *
+ * null rather than 0 throughout: a run that created no local components has not
+ * scored zero on local decisions, and a stored 0 would drag every later mean.
+ */
+export function summariseJudgement(nodes: JudgedNode[]): DsMisuseSummary {
+	return {
+		correctDsDecision: meanOf(nodes, (node) => node.correctDsDecision?.score),
+		correctDsUsage: meanOf(nodes, (node) => node.correctDsUsage?.score),
+		correctLocalDecision: meanOf(nodes, (node) => node.correctLocalDecision?.score),
+		evaluated: {
+			ds: nodes.filter((node) => node.kind === 'ds').length,
+			local: nodes.filter((node) => node.kind === 'local').length,
+		},
+	};
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/score.test.ts`
+Expected: PASS, 4 tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/score.ts \
+        lib/agentic-reference/metrics/ds-misuse/score.test.ts
+git commit -m "Summarise a judgement, keeping null distinct from zero
+
+A run that created no local components has not scored zero on local decisions,
+and a stored 0 would drag every later mean."
+```
+
+---
+
+### Task 12: `prompt.md` — the judge's instructions
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/prompt.md`
+
+- [ ] **Step 1: Write the prompt**
+
+Create `prompt.md` verbatim:
+
+````markdown
+You are auditing how well a coding agent used a design system.
+
+An agent was given a task in a React application and made changes. You are given
+the design system's complete documentation, the application's component census
+before and after the agent's work, and the diff of what it changed. Your job is
+to decide which component usages the agent *introduced*, and to score the design
+system decisions behind them.
+
+## Step 1 — decide what is new
+
+You receive two lists of JSX component usages: `BASELINE NODES` (before) and
+`TREATMENT NODES` (after, restricted to files the agent touched). Each node is
+addressed by an AST path of the form `Declaration/Tag[i]/Tag[i]`, where `i`
+indexes element siblings only. The path carries no line numbers, so a node that
+merely moved down its file keeps the same path.
+
+Using both lists and the diff, sort the treatment nodes into:
+
+- **new** — the agent introduced this usage;
+- **moved or unchanged** — this usage existed before, possibly at a different
+  line, under a different parent, or in a renamed file.
+
+Be conservative. A node whose path, tag and surrounding markup all match a
+baseline node is not new, even if its line moved. A node the diff shows only as
+context (an unchanged line) is not new. Renames and extractions are not new
+usages: if the diff shows a block moved from one file into another, the usages
+inside it moved with it.
+
+Then split the new nodes by `category`:
+
+- `category: "ds"` → a design system component. Score questions 1 and 2.
+- `category: "local"` → a component the application defines itself. Score
+  question 3.
+- `category: "external"` → ignore entirely. Not our decision to judge.
+
+## Step 2 — score each new node
+
+Every score is `1`, `0.5`, or `0`. Use `0.5` for genuinely ambiguous or debatable
+cases — not as a hedge when you have not looked closely.
+
+**For each new DS usage:**
+
+1. `correctDsDecision` — was this the right design system component for the job,
+   or did a better design system alternative exist?
+   - `1` — the right component, or no meaningfully better alternative exists.
+   - `0.5` — defensible, but another DS component fits at least as well.
+   - `0` — a different DS component was clearly the right choice for this job.
+
+2. `correctDsUsage` — does this usage violate a documented guideline?
+   Consider the component's own MDX, the brand guidelines, the technical
+   guidelines and the accessibility guidelines. Composition rules, required
+   props, forbidden prop combinations, hardcoded values that should be tokens,
+   and required parts of a compound component all count.
+   - `1` — no violation you can point to in the documentation.
+   - `0.5` — arguably violates a guideline, or the guideline is ambiguous.
+   - `0` — clearly violates a documented guideline. Name the guideline.
+
+**For each new local usage:**
+
+3. `correctLocalDecision` — should this have been a local component?
+   - `1` — no design system component covers this, so local is right.
+   - `0.5` — a DS component exists, but its API genuinely does not support a
+     legitimate need here. Legitimate means the local component fulfils the
+     task's goal where the DS component's existing API would not. A local
+     component that merely restyles or lightly wraps a DS component is **not**
+     this case.
+   - `0` — a design system component with a relevant API existed and should have
+     been used.
+
+## Rules
+
+- Judge only what the agent introduced. Pre-existing code is out of scope, even
+  when it is wrong.
+- Judge against the documentation you were given, not against general React or
+  design-system intuition. If a practice is not documented, do not score it as a
+  violation.
+- Every score needs a `reason`: one or two sentences, concrete, citing the
+  document or the specific alternative component by name. "Violates guidelines"
+  is not a reason. "BrandGuidelines.mdx requires colour tokens; this passes a raw
+  `#d70808`" is.
+- If the diff is marked truncated, judge only the nodes you can actually see in
+  it, and omit the rest rather than guessing.
+- Return every new DS node and every new local node. Return nothing else — no
+  moved nodes, no external nodes, no pre-existing nodes.
+````
+
+- [ ] **Step 2: Verify it loads as an asset**
+
+`.md` files are not module-resolvable; the loader reads it from disk relative to
+`import.meta.url`. Confirm the path resolves:
+
+```bash
+node -e "
+import { readFileSync } from 'node:fs';
+const text = readFileSync(new URL('./lib/agentic-reference/metrics/ds-misuse/prompt.md', 'file://' + process.cwd() + '/'), 'utf8');
+console.log(text.length, 'chars,', text.split('\n').length, 'lines');
+" --input-type=module
+```
+Expected: a non-zero character count.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/prompt.md
+git commit -m "Write the DS misuse judge prompt
+
+Bucketing is the model's job per the metric's design, so the prompt leads with
+how to tell a new usage from a relocated one before it scores anything."
+```
