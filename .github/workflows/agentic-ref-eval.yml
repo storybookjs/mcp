@@ -14,17 +14,17 @@ on:
   workflow_dispatch:
     inputs:
       cases:
-        description: 'Space-separated case names or globs, e.g. agentic-ref-cc-control-none-opus-high agentic-ref-cc-docs-full-opus-high — empty runs every case'
+        description: 'Comma-separated case names or globs, e.g. agentic-ref-cc-control-none-opus-high,agentic-ref-cc-docs-full-opus-high — empty runs every case'
         type: string
         default: ''
       flows:
-        description: "Comma-separated workflow fixtures (AGENTIC_REF_FLOW), e.g. 703-fix-bug-flow — empty runs each case's full workflow set"
+        description: "Comma-separated workflow fixtures; a full name, a number (703), or a glob (70*) all work — empty runs each case's full workflow set"
         type: string
         default: ''
       runs:
-        description: 'Repetitions per (case, workflow) cell (AGENTIC_REF_RUNS)'
+        description: 'Repetitions per (case, workflow) cell (AGENTIC_REF_RUNS). Default 10, the batch size the comparison tooling expects'
         type: string
-        default: '1'
+        default: '10'
       force:
         description: 'Run every selected cell again, even ones that already have saved results'
         type: boolean
@@ -94,13 +94,56 @@ jobs:
 
           exit "$missing"
 
+      - name: Resolve the selection
+        shell: bash
+        env:
+          RAW_CASES: ${{ inputs.cases }}
+          RAW_FLOWS: ${{ inputs.flows }}
+        run: |
+          # Cases arrive comma-separated; run-all wants one argument per case,
+          # so normalize to spaces here and let the run step split.
+          CASES=$(tr ',' ' ' <<< "$RAW_CASES" | tr -s ' ' | sed 's/^ //; s/ $//')
+
+          # Flows may be full fixture names, bare numbers (703) or globs (70*).
+          # Expand each token against agent-eval/evals/ on this ref, so the
+          # runner only ever sees exact fixture names.
+          FLOWS=""
+          if [[ -n "$RAW_FLOWS" ]]; then
+            resolved=()
+            IFS=',' read -r -a tokens <<< "$RAW_FLOWS"
+            for token in "${tokens[@]}"; do
+              token=$(tr -d ' ' <<< "$token")
+              [[ -z "$token" ]] && continue
+              if [[ -d "agent-eval/evals/$token" ]]; then
+                matches=("$token")
+              else
+                pattern="$token"
+                # A bare number selects every fixture with that number prefix.
+                [[ "$pattern" != *[*?]* ]] && pattern="$token-*"
+                mapfile -t matches < <(cd agent-eval/evals && compgen -G "$pattern" || true)
+              fi
+              if [[ ${#matches[@]} -eq 0 ]]; then
+                echo "::error title=Unknown flow::'$token' matches no fixture under agent-eval/evals/. Nothing was run."
+                exit 1
+              fi
+              resolved+=("${matches[@]}")
+            done
+            FLOWS=$(printf '%s\n' "${resolved[@]}" | sort -u | paste -sd, -)
+            echo "Flows resolved: $FLOWS"
+          fi
+
+          {
+            echo "RESOLVED_CASES=$CASES"
+            echo "RESOLVED_FLOWS=$FLOWS"
+          } >> "$GITHUB_ENV"
+
       - name: Enforce the expected plan size
         if: ${{ inputs.expect != '' }}
         shell: bash
         env:
-          CASES: ${{ inputs.cases }}
+          CASES: ${{ env.RESOLVED_CASES }}
           EXPECT: ${{ inputs.expect }}
-          AGENTIC_REF_FLOW: ${{ inputs.flows }}
+          AGENTIC_REF_FLOW: ${{ env.RESOLVED_FLOWS }}
           AGENTIC_REF_RUNS: ${{ inputs.runs }}
         run: |
           args=()
@@ -126,10 +169,10 @@ jobs:
       - name: Run agentic-reference evals
         shell: bash
         env:
-          CASES: ${{ inputs.cases }}
+          CASES: ${{ env.RESOLVED_CASES }}
           DRY: ${{ inputs.dry }}
           FORCE: ${{ inputs.force }}
-          AGENTIC_REF_FLOW: ${{ inputs.flows }}
+          AGENTIC_REF_FLOW: ${{ env.RESOLVED_FLOWS }}
           AGENTIC_REF_RUNS: ${{ inputs.runs }}
           # The runner drives coding agents through Vercel AI Gateway and skips
           # an experiment with exit 0 when this is unset — the job goes green
