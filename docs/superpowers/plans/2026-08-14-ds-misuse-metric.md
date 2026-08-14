@@ -115,7 +115,10 @@ describe('includeNodes', () => {
 		});
 		expect(report.nodeList).toEqual([
 			{
-				path: 'App/Button[0]',
+				// Hosts never become records, but they are still path segments:
+				// the path locates a node in the markup tree, and dropping `div`
+				// would leave sibling indices with nothing to be relative to.
+				path: 'App/div[0]/Button[0]',
 				file: 'src/App.tsx',
 				line: 2,
 				tag: 'Button',
