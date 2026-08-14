@@ -88,6 +88,15 @@ describe('treePatch', () => {
 		expect(patch.text.split('diff --git').length - 1).toBe(patch.files.length);
 	});
 
+	// git exits 1 for a path it cannot access exactly as it does for a difference,
+	// so an unguarded missing tree reads as "the run changed nothing" — a run that
+	// never got copied out would be judged as having written nothing at all.
+	it('throws when a tree is missing rather than reporting no change', () => {
+		const after = tree('after', { 'src/App.tsx': 'const a = 1\n' });
+		expect(() => treePatch(join(root, 'absent'), after)).toThrow(/tree not found/);
+		expect(() => treePatch(after, join(root, 'absent'))).toThrow(/tree not found/);
+	});
+
 	// The cap dropping everything proves nothing about the boundary: the case that
 	// matters is a cut that keeps one block and drops the next, whole.
 	it('keeps whole blocks that fit and drops the ones that do not', () => {
