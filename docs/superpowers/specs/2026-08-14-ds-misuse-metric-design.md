@@ -139,6 +139,22 @@ Two spelling rules, so the format is unambiguous:
   as non-rendering. A node's path is therefore the same whether or not its author
   wrapped a subtree in a fragment.
 
+The chain follows JSX ancestors only. Where JSX is reached through a non-JSX node
+— the callback of a `.map()`, or an attribute value — the node starts a fresh
+chain instead of nesting under its container. This is deliberate: nesting through
+child expressions but *not* attribute expressions is the only correct widening,
+and it is not worth the machinery, because what is lost is a single link rather
+than a subtree. `<ul>{items.map(() => <li><Card/></li>)}</ul>` yields
+`List/li[0]` and `List/li[0]/Card[0]` — the `li`→`Card` nesting survives; only
+`ul`→`li` is dropped. A short chain that is true beats a long one that lies.
+
+Two smaller consequences of the same rule: siblings rooted directly in a fragment
+all index `[0]` (they stay distinct by tag, or by the `#n` suffix), and a class
+component is named by its nearest named declaration, `render`, rather than the
+class. None of this affects uniqueness or relocation-stability, which is the
+contract the metric depends on; it only makes some paths less descriptive than
+the example above suggests.
+
 `props` is prop *names* only, never values. The judge needs to know a `Button`
 was given `variant` to check it against the guidelines; it does not need the
 value, which it can read in the diff, and which would bloat the record.
