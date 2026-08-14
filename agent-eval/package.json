@@ -20,6 +20,7 @@
 		"playground:check-routes": "node ./scripts/check-playground-routes.mjs",
 		"results:download": "node ./scripts/download-ci-results.mjs",
 		"results:analyze": "pnpm gen:agentic-ref && node ./scripts/analyze-results.ts",
+		"judge:ds-misuse": "node ./scripts/judge-ds-misuse.ts",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:coverage": "vitest run --coverage",
