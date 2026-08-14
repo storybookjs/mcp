@@ -302,6 +302,13 @@ apart is a trap worth spending a rename to avoid."
 - Create: `lib/agentic-reference/metrics/ds-coverage/react/node-path.ts`
 - Test: `lib/agentic-reference/metrics/ds-coverage/react/node-path.test.ts`
 
+> **Shipped API note.** Review moved the entry point from
+> `buildNodePath(element, seen)` to a factory,
+> `createNodePathBuilder(): (element: JsxNode) => string`, so per-file freshness
+> is structural rather than a caller obligation. The exports are
+> `createNodePathBuilder`, `elementTag`, `propNames`. Task 3 below reflects the
+> factory; the sketch in this task's steps predates it.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `react/node-path.test.ts`:
@@ -550,7 +557,7 @@ Expected: FAIL — `nodeList` is `[]`.
 In `react/census.ts`, add the import:
 
 ```ts
-import { buildNodePath, propNames } from './node-path.ts';
+import { createNodePathBuilder, propNames } from './node-path.ts';
 ```
 
 Add to the imported types: `NodeRecord`.
@@ -564,8 +571,11 @@ Inside `censusReactTree`, declare the accumulator beside `unresolved`:
 Inside the `for (const file of graph.files.values())` loop, after `const fileTotals = emptyTotals();`:
 
 ```ts
-		// Fresh per file: paths are disambiguated within a file, not across the tree.
-		const seenPaths = new Map<string, number>();
+		// One builder per file: paths are disambiguated within a file, not across
+		// the tree. The builder must also see every counted element exactly once,
+		// in an order the baseline census reproduces — its `#n` suffix counts
+		// visit order, so a different walk renumbers every colliding path.
+		const nextPath = createNodePathBuilder();
 ```
 
 Change the `count` closure signature to receive the element in its narrowed form. Replace the two call sites in `walk`:
@@ -593,7 +603,7 @@ Then, inside the `resolution.category === 'ds' | 'external' | 'local'` branch, a
 ```ts
 				if (includeNodes) {
 					nodeList.push({
-						path: buildNodePath(element, seenPaths),
+						path: nextPath(element),
 						file: file.path,
 						line: file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1,
 						tag: tag.getText(),
@@ -3786,7 +3796,7 @@ Checked against the spec:
 Naming is consistent across tasks: `nodeList` (the key on both `DsCoverageReport`
 and `CensusResult`, chosen in Task 1 because `nodes` already means `NodeTotals`
 on the report), `NodeRecord`,
-`buildNodePath`, `elementTag`, `propNames`, `treePatch`, `collectDsDocs`,
+`createNodePathBuilder`, `elementTag`, `propNames`, `treePatch`, `collectDsDocs`,
 `dsDocsRefLabel`, `DS_DOCS_PIN`, `buildJudgeRequest`, `JUDGE_MODEL`, `runJudge`,
 `assertApiKey`, `summariseJudgement`, `judgeRun`, `readMisuseReport`,
 `writeMisuseReport`, `isStale`, `DS_MISUSE_FILENAME`, `readNodeSidecar`,
