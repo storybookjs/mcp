@@ -3,8 +3,8 @@
 // The format is `<declaration>/<Tag>[i]/<Tag>[i]…`, where `i` indexes element
 // siblings only. It deliberately carries no line or character offsets: a node
 // that moved down a file because something was inserted above it keeps the same
-// path, which is what lets a reader separate a genuinely new node from a
-// relocated one.
+// path — with the `#n` caveat below — which is what lets a reader separate a
+// genuinely new node from a relocated one.
 //
 // Fragments are transparent — they render nothing, so wrapping a subtree in one
 // must not renumber it. Member expressions keep their dotted source text; the
@@ -61,7 +61,14 @@ export function elementTag(element: JsxNode): string {
 	return tagText(ts.isJsxElement(element) ? element.openingElement.tagName : element.tagName);
 }
 
-/** Attribute names in source order; a spread contributes the literal `...`. */
+/**
+ * Attribute names in source order; a spread contributes the literal `...`.
+ *
+ * Sliced from source rather than rebuilt like `tagText`, and deliberately so:
+ * these are descriptive payload for the judge, not part of a path, so trivia in
+ * a namespaced name cannot move a node. The asymmetry is a choice, not an
+ * oversight.
+ */
 export function propNames(element: JsxNode): string[] {
 	const attributes = ts.isJsxElement(element)
 		? element.openingElement.attributes
