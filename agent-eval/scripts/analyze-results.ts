@@ -53,9 +53,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { readRunOutcomes } from '#lib/agentic-reference/collected-runs';
-import { findStoredEvalDirs } from '#lib/agentic-reference/results-tree';
-import { groupComparableRuns, parseResultTimestamp } from '#lib/agentic-reference/comparability';
+import { groupComparableRuns } from '#lib/agentic-reference/comparability';
 import {
 	currentMeasurement,
 	describeDifferences,
@@ -65,11 +63,12 @@ import {
 } from '#lib/agentic-reference/identity';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
+import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
-import { matchesAnySelector, selectionFlags } from '#lib/agentic-reference/selection';
+import { selectionFlags } from '#lib/agentic-reference/selection';
 
 import type { ComparableGroup } from '#lib/agentic-reference/comparability';
 import type {
@@ -147,72 +146,6 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 			coverage: chosen.includes('coverage'),
 		},
 	};
-}
-
-// --- discovery ---
-// Layout: results/<experiment>/<model>/<timestamp>/<eval>/run-N/project
-interface Run {
-	runDir: string;
-	projectDir: string;
-	experiment: string;
-	model: string;
-	timestamp: string;
-	evalName: string;
-	run: number;
-	/**
-	 * Whether the run left a project tree behind (see
-	 * lib/agentic-reference/collected-runs.ts). Runs without one are still
-	 * carried through selection and reported, not silently dropped.
-	 * `pnpm results:prune` clears them.
-	 */
-	collected: boolean;
-}
-
-/** Every run directory under `dir`, collected or not. */
-function findRuns(dir: string): Run[] {
-	return findStoredEvalDirs(dir).flatMap((evalDir) =>
-		readRunOutcomes(evalDir.dir).map((outcome) => ({
-			runDir: outcome.dir,
-			projectDir: join(outcome.dir, 'project'),
-			experiment: evalDir.experiment,
-			model: evalDir.model,
-			timestamp: evalDir.timestamp,
-			evalName: evalDir.evalName,
-			run: outcome.run,
-			collected: outcome.collected,
-		})),
-	);
-}
-
-function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
-	let selected = runs;
-	selected = selected.filter(
-		(run) =>
-			matchesAnySelector(run.experiment, options.experiments) &&
-			matchesAnySelector(run.evalName, options.evals),
-	);
-	if (options.since) {
-		const since = new Date(options.since);
-		if (Number.isNaN(since.getTime())) {
-			throw new Error(`--since must be a parseable date; received "${options.since}"`);
-		}
-		// A directory whose name is not a timestamp cannot be vouched for, and the
-		// point of a cutoff is to trust what stays in — so it stays out.
-		selected = selected.filter((run) => {
-			const at = parseResultTimestamp(run.timestamp);
-			return at !== null && at >= since;
-		});
-	}
-	if (options.latest) {
-		const newest = new Map<string, string>();
-		for (const run of selected) {
-			const current = newest.get(run.experiment);
-			if (current === undefined || run.timestamp > current)
-				newest.set(run.experiment, run.timestamp);
-		}
-		selected = selected.filter((run) => run.timestamp === newest.get(run.experiment));
-	}
-	return selected;
 }
 
 function messageOf(error: unknown): string {
