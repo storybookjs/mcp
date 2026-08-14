@@ -2409,14 +2409,14 @@ vi.mock('@anthropic-ai/sdk', () => ({
 	},
 }));
 
-import { runJudge } from './judge.ts';
+import { runJudge, type JudgeRequest } from './judge.ts';
 
 const REQUEST = {
 	model: 'claude-opus-4-8',
 	max_tokens: 32_000,
 	system: [],
 	messages: [],
-} as never;
+} as unknown as JudgeRequest;
 
 afterEach(() => {
 	vi.clearAllMocks();
@@ -2481,7 +2481,11 @@ Create `judge.ts`:
 // assembled message back anyway.
 import Anthropic from '@anthropic-ai/sdk';
 
+import type { buildJudgeRequest } from './context.ts';
 import type { JudgeResponse } from './types.ts';
+
+/** Exactly what buildJudgeRequest produces, so no cast is needed at the call site. */
+export type JudgeRequest = ReturnType<typeof buildJudgeRequest>;
 
 /**
  * Fail before any work is thrown away, and say where the key goes — the eval
@@ -2502,13 +2506,14 @@ export function assertApiKey(): void {
  * The response is schema-constrained by output_config.format, so the only
  * failures worth naming are the ones that produce no usable content at all.
  */
-export async function runJudge(
-	request: Anthropic.MessageCreateParamsNonStreaming,
-): Promise<JudgeResponse> {
+export async function runJudge(request: JudgeRequest): Promise<JudgeResponse> {
 	assertApiKey();
 	const client = new Anthropic();
 
-	const message = await client.messages.stream(request).finalMessage();
+	// The SDK's param type is wider than what we build; the cast is confined here.
+	const message = await client.messages
+		.stream(request as unknown as Anthropic.MessageStreamParams)
+		.finalMessage();
 
 	if (message.stop_reason === 'refusal') {
 		throw new Error(
@@ -2919,7 +2924,7 @@ import { join } from 'node:path';
 import { readJson } from '../../../utils/files.ts';
 import { buildJudgeRequest, JUDGE_MODEL } from './context.ts';
 import { collectDsDocs, dsDocsRefLabel } from './ds-docs.ts';
-import { runJudge } from './judge.ts';
+import { runJudge, type JudgeRequest } from './judge.ts';
 import { summariseJudgement } from './score.ts';
 import { treePatch } from './tree-patch.ts';
 import { DS_MISUSE_SCHEMA_VERSION, type DsMisuseReport } from './types.ts';
@@ -2995,7 +3000,7 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 			treatmentNodes: treatment.nodeList ?? [],
 			patch,
 			fixtureRef: input.fixtureRef,
-		}) as never,
+		}),
 	);
 
 	return {
@@ -3298,3 +3303,471 @@ API call.
 
 If there are no local results, stop here and hand back for a real run before
 starting Phase F.
+
+---
+
+## Phase F — Reporting
+
+### Task 19: Register `--misuse` and merge the artifact after the cache
+
+**Files:**
+- Modify: `lib/post-analysis/types.ts` (`SummarizeOptions`)
+- Modify: `scripts/analyze-results.ts`
+
+- [ ] **Step 1: Add the option**
+
+In `lib/post-analysis/types.ts`, extend `SummarizeOptions`:
+
+```ts
+export interface SummarizeOptions {
+	/** Per-run vitals and the grouped summary. */
+	general: boolean;
+	/** The complexity family, where a module measures one. */
+	complexity: boolean;
+	/** The design-system coverage family, where a module measures one. */
+	coverage: boolean;
+	/** The design-system misuse family, from artifacts `pnpm judge:ds-misuse` wrote. */
+	misuse: boolean;
+}
+```
+
+- [ ] **Step 2: Register the section in the CLI**
+
+In `scripts/analyze-results.ts`:
+
+```ts
+const TABLE_SECTIONS = ['general', 'complexity', 'coverage', 'misuse'] as const;
+```
+
+In `parseArgs`, extend the initial options object:
+
+```ts
+		tables: { general: false, complexity: false, coverage: false, misuse: false },
+```
+
+Extend the usage comment near the top of the file, after the `--coverage` line:
+
+```
+//   --misuse             print the design-system misuse tables (see judge:ds-misuse)
+```
+
+- [ ] **Step 3: Merge the artifact after the cache lookup**
+
+> **This ordering is the point of the task.** The judge runs *after*
+> `results:analyze` in the normal workflow. A row baked into
+> `post-analysis-meta.json` on the first pass would carry no scores, and every
+> later `results:analyze` would keep serving that cached row — the numbers would
+> never appear without `--recompute`.
+
+Add the import:
+
+```ts
+import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
+```
+
+Change `strip` to merge on the way out:
+
+```ts
+// Read fresh on every invocation and merged here rather than into the cached
+// analysis: the judge runs after this script, so a cached row would never gain
+// the scores without --recompute.
+function strip(row: SuccessfulAnalysis): Record<string, unknown> {
+	const report = readMisuseReport(row.__run.runDir);
+	return {
+		...Object.fromEntries(
+			Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
+		),
+		...(report === null ? {} : { dsMisuse: report }),
+	};
+}
+```
+
+- [ ] **Step 4: Warn when the metric is absent**
+
+In `main()`, immediately after the `successfulAnalyses.sort(...)` call:
+
+```ts
+	// A silently absent metric is the failure mode worth shouting about, so this
+	// fires whichever table families were selected.
+	const unjudged = successfulAnalyses.filter(
+		(row) => readMisuseReport(row.__run.runDir) === null,
+	).length;
+	if (unjudged > 0) {
+		const bold = '\x1b[1;31m';
+		const reset = '\x1b[0m';
+		console.error(
+			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+				'  Run: pnpm judge:ds-misuse' +
+				(options.experiment === null ? '' : ` --experiment=${options.experiment}`) +
+				(options.latest ? ' --latest' : ''),
+		);
+	}
+```
+
+- [ ] **Step 5: Typecheck**
+
+Run: `pnpm exec tsc --noEmit`
+Expected: exactly one error, in `lib/agentic-reference/post-analysis.ts` — the
+default `SummarizeOptions` literal in `summarize`'s signature is missing
+`misuse`. Task 20 fixes it. Do not patch it here.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/post-analysis/types.ts scripts/analyze-results.ts
+git commit -m "Register the --misuse section and merge its artifact after the cache
+
+The judge runs after results:analyze, so a row baked into the analysis cache on
+the first pass would never gain the scores without --recompute."
+```
+
+---
+
+### Task 20: Render the misuse tables
+
+**Files:**
+- Modify: `lib/agentic-reference/post-analysis.ts`
+- Test: `lib/agentic-reference/post-analysis.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `post-analysis.test.ts`:
+
+```ts
+describe('misuse summary', () => {
+	function row(overrides: Record<string, unknown> = {}) {
+		return {
+			experiment: 'agentic-ref-arm-a',
+			eval: '701-new-ui-flow',
+			run: 1,
+			status: 'passed',
+			fixtureRef: 'yannbf/mealdrop@refs/tags/x',
+			dsMisuse: {
+				summary: {
+					correctDsDecision: 1,
+					correctDsUsage: 0.5,
+					correctLocalDecision: null,
+					evaluated: { ds: 2, local: 0 },
+				},
+			},
+			...overrides,
+		};
+	}
+
+	const SILENT = { general: false, complexity: false, coverage: false, misuse: false };
+
+	it('means each score across an arm', () => {
+		const [group] = summarize([row(), row({ run: 2 })], SILENT);
+		expect(group).toMatchObject({
+			misuseDecision: { mean: 1 },
+			misuseUsage: { mean: 0.5 },
+			misuseEvaluated: { ds: 4, local: 0 },
+		});
+	});
+
+	// An unjudged run must not read as a zero — that is the difference between
+	// "not measured" and "measured badly".
+	it('excludes unjudged runs from the means', () => {
+		const [group] = summarize([row(), row({ run: 2, dsMisuse: undefined })], SILENT);
+		expect(group).toMatchObject({ misuseDecision: { mean: 1 }, misuseJudged: 1, runs: 2 });
+	});
+
+	it('leaves a score no run measured as null', () => {
+		expect(summarize([row()], SILENT)[0]).toMatchObject({ misuseLocalDecision: { mean: null } });
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/post-analysis.test.ts -t 'misuse summary'`
+Expected: FAIL — the group has no `misuseDecision`.
+
+- [ ] **Step 3: Add the reader and the grouped means**
+
+In `post-analysis.ts`, beside `coverageOf`, add:
+
+```ts
+/** A run's judged misuse scores, or null when the judge has not run on it. */
+function misuseOf(row: Record<string, unknown>): DsMisuseSummary | null {
+	const report = row.dsMisuse;
+	return isRecord(report) && isRecord(report.summary)
+		? (report.summary as unknown as DsMisuseSummary)
+		: null;
+}
+```
+
+with the import:
+
+```ts
+import type { DsMisuseSummary } from './metrics/ds-misuse/types.ts';
+```
+
+Inside `makeGeneralSummary`'s per-group body, beside the coverage numbers:
+
+```ts
+		const misuseDecision = numbersAt(group, (row) => misuseOf(row)?.correctDsDecision);
+		const misuseUsage = numbersAt(group, (row) => misuseOf(row)?.correctDsUsage);
+		const misuseLocal = numbersAt(group, (row) => misuseOf(row)?.correctLocalDecision);
+		const misuseJudged = group.filter((row) => misuseOf(row) !== null).length;
+		const misuseDsNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.ds);
+		const misuseLocalNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.local);
+```
+
+and in the returned object, after the coverage keys:
+
+```ts
+			// Scores keep four decimals like the coverage shares: a mean rounded to
+			// two would flatten a one-point move to nothing. numbersAt drops
+			// non-finite values, so an unjudged run contributes nothing rather than
+			// dragging a mean toward zero — misuseJudged says how many did count.
+			misuseJudged,
+			misuseDecision: { mean: round(mean(misuseDecision), 4) },
+			misuseUsage: { mean: round(mean(misuseUsage), 4) },
+			misuseLocalDecision: { mean: round(mean(misuseLocal), 4) },
+			misuseEvaluated: {
+				ds: sum(misuseDsNodes) ?? 0,
+				local: sum(misuseLocalNodes) ?? 0,
+			},
+```
+
+- [ ] **Step 4: Print the two tables**
+
+In `summarize`, after the coverage block and before the "no families selected"
+fallback:
+
+```ts
+	// Absolute scores only — unlike coverage there is no before side to move
+	// against, because a decision the run did not make has no baseline value.
+	// judged is the escape hatch: a mean over one judged run of ten is not the
+	// arm's number, and the column says so.
+	const withMisuse = analyses.filter((row) => misuseOf(row) !== null);
+	const printedMisuse = options.misuse && withMisuse.length > 0;
+	if (printedMisuse) {
+		console.table(
+			withMisuse.map((row) => {
+				const misuse = misuseOf(row);
+				return {
+					experiment: shortExperiment(row.experiment),
+					run: row.run,
+					dsNodes: misuse?.evaluated.ds ?? null,
+					localNodes: misuse?.evaluated.local ?? null,
+					decision: misuse?.correctDsDecision ?? null,
+					usage: misuse?.correctDsUsage ?? null,
+					localDecision: misuse?.correctLocalDecision ?? null,
+				};
+			}),
+		);
+
+		console.table(
+			summary.map((group) => ({
+				experiment: shortExperiment(group.experiment),
+				judged: `${group.misuseJudged as number}/${group.runs as number}`,
+				dsNodes: (group.misuseEvaluated as { ds: number }).ds,
+				localNodes: (group.misuseEvaluated as { local: number }).local,
+				decisionMean: (group.misuseDecision as { mean: number | null }).mean,
+				usageMean: (group.misuseUsage as { mean: number | null }).mean,
+				localMean: (group.misuseLocalDecision as { mean: number | null }).mean,
+			})),
+		);
+	}
+```
+
+Extend the empty-selection fallback so `--misuse` with no data says something
+useful rather than printing a bare header:
+
+```ts
+	if (!options.general && !printedComplexity && !printedCoverage && !printedMisuse) {
+		if (options.misuse && withMisuse.length === 0) {
+			console.log('No DS misuse judgement for these runs. Run: pnpm judge:ds-misuse');
+		} else if (options.coverage && withCoverage.length === 0) {
+			console.log(
+				'No DS coverage for these runs: their external-repo pin declares no DS packages. ' +
+					'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
+			);
+		} else if (options.complexity) {
+			console.log('Nothing to show: these runs carry no baseline delta.');
+		} else {
+			console.log('No table families selected.');
+		}
+	}
+```
+
+Finally, update `summarize`'s default parameter so a direct programmatic call
+still means "every family":
+
+```ts
+export function summarize(
+	analyses: Array<Record<string, unknown>>,
+	options: SummarizeOptions = { general: true, complexity: true, coverage: true, misuse: true },
+): Array<Record<string, unknown>> {
+```
+
+- [ ] **Step 5: Run the tests**
+
+Run: `pnpm exec vitest run lib/agentic-reference/post-analysis.test.ts`
+Expected: PASS.
+
+Run: `pnpm exec tsc --noEmit`
+Expected: no errors.
+
+- [ ] **Step 6: Verify the tables by hand**
+
+```bash
+pnpm results:analyze --misuse --latest
+```
+Expected: the per-run and grouped misuse tables, and — if any run is unjudged —
+the bold red warning naming the count and the `judge:ds-misuse` command.
+
+```bash
+pnpm results:analyze --latest
+```
+Expected: the coverage tables as before, plus the same warning. The misuse tables
+must NOT print: `DEFAULT_TABLES` is still `['coverage']`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/agentic-reference/post-analysis.ts lib/agentic-reference/post-analysis.test.ts
+git commit -m "Render the DS misuse tables as their own selectable family
+
+Absolute scores only: a decision the run did not make has no baseline value to
+move against. The judged column is the escape hatch — a mean over one judged
+run of ten is not the arm's number, and the column says so."
+```
+
+---
+
+### Task 21: Document the metric
+
+**Files:**
+- Modify: `agent-eval/README.md`
+
+- [ ] **Step 1: Add a section after "Known Failures"**
+
+````markdown
+## Design-system misuse judging
+
+`ds-coverage` measures how *much* of a run's UI comes from the design system.
+`ds-misuse` measures whether the agent used it *well*, scoring the JSX nodes a
+run introduced against the Droppy design system's own documentation:
+
+- `correct-ds-decision` — was this the right DS component, or did a better DS
+  alternative exist?
+- `correct-ds-usage` — does this usage violate a documented guideline?
+- `correct-local-decision` — should this have been local, or did a DS component
+  with a relevant API exist?
+
+Each is scored 1 / 0.5 / 0 per node and summarised as a mean in `[0, 1]`.
+
+Unlike every other metric here, this one **costs money** — one Claude call per
+run — so it lives behind its own command rather than running as part of
+`results:analyze`:
+
+```bash
+pnpm results:analyze --recompute   # builds the baselines and node census first
+pnpm judge:ds-misuse --latest      # then judges; roughly $0.10-0.15 per run
+pnpm results:analyze --misuse      # reads the artifacts and prints the tables
+```
+
+It needs `ANTHROPIC_API_KEY` and aborts naming it if absent. Each run's
+judgement is cached in its run directory as `ds-misuse.json` and reused until
+the guidelines pin or `metricsVersion` moves; `--recompute` re-judges.
+
+Every arm is judged against **one pinned, complete** copy of the design system's
+documentation (`DS_DOCS_PIN` in
+`lib/agentic-reference/metrics/ds-misuse/ds-docs.ts`) — deliberately not the
+docs variant that arm was served. Content variation between arms is the round's
+independent variable, so judging each arm against what it saw would score a
+degraded arm against a lowered bar.
+
+Design notes: `docs/superpowers/specs/2026-08-14-ds-misuse-metric-design.md`.
+````
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add README.md
+git commit -m "Document the ds-misuse metric and its cost in the eval README"
+```
+
+---
+
+## Final verification
+
+- [ ] **Full suite**
+
+```bash
+pnpm exec vitest run
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm format:check
+```
+Expected: all green. Run `pnpm format` if `format:check` complains.
+
+- [ ] **End to end on real runs**
+
+```bash
+pnpm results:analyze --recompute --latest
+pnpm judge:ds-misuse --latest
+pnpm results:analyze --misuse --latest
+```
+
+Expected: baselines under `baselines/<pinSlug>.json`, sidecars under
+`baselines/ds-nodes/`, `ds-misuse.json` in each run directory, and the two
+misuse tables. A second `judge:ds-misuse --latest` must report every run as
+`reused` and make no API call.
+
+- [ ] **The cache is actually working**
+
+After judging at least two runs in one pass, confirm the corpus was written once
+and read after. Add a temporary log at the end of `runJudge` in `judge.ts`:
+
+```ts
+console.log(message.usage.cache_creation_input_tokens, message.usage.cache_read_input_tokens);
+```
+
+Expected: run 1 shows a large `cache_creation_input_tokens` (~95k) and ~0 reads;
+run 2 shows ~0 creation and a large `cache_read_input_tokens`. If run 2 also
+writes, something volatile is leaking into the `system` blocks — check
+`buildJudgeRequest`. Remove the log before committing.
+
+---
+
+## Self-review notes
+
+Checked against the spec:
+
+- **Node census** — Tasks 1–4 (option, path format, emission, CLI flag).
+- **Baseline re-key** — Tasks 5–6. **Node sidecar** — Task 7.
+- **DS guidelines from one pinned full-docs ref** — Task 9, with a real-network
+  verification step so a moved pin is caught immediately rather than silently
+  judged against.
+- **CLI abort order** (pin → tree → sidecar → diff → key → docs → census →
+  judge) — Tasks 17–18. The API key is checked after the cheap local steps, as
+  specified, so a misconfigured environment surfaces every other problem in the
+  same pass.
+- **Judge** — Tasks 10, 12, 14, 15: Messages API, `claude-opus-4-8`, adaptive
+  thinking, `effort: high`, structured output, `1h` cache TTL on the docs
+  prefix, model-side bucketing, buckets stored beside the scores.
+- **`--misuse` family, post-cache merge, red warning** — Tasks 19–20.
+- **Known-violations list** — deliberately absent, per the spec. No task reads
+  `KNOWN-ISSUES.md`.
+
+Naming is consistent across tasks: `nodeList` (the report key, chosen in Task 1
+to avoid colliding with the existing `nodes: NodeTotals`), `NodeRecord`,
+`buildNodePath`, `elementTag`, `propNames`, `treePatch`, `collectDsDocs`,
+`dsDocsRefLabel`, `DS_DOCS_PIN`, `buildJudgeRequest`, `JUDGE_MODEL`, `runJudge`,
+`assertApiKey`, `summariseJudgement`, `judgeRun`, `readMisuseReport`,
+`writeMisuseReport`, `isStale`, `DS_MISUSE_FILENAME`, `readNodeSidecar`,
+`writeNodeSidecar`, `nodeSidecarPath`, `findRuns`, `selectRuns`.
+
+Two things a reviewer should watch for during execution, because they are the
+cheap-to-get-wrong parts:
+
+1. **Task 1's naming collision.** `DsCoverageReport.nodes` already means
+   `NodeTotals`. The record list is `nodeList`. Getting this backwards silently
+   changes every committed baseline.
+2. **Task 19's merge point.** If `dsMisuse` ends up inside the cached analysis
+   rather than merged after it, the scores will appear once and then never
+   again without `--recompute`, which is a genuinely confusing bug to chase.
