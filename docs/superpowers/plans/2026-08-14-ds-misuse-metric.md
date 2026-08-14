@@ -2551,3 +2551,482 @@ git commit -m "Call the judge, naming the failures that yield no usable content
 A refusal is HTTP 200 with empty content and a truncation is valid-looking half
 JSON; both would otherwise surface as a parse error frames from the cause."
 ```
+
+---
+
+## Phase E — Orchestration and CLI
+
+### Task 16: Extract run discovery so both scripts share it
+
+**Files:**
+- Create: `lib/post-analysis/discovery.ts`
+- Create: `lib/post-analysis/discovery.test.ts`
+- Modify: `scripts/analyze-results.ts` (delete the moved code, import instead)
+
+`findRuns`, `selectRuns` and `parseTimestamp` currently live inside
+`analyze-results.ts`. The judge CLI needs exactly the same walk and the same
+`--experiment` / `--since` / `--latest` semantics, and two copies would drift.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `discovery.test.ts`:
+
+```ts
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { findRuns, selectRuns } from './discovery.ts';
+
+let root: string;
+
+/** results/<experiment>/<model>/<timestamp>/<eval>/run-N/project */
+function run(experiment: string, timestamp: string, evalName: string, index: number): void {
+	const dir = join(root, experiment, 'opus', timestamp, evalName, `run-${index}`, 'project');
+	mkdirSync(dir, { recursive: true });
+	writeFileSync(join(dir, 'index.ts'), '');
+}
+
+beforeEach(() => {
+	root = mkdtempSync(join(tmpdir(), 'discovery-'));
+});
+
+afterEach(() => {
+	rmSync(root, { recursive: true, force: true });
+});
+
+describe('findRuns', () => {
+	it('reads experiment, timestamp, eval and index out of the layout', () => {
+		run('arm-a', '2026-07-27T10-43-55.864Z', '701-new-ui-flow', 1);
+		expect(findRuns(root)).toEqual([
+			{
+				runDir: join(root, 'arm-a/opus/2026-07-27T10-43-55.864Z/701-new-ui-flow/run-1'),
+				projectDir: join(root, 'arm-a/opus/2026-07-27T10-43-55.864Z/701-new-ui-flow/run-1/project'),
+				experiment: 'arm-a',
+				model: 'opus',
+				timestamp: '2026-07-27T10-43-55.864Z',
+				evalName: '701-new-ui-flow',
+				run: 1,
+			},
+		]);
+	});
+
+	it('returns nothing for a missing results directory', () => {
+		expect(findRuns(join(root, 'absent'))).toEqual([]);
+	});
+
+	// A run-N directory with no collected project is a failed run, not a run.
+	it('ignores a run directory with no project', () => {
+		mkdirSync(join(root, 'arm-a/opus/2026-07-27T10-43-55.864Z/701/run-1'), { recursive: true });
+		expect(findRuns(root)).toEqual([]);
+	});
+});
+
+describe('selectRuns', () => {
+	function threeRuns() {
+		run('arm-a', '2026-07-01T00-00-00.000Z', '701', 1);
+		run('arm-a', '2026-08-01T00-00-00.000Z', '701', 1);
+		run('arm-b', '2026-07-01T00-00-00.000Z', '701', 1);
+		return findRuns(root);
+	}
+
+	it('filters by experiment', () => {
+		const selected = selectRuns(threeRuns(), { experiment: 'arm-b', since: null, latest: false });
+		expect(selected.map((entry) => entry.experiment)).toEqual(['arm-b']);
+	});
+
+	it('filters by date, parsing the dashed-time directory format', () => {
+		const selected = selectRuns(threeRuns(), {
+			experiment: null,
+			since: '2026-07-15',
+			latest: false,
+		});
+		expect(selected.map((entry) => entry.timestamp)).toEqual(['2026-08-01T00-00-00.000Z']);
+	});
+
+	it('keeps only the newest timestamp per experiment when latest is set', () => {
+		const selected = selectRuns(threeRuns(), { experiment: null, since: null, latest: true });
+		expect(selected.map((entry) => `${entry.experiment}@${entry.timestamp}`).sort()).toEqual([
+			'arm-a@2026-08-01T00-00-00.000Z',
+			'arm-b@2026-07-01T00-00-00.000Z',
+		]);
+	});
+
+	it('rejects an unparseable since date rather than filtering everything out', () => {
+		expect(() =>
+			selectRuns(threeRuns(), { experiment: null, since: 'not-a-date', latest: false }),
+		).toThrow(/parseable date/);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/post-analysis/discovery.test.ts`
+Expected: FAIL — `Cannot find module './discovery.ts'`.
+
+- [ ] **Step 3: Move the code**
+
+Create `lib/post-analysis/discovery.ts` by moving the block from
+`scripts/analyze-results.ts` verbatim, adding exports and a header:
+
+```ts
+// Finding stored runs on disk, and narrowing them the way every analysis CLI does.
+//
+// Layout: results/<experiment>/<model>/<timestamp>/<eval>/run-N/project
+//
+// Shared rather than duplicated: analyze-results.ts and judge-ds-misuse.ts must
+// agree about what a run is and what --experiment/--since/--latest select, or
+// the two will quietly disagree about which runs they covered.
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+export interface Run {
+	runDir: string;
+	projectDir: string;
+	experiment: string;
+	model: string;
+	timestamp: string;
+	evalName: string;
+	run: number;
+}
+
+export interface RunSelection {
+	experiment: string | null;
+	since: string | null;
+	latest: boolean;
+}
+
+export function findRuns(resultsDir: string): Run[] {
+	if (!existsSync(resultsDir)) return [];
+	const runs: Run[] = [];
+	const walk = (current: string) => {
+		for (const entry of readdirSync(current, { withFileTypes: true })) {
+			if (!entry.isDirectory()) {
+				continue;
+			}
+			const path = join(current, entry.name);
+			if (!/^run-\d+$/.test(entry.name) || !existsSync(join(path, 'project'))) {
+				walk(path);
+				continue;
+			}
+			const parts = path.slice(resultsDir.length + 1).split('/');
+			runs.push({
+				runDir: path,
+				projectDir: join(path, 'project'),
+				experiment: parts[0]!,
+				model: parts.slice(1, -3).join('/'),
+				timestamp: parts.at(-3)!,
+				evalName: parts.at(-2)!,
+				run: Number.parseInt(entry.name.slice('run-'.length), 10),
+			});
+		}
+	};
+	walk(resultsDir);
+	return runs;
+}
+
+// Result directories are ISO timestamps with the time's ':' replaced by '-',
+// e.g. 2026-07-27T10-43-55.864Z.
+export function parseTimestamp(timestamp: string): Date {
+	return new Date(timestamp.replace(/T(\d\d)-(\d\d)-(\d\d)/, 'T$1:$2:$3'));
+}
+
+export function selectRuns(runs: Run[], options: RunSelection): Run[] {
+	let selected = runs;
+	if (options.experiment) {
+		selected = selected.filter((run) => run.experiment === options.experiment);
+	}
+	if (options.since) {
+		const since = new Date(options.since);
+		if (Number.isNaN(since.getTime())) {
+			throw new Error(`--since must be a parseable date; received "${options.since}"`);
+		}
+		selected = selected.filter((run) => parseTimestamp(run.timestamp) >= since);
+	}
+	if (options.latest) {
+		const newest = new Map<string, string>();
+		for (const run of selected) {
+			const current = newest.get(run.experiment);
+			if (current === undefined || run.timestamp > current)
+				newest.set(run.experiment, run.timestamp);
+		}
+		selected = selected.filter((run) => run.timestamp === newest.get(run.experiment));
+	}
+	return selected;
+}
+```
+
+- [ ] **Step 4: Delete the originals and import instead**
+
+In `scripts/analyze-results.ts`, delete the `--- discovery ---` section (the
+`Run` interface, `findRuns`, `parseTimestamp`, `selectRuns`) and add:
+
+```ts
+import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
+```
+
+`PostAnalysisOptions` already carries `experiment`, `since` and `latest`, so the
+existing `selectRuns(findRuns(RESULTS_DIR), options)` call compiles unchanged.
+
+- [ ] **Step 5: Run the tests**
+
+Run: `pnpm exec vitest run lib/post-analysis/ && pnpm exec tsc --noEmit`
+Expected: PASS, no type errors.
+
+Run: `pnpm results:analyze --latest`
+Expected: identical output to before the move. If there are no local results it
+prints `No analysable runs found under results/.` — also a pass.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/post-analysis/discovery.ts lib/post-analysis/discovery.test.ts \
+        scripts/analyze-results.ts
+git commit -m "Extract run discovery so the judge CLI shares it
+
+Two copies of the walk would drift, and the two scripts must agree about what
+a run is and what --experiment/--since/--latest select."
+```
+
+---
+
+### Task 17: `index.ts` — orchestration and the artifact
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/index.ts`
+- Test: `lib/agentic-reference/metrics/ds-misuse/index.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `index.test.ts`:
+
+```ts
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { DS_MISUSE_FILENAME, isStale, readMisuseReport, writeMisuseReport } from './index.ts';
+
+import type { DsMisuseReport } from './types.ts';
+
+let runDir: string;
+
+function report(overrides: Partial<DsMisuseReport> = {}): DsMisuseReport {
+	return {
+		schemaVersion: 1,
+		metricsVersion: 7,
+		judgedAt: '2026-08-14T00:00:00.000Z',
+		model: 'claude-opus-4-8',
+		dsGuidelinesRef: 'yannbf/droppy-ds@abc',
+		fixtureRef: 'yannbf/mealdrop@def',
+		diffTruncated: false,
+		summary: {
+			correctDsDecision: 1,
+			correctDsUsage: 1,
+			correctLocalDecision: null,
+			evaluated: { ds: 1, local: 0 },
+		},
+		nodes: [],
+		...overrides,
+	};
+}
+
+beforeEach(() => {
+	runDir = mkdtempSync(join(tmpdir(), 'ds-misuse-'));
+});
+
+afterEach(() => {
+	rmSync(runDir, { recursive: true, force: true });
+});
+
+describe('artifact round-trip', () => {
+	it('writes and reads back the report', () => {
+		writeMisuseReport(runDir, report());
+		expect(readMisuseReport(runDir)).toEqual(report());
+	});
+
+	it('returns null when there is none', () => {
+		expect(readMisuseReport(runDir)).toBeNull();
+	});
+
+	it('returns null for an unreadable artifact rather than throwing', () => {
+		mkdirSync(runDir, { recursive: true });
+		writeFileSync(join(runDir, DS_MISUSE_FILENAME), '{ not json');
+		expect(readMisuseReport(runDir)).toBeNull();
+	});
+});
+
+describe('isStale', () => {
+	// Judging costs money; a fresh artifact must not be re-spent on.
+	it('is false for an artifact matching the current pins and versions', () => {
+		expect(isStale(report(), { dsGuidelinesRef: 'yannbf/droppy-ds@abc', metricsVersion: 7 })).toBe(
+			false,
+		);
+	});
+
+	// A moved guidelines pin means the run was judged against another standard.
+	it('is true when the guidelines pin moved', () => {
+		expect(isStale(report(), { dsGuidelinesRef: 'yannbf/droppy-ds@zzz', metricsVersion: 7 })).toBe(
+			true,
+		);
+	});
+
+	// A different metricsVersion means the node paths were built differently.
+	it('is true when the metrics version moved', () => {
+		expect(isStale(report(), { dsGuidelinesRef: 'yannbf/droppy-ds@abc', metricsVersion: 8 })).toBe(
+			true,
+		);
+	});
+
+	it('is true for a report from an older schema', () => {
+		expect(
+			isStale(report({ schemaVersion: 0 }), {
+				dsGuidelinesRef: 'yannbf/droppy-ds@abc',
+				metricsVersion: 7,
+			}),
+		).toBe(true);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/index.test.ts`
+Expected: FAIL — `Cannot find module './index.ts'`.
+
+- [ ] **Step 3: Write the implementation**
+
+Create `index.ts`:
+
+```ts
+// The ds-misuse metric: how well a run used the design system.
+//
+// ds-coverage answers how *much* of a run's UI came from the design system.
+// This answers whether the agent chose well — right component, used the way the
+// guidelines say, and local only where nothing in the system fit.
+//
+// It is the one metric in this tree that is not a pure function of stored
+// artifacts: it calls a model, so it lives behind its own CLI rather than in
+// post-analysis, and its result is cached on disk as ds-misuse.json.
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { readJson } from '../../../utils/files.ts';
+import { buildJudgeRequest, JUDGE_MODEL } from './context.ts';
+import { collectDsDocs, dsDocsRefLabel } from './ds-docs.ts';
+import { runJudge } from './judge.ts';
+import { summariseJudgement } from './score.ts';
+import { treePatch } from './tree-patch.ts';
+import { DS_MISUSE_SCHEMA_VERSION, type DsMisuseReport } from './types.ts';
+
+import { analyzeDsCoverage } from '../ds-coverage/index.ts';
+import type { NodeRecord } from '../ds-coverage/types.ts';
+
+export const DS_MISUSE_FILENAME = 'ds-misuse.json';
+
+export interface JudgeRunInput {
+	/** The run directory; the artifact lands here. */
+	runDir: string;
+	/** The collected post-run tree. */
+	projectDir: string;
+	/** The materialized pinned tree the run started from. */
+	baselineDir: string;
+	/** Whole-tree node census of the pinned tree, from the sidecar. */
+	baselineNodes: NodeRecord[];
+	/** DS package patterns for this pin. */
+	dsPackages: string[];
+	/** `repo@ref` of the pin, recorded in the artifact. */
+	fixtureRef: string;
+	metricsVersion: number | undefined;
+	/** Where prepareRef caches trees. */
+	refCacheDir: string;
+}
+
+export interface StalenessCheck {
+	dsGuidelinesRef: string;
+	metricsVersion: number | undefined;
+}
+
+export function readMisuseReport(runDir: string): DsMisuseReport | null {
+	return readJson<DsMisuseReport>(join(runDir, DS_MISUSE_FILENAME));
+}
+
+export function writeMisuseReport(runDir: string, report: DsMisuseReport): void {
+	writeFileSync(join(runDir, DS_MISUSE_FILENAME), JSON.stringify(report, null, 2) + '\n');
+}
+
+/**
+ * Whether a stored judgement can still be trusted.
+ *
+ * A moved guidelines pin means the run was scored against a different standard;
+ * a moved metricsVersion means its node paths were built by different rules.
+ * Either way the number is not comparable with a fresh one, so it is re-spent.
+ */
+export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
+	return (
+		report.schemaVersion !== DS_MISUSE_SCHEMA_VERSION ||
+		report.dsGuidelinesRef !== current.dsGuidelinesRef ||
+		report.metricsVersion !== current.metricsVersion
+	);
+}
+
+/** Judge one run and return its report. Makes exactly one model call. */
+export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
+	const patch = treePatch(input.baselineDir, input.projectDir);
+
+	// Targeted: the graph is still whole so imports resolve, but only the files
+	// the run touched are counted — a new JSX node can appear nowhere else.
+	const treatment = analyzeDsCoverage({
+		projectDir: input.projectDir,
+		dsPackages: input.dsPackages,
+		includeNodes: true,
+		censusInclude: patch.files,
+	});
+
+	const judged = await runJudge(
+		buildJudgeRequest({
+			docs: collectDsDocs(input.refCacheDir),
+			baselineNodes: input.baselineNodes,
+			treatmentNodes: treatment.nodeList ?? [],
+			patch,
+			fixtureRef: input.fixtureRef,
+		}) as never,
+	);
+
+	return {
+		schemaVersion: DS_MISUSE_SCHEMA_VERSION,
+		metricsVersion: input.metricsVersion,
+		judgedAt: new Date().toISOString(),
+		model: JUDGE_MODEL,
+		dsGuidelinesRef: dsDocsRefLabel(),
+		fixtureRef: input.fixtureRef,
+		diffTruncated: patch.truncated,
+		summary: summariseJudgement(judged.nodes),
+		// The buckets travel with the scores: the judge chose them, so a surprising
+		// number has to be traceable to what it actually counted.
+		nodes: judged.nodes,
+	};
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/index.test.ts`
+Expected: PASS, 7 tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/index.ts \
+        lib/agentic-reference/metrics/ds-misuse/index.test.ts
+git commit -m "Orchestrate one run's judgement and cache it as ds-misuse.json
+
+Judging costs money, so a fresh artifact is reused; a moved guidelines pin or
+metricsVersion makes it stale, because either means the stored number is not
+comparable with a fresh one."
+```
