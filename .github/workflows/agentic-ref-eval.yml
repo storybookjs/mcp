@@ -26,7 +26,7 @@ on:
         type: string
         default: '1'
       force:
-        description: 'Re-run cells the fingerprint cache already marks complete'
+        description: 'Run every selected cell again, even ones that already have saved results'
         type: boolean
         default: false
       dry:
