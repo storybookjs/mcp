@@ -55,9 +55,17 @@ export interface RunContext extends TreeContext {
 	pin: ExternalRepoPin | null;
 }
 
-/** `analyzeRun` against a pinned external repo's pristine tree. */
-export interface BaselineContext extends TreeContext {
+/**
+ * `analyzeRun` against a pinned external repo's pristine tree.
+ *
+ * Deliberately carries no eval: what a pinned tree is made of does not depend on
+ * which eval is about to run against it, and a baseline that varied by eval
+ * would be measured — and committed — once per eval for identical numbers.
+ */
+export interface BaselineContext {
 	mode: 'baseline';
+	/** Absolute path to the tree being measured. */
+	projectDir: string;
 	/** The pin whose materialized tree `projectDir` points at. */
 	pin: ExternalRepoPin;
 }

@@ -80,8 +80,6 @@ function deltaContext(
 		baselineAnalysis: analyzeRun({
 			mode: 'baseline',
 			projectDir: baselineDir,
-			fixtureDir: context.fixtureDir,
-			evalName: '701-agentic-ref-reuse-component-mcp',
 			pin: PIN,
 		} satisfies BaselineContext),
 	};
@@ -197,8 +195,6 @@ describe('analyzeRun in baseline mode', () => {
 		const baseline = analyzeRun({
 			mode: 'baseline',
 			projectDir,
-			fixtureDir: join(root, 'fixture'),
-			evalName: '701-agentic-ref-reuse-component-mcp',
 			pin: UNMAPPED_PIN,
 		});
 
@@ -219,8 +215,6 @@ describe('analyzeRun in baseline mode', () => {
 		const baseline = analyzeRun({
 			mode: 'baseline',
 			projectDir: writeTree('ref-ds', HOST_TREE),
-			fixtureDir: join(root, 'fixture'),
-			evalName: '701-agentic-ref-reuse-component-mcp',
 			pin: PIN,
 		});
 

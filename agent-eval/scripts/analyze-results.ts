@@ -318,8 +318,6 @@ async function analyzeOneRun(
 	}
 
 	const baseline = await loadOrBuildBaselineAnalysis({
-		evalName: run.evalName,
-		fixtureDir: context.fixtureDir,
 		pin,
 		postAnalysis,
 		recompute: options.recompute,

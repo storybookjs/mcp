@@ -21,8 +21,6 @@ let root: string;
 
 function options(overrides: Partial<Parameters<typeof loadOrBuildBaselineAnalysis>[0]> = {}) {
 	return {
-		evalName: 'eval-a',
-		fixtureDir: join(root, 'fixture'),
 		pin: PIN,
 		baselinesDir: join(root, 'baselines'),
 		refCacheDir: join(root, 'refs'),
@@ -48,10 +46,16 @@ afterEach(() => {
 });
 
 describe('baselinePath', () => {
-	it('escapes pin separators so each half stays a single path segment', () => {
-		expect(baselinePath('/b', 'eval-a', { repo: 'owner/name', ref: 'heads/main' })).toBe(
-			'/b/eval-a/owner__name@heads__main.json',
+	it('keys on the pin alone, escaping separators in both halves', () => {
+		expect(baselinePath('/b', { repo: 'owner/name', ref: 'heads/main' })).toBe(
+			'/b/owner__name@heads__main.json',
 		);
+	});
+
+	// The point of the re-key: one pin backs many evals, and every one of them
+	// produced a byte-identical file under the old scheme.
+	it('gives two evals on one pin the same path', () => {
+		expect(baselinePath('/b', PIN)).toBe(baselinePath('/b', { ...PIN }));
 	});
 });
 
@@ -62,33 +66,30 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 		expect(built.analysis).toEqual({ files: { 'a.ts': 1 } });
 		expect(built.dir).toBe(join(root, 'ref-tree'));
-		expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledWith({
-			mode: 'baseline',
-			projectDir: join(root, 'ref-tree'),
-			fixtureDir: opts.fixtureDir,
-			evalName: 'eval-a',
-			pin: PIN,
-		});
 
-		const written = JSON.parse(
-			readFileSync(baselinePath(opts.baselinesDir, 'eval-a', PIN), 'utf8'),
-		);
+		const written = JSON.parse(readFileSync(baselinePath(opts.baselinesDir, PIN), 'utf8'));
 		expect(written).toEqual({
-			eval: 'eval-a',
 			repo: 'owner/name',
 			ref: 'deadbeef',
 			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
 
+	it('hands analyzeRun a baseline context of pin and tree only', async () => {
+		const opts = options();
+		await loadOrBuildBaselineAnalysis(opts);
+		expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledWith({
+			mode: 'baseline',
+			projectDir: join(root, 'ref-tree'),
+			pin: PIN,
+		});
+	});
+
 	it('reads the committed baseline instead of re-measuring the tree', async () => {
 		const opts = options();
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
-		writeFileSync(
-			path,
-			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
-		);
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(path, JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }));
 
 		const loaded = await loadOrBuildBaselineAnalysis(opts);
 
@@ -104,12 +105,11 @@ describe('loadOrBuildBaselineAnalysis', () => {
 				metricsVersion: 2,
 			} as unknown as PostAnalysis,
 		});
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
 		writeFileSync(
 			path,
 			JSON.stringify({
-				eval: 'eval-a',
 				...PIN,
 				metricsVersion: 2,
 				analysis: { files: { 'a.ts': 99 } },
@@ -132,20 +132,16 @@ describe('loadOrBuildBaselineAnalysis', () => {
 				metricsVersion: 2,
 			} as unknown as PostAnalysis,
 		});
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
 		// A legacy file, from before the module declared a version.
-		writeFileSync(
-			path,
-			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
-		);
+		writeFileSync(path, JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }));
 
 		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
 
 		expect(rebuilt.analysis).toEqual({ files: { 'a.ts': 1 } });
 		// The overwritten file now carries the version it was measured under.
 		expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({
-			eval: 'eval-a',
 			repo: 'owner/name',
 			ref: 'deadbeef',
 			metricsVersion: 2,
@@ -155,12 +151,9 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 	it('re-measures and overwrites the committed baseline when recompute is set', async () => {
 		const opts = options({ recompute: true });
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
-		writeFileSync(
-			path,
-			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
-		);
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(path, JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }));
 
 		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
 
@@ -188,10 +181,13 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledTimes(1);
 	});
 
-	it('keys by eval as well as pin, since each eval measures its own metrics', async () => {
+	// The pin is now the whole key, so it has to be a discriminating one: two
+	// pins sharing a baselinesDir must not read each other's numbers.
+	it('keys by pin, so a second pin gets its own file', async () => {
+		const other = { repo: 'owner/name', ref: 'cafebabe' };
 		const a = options();
 		const b = options({
-			evalName: 'eval-b',
+			pin: other,
 			baselinesDir: a.baselinesDir,
 			postAnalysis: {
 				analyzeRun: vi.fn(() => ({ files: { 'b.ts': 2 } })),
@@ -201,14 +197,14 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 		await loadOrBuildBaselineAnalysis(a);
 		expect((await loadOrBuildBaselineAnalysis(b)).analysis).toEqual({ files: { 'b.ts': 2 } });
-		expect(existsSync(baselinePath(a.baselinesDir, 'eval-a', PIN))).toBe(true);
-		expect(existsSync(baselinePath(a.baselinesDir, 'eval-b', PIN))).toBe(true);
+		expect(existsSync(baselinePath(a.baselinesDir, PIN))).toBe(true);
+		expect(existsSync(baselinePath(a.baselinesDir, other))).toBe(true);
 	});
 
 	it('rebuilds rather than trusting a truncated baseline', async () => {
 		const opts = options();
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
-		writeFileSync(baselinePath(opts.baselinesDir, 'eval-a', PIN), '{"analysis": {"fi');
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(baselinePath(opts.baselinesDir, PIN), '{"analysis": {"fi');
 
 		expect((await loadOrBuildBaselineAnalysis(opts)).analysis).toEqual({ files: { 'a.ts': 1 } });
 	});
@@ -222,6 +218,6 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		});
 
 		await expect(loadOrBuildBaselineAnalysis(opts)).rejects.toThrow(/owner\/name@deadbeef/);
-		expect(existsSync(baselinePath(opts.baselinesDir, 'eval-a', PIN))).toBe(false);
+		expect(existsSync(baselinePath(opts.baselinesDir, PIN))).toBe(false);
 	});
 });
