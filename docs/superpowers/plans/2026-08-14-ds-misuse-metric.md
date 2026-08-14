@@ -2129,3 +2129,425 @@ git commit -m "Write the DS misuse judge prompt
 Bucketing is the model's job per the metric's design, so the prompt leads with
 how to tell a new usage from a relocated one before it scores anything."
 ```
+
+---
+
+### Task 13: Add the Anthropic SDK dependency
+
+**Files:**
+- Modify: `agent-eval/package.json`
+
+- [ ] **Step 1: Install**
+
+```bash
+cd agent-eval
+pnpm add -D @anthropic-ai/sdk
+```
+
+- [ ] **Step 2: Verify it resolves**
+
+Run: `node -e "import('@anthropic-ai/sdk').then((m) => console.log(typeof m.default))" --input-type=module`
+Expected: `function`.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add package.json pnpm-lock.yaml ../pnpm-lock.yaml
+git commit -m "Add @anthropic-ai/sdk for the DS misuse judge"
+```
+
+---
+
+### Task 14: `context.ts` — assembling the request
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/context.ts`
+- Test: `lib/agentic-reference/metrics/ds-misuse/context.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `context.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+
+import { buildJudgeRequest } from './context.ts';
+
+import type { NodeRecord } from '../ds-coverage/types.ts';
+
+const DOCS = [
+	{ path: 'src/docs/BrandGuidelines.mdx', text: '# Brand\nUse colour tokens.\n' },
+	{ path: 'src/components/Button/Button.mdx', text: '# Button\n' },
+];
+
+const NODE: NodeRecord = {
+	path: 'App/Button[0]',
+	file: 'src/App.tsx',
+	line: 3,
+	tag: 'Button',
+	category: 'ds',
+	module: '@droppy/react',
+	name: 'Button',
+	weight: 1,
+	props: ['variant'],
+};
+
+function build(overrides: Partial<Parameters<typeof buildJudgeRequest>[0]> = {}) {
+	return buildJudgeRequest({
+		docs: DOCS,
+		baselineNodes: [],
+		treatmentNodes: [NODE],
+		patch: { text: 'diff --git a/src/App.tsx b/src/App.tsx\n', files: ['src/App.tsx'], truncated: false, droppedFiles: 0 },
+		fixtureRef: 'yannbf/mealdrop@refs/tags/x',
+		...overrides,
+	});
+}
+
+describe('buildJudgeRequest', () => {
+	// Caching is a prefix match: anything volatile placed before the breakpoint
+	// invalidates the ~95k-token corpus on every single request.
+	it('puts the stable prompt and docs in system, volatile content in messages', () => {
+		const request = build();
+		const system = request.system as Array<{ text: string }>;
+		expect(system).toHaveLength(2);
+		expect(system[0]!.text).toContain('You are auditing');
+		expect(system[1]!.text).toContain('Use colour tokens.');
+		expect(JSON.stringify(request.system)).not.toContain('yannbf/mealdrop');
+	});
+
+	it('marks the last system block as the cache breakpoint with a 1h ttl', () => {
+		const system = build().system as Array<{ cache_control?: unknown }>;
+		expect(system[0]!.cache_control).toBeUndefined();
+		expect(system[1]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+	});
+
+	// Two runs of two different arms share the corpus byte for byte, which is the
+	// only reason the cache pays for itself.
+	it('produces a byte-identical system block for different runs', () => {
+		expect(JSON.stringify(build().system)).toBe(
+			JSON.stringify(build({ fixtureRef: 'other/repo@sha', treatmentNodes: [] }).system),
+		);
+	});
+
+	it('carries both node lists and the diff in the user turn', () => {
+		const text = String((build().messages[0]!.content as Array<{ text: string }>)[0]!.text);
+		expect(text).toContain('BASELINE NODES');
+		expect(text).toContain('TREATMENT NODES');
+		expect(text).toContain('diff --git a/src/App.tsx');
+		expect(text).toContain('App/Button[0]');
+	});
+
+	// The prompt tells the judge to omit what it cannot see; it has to be told.
+	it('announces truncation to the judge', () => {
+		const text = String(
+			(
+				build({
+					patch: { text: 'diff --git a/src/A.tsx b/src/A.tsx\n', files: ['src/A.tsx'], truncated: true, droppedFiles: 4 },
+				}).messages[0]!.content as Array<{ text: string }>
+			)[0]!.text,
+		);
+		expect(text).toContain('TRUNCATED');
+		expect(text).toContain('4');
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/context.test.ts`
+Expected: FAIL — `Cannot find module './context.ts'`.
+
+- [ ] **Step 3: Write the implementation**
+
+Create `context.ts`:
+
+```ts
+// Turning a run into one Messages API request.
+//
+// The ordering here is the whole cost story. Prompt caching is a prefix match
+// over tools -> system -> messages, so the ~95k-token guideline corpus goes in
+// `system` with the cache breakpoint on it, and everything that varies per run
+// goes in `messages`, after the breakpoint. A single volatile byte placed before
+// it — a timestamp, the fixture ref, a node path — would invalidate the corpus on
+// every request and turn a ~$0.10 read back into a ~$1 write.
+import { readFileSync } from 'node:fs';
+
+import { JUDGE_OUTPUT_SCHEMA } from './types.ts';
+
+import type { DsDoc } from './ds-docs.ts';
+import type { TreePatch } from './tree-patch.ts';
+import type { NodeRecord } from '../ds-coverage/types.ts';
+
+export const JUDGE_MODEL = 'claude-opus-4-8';
+
+/**
+ * 1h is the longest TTL the API offers (the only values are `5m` and `1h`), and
+ * it is enough for a sweep of any length because a cache read refreshes the
+ * lifetime for free — what must stay under the TTL is the gap between two
+ * consecutive judge calls, not the duration of the whole pass. It is chosen over
+ * the cheaper `5m` default for headroom: the lifetime runs from the *start* of
+ * the request that reads it, so a multi-minute generation counts against it.
+ */
+const CACHE_CONTROL = { type: 'ephemeral', ttl: '1h' } as const;
+
+/** Room for a reason per score across a large change set. */
+const MAX_TOKENS = 32_000;
+
+const PROMPT_PATH = new URL('./prompt.md', import.meta.url);
+
+export interface JudgeRequestInput {
+	docs: DsDoc[];
+	baselineNodes: NodeRecord[];
+	treatmentNodes: NodeRecord[];
+	patch: TreePatch;
+	fixtureRef: string;
+}
+
+function docsBlock(docs: DsDoc[]): string {
+	return docs
+		.map((doc) => `<document path="${doc.path}">\n${doc.text}\n</document>`)
+		.join('\n\n');
+}
+
+/** One node per line: far cheaper than pretty-printed JSON, and just as readable. */
+function nodeLines(nodes: NodeRecord[]): string {
+	if (nodes.length === 0) return '(none)';
+	return nodes
+		.map(
+			(node) =>
+				`${node.path}\t${node.file}:${node.line}\t${node.category}\t${node.module}#${node.name}\tprops=[${node.props.join(',')}]`,
+		)
+		.join('\n');
+}
+
+function userText(input: JudgeRequestInput): string {
+	const truncation = input.patch.truncated
+		? `\n\nNOTE: the diff below is TRUNCATED. ${input.patch.droppedFiles} changed file(s) were dropped to fit. Judge only nodes you can see in it; omit the rest.`
+		: '';
+
+	return [
+		`FIXTURE: ${input.fixtureRef}`,
+		truncation.trim(),
+		'',
+		'BASELINE NODES (the pinned tree, before the agent worked)',
+		'Format: path<TAB>file:line<TAB>category<TAB>module#name<TAB>props',
+		nodeLines(input.baselineNodes),
+		'',
+		'TREATMENT NODES (after the agent worked, restricted to files it touched)',
+		nodeLines(input.treatmentNodes),
+		'',
+		`DIFF (${input.patch.files.length} file(s))`,
+		input.patch.text || '(no source changes)',
+	]
+		.filter((section) => section !== '')
+		.join('\n');
+}
+
+/** The full `messages.create` parameter object, ready to stream. */
+export function buildJudgeRequest(input: JudgeRequestInput) {
+	return {
+		model: JUDGE_MODEL,
+		max_tokens: MAX_TOKENS,
+		thinking: { type: 'adaptive' as const },
+		output_config: {
+			effort: 'high' as const,
+			format: { type: 'json_schema' as const, schema: JUDGE_OUTPUT_SCHEMA },
+		},
+		// Stable, and in this order: the breakpoint on the last block caches both.
+		system: [
+			{ type: 'text' as const, text: readFileSync(PROMPT_PATH, 'utf8') },
+			{ type: 'text' as const, text: docsBlock(input.docs), cache_control: CACHE_CONTROL },
+		],
+		messages: [
+			{
+				role: 'user' as const,
+				content: [{ type: 'text' as const, text: userText(input) }],
+			},
+		],
+	};
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/context.test.ts`
+Expected: PASS, 5 tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/context.ts \
+        lib/agentic-reference/metrics/ds-misuse/context.test.ts
+git commit -m "Assemble the judge request with the doc corpus behind a cache breakpoint
+
+Caching is a prefix match, so one volatile byte before the breakpoint would
+invalidate the ~95k-token corpus on every request and turn a cheap read back
+into a full write."
+```
+
+---
+
+### Task 15: `judge.ts` — the API call
+
+**Files:**
+- Create: `lib/agentic-reference/metrics/ds-misuse/judge.ts`
+- Test: `lib/agentic-reference/metrics/ds-misuse/judge.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `judge.test.ts`:
+
+```ts
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const finalMessage = vi.fn();
+const stream = vi.fn(() => ({ finalMessage }));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class {
+		messages = { stream };
+	},
+}));
+
+import { runJudge } from './judge.ts';
+
+const REQUEST = {
+	model: 'claude-opus-4-8',
+	max_tokens: 32_000,
+	system: [],
+	messages: [],
+} as never;
+
+afterEach(() => {
+	vi.clearAllMocks();
+	delete process.env.ANTHROPIC_API_KEY;
+});
+
+describe('runJudge', () => {
+	it('returns the parsed nodes from the structured response', async () => {
+		process.env.ANTHROPIC_API_KEY = 'sk-test';
+		finalMessage.mockResolvedValue({
+			stop_reason: 'end_turn',
+			content: [
+				{ type: 'text', text: '{"nodes":[{"path":"App/A[0]","file":"a.tsx","line":1,"tag":"A","kind":"ds"}]}' },
+			],
+		});
+		await expect(runJudge(REQUEST)).resolves.toEqual({
+			nodes: [{ path: 'App/A[0]', file: 'a.tsx', line: 1, tag: 'A', kind: 'ds' }],
+		});
+	});
+
+	// A refusal returns HTTP 200 with no usable content. Reading content[0] blindly
+	// would surface as a confusing parse error three frames away from the cause.
+	it('names a refusal rather than failing to parse it', async () => {
+		process.env.ANTHROPIC_API_KEY = 'sk-test';
+		finalMessage.mockResolvedValue({ stop_reason: 'refusal', stop_details: null, content: [] });
+		await expect(runJudge(REQUEST)).rejects.toThrow(/refused/i);
+	});
+
+	it('names a truncated response rather than parsing half of it', async () => {
+		process.env.ANTHROPIC_API_KEY = 'sk-test';
+		finalMessage.mockResolvedValue({
+			stop_reason: 'max_tokens',
+			content: [{ type: 'text', text: '{"nodes":[' }],
+		});
+		await expect(runJudge(REQUEST)).rejects.toThrow(/max_tokens/);
+	});
+});
+
+describe('assertApiKey', () => {
+	it('names the variable and where to set it', async () => {
+		const { assertApiKey } = await import('./judge.ts');
+		expect(() => assertApiKey()).toThrow(/ANTHROPIC_API_KEY/);
+		expect(() => assertApiKey()).toThrow(/\.env\.local/);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/judge.test.ts`
+Expected: FAIL — `Cannot find module './judge.ts'`.
+
+- [ ] **Step 3: Write the implementation**
+
+Create `judge.ts`:
+
+```ts
+// The one model call the metric makes.
+//
+// Streamed rather than awaited whole: max_tokens is high enough that a
+// non-streaming request risks an HTTP timeout, and .finalMessage() gives the
+// assembled message back anyway.
+import Anthropic from '@anthropic-ai/sdk';
+
+import type { JudgeResponse } from './types.ts';
+
+/**
+ * Fail before any work is thrown away, and say where the key goes — the eval
+ * suite reads it from .env.local, which is not obvious from an SDK error.
+ */
+export function assertApiKey(): void {
+	if (!process.env.ANTHROPIC_API_KEY) {
+		throw new Error(
+			'ds-misuse: ANTHROPIC_API_KEY is not set, and the judge cannot run without it. ' +
+				'Add it to agent-eval/.env.local (see .env.example) or export it.',
+		);
+	}
+}
+
+/**
+ * Call the judge and return its structured answer.
+ *
+ * The response is schema-constrained by output_config.format, so the only
+ * failures worth naming are the ones that produce no usable content at all.
+ */
+export async function runJudge(
+	request: Anthropic.MessageCreateParamsNonStreaming,
+): Promise<JudgeResponse> {
+	assertApiKey();
+	const client = new Anthropic();
+
+	const message = await client.messages.stream(request).finalMessage();
+
+	if (message.stop_reason === 'refusal') {
+		throw new Error(
+			`ds-misuse: the judge refused this request (${message.stop_details?.category ?? 'no category'}). ` +
+				'Nothing was scored; the run is left unjudged.',
+		);
+	}
+	if (message.stop_reason === 'max_tokens') {
+		throw new Error(
+			'ds-misuse: the judge hit max_tokens and returned incomplete JSON. ' +
+				'Raise MAX_TOKENS in context.ts, or judge a smaller change set.',
+		);
+	}
+
+	const text = message.content.find((block) => block.type === 'text');
+	if (text === undefined) {
+		throw new Error(`ds-misuse: the judge returned no text block (stop_reason: ${message.stop_reason}).`);
+	}
+
+	return JSON.parse(text.text) as JudgeResponse;
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/judge.test.ts`
+Expected: PASS, 4 tests.
+
+If the `assertApiKey` test fails because a real `ANTHROPIC_API_KEY` is exported in
+your shell, that is the test doing its job — run it with the variable unset:
+`env -u ANTHROPIC_API_KEY pnpm exec vitest run lib/agentic-reference/metrics/ds-misuse/judge.test.ts`
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/agentic-reference/metrics/ds-misuse/judge.ts \
+        lib/agentic-reference/metrics/ds-misuse/judge.test.ts
+git commit -m "Call the judge, naming the failures that yield no usable content
+
+A refusal is HTTP 200 with empty content and a truncation is valid-looking half
+JSON; both would otherwise surface as a parse error frames from the cause."
+```
