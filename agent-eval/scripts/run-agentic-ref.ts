@@ -100,7 +100,11 @@ function main(): void {
 		}
 	}
 
-	const child = spawn(AGENT_EVAL_BIN, cliArgs, { cwd: GENERATED_EVALS_WORK_DIR, env: childEnv, stdio: 'inherit' });
+	const child = spawn(AGENT_EVAL_BIN, cliArgs, {
+		cwd: GENERATED_EVALS_WORK_DIR,
+		env: childEnv,
+		stdio: 'inherit',
+	});
 	child.on('exit', (code, signal) => {
 		process.exit(signal !== null ? 1 : (code ?? 1));
 	});

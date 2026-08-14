@@ -867,13 +867,13 @@ describe('summarize', () => {
 
 		it('prints only the families the runner selected', () => {
 			expect(
-				tables(everything(), { general: false, complexity: false, coverage: true }),
+				tables(everything(), { general: false, complexity: false, coverage: true, misuse: false }),
 			).toHaveLength(2);
 			expect(
-				tables(everything(), { general: true, complexity: false, coverage: false }),
+				tables(everything(), { general: true, complexity: false, coverage: false, misuse: false }),
 			).toHaveLength(2);
 			expect(
-				tables(everything(), { general: false, complexity: true, coverage: true }),
+				tables(everything(), { general: false, complexity: true, coverage: true, misuse: false }),
 			).toHaveLength(4);
 		});
 
@@ -883,7 +883,7 @@ describe('summarize', () => {
 			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 			try {
 				// armRows carries complexity but no coverage.
-				summarize(armRows(), { general: false, complexity: false, coverage: true });
+				summarize(armRows(), { general: false, complexity: false, coverage: true, misuse: false });
 				expect(log.mock.calls.map(String).filter((line) => line.startsWith('┌'))).toEqual([]);
 				// The one thing that stops a run being measured is an unmapped pin,
 				// so the note names the table to edit rather than shrugging.
@@ -896,7 +896,12 @@ describe('summarize', () => {
 		it('says nothing beyond the tables when a selected family does have data', () => {
 			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 			try {
-				summarize(coverageRows(), { general: false, complexity: false, coverage: true });
+				summarize(coverageRows(), {
+					general: false,
+					complexity: false,
+					coverage: true,
+					misuse: false,
+				});
 				expect(log.mock.calls.map(String).filter((line) => !line.startsWith('┌'))).toEqual([]);
 			} finally {
 				log.mockRestore();
@@ -913,11 +918,17 @@ describe('summarize', () => {
 					general: true,
 					complexity: true,
 					coverage: true,
+					misuse: false,
 					quiet: true,
 				});
 				expect(log).not.toHaveBeenCalled();
 				expect(quiet).toEqual(
-					summarize(everything(), { general: false, complexity: false, coverage: false }),
+					summarize(everything(), {
+						general: false,
+						complexity: false,
+						coverage: false,
+						misuse: false,
+					}),
 				);
 			} finally {
 				log.mockRestore();
@@ -929,11 +940,17 @@ describe('summarize', () => {
 		it('returns the same rows whatever prints', () => {
 			const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 			try {
-				const all = summarize(everything(), { general: true, complexity: true, coverage: true });
+				const all = summarize(everything(), {
+					general: true,
+					complexity: true,
+					coverage: true,
+					misuse: false,
+				});
 				const none = summarize(everything(), {
 					general: false,
 					complexity: false,
 					coverage: false,
+					misuse: false,
 				});
 				expect(none).toEqual(all);
 			} finally {
@@ -973,5 +990,48 @@ describe('summarize', () => {
 			{ experiment: 'x', eval: 'e', status: 'passed', fixtureRef: 'r@2', cost: {}, speed: {} },
 		];
 		expect(groupedRows(rows)[0]?.fixtureRef).toBe('mixed (2)');
+	});
+});
+
+describe('misuse summary', () => {
+	function row(overrides: Record<string, unknown> = {}) {
+		return {
+			experiment: 'agentic-ref-arm-a',
+			eval: '701-new-ui-flow',
+			run: 1,
+			status: 'passed',
+			fixtureRef: 'yannbf/mealdrop@refs/tags/x',
+			dsMisuse: {
+				summary: {
+					correctDsDecision: 1,
+					correctDsUsage: 0.5,
+					correctLocalDecision: null,
+					evaluated: { ds: 2, local: 0 },
+				},
+			},
+			...overrides,
+		};
+	}
+
+	const SILENT = { general: false, complexity: false, coverage: false, misuse: false };
+
+	it('means each score across an arm', () => {
+		const [group] = summarize([row(), row({ run: 2 })], SILENT);
+		expect(group).toMatchObject({
+			misuseDecision: { mean: 1 },
+			misuseUsage: { mean: 0.5 },
+			misuseEvaluated: { ds: 4, local: 0 },
+		});
+	});
+
+	// An unjudged run must not read as a zero — that is the difference between
+	// "not measured" and "measured badly".
+	it('excludes unjudged runs from the means', () => {
+		const [group] = summarize([row(), row({ run: 2, dsMisuse: undefined })], SILENT);
+		expect(group).toMatchObject({ misuseDecision: { mean: 1 }, misuseJudged: 1, runs: 2 });
+	});
+
+	it('leaves a score no run measured as null', () => {
+		expect(summarize([row()], SILENT)[0]).toMatchObject({ misuseLocalDecision: { mean: null } });
 	});
 });

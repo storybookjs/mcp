@@ -96,12 +96,10 @@ export interface DeltaToBaselineContext extends Omit<RunContext, 'pin'> {
  * persisted, and are the same whatever prints.
  */
 export interface SummarizeOptions {
-	/** Per-run vitals and the grouped summary. */
 	general: boolean;
-	/** The complexity family, where a module measures one. */
 	complexity: boolean;
-	/** The design-system coverage family, where a module measures one. */
 	coverage: boolean;
+	misuse: boolean;
 	/**
 	 * Compute the rows without printing. The runner folds each eval directory
 	 * on its own (so its summary.json stays scoped to that directory) but

@@ -55,8 +55,8 @@ export function countCollectedRuns(evalDir: string, successfulOnly = true): numb
 	const allOutcomes = readRunOutcomes(evalDir).filter((outcome) => outcome.collected);
 
 	return successfulOnly
-	  ?	allOutcomes.filter((outcome) => outcome.error === null).length
-		: allOutcomes.length
+		? allOutcomes.filter((outcome) => outcome.error === null).length
+		: allOutcomes.length;
 }
 
 /** Removes a directory if nothing is left in it, and says whether it did. */
