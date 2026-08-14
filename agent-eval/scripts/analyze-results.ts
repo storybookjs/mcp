@@ -57,12 +57,13 @@
 // The three table flags select what is *printed*; everything is measured and
 // written either way. Passing any of them prints exactly that set; passing none
 // falls back to DEFAULT_TABLES below.
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
+import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
@@ -145,79 +146,6 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 			coverage: chosen.includes('coverage'),
 		},
 	};
-}
-
-// --- discovery ---
-// Layout: results/<experiment>/<model>/<timestamp>/<eval>/run-N/project
-interface Run {
-	runDir: string;
-	projectDir: string;
-	experiment: string;
-	model: string;
-	timestamp: string;
-	evalName: string;
-	run: number;
-}
-
-function findRuns(dir: string): Run[] {
-	if (!existsSync(dir)) return [];
-	const runs: Run[] = [];
-	const walk = (current: string) => {
-		for (const entry of readdirSync(current, { withFileTypes: true })) {
-			if (!entry.isDirectory()) {
-				continue;
-			}
-			const path = join(current, entry.name);
-			if (!/^run-\d+$/.test(entry.name) || !existsSync(join(path, 'project'))) {
-				walk(path);
-				continue;
-			}
-			const parts = path.slice(RESULTS_DIR.length + 1).split('/');
-			runs.push({
-				runDir: path,
-				projectDir: join(path, 'project'),
-				experiment: parts[0]!,
-				model: parts.slice(1, -3).join('/'),
-				timestamp: parts.at(-3)!,
-				evalName: parts.at(-2)!,
-				run: Number.parseInt(entry.name.slice('run-'.length), 10),
-			});
-		}
-	};
-	walk(dir);
-	return runs;
-}
-
-// Result directories are ISO timestamps with the time's ':' replaced by '-',
-// e.g. 2026-07-27T10-43-55.864Z.
-function parseTimestamp(timestamp: string): Date {
-	return new Date(timestamp.replace(/T(\d\d)-(\d\d)-(\d\d)/, 'T$1:$2:$3'));
-}
-
-function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
-	let selected = runs;
-	selected = selected.filter(
-		(run) =>
-			matchesAnySelector(run.experiment, options.experiments) &&
-			matchesAnySelector(run.evalName, options.evals),
-	);
-	if (options.since) {
-		const since = new Date(options.since);
-		if (Number.isNaN(since.getTime())) {
-			throw new Error(`--since must be a parseable date; received "${options.since}"`);
-		}
-		selected = selected.filter((run) => parseTimestamp(run.timestamp) >= since);
-	}
-	if (options.latest) {
-		const newest = new Map<string, string>();
-		for (const run of selected) {
-			const current = newest.get(run.experiment);
-			if (current === undefined || run.timestamp > current)
-				newest.set(run.experiment, run.timestamp);
-		}
-		selected = selected.filter((run) => run.timestamp === newest.get(run.experiment));
-	}
-	return selected;
 }
 
 function messageOf(error: unknown): string {
