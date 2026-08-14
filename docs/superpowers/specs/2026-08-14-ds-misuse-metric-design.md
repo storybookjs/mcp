@@ -230,10 +230,19 @@ One `@anthropic-ai/sdk` call per run.
   scored-node array is schema-guaranteed rather than parsed out of prose.
 - **Prompt caching** with `cache_control: {type: "ephemeral", ttl: "1h"}` on the
   DS-MDX block. The corpus is byte-identical across every run and every arm, so a
-  sweep pays the write once and reads it at ~0.1× thereafter. The 1-hour TTL is
-  chosen over the 5-minute default because a sweep across many runs can span
-  longer than five minutes and would otherwise re-write the ~95k-token prefix
-  repeatedly.
+  sweep pays the write once and reads it at ~0.1× thereafter.
+
+  `1h` is the longest TTL the API offers — the only accepted values are `5m` and
+  `1h`. It is nonetheless sufficient for a sweep of any length, because **a cache
+  read refreshes the lifetime at no cost**. What has to stay under the TTL is the
+  gap between two consecutive judge calls, not the duration of the whole sweep, so
+  a sequential pass over hundreds of runs keeps the entry alive indefinitely.
+
+  `1h` is still chosen over the cheaper `5m` default for headroom: the lifetime is
+  measured from the *start* of the request that reads it, so generation time counts
+  against it. A high-effort call over ~100k tokens of input can run for several
+  minutes, which leaves an uncomfortable margin against a five-minute window. The
+  trade is a 2× write multiplier instead of 1.25×, paid once.
 - **Ordering** — DS docs first (stable, cached), then the run-specific package
   (volatile). Anything volatile placed before the breakpoint would invalidate the
   cache on every request.
@@ -301,14 +310,51 @@ thing anyone will ask of a surprising score is why.
 
 ## Feeding back into `results:analyze`
 
-`scripts/analyze-results.ts` gains one check and no new work. After analysing, if
-any run it touched has no `ds-misuse.json`, it prints a **bold red warning**
-naming the count and the command to run.
-
-It never invokes the judge. `analyze-results.ts` documents that every metric it
+`analyze-results.ts` never invokes the judge. It documents that every metric it
 computes is a pure function of stored artifacts, re-runnable as often as a
-definition changes without spending anything on model calls. Calling a paid API
-from it would break that guarantee.
+definition changes without spending anything on model calls; calling a paid API
+from it would break that guarantee. It only *reads* what the judge already wrote.
+
+### The `--misuse` table family
+
+`TABLE_SECTIONS` gains `'misuse'` and `SummarizeOptions` gains a matching
+`misuse: boolean`, so `--misuse` selects the family exactly like `--coverage` and
+`--complexity` do. `DEFAULT_TABLES` is unchanged (`['coverage']`) — naming any
+section already selects exactly that set, so `--misuse` alone prints just these
+two tables.
+
+`summarize()` prints the same per-run/grouped pair as the other families:
+
+- **Per-run** — experiment, run, `dsNodes`/`localNodes` evaluated, `decision`,
+  `usage`, `localDecision`, and a `judged` marker for runs with no artifact.
+- **Grouped** — the arm means of the three scores plus the evaluated-node counts,
+  so arms are comparable in one row.
+
+Means follow the existing convention: `numbersAt` drops non-finite values, so an
+unjudged run contributes nothing rather than dragging a mean toward zero, and a
+score with no evaluated nodes stays `null` rather than becoming `0`.
+
+### Reading the artifact outside the analysis cache
+
+`ds-misuse.json` is read fresh on every invocation and merged into the analysis
+row **after** the `post-analysis-meta.json` cache lookup, under a `dsMisuse` key.
+
+This ordering is the whole point. The judge runs *after* `results:analyze` in the
+normal workflow, so a row baked into the cache during the first analysis pass
+would not contain the scores, and every later `results:analyze` would keep
+serving that cached row — the numbers would never appear without `--recompute`.
+Merging post-cache means judging a run and then re-running `results:analyze`
+picks the scores up immediately.
+
+The merged rows still reach `summary.json` and `results/analysis-summary.json`,
+so comparing arms on misuse stays a single read, matching how coverage works.
+
+### The missing-artifact warning
+
+After analysing, if any run it touched has no `ds-misuse.json`,
+`analyze-results.ts` prints a **bold red warning** naming the count and the
+command to run. This fires regardless of which table families were selected — a
+silently absent metric is the failure mode worth shouting about.
 
 ## Testing
 
@@ -330,13 +376,18 @@ and use `memfs` for tree fixtures.
   volatile content, cache breakpoint placement), schema validation of a
   well-formed response, summary arithmetic including the `null`-on-empty case, and
   the stale-`dsGuidelinesRef` cache-miss path. No test makes a network call.
+- **`--misuse` tables** — `summarize()` renders both tables from rows carrying
+  `dsMisuse`; unjudged rows are excluded from means rather than counted as zero;
+  the family prints nothing and the warning fires when no row carries the key.
+- **Post-cache merge** — the regression this ordering exists to prevent: a run
+  analysed *before* it was judged, then judged, then re-analysed without
+  `--recompute`, must surface its scores.
 
 ## Out of scope
 
 - Judging nodes in files the run did not touch.
 - Any use of the stale `KNOWN-ISSUES.md` catalog.
-- Rendering `ds-misuse` scores into `summarize()`'s comparison tables. The scores
-  land in per-run artifacts and the warning tells you when they are missing;
-  folding them into the grouped tables is a follow-up once there is a round of
-  real data to shape the columns against.
+- Adding `misuse` to `DEFAULT_TABLES`. It is opt-in via `--misuse` for now;
+  promoting it is a one-line change once a round of real data says it earns the
+  terminal space more than `coverage` does.
 - Framework support beyond React, which is all `ds-coverage` supports today.
