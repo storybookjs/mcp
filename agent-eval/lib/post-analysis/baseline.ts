@@ -28,7 +28,6 @@ const DEFAULT_REF_CACHE_DIR = new URL('../../.eval-cache/refs', import.meta.url)
 
 /** What a committed baseline file holds. `analysis` is opaque to this module. */
 interface CommittedBaseline {
-	eval: string;
 	repo: string;
 	ref: string;
 	/** The eval's metricsVersion at measuring time; absent for legacy files. */
@@ -44,8 +43,6 @@ export interface BaselineAnalysis {
 }
 
 export interface BaselineOptions {
-	evalName: string;
-	fixtureDir: string;
 	pin: ExternalRepoPin;
 	postAnalysis: PostAnalysis;
 	/** Re-measure the pinned tree and overwrite the committed baseline. */
@@ -61,11 +58,11 @@ export interface BaselineOptions {
  * path segment: a ref like `heads/main` would otherwise turn the filename into
  * a nested path.
  */
-export function baselinePath(baselinesDir: string, evalName: string, pin: ExternalRepoPin): string {
-	return join(baselinesDir, evalName, `${pinSlug(pin)}.json`);
+export function baselinePath(baselinesDir: string, pin: ExternalRepoPin): string {
+	return join(baselinesDir, `${pinSlug(pin)}.json`);
 }
 
-// Keyed by the resolved file path rather than eval+pin, so a caller pointed at
+// Keyed by the resolved file path rather than the pin, so a caller pointed at
 // a different baselinesDir gets its own entry.
 const memo = new Map<string, BaselineAnalysis>();
 
@@ -77,9 +74,9 @@ const recomputedPaths = new Set<string>();
 export async function loadOrBuildBaselineAnalysis(
 	options: BaselineOptions,
 ): Promise<BaselineAnalysis> {
-	const { evalName, fixtureDir, pin, postAnalysis, recompute = false } = options;
+	const { pin, postAnalysis, recompute = false } = options;
 	const baselinesDir = options.baselinesDir ?? DEFAULT_BASELINES_DIR;
-	const path = baselinePath(baselinesDir, evalName, pin);
+	const path = baselinePath(baselinesDir, pin);
 
 	const remembered = memo.get(path);
 	if (remembered && (!recompute || recomputedPaths.has(path))) return remembered;
@@ -109,18 +106,12 @@ export async function loadOrBuildBaselineAnalysis(
 		: committed?.analysis
 			? `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`
 			: 'no committed baseline';
-	console.log(`Measuring baseline for ${evalName}: ${pin.repo}@${pin.ref} (${reason})`);
+	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
 
-	const analysis = await postAnalysis.analyzeRun({
-		mode: 'baseline',
-		projectDir: dir,
-		fixtureDir,
-		evalName,
-		pin,
-	});
+	const analysis = await postAnalysis.analyzeRun({ mode: 'baseline', projectDir: dir, pin });
 	if (analysis === null) {
 		throw new Error(
-			`${evalName}: analyzeRun returned no baseline for ${pin.repo}@${pin.ref}; ` +
+			`analyzeRun returned no baseline for ${pin.repo}@${pin.ref}; ` +
 				'a postAnalysis providing deltaToBaseline must measure its pinned tree.',
 		);
 	}
@@ -129,7 +120,6 @@ export async function loadOrBuildBaselineAnalysis(
 	// JSON.stringify drops an undefined metricsVersion, keeping legacy modules'
 	// files byte-identical to what they wrote before the field existed.
 	const payload: CommittedBaseline = {
-		eval: evalName,
 		repo: pin.repo,
 		ref: pin.ref,
 		metricsVersion: postAnalysis.metricsVersion,
