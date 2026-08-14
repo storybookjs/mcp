@@ -104,26 +104,33 @@ jobs:
           # so normalize to spaces here and let the run step split.
           CASES=$(tr ',' ' ' <<< "$RAW_CASES" | tr -s ' ' | sed 's/^ //; s/ $//')
 
-          # Flows may be full fixture names, bare numbers (703) or globs (70*).
-          # Expand each token against agent-eval/evals/ on this ref, so the
-          # runner only ever sees exact fixture names.
+          # Flows may be full names, bare numbers (703) or globs (70*). Tokens
+          # expand against the ACTIVE eval registry (AGENTIC_REF_EVALS in
+          # cases.ts) rather than the evals/ directory: fixtures can exist on
+          # disk while parked out of the registry, and the runner rejects those.
           FLOWS=""
           if [[ -n "$RAW_FLOWS" ]]; then
+            mapfile -t active < <(sed -n "/^export const AGENTIC_REF_EVALS/,/^\];/ s/^[[:space:]]*'\([0-9][^']*\)'.*/\1/p" \
+              agent-eval/lib/agentic-reference/cases.ts)
+            if [[ ${#active[@]} -eq 0 ]]; then
+              echo "::error title=No registry::Could not read AGENTIC_REF_EVALS from cases.ts on this ref. Nothing was run."
+              exit 1
+            fi
+
             resolved=()
             IFS=',' read -r -a tokens <<< "$RAW_FLOWS"
             for token in "${tokens[@]}"; do
               token=$(tr -d ' ' <<< "$token")
               [[ -z "$token" ]] && continue
-              if [[ -d "agent-eval/evals/$token" ]]; then
-                matches=("$token")
-              else
-                pattern="$token"
-                # A bare number selects every fixture with that number prefix.
-                [[ "$pattern" != *[*?]* ]] && pattern="$token-*"
-                mapfile -t matches < <(cd agent-eval/evals && compgen -G "$pattern" || true)
-              fi
+              pattern="$token"
+              # A bare number selects every active flow with that number prefix.
+              [[ "$pattern" != *[*?]* && "$pattern" =~ ^[0-9]+$ ]] && pattern="$token-*"
+              matches=()
+              for name in "${active[@]}"; do
+                [[ "$name" == $pattern ]] && matches+=("$name")
+              done
               if [[ ${#matches[@]} -eq 0 ]]; then
-                echo "::error title=Unknown flow::'$token' matches no fixture under agent-eval/evals/. Nothing was run."
+                echo "::error title=Unknown flow::'$token' matches no ACTIVE flow. Active: ${active[*]}. Nothing was run."
                 exit 1
               fi
               resolved+=("${matches[@]}")
