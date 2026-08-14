@@ -85,11 +85,24 @@ describe('includeNodes', () => {
 		].join('\n'),
 	};
 
-	// Default-off is load-bearing: measureDsCoverage stores this report shape in
-	// every committed baseline, and a new key would change every one of them.
+	// Absent, not present-and-undefined: the report is a public contract, and a
+	// key that exists but is undefined invites callers to test truthiness where
+	// they should test presence.
 	it('omits the nodeList key entirely when not asked', () => {
 		vol.fromJSON(FILES, ROOT);
 		const report = analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'] });
+		expect('nodeList' in report).toBe(false);
+	});
+
+	// The path a CLI flag actually takes: --nodes defaults to false and is passed
+	// explicitly, so `false` must behave exactly like omitting the option.
+	it('omits the nodeList key when asked explicitly for no nodes', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: false,
+		});
 		expect('nodeList' in report).toBe(false);
 	});
 
@@ -154,19 +167,23 @@ export interface NodeRecord {
 }
 ```
 
-Add to `CensusResult`:
+Add to `CensusResult`. Call it `nodeList` here too — `CensusResult` is internal
+and free to take the clear name, and having one `nodes` mean `NodeTotals` while
+another means `NodeRecord[]` eight lines away in `index.ts` is exactly the
+hazard the report-side rename exists to avoid:
 
 ```ts
 	/** Populated only when the census was asked for nodes. */
-	nodes?: NodeRecord[];
+	nodeList?: NodeRecord[];
 ```
 
 Add to `DsCoverageOptions`:
 
 ```ts
 	/**
-	 * Emit a per-node list alongside the aggregates. Off by default so the stored
-	 * shape of every committed baseline is unchanged.
+	 * Emit a per-node list alongside the aggregates. Off by default because the
+	 * list is large and only the judge wants it; every other caller reads the
+	 * aggregates.
 	 */
 	includeNodes?: boolean;
 ```
@@ -218,36 +235,46 @@ Replace the census call and return in `analyzeDsCoverage`:
 
 Note the `nodes: census.totals` line above is the pre-existing `NodeTotals` key
 and stays exactly as it is. Append the record list after `perFile` under its own
-key. Spreading conditionally is what keeps that key *absent* rather than
-`undefined` when the option is off, which is what the Step 1 test asserts:
+key:
 
 ```ts
-		...(includeNodes ? { nodeList: census.nodes ?? [] } : {}),
+		...(includeNodes ? { nodeList: census.nodeList ?? [] } : {}),
 ```
+
+Spreading conditionally keeps the key *absent* rather than `undefined` when the
+option is off, which is what the Step 1 tests assert. To be clear about what
+this does **not** protect: committed baselines are shielded by
+`measureDsCoverage` in `metrics/coverage.ts`, which projects the report onto a
+named-field whitelist, so no new report key can reach one either way. The reason
+to prefer absence is that the report is a public contract and a
+present-but-`undefined` key invites truthiness checks where presence is meant.
 
 - [ ] **Step 5: Add a no-op census signature so the suite compiles**
 
-In `react/census.ts`, widen the signature only (implementation comes in Task 2):
+In `react/census.ts`, widen the signature only (implementation comes in Task 3).
+No default value — `FrameworkImplementation.createCensus` declares the parameter
+required, and a default would let a direct caller turn "forgot the flag" into
+"silently emitted nothing" instead of a type error:
 
 ```ts
 export function censusReactTree(
 	graph: ModuleGraph,
 	resolver: IdentityResolver,
 	isCounted: IsCountedFile,
-	includeNodes = false,
+	includeNodes: boolean,
 ): CensusResult {
 ```
 
-and return `nodes: includeNodes ? [] : undefined` from the existing return:
+and return an empty list from the existing return:
 
 ```ts
-	return { totals, perFile, components, unresolved, nodes: includeNodes ? [] : undefined };
+	return { totals, perFile, components, unresolved, nodeList: includeNodes ? [] : undefined };
 ```
 
 - [ ] **Step 6: Run tests**
 
 Run: `pnpm exec vitest run lib/agentic-reference/metrics/ds-coverage/ -t includeNodes`
-Expected: the `omits the nodes key` test PASSES; the emission test FAILS with `[]` vs the expected record. That is correct — Task 2 fills it.
+Expected: both `omits the nodeList key` tests PASS; the emission test FAILS with `[]` vs the expected record. That is correct — Task 3 fills it.
 
 Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
@@ -261,8 +288,10 @@ git add lib/agentic-reference/metrics/ds-coverage/types.ts \
         lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts
 git commit -m "Add the includeNodes option and NodeRecord shape to ds-coverage
 
-Off by default, and under nodeList rather than nodes, so the report shape every
-committed baseline stores is byte-identical to what it was."
+Off by default because the list is large and only the judge wants it. Named
+nodeList on both the report and the census result: nodes already means
+NodeTotals on the report, and one identifier meaning two things eight lines
+apart is a trap worth spending a rename to avoid."
 ```
 
 ---
@@ -529,7 +558,7 @@ Add to the imported types: `NodeRecord`.
 Inside `censusReactTree`, declare the accumulator beside `unresolved`:
 
 ```ts
-	const nodes: NodeRecord[] = [];
+	const nodeList: NodeRecord[] = [];
 ```
 
 Inside the `for (const file of graph.files.values())` loop, after `const fileTotals = emptyTotals();`:
@@ -563,7 +592,7 @@ Then, inside the `resolution.category === 'ds' | 'external' | 'local'` branch, a
 
 ```ts
 				if (includeNodes) {
-					nodes.push({
+					nodeList.push({
 						path: buildNodePath(element, seenPaths),
 						file: file.path,
 						line: file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1,
@@ -580,7 +609,7 @@ Then, inside the `resolution.category === 'ds' | 'external' | 'local'` branch, a
 Finally return them:
 
 ```ts
-	return { totals, perFile, components, unresolved, nodes: includeNodes ? nodes : undefined };
+	return { totals, perFile, components, unresolved, nodeList: includeNodes ? nodeList : undefined };
 ```
 
 - [ ] **Step 3: Run the test**
@@ -3754,8 +3783,9 @@ Checked against the spec:
 - **Known-violations list** — deliberately absent, per the spec. No task reads
   `KNOWN-ISSUES.md`.
 
-Naming is consistent across tasks: `nodeList` (the report key, chosen in Task 1
-to avoid colliding with the existing `nodes: NodeTotals`), `NodeRecord`,
+Naming is consistent across tasks: `nodeList` (the key on both `DsCoverageReport`
+and `CensusResult`, chosen in Task 1 because `nodes` already means `NodeTotals`
+on the report), `NodeRecord`,
 `buildNodePath`, `elementTag`, `propNames`, `treePatch`, `collectDsDocs`,
 `dsDocsRefLabel`, `DS_DOCS_PIN`, `buildJudgeRequest`, `JUDGE_MODEL`, `runJudge`,
 `assertApiKey`, `summariseJudgement`, `judgeRun`, `readMisuseReport`,
@@ -3766,8 +3796,11 @@ Two things a reviewer should watch for during execution, because they are the
 cheap-to-get-wrong parts:
 
 1. **Task 1's naming collision.** `DsCoverageReport.nodes` already means
-   `NodeTotals`. The record list is `nodeList`. Getting this backwards silently
-   changes every committed baseline.
+   `NodeTotals`, so the record list is `nodeList` on both the report and
+   `CensusResult`. Note what this does *not* guard: committed baselines are
+   protected by `measureDsCoverage`'s named-field whitelist in
+   `metrics/coverage.ts`, not by the report's shape. Anyone adding a field that
+   must reach a baseline has to edit that whitelist.
 2. **Task 19's merge point.** If `dsMisuse` ends up inside the cached analysis
    rather than merged after it, the scores will appear once and then never
    again without `--recompute`, which is a genuinely confusing bug to chase.
