@@ -23,9 +23,9 @@ export const AGENTIC_REF_EVALS: string[] = [
 	'706-new-ui-scheduled-flow',
 ];
 
-// The workflows the base-ui Storybook content variants treat; the migration
-// flows are excluded.
-const BASE_UI_APP_WORKFLOWS = AGENTIC_REF_EVALS.filter(
+// The workflows the Storybook content variants treat; the migration flows are
+// excluded.
+const DS_APP_WORKFLOWS = AGENTIC_REF_EVALS.filter(
 	(evalName) => !['705-migrate-to-ds-flow'].includes(evalName),
 );
 
@@ -59,18 +59,22 @@ export interface AgenticRefCase {
 }
 
 // The design-system repo's MCP preview package: its storybook-mcp-preview
-// workflow publishes @storybook-tmp/baseui-mcp (the repo's MCP server with the
-// branch's Storybook manifests baked in) to pkg.pr.new on every push to
-// experiment/*. Cases select a branch; setup pins its head sha,
-// so each experiment runs against one immutable build — unlike the Chromatic
-// branch permalinks these cases previously pointed at.
-const BASE_UI_MCP_PACKAGE = {
-	repo: 'storybook-tmp/base-ui',
-	packageName: '@storybook-tmp/baseui-mcp',
+// workflow publishes @droppy/mcp (the repo's MCP server with the branch's
+// Storybook manifests baked in) to pkg.pr.new on every push to experiment/*.
+// Cases select a branch; setup pins its head sha, so each experiment runs
+// against one immutable build — unlike the Chromatic branch permalinks these
+// cases previously pointed at.
+//
+// The fixtures under evals/ pin a MealDrop built on Droppy, so the served
+// documentation has to be Droppy's: an agent handed another system's docs finds
+// nothing installed under those names and falls back to reading source.
+const DROPPY_MCP_PACKAGE = {
+	repo: 'yannbf/droppy-ds',
+	packageName: '@droppy/mcp',
 } as const;
 
-function baseUiMcpPackage(branch: string): StorybookMcpPackageSpec {
-	return { ...BASE_UI_MCP_PACKAGE, branch };
+function droppyMcpPackage(branch: string): StorybookMcpPackageSpec {
+	return { ...DROPPY_MCP_PACKAGE, branch };
 }
 
 /** Build a case `editPrompt` that appends eval-specific context after the fixture's task prompt. */
@@ -115,9 +119,9 @@ function storybookVariantCases(): AgenticRefCase[] {
 			return {
 				name: `${prefix}-${variant}-${modelSuffix}`,
 				description: `Design-system Storybook MCP served in-sandbox, content variant "${variant}".`,
-				storybookMcpPackage: baseUiMcpPackage(branchName),
+				storybookMcpPackage: droppyMcpPackage(branchName),
 				agent,
-				evals: BASE_UI_APP_WORKFLOWS,
+				evals: DS_APP_WORKFLOWS,
 				editPrompt: appendToPrompt(
 					'This app uses a Design System. Use the Storybook MCP to fetch documentation and API reference for UI components. Abort with an error if the MCP is not reachable.',
 				),

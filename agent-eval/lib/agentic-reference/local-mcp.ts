@@ -3,7 +3,7 @@
 // preview package — the design-system repo's MCP server with that branch's
 // Storybook manifests baked in, published by its storybook-mcp-preview
 // workflow on every push to research/experiment/* (see
-// storybook-tmp/base-ui/apps/mcp-server). Each run gets a private server, so
+// yannbf/droppy-ds/apps/mcp-server). Each run gets a private server, so
 // parallel runs cannot contend on a remote endpoint; the only external
 // dependency left is the one-time tarball download at setup.
 //
@@ -16,9 +16,9 @@ import { NODE_DOWNLOAD_SCRIPT } from './sandbox-fetch.ts';
 
 /** A design-system MCP preview package published to pkg.pr.new, selected by branch. */
 export interface StorybookMcpPackageSpec {
-	/** GitHub repo the package publishes from, e.g. 'storybook-tmp/base-ui'. */
+	/** GitHub repo the package publishes from, e.g. 'yannbf/droppy-ds'. */
 	repo: string;
-	/** npm package name, e.g. '@storybook-tmp/baseui-mcp'. */
+	/** npm package name, e.g. '@droppy/mcp'. */
 	packageName: string;
 	/** Branch whose latest published commit to serve, e.g. 'experiment/empty'. */
 	branch: string;
@@ -111,8 +111,38 @@ export async function resolveStorybookMcpPackage(
 		);
 	}
 
+	await assertPackagePublished(spec, body.sha);
+
 	resolutionCache.set(resolutionKey(spec), body.sha);
 	return { ...spec, sha: body.sha };
+}
+
+/**
+ * Fail host-side when the branch head has no published package, rather than
+ * letting the sandbox discover it as a download failure after a sandbox has
+ * already been created. A branch that predates the design-system repo's
+ * storybook-mcp-preview workflow resolves to a perfectly good sha whose package
+ * was never built, which is the shape a regenerated experiment branch takes
+ * before its first push.
+ *
+ * Only a definitive 404 fails: any other status, or a transport error, leaves
+ * the decision to the download step, which retries.
+ */
+async function assertPackagePublished(spec: StorybookMcpPackageSpec, sha: string): Promise<void> {
+	const url = packageTarballUrl(spec, sha);
+	let status: number;
+	try {
+		status = (await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(30_000) })).status;
+	} catch {
+		return;
+	}
+	if (status === 404) {
+		throw new Error(
+			`resolveStorybookMcpPackage: ${spec.repo}@${spec.branch} resolved to ${sha.slice(0, 12)}, ` +
+				`but ${spec.packageName} was never published for that commit (404 at ${url}). ` +
+				`Push the branch so its storybook-mcp-preview workflow publishes, then re-run.`,
+		);
+	}
 }
 
 const DOWNLOAD_ATTEMPTS = 3;

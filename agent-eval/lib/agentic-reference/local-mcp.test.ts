@@ -148,7 +148,36 @@ describe('resolveStorybookMcpPackage', () => {
 		const spec = { ...SPEC, branch: 'experiment/cache-test' };
 		await resolveStorybookMcpPackage(spec);
 		await resolveStorybookMcpPackage(spec);
-		expect(fetchMock).toHaveBeenCalledTimes(1);
+		// One commits-API call plus one publish pre-flight, for the first resolve only.
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('fails when the branch head has no published package', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (input: string | URL | Request, init?: RequestInit) =>
+				init?.method === 'HEAD'
+					? new Response(null, { status: 404 })
+					: new Response(JSON.stringify({ sha: SHA }), { status: 200 }),
+			),
+		);
+
+		await expect(
+			resolveStorybookMcpPackage({ ...SPEC, branch: 'experiment/unpublished-test' }),
+		).rejects.toThrow(/was never published for that commit/);
+	});
+
+	it('lets the download step decide when the pre-flight cannot reach the registry', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+				if (init?.method === 'HEAD') throw new Error('network down');
+				return new Response(JSON.stringify({ sha: SHA }), { status: 200 });
+			}),
+		);
+
+		const spec = { ...SPEC, branch: 'experiment/preflight-offline-test' };
+		await expect(resolveStorybookMcpPackage(spec)).resolves.toEqual({ ...spec, sha: SHA });
 	});
 
 	it('reports the branch and the publish prerequisite on an API error', async () => {
