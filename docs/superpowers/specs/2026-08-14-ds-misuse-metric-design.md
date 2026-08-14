@@ -64,7 +64,11 @@ we want to detect misuse from. Judging each arm against the docs it was served
 would make the arms incomparable, and would score a degraded arm against a
 lowered bar. Every arm is judged against the complete guidelines.
 
-At the pinned ref the corpus is 43 `.mdx` files, ~380 KB (~95k tokens):
+At the pinned ref the corpus is 43 `.mdx` files, 379,842 bytes (~95k tokens).
+Note the unit: that is bytes on disk. Read into JS the same corpus measures
+378,410 characters, the 1,432-byte gap being non-ASCII content. A check
+asserting one number against the other will look like the pin moved when it
+has not.
 
 - 33 component docs, `src/components/<Name>/<Name>.mdx`
 - 10 under `src/docs/`, of which the load-bearing four are
