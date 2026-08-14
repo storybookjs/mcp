@@ -14,25 +14,29 @@ on:
   workflow_dispatch:
     inputs:
       cases:
-        description: 'Space-separated case names or globs, e.g. agentic-ref-cc-control-none-opus-high agentic-ref-cc-docs-full-opus-high — empty runs every case'
+        description: 'Comma-separated case names or globs, e.g. agentic-ref-cc-control-none-opus-high,agentic-ref-cc-docs-full-opus-high — empty runs every case'
         type: string
         default: ''
       flows:
-        description: "Comma-separated workflow fixtures (AGENTIC_REF_FLOW), e.g. 703-fix-bug-flow — empty runs each case's full workflow set"
+        description: "Comma-separated workflow fixtures; a full name, a number (703), or a glob (70*) all work — empty runs each case's full workflow set"
         type: string
         default: ''
       runs:
-        description: 'Repetitions per (case, workflow) cell (AGENTIC_REF_RUNS)'
+        description: 'Repetitions per (case, workflow) cell (AGENTIC_REF_RUNS). Default 10, the batch size the comparison tooling expects'
         type: string
-        default: '1'
+        default: '10'
       force:
-        description: 'Re-run cells the fingerprint cache already marks complete'
+        description: 'Run every selected cell again, even ones that already have saved results'
         type: boolean
         default: false
       dry:
         description: 'Dry run: resolve the selection and print the plan without spending'
         type: boolean
         default: false
+      expect:
+        description: 'Spend guard: fail before running unless the resolved plan is exactly this many evals (leave empty to skip the check)'
+        type: string
+        default: ''
 
 env:
   TURBO_ENV_MODE: loose
@@ -68,32 +72,119 @@ jobs:
       - name: Type check agent eval config
         run: pnpm --dir agent-eval run typecheck
 
-      - name: Validate Vercel credentials
+      - name: Validate credentials
         shell: bash
         env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         run: |
           missing=0
 
-          for name in VERCEL_PROJECT_ID VERCEL_TOKEN VERCEL_TEAM_ID; do
+          # AI_GATEWAY_API_KEY must be validated here: the runner reacts to a
+          # missing gateway key by skipping the experiment with exit 0, which
+          # this job would report as success.
+          for name in AI_GATEWAY_API_KEY VERCEL_PROJECT_ID VERCEL_TOKEN VERCEL_TEAM_ID; do
             if [[ -z "${!name}" ]]; then
-              echo "::error title=Missing Vercel secret::$name is required for Vercel Sandbox evals."
+              echo "::error title=Missing secret::$name is required to run sandboxed evals."
               missing=1
             fi
           done
 
           exit "$missing"
 
+      - name: Resolve the selection
+        shell: bash
+        env:
+          RAW_CASES: ${{ inputs.cases }}
+          RAW_FLOWS: ${{ inputs.flows }}
+        run: |
+          # Cases arrive comma-separated; run-all wants one argument per case,
+          # so normalize to spaces here and let the run step split.
+          CASES=$(tr ',' ' ' <<< "$RAW_CASES" | tr -s ' ' | sed 's/^ //; s/ $//')
+
+          # Flows may be full names, bare numbers (703) or globs (70*). Tokens
+          # expand against the ACTIVE eval registry (AGENTIC_REF_EVALS in
+          # cases.ts) rather than the evals/ directory: fixtures can exist on
+          # disk while parked out of the registry, and the runner rejects those.
+          FLOWS=""
+          if [[ -n "$RAW_FLOWS" ]]; then
+            mapfile -t active < <(sed -n "/^export const AGENTIC_REF_EVALS/,/^\];/ s/^[[:space:]]*'\([0-9][^']*\)'.*/\1/p" \
+              agent-eval/lib/agentic-reference/cases.ts)
+            if [[ ${#active[@]} -eq 0 ]]; then
+              echo "::error title=No registry::Could not read AGENTIC_REF_EVALS from cases.ts on this ref. Nothing was run."
+              exit 1
+            fi
+
+            resolved=()
+            IFS=',' read -r -a tokens <<< "$RAW_FLOWS"
+            for token in "${tokens[@]}"; do
+              token=$(tr -d ' ' <<< "$token")
+              [[ -z "$token" ]] && continue
+              pattern="$token"
+              # A bare number selects every active flow with that number prefix.
+              [[ "$pattern" != *[*?]* && "$pattern" =~ ^[0-9]+$ ]] && pattern="$token-*"
+              matches=()
+              for name in "${active[@]}"; do
+                [[ "$name" == $pattern ]] && matches+=("$name")
+              done
+              if [[ ${#matches[@]} -eq 0 ]]; then
+                echo "::error title=Unknown flow::'$token' matches no ACTIVE flow. Active: ${active[*]}. Nothing was run."
+                exit 1
+              fi
+              resolved+=("${matches[@]}")
+            done
+            FLOWS=$(printf '%s\n' "${resolved[@]}" | sort -u | paste -sd, -)
+            echo "Flows resolved: $FLOWS"
+          fi
+
+          {
+            echo "RESOLVED_CASES=$CASES"
+            echo "RESOLVED_FLOWS=$FLOWS"
+          } >> "$GITHUB_ENV"
+
+      - name: Enforce the expected plan size
+        if: ${{ inputs.expect != '' }}
+        shell: bash
+        env:
+          CASES: ${{ env.RESOLVED_CASES }}
+          EXPECT: ${{ inputs.expect }}
+          AGENTIC_REF_FLOW: ${{ env.RESOLVED_FLOWS }}
+          AGENTIC_REF_RUNS: ${{ inputs.runs }}
+        run: |
+          args=()
+          if [[ -n "$CASES" ]]; then
+            read -r -a case_args <<< "$CASES"
+            args+=("${case_args[@]}")
+          fi
+
+          plan=$(pnpm --dir agent-eval run eval:agentic-ref:dry -- "${args[@]}")
+          echo "$plan"
+          resolved=$(grep -oE '[0-9]+ evals? to run' <<< "$plan" | grep -oE '^[0-9]+' | head -1)
+
+          if [[ -z "$resolved" ]]; then
+            echo "::error title=Spend guard::Could not read the resolved eval count from the dry-run plan."
+            exit 1
+          fi
+          if [[ "$resolved" != "$EXPECT" ]]; then
+            echo "::error title=Spend guard::The selection resolves to $resolved evals, but expect=$EXPECT. Nothing was run."
+            exit 1
+          fi
+          echo "Plan matches: $resolved evals."
+
       - name: Run agentic-reference evals
         shell: bash
         env:
-          CASES: ${{ inputs.cases }}
+          CASES: ${{ env.RESOLVED_CASES }}
           DRY: ${{ inputs.dry }}
           FORCE: ${{ inputs.force }}
-          AGENTIC_REF_FLOW: ${{ inputs.flows }}
+          AGENTIC_REF_FLOW: ${{ env.RESOLVED_FLOWS }}
           AGENTIC_REF_RUNS: ${{ inputs.runs }}
+          # The runner drives coding agents through Vercel AI Gateway and skips
+          # an experiment with exit 0 when this is unset — the job goes green
+          # having run nothing.
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
