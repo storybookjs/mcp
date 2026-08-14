@@ -87,12 +87,23 @@ relocation.
 ### The option
 
 `DsCoverageOptions` gains `includeNodes?: boolean`, default `false`. The
-`DsCoverageReport` gains `nodes?: NodeRecord[]`, populated only when the option is
-set. `scripts/ds-coverage.ts` exposes it as `--nodes`.
+`DsCoverageReport` gains `nodeList?: NodeRecord[]`, populated only when the option
+is set, and `CensusResult` gains the same key. `scripts/ds-coverage.ts` exposes it
+as `--nodes`.
 
-Default-off is load-bearing: `measureDsCoverage` (used by `post-analysis.ts` for
-every run and every baseline) keeps its current stored shape, so no existing
-committed artifact changes and no consumer needs updating.
+`nodeList` rather than `nodes` because `DsCoverageReport.nodes` already means
+`NodeTotals`. `CensusResult` is internal and could have taken `nodes` freely, but
+then one identifier would mean aggregate totals in one place and a record list a
+few lines away in another — worth a rename to avoid.
+
+Default-off because the list is large and only the judge wants it — every other
+consumer reads the aggregates.
+
+Worth stating precisely, because it is easy to assume otherwise: this option is
+*not* what protects committed baselines. `measureDsCoverage` in
+`metrics/coverage.ts` projects the report onto a named-field whitelist, so no new
+report key reaches a stored artifact whether the option exists or not. Anyone
+adding a field that *should* reach a baseline has to edit that whitelist.
 
 ### The record
 
