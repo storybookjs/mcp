@@ -30,10 +30,11 @@
 // output instead of recomputing it. Pass --recompute after changing a metric
 // definition to force every matched run to be recomputed.
 //
-// Usage: pnpm results:analyze [--experiment=<name>] [--since=<ISO date>] [--latest] [--recompute]
+// Usage: pnpm results:analyze [--experiment=<name>] [--eval=<name>] [--since=<ISO date>] [--latest] [--recompute]
 //                             [--general] [--complexity] [--coverage]
 //
 //   --experiment=<name>  only runs under results/<name>/
+//   --eval=<name>        only runs of the named eval (e.g. 706-new-ui-scheduled-flow)
 //   --since=<ISO date>   only runs whose result directory is stamped on or after
 //   --latest             only the newest result directory per experiment
 //   --recompute          recompute analysis, and rebuild committed baselines,
@@ -78,6 +79,7 @@ const DEFAULT_TABLES: TableSection[] = ['coverage'];
 
 interface PostAnalysisOptions {
 	experiment: string | null;
+	evalName: string | null;
 	since: string | null;
 	latest: boolean;
 	recompute: boolean;
@@ -91,6 +93,7 @@ function isTableSection(name: string): name is TableSection {
 function parseArgs(argv: string[]) {
 	const options: PostAnalysisOptions = {
 		experiment: null,
+		evalName: null,
 		since: null,
 		latest: false,
 		recompute: false,
@@ -102,6 +105,7 @@ function parseArgs(argv: string[]) {
 		if (flag === '--latest') options.latest = true;
 		else if (flag === '--recompute') options.recompute = true;
 		else if (flag === '--experiment' && value) options.experiment = value;
+		else if (flag === '--eval' && value) options.evalName = value;
 		else if (flag === '--since' && value) options.since = value;
 		else if (flag?.startsWith('--') && isTableSection(flag.slice(2))) {
 			sections.add(flag.slice(2) as TableSection);
@@ -172,6 +176,9 @@ function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
 	let selected = runs;
 	if (options.experiment) {
 		selected = selected.filter((run) => run.experiment === options.experiment);
+	}
+	if (options.evalName) {
+		selected = selected.filter((run) => run.evalName === options.evalName);
 	}
 	if (options.since) {
 		const since = new Date(options.since);
