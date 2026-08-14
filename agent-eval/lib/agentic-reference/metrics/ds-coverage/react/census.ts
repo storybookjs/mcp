@@ -76,6 +76,7 @@ export function censusReactTree(
 	graph: ModuleGraph,
 	resolver: IdentityResolver,
 	isCounted: IsCountedFile,
+	includeNodes = false,
 ): CensusResult {
 	const totals = emptyTotals();
 	const perFile = new Map<string, NodeTotals>();
@@ -173,5 +174,5 @@ export function censusReactTree(
 		if (fileTotals.all > 0) perFile.set(file.path, fileTotals);
 	}
 
-	return { totals, perFile, components, unresolved };
+	return { totals, perFile, components, unresolved, nodes: includeNodes ? [] : undefined };
 }

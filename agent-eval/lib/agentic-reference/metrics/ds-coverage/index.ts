@@ -60,7 +60,8 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 	const resolver = createResolver(graph, isDsPackage, framework.createDeclarationAnalyzer());
 	// We use the projectDir as a working directory to resolve relative paths in filters.
 	const isCounted = createPathFilter(censusInclude, censusExclude, options.projectDir);
-	const census = framework.createCensus()(graph, resolver, isCounted);
+	const includeNodes = options.includeNodes ?? false;
+	const census = framework.createCensus()(graph, resolver, isCounted, includeNodes);
 
 	return {
 		framework: options.framework ?? 'react',
@@ -76,5 +77,8 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 		components: sortedComponents(census),
 		unresolvedElements: census.unresolved,
 		perFile: Object.fromEntries(census.perFile),
+		// Spread rather than assign: the key has to be *absent*, not undefined, or
+		// every stored baseline would gain a key it never had.
+		...(includeNodes ? { nodeList: census.nodes ?? [] } : {}),
 	};
 }
