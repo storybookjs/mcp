@@ -5,8 +5,8 @@ metric family alongside `ds-coverage`.
 
 ## Problem
 
-`ds-coverage` measures *how much* of a run's UI comes from the design system. It
-cannot say whether the agent used the design system *well*: whether it reached
+`ds-coverage` measures _how much_ of a run's UI comes from the design system. It
+cannot say whether the agent used the design system _well_: whether it reached
 for the right component, followed the usage guidelines, or hand-rolled something
 the DS already provides. Two arms can land on identical DS share while one made
 good decisions and the other pasted `<Card>` around markup that wanted
@@ -20,15 +20,15 @@ introduced, scored against the Droppy design system's own documentation.
 Three sub-scores, each `1` / `0.5` / `0` per evaluated node, summarised as a mean
 in `[0, 1]`:
 
-| Score                    | Asked of          | Question                                                                       |
-| ------------------------ | ----------------- | ------------------------------------------------------------------------------ |
-| `correct-ds-decision`    | new DS usages     | Was this the right DS component, or did a better DS alternative exist?          |
-| `correct-ds-usage`       | new DS usages     | Does this usage violate a documented usage or brand guideline?                  |
-| `correct-local-decision` | new local usages  | Should this have been local, or did a DS component with adequate API exist?     |
+| Score                    | Asked of         | Question                                                                    |
+| ------------------------ | ---------------- | --------------------------------------------------------------------------- |
+| `correct-ds-decision`    | new DS usages    | Was this the right DS component, or did a better DS alternative exist?      |
+| `correct-ds-usage`       | new DS usages    | Does this usage violate a documented usage or brand guideline?              |
+| `correct-local-decision` | new local usages | Should this have been local, or did a DS component with adequate API exist? |
 
 `0.5` is the ambiguous/debatable band throughout. For `correct-local-decision` it
 carries a specific meaning: a DS component exists, but its API does not support a
-*legitimate* local use case — legitimate meaning the local component fulfils the
+_legitimate_ local use case — legitimate meaning the local component fulfils the
 task goal where the DS component's existing API would not.
 
 ### Known pre-existing violations are out of scope
@@ -57,7 +57,7 @@ regenerated against the Droppy fixtures.
 Sourced from `yannbf/droppy-ds` at **one pinned ref, fixed in code**:
 `refs/heads/main` pinned at `dfe7e43eeb2ff25c95897e55e86a976ef3f7cb7d`.
 
-This is deliberately *not* the arm's own `experiment/*` branch. Content variation
+This is deliberately _not_ the arm's own `experiment/*` branch. Content variation
 between arms is the independent variable of the whole agentic-reference round —
 some arms are served deliberately degraded documentation, which is precisely what
 we want to detect misuse from. Judging each arm against the docs it was served
@@ -100,24 +100,24 @@ Default-off because the list is large and only the judge wants it — every othe
 consumer reads the aggregates.
 
 Worth stating precisely, because it is easy to assume otherwise: this option is
-*not* what protects committed baselines. `measureDsCoverage` in
+_not_ what protects committed baselines. `measureDsCoverage` in
 `metrics/coverage.ts` projects the report onto a named-field whitelist, so no new
 report key reaches a stored artifact whether the option exists or not. Anyone
-adding a field that *should* reach a baseline has to edit that whitelist.
+adding a field that _should_ reach a baseline has to edit that whitelist.
 
 ### The record
 
 ```jsonc
 {
-  "path": "RestaurantCard/div[0]/Card[1]/Button[0]",
-  "file": "src/components/RestaurantCard.tsx",
-  "line": 166,
-  "tag": "Button",
-  "category": "ds",
-  "module": "@droppy/react",
-  "name": "Button",
-  "weight": 1,
-  "props": ["variant", "size", "onClick"]
+	"path": "RestaurantCard/div[0]/Card[1]/Button[0]",
+	"file": "src/components/RestaurantCard.tsx",
+	"line": 166,
+	"tag": "Button",
+	"category": "ds",
+	"module": "@droppy/react",
+	"name": "Button",
+	"weight": 1,
+	"props": ["variant", "size", "onClick"],
 }
 ```
 
@@ -142,7 +142,7 @@ Two spelling rules, so the format is unambiguous:
 The chain follows JSX ancestors only. Where JSX is reached through a non-JSX node
 — the callback of a `.map()`, or an attribute value — the node starts a fresh
 chain instead of nesting under its container. This is deliberate: nesting through
-child expressions but *not* attribute expressions is the only correct widening,
+child expressions but _not_ attribute expressions is the only correct widening,
 and it is not worth the machinery, because what is lost is a single link rather
 than a subtree. `<ul>{items.map(() => <li><Card/></li>)}</ul>` yields
 `List/li[0]` and `List/li[0]/Card[0]` — the `li`→`Card` nesting survives; only
@@ -155,7 +155,7 @@ class. None of this affects uniqueness or relocation-stability, which is the
 contract the metric depends on; it only makes some paths less descriptive than
 the example above suggests.
 
-`props` is prop *names* only, never values. The judge needs to know a `Button`
+`props` is prop _names_ only, never values. The judge needs to know a `Button`
 was given `variant` to check it against the guidelines; it does not need the
 value, which it can read in the diff, and which would bloat the record.
 
@@ -174,7 +174,7 @@ roughly 200 experiments in practice.
 tree diff touched, with `includeNodes` on. `analyzeDsCoverage` still builds the
 full module graph (identity resolution needs it) but only walks and counts the
 touched files, so the output is a handful of files rather than the whole app.
-This is sound because a *new* JSX node can only appear in a file the run changed.
+This is sound because a _new_ JSX node can only appear in a file the run changed.
 
 ## Baseline storage and re-keying
 
@@ -232,7 +232,7 @@ Per run, in order. Each step aborts with a message naming the cause and the fix:
    carries an explicit marker naming how many files were dropped, and
    `diffTruncated: true` is recorded in the output — so a huge diff degrades
    visibly rather than silently.
-5. **Check `ANTHROPIC_API_KEY`.** Abort if unset. This is checked *after* the
+5. **Check `ANTHROPIC_API_KEY`.** Abort if unset. This is checked _after_ the
    cheap local steps so a misconfigured environment surfaces every other problem
    in the same run rather than one per invocation.
 6. **Fetch the DS guidelines** at the pinned ref via `prepareRef`; glob its MDX.
@@ -266,10 +266,11 @@ One `@anthropic-ai/sdk` call per run.
   a sequential pass over hundreds of runs keeps the entry alive indefinitely.
 
   `1h` is still chosen over the cheaper `5m` default for headroom: the lifetime is
-  measured from the *start* of the request that reads it, so generation time counts
+  measured from the _start_ of the request that reads it, so generation time counts
   against it. A high-effort call over ~100k tokens of input can run for several
   minutes, which leaves an uncomfortable margin against a five-minute window. The
   trade is a 2× write multiplier instead of 1.25×, paid once.
+
 - **Ordering** — DS docs first (stable, cached), then the run-specific package
   (volatile). Anything volatile placed before the breakpoint would invalidate the
   cache on every request.
@@ -293,38 +294,38 @@ not just the scores, so a surprising number can be traced back to what it counte
 
 ```jsonc
 {
-  "schemaVersion": 1,
-  "metricsVersion": 7,
-  "judgedAt": "2026-08-14T12:00:00.000Z",
-  "model": "claude-opus-4-8",
-  "dsGuidelinesRef": "yannbf/droppy-ds@dfe7e43eeb2ff25c95897e55e86a976ef3f7cb7d",
-  "fixtureRef": "yannbf/mealdrop@refs/tags/agentic-reference/droppy-70pc-v2",
-  "diffTruncated": false,
-  "summary": {
-    "correctDsDecision": 0.87,
-    "correctDsUsage": 0.93,
-    "correctLocalDecision": 0.75,
-    "evaluated": { "ds": 12, "local": 4 }
-  },
-  "nodes": [
-    {
-      "path": "CheckoutSummary/div[0]/Card[0]/Button[1]",
-      "file": "src/components/CheckoutSummary.tsx",
-      "line": 88,
-      "tag": "Button",
-      "kind": "ds",
-      "correctDsDecision": { "score": 1, "reason": "…" },
-      "correctDsUsage": { "score": 0.5, "reason": "…" }
-    },
-    {
-      "path": "CheckoutSummary/div[0]/PriceRow[2]",
-      "file": "src/components/CheckoutSummary.tsx",
-      "line": 96,
-      "tag": "PriceRow",
-      "kind": "local",
-      "correctLocalDecision": { "score": 0, "reason": "…" }
-    }
-  ]
+	"schemaVersion": 1,
+	"metricsVersion": 7,
+	"judgedAt": "2026-08-14T12:00:00.000Z",
+	"model": "claude-opus-4-8",
+	"dsGuidelinesRef": "yannbf/droppy-ds@dfe7e43eeb2ff25c95897e55e86a976ef3f7cb7d",
+	"fixtureRef": "yannbf/mealdrop@refs/tags/agentic-reference/droppy-70pc-v2",
+	"diffTruncated": false,
+	"summary": {
+		"correctDsDecision": 0.87,
+		"correctDsUsage": 0.93,
+		"correctLocalDecision": 0.75,
+		"evaluated": { "ds": 12, "local": 4 },
+	},
+	"nodes": [
+		{
+			"path": "CheckoutSummary/div[0]/Card[0]/Button[1]",
+			"file": "src/components/CheckoutSummary.tsx",
+			"line": 88,
+			"tag": "Button",
+			"kind": "ds",
+			"correctDsDecision": { "score": 1, "reason": "…" },
+			"correctDsUsage": { "score": 0.5, "reason": "…" },
+		},
+		{
+			"path": "CheckoutSummary/div[0]/PriceRow[2]",
+			"file": "src/components/CheckoutSummary.tsx",
+			"line": 96,
+			"tag": "PriceRow",
+			"kind": "local",
+			"correctLocalDecision": { "score": 0, "reason": "…" },
+		},
+	],
 }
 ```
 
@@ -340,7 +341,7 @@ thing anyone will ask of a surprising score is why.
 `analyze-results.ts` never invokes the judge. It documents that every metric it
 computes is a pure function of stored artifacts, re-runnable as often as a
 definition changes without spending anything on model calls; calling a paid API
-from it would break that guarantee. It only *reads* what the judge already wrote.
+from it would break that guarantee. It only _reads_ what the judge already wrote.
 
 ### The `--misuse` table family
 
@@ -366,7 +367,7 @@ score with no evaluated nodes stays `null` rather than becoming `0`.
 `ds-misuse.json` is read fresh on every invocation and merged into the analysis
 row **after** the `post-analysis-meta.json` cache lookup, under a `dsMisuse` key.
 
-This ordering is the whole point. The judge runs *after* `results:analyze` in the
+This ordering is the whole point. The judge runs _after_ `results:analyze` in the
 normal workflow, so a row baked into the cache during the first analysis pass
 would not contain the scores, and every later `results:analyze` would keep
 serving that cached row — the numbers would never appear without `--recompute`.
@@ -407,7 +408,7 @@ and use `memfs` for tree fixtures.
   `dsMisuse`; unjudged rows are excluded from means rather than counted as zero;
   the family prints nothing and the warning fires when no row carries the key.
 - **Post-cache merge** — the regression this ordering exists to prevent: a run
-  analysed *before* it was judged, then judged, then re-analysed without
+  analysed _before_ it was judged, then judged, then re-analysed without
   `--recompute`, must surface its scores.
 
 ## Out of scope

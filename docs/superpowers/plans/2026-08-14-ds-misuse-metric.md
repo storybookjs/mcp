@@ -18,48 +18,48 @@
 
 **Phase A — node census (`ds-coverage`)**
 
-| File | Responsibility |
-|---|---|
-| `lib/agentic-reference/metrics/ds-coverage/types.ts` (modify) | `NodeRecord` type, `includeNodes` option, `nodes` on report + census result |
-| `lib/agentic-reference/metrics/ds-coverage/react/node-path.ts` (create) | AST path construction — the only file that knows the path format |
-| `lib/agentic-reference/metrics/ds-coverage/react/node-path.test.ts` (create) | Path format tests |
-| `lib/agentic-reference/metrics/ds-coverage/react/census.ts` (modify) | Emit `NodeRecord`s when asked |
-| `lib/agentic-reference/metrics/ds-coverage/index.ts` (modify) | Thread `includeNodes` through |
-| `lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts` (modify) | Default-off shape guarantee, end-to-end node emission |
-| `scripts/ds-coverage.ts` (modify) | `--nodes` flag |
+| File                                                                         | Responsibility                                                              |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `lib/agentic-reference/metrics/ds-coverage/types.ts` (modify)                | `NodeRecord` type, `includeNodes` option, `nodes` on report + census result |
+| `lib/agentic-reference/metrics/ds-coverage/react/node-path.ts` (create)      | AST path construction — the only file that knows the path format            |
+| `lib/agentic-reference/metrics/ds-coverage/react/node-path.test.ts` (create) | Path format tests                                                           |
+| `lib/agentic-reference/metrics/ds-coverage/react/census.ts` (modify)         | Emit `NodeRecord`s when asked                                               |
+| `lib/agentic-reference/metrics/ds-coverage/index.ts` (modify)                | Thread `includeNodes` through                                               |
+| `lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts` (modify)     | Default-off shape guarantee, end-to-end node emission                       |
+| `scripts/ds-coverage.ts` (modify)                                            | `--nodes` flag                                                              |
 
 **Phase B — baseline re-key + sidecar**
 
-| File | Responsibility |
-|---|---|
-| `lib/post-analysis/types.ts` (modify) | Drop `evalName`/`fixtureDir` from `BaselineContext` |
-| `lib/post-analysis/baseline.ts` (modify) | Key on pin; write the node sidecar |
-| `lib/post-analysis/baseline.test.ts` (modify) | New key shape, sidecar round-trip |
-| `lib/agentic-reference/post-analysis.ts` (modify) | `metricsVersion` 7 |
-| `scripts/analyze-results.ts` (modify) | Drop the dropped baseline options |
-| `baselines/**` (move/delete) | Re-keyed committed files |
+| File                                              | Responsibility                                      |
+| ------------------------------------------------- | --------------------------------------------------- |
+| `lib/post-analysis/types.ts` (modify)             | Drop `evalName`/`fixtureDir` from `BaselineContext` |
+| `lib/post-analysis/baseline.ts` (modify)          | Key on pin; write the node sidecar                  |
+| `lib/post-analysis/baseline.test.ts` (modify)     | New key shape, sidecar round-trip                   |
+| `lib/agentic-reference/post-analysis.ts` (modify) | `metricsVersion` 7                                  |
+| `scripts/analyze-results.ts` (modify)             | Drop the dropped baseline options                   |
+| `baselines/**` (move/delete)                      | Re-keyed committed files                            |
 
 **Phase C–E — the metric**
 
-| File | Responsibility |
-|---|---|
-| `lib/agentic-reference/metrics/ds-misuse/types.ts` (create) | `DsMisuseReport`, `JudgedNode`, the JSON schema |
+| File                                                             | Responsibility                                               |
+| ---------------------------------------------------------------- | ------------------------------------------------------------ |
+| `lib/agentic-reference/metrics/ds-misuse/types.ts` (create)      | `DsMisuseReport`, `JudgedNode`, the JSON schema              |
 | `lib/agentic-reference/metrics/ds-misuse/tree-patch.ts` (create) | `git diff --no-index` → workspace-relative, filtered, capped |
-| `lib/agentic-reference/metrics/ds-misuse/ds-docs.ts` (create) | Pinned Droppy ref + MDX collection |
-| `lib/agentic-reference/metrics/ds-misuse/prompt.md` (create) | The judge prompt |
-| `lib/agentic-reference/metrics/ds-misuse/context.ts` (create) | Context package assembly + cache breakpoint placement |
-| `lib/agentic-reference/metrics/ds-misuse/judge.ts` (create) | The Anthropic SDK call |
-| `lib/agentic-reference/metrics/ds-misuse/score.ts` (create) | Summary arithmetic |
-| `lib/agentic-reference/metrics/ds-misuse/index.ts` (create) | Orchestration; artifact read/write + staleness |
-| `scripts/judge-ds-misuse.ts` (create) | CLI entry point, abort paths |
+| `lib/agentic-reference/metrics/ds-misuse/ds-docs.ts` (create)    | Pinned Droppy ref + MDX collection                           |
+| `lib/agentic-reference/metrics/ds-misuse/prompt.md` (create)     | The judge prompt                                             |
+| `lib/agentic-reference/metrics/ds-misuse/context.ts` (create)    | Context package assembly + cache breakpoint placement        |
+| `lib/agentic-reference/metrics/ds-misuse/judge.ts` (create)      | The Anthropic SDK call                                       |
+| `lib/agentic-reference/metrics/ds-misuse/score.ts` (create)      | Summary arithmetic                                           |
+| `lib/agentic-reference/metrics/ds-misuse/index.ts` (create)      | Orchestration; artifact read/write + staleness               |
+| `scripts/judge-ds-misuse.ts` (create)                            | CLI entry point, abort paths                                 |
 
 **Phase F — reporting**
 
-| File | Responsibility |
-|---|---|
-| `scripts/analyze-results.ts` (modify) | `--misuse` section, post-cache merge, red warning |
-| `lib/post-analysis/types.ts` (modify) | `SummarizeOptions.misuse` |
-| `lib/agentic-reference/post-analysis.ts` (modify) | Misuse tables + grouped means |
+| File                                              | Responsibility                                    |
+| ------------------------------------------------- | ------------------------------------------------- |
+| `scripts/analyze-results.ts` (modify)             | `--misuse` section, post-cache merge, red warning |
+| `lib/post-analysis/types.ts` (modify)             | `SummarizeOptions.misuse`                         |
+| `lib/agentic-reference/post-analysis.ts` (modify) | Misuse tables + grouped means                     |
 
 ---
 
@@ -68,6 +68,7 @@
 ### Task 1: `NodeRecord` type and the `includeNodes` option
 
 **Files:**
+
 - Modify: `lib/agentic-reference/metrics/ds-coverage/types.ts`
 - Modify: `lib/agentic-reference/metrics/ds-coverage/index.ts:43-80`
 - Test: `lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts`
@@ -216,24 +217,24 @@ Change `FrameworkImplementation.createCensus` to accept the flag:
 Replace the census call and return in `analyzeDsCoverage`:
 
 ```ts
-	const includeNodes = options.includeNodes ?? false;
-	const census = framework.createCensus()(graph, resolver, isCounted, includeNodes);
+const includeNodes = options.includeNodes ?? false;
+const census = framework.createCensus()(graph, resolver, isCounted, includeNodes);
 
-	return {
-		framework: options.framework ?? 'react',
-		dsPackages: options.dsPackages,
-		censusInclude,
-		censusExclude,
-		files: [...graph.files.keys()].filter(isCounted).length,
-		parseFailures: graph.parseFailures,
-		readFailures: graph.readFailures,
-		nodes: census.totals,
-		dsShareOfAllNodes: share(census.totals.ds, census.totals.all),
-		dsShareOfComponentNodes: share(census.totals.ds, census.totals.component),
-		components: sortedComponents(census),
-		unresolvedElements: census.unresolved,
-		perFile: Object.fromEntries(census.perFile),
-	};
+return {
+	framework: options.framework ?? 'react',
+	dsPackages: options.dsPackages,
+	censusInclude,
+	censusExclude,
+	files: [...graph.files.keys()].filter(isCounted).length,
+	parseFailures: graph.parseFailures,
+	readFailures: graph.readFailures,
+	nodes: census.totals,
+	dsShareOfAllNodes: share(census.totals.ds, census.totals.all),
+	dsShareOfComponentNodes: share(census.totals.ds, census.totals.component),
+	components: sortedComponents(census),
+	unresolvedElements: census.unresolved,
+	perFile: Object.fromEntries(census.perFile),
+};
 ```
 
 Note the `nodes: census.totals` line above is the pre-existing `NodeTotals` key
@@ -244,7 +245,7 @@ key:
 		...(includeNodes ? { nodeList: census.nodeList ?? [] } : {}),
 ```
 
-Spreading conditionally keeps the key *absent* rather than `undefined` when the
+Spreading conditionally keeps the key _absent_ rather than `undefined` when the
 option is off, which is what the Step 1 tests assert. To be clear about what
 this does **not** protect: committed baselines are shielded by
 `measureDsCoverage` in `metrics/coverage.ts`, which projects the report onto a
@@ -271,7 +272,7 @@ export function censusReactTree(
 and return an empty list from the existing return:
 
 ```ts
-	return { totals, perFile, components, unresolved, nodeList: includeNodes ? [] : undefined };
+return { totals, perFile, components, unresolved, nodeList: includeNodes ? [] : undefined };
 ```
 
 - [ ] **Step 6: Run tests**
@@ -302,6 +303,7 @@ apart is a trap worth spending a rename to avoid."
 ### Task 2: AST path construction
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-coverage/react/node-path.ts`
 - Test: `lib/agentic-reference/metrics/ds-coverage/react/node-path.test.ts`
 
@@ -547,6 +549,7 @@ that question on its own."
 ### Task 3: Emit records from the census
 
 **Files:**
+
 - Modify: `lib/agentic-reference/metrics/ds-coverage/react/census.ts:75-177`
 - Test: `lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts`
 
@@ -568,17 +571,17 @@ Add to the imported types: `NodeRecord`.
 Inside `censusReactTree`, declare the accumulator beside `unresolved`:
 
 ```ts
-	const nodeList: NodeRecord[] = [];
+const nodeList: NodeRecord[] = [];
 ```
 
 Inside the `for (const file of graph.files.values())` loop, after `const fileTotals = emptyTotals();`:
 
 ```ts
-		// One builder per file: paths are disambiguated within a file, not across
-		// the tree. The builder must also see every counted element exactly once,
-		// in an order the baseline census reproduces — its `#n` suffix counts
-		// visit order, so a different walk renumbers every colliding path.
-		const nextPath = createNodePathBuilder();
+// One builder per file: paths are disambiguated within a file, not across
+// the tree. The builder must also see every counted element exactly once,
+// in an order the baseline census reproduces — its `#n` suffix counts
+// visit order, so a different walk renumbers every colliding path.
+const nextPath = createNodePathBuilder();
 ```
 
 Change the `count` closure signature to receive the element in its narrowed form. Replace the two call sites in `walk`:
@@ -604,25 +607,25 @@ Then, inside the `resolution.category === 'ds' | 'external' | 'local'` branch, a
 `components.set(key, entry);` and before `return;`:
 
 ```ts
-				if (includeNodes) {
-					nodeList.push({
-						path: nextPath(element),
-						file: file.path,
-						line: file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1,
-						tag: tag.getText(),
-						category: resolution.category,
-						module: resolution.module,
-						name: resolution.name,
-						weight,
-						props: propNames(element),
-					});
-				}
+if (includeNodes) {
+	nodeList.push({
+		path: nextPath(element),
+		file: file.path,
+		line: file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1,
+		tag: tag.getText(),
+		category: resolution.category,
+		module: resolution.module,
+		name: resolution.name,
+		weight,
+		props: propNames(element),
+	});
+}
 ```
 
 Finally return them:
 
 ```ts
-	return { totals, perFile, components, unresolved, nodeList: includeNodes ? nodeList : undefined };
+return { totals, perFile, components, unresolved, nodeList: includeNodes ? nodeList : undefined };
 ```
 
 - [ ] **Step 3: Run the test**
@@ -635,45 +638,45 @@ Expected: PASS, 2 tests.
 Append to the `includeNodes` describe block:
 
 ```ts
-	it('omits host and unresolved elements', () => {
-		vol.fromJSON(
-			{
-				'src/App.tsx': [
-					"import { Button } from '@ds/react'",
-					"import Mystery from './missing'",
-					'export const App = () => <div><Button /><Mystery /></div>',
-				].join('\n'),
-			},
-			ROOT,
-		);
-		const report = analyzeDsCoverage({
-			projectDir: ROOT,
-			dsPackages: ['@ds/*'],
-			includeNodes: true,
-		});
-		expect(report.nodeList?.map((node) => node.tag)).toEqual(['Button']);
-		expect(report.unresolvedElements.map((element) => element.tag)).toEqual(['Mystery']);
+it('omits host and unresolved elements', () => {
+	vol.fromJSON(
+		{
+			'src/App.tsx': [
+				"import { Button } from '@ds/react'",
+				"import Mystery from './missing'",
+				'export const App = () => <div><Button /><Mystery /></div>',
+			].join('\n'),
+		},
+		ROOT,
+	);
+	const report = analyzeDsCoverage({
+		projectDir: ROOT,
+		dsPackages: ['@ds/*'],
+		includeNodes: true,
 	});
+	expect(report.nodeList?.map((node) => node.tag)).toEqual(['Button']);
+	expect(report.unresolvedElements.map((element) => element.tag)).toEqual(['Mystery']);
+});
 
-	// censusInclude is how the judge keeps its treatment-side census small: the
-	// graph is still whole, so imports resolve, but only touched files are listed.
-	it('lists only files the census counts', () => {
-		vol.fromJSON(
-			{
-				'src/Kept.tsx': "import { Button } from '@ds/react'\nexport const Kept = () => <Button />",
-				'src/Skipped.tsx':
-					"import { Button } from '@ds/react'\nexport const Skipped = () => <Button />",
-			},
-			ROOT,
-		);
-		const report = analyzeDsCoverage({
-			projectDir: ROOT,
-			dsPackages: ['@ds/*'],
-			includeNodes: true,
-			censusInclude: ['src/Kept.tsx'],
-		});
-		expect(report.nodeList?.map((node) => node.file)).toEqual(['src/Kept.tsx']);
+// censusInclude is how the judge keeps its treatment-side census small: the
+// graph is still whole, so imports resolve, but only touched files are listed.
+it('lists only files the census counts', () => {
+	vol.fromJSON(
+		{
+			'src/Kept.tsx': "import { Button } from '@ds/react'\nexport const Kept = () => <Button />",
+			'src/Skipped.tsx':
+				"import { Button } from '@ds/react'\nexport const Skipped = () => <Button />",
+		},
+		ROOT,
+	);
+	const report = analyzeDsCoverage({
+		projectDir: ROOT,
+		dsPackages: ['@ds/*'],
+		includeNodes: true,
+		censusInclude: ['src/Kept.tsx'],
 	});
+	expect(report.nodeList?.map((node) => node.file)).toEqual(['src/Kept.tsx']);
+});
 ```
 
 - [ ] **Step 5: Run the full ds-coverage suite**
@@ -700,6 +703,7 @@ unresolved tag cannot be judged — it is already reported separately."
 ### Task 4: `--nodes` flag on the human CLI
 
 **Files:**
+
 - Modify: `scripts/ds-coverage.ts:25-40,76-79`
 
 - [ ] **Step 1: Add the flag to `parseArgs` and the usage string**
@@ -724,13 +728,13 @@ In the `options` object passed to `parseArgs`, after `exclude`:
 Replace the `analyzeDsCoverage` call:
 
 ```ts
-	report = analyzeDsCoverage({
-		projectDir: dir,
-		dsPackages,
-		censusInclude,
-		censusExclude,
-		includeNodes: values.nodes,
-	});
+report = analyzeDsCoverage({
+	projectDir: dir,
+	dsPackages,
+	censusInclude,
+	censusExclude,
+	includeNodes: values.nodes,
+});
 ```
 
 - [ ] **Step 3: Render it in the human view**
@@ -752,9 +756,11 @@ if (values.nodes && report.nodeList) {
 - [ ] **Step 4: Verify by hand against this repo's own source**
 
 Run:
+
 ```bash
 node scripts/ds-coverage.ts ../apps/internal-storybook --ds '@storybook/*' --nodes --top 5
 ```
+
 Expected: the usual tables, then a `Nodes (N):` section listing `[external] path:line  Decl/Tag[0]` lines. If the fixture has no JSX the section prints `Nodes (0):` — that is a pass, not a failure.
 
 Run: `node scripts/ds-coverage.ts . --ds '@ds/*'`
@@ -793,6 +799,7 @@ Expected: all green. Run `pnpm format` first if `format:check` complains.
 ### Task 5: Key baselines on the pin alone
 
 **Files:**
+
 - Modify: `lib/post-analysis/types.ts` (`BaselineContext`)
 - Modify: `lib/post-analysis/baseline.ts:29-148`
 - Modify: `scripts/analyze-results.ts` (the `loadOrBuildBaselineAnalysis` call)
@@ -918,30 +925,30 @@ In `loadOrBuildBaselineAnalysis`, update the destructure, the path call, the log
 line, the `analyzeRun` call, and the payload:
 
 ```ts
-	const { pin, postAnalysis, recompute = false } = options;
-	const baselinesDir = options.baselinesDir ?? DEFAULT_BASELINES_DIR;
-	const path = baselinePath(baselinesDir, pin);
+const { pin, postAnalysis, recompute = false } = options;
+const baselinesDir = options.baselinesDir ?? DEFAULT_BASELINES_DIR;
+const path = baselinePath(baselinesDir, pin);
 ```
 
 ```ts
-	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
+console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
 
-	const analysis = await postAnalysis.analyzeRun({ mode: 'baseline', projectDir: dir, pin });
-	if (analysis === null) {
-		throw new Error(
-			`analyzeRun returned no baseline for ${pin.repo}@${pin.ref}; ` +
-				'a postAnalysis providing deltaToBaseline must measure its pinned tree.',
-		);
-	}
+const analysis = await postAnalysis.analyzeRun({ mode: 'baseline', projectDir: dir, pin });
+if (analysis === null) {
+	throw new Error(
+		`analyzeRun returned no baseline for ${pin.repo}@${pin.ref}; ` +
+			'a postAnalysis providing deltaToBaseline must measure its pinned tree.',
+	);
+}
 ```
 
 ```ts
-	const payload: CommittedBaseline = {
-		repo: pin.repo,
-		ref: pin.ref,
-		metricsVersion: postAnalysis.metricsVersion,
-		analysis,
-	};
+const payload: CommittedBaseline = {
+	repo: pin.repo,
+	ref: pin.ref,
+	metricsVersion: postAnalysis.metricsVersion,
+	analysis,
+};
 ```
 
 - [ ] **Step 5: Update the caller**
@@ -949,11 +956,11 @@ line, the `analyzeRun` call, and the payload:
 In `scripts/analyze-results.ts`, inside `analyzeOneRun`, replace the call:
 
 ```ts
-	const baseline = await loadOrBuildBaselineAnalysis({
-		pin,
-		postAnalysis,
-		recompute: options.recompute,
-	});
+const baseline = await loadOrBuildBaselineAnalysis({
+	pin,
+	postAnalysis,
+	recompute: options.recompute,
+});
 ```
 
 - [ ] **Step 6: Run the tests**
@@ -982,6 +989,7 @@ a baseline eval-dependent again."
 ### Task 6: Bump `metricsVersion` and migrate committed baselines
 
 **Files:**
+
 - Modify: `lib/agentic-reference/post-analysis.ts:579-599`
 - Move: `baselines/**`
 
@@ -1059,6 +1067,7 @@ miss, rebuilding it under the current definitions rather than comparing across."
 ### Task 7: Pin-keyed node sidecar
 
 **Files:**
+
 - Modify: `lib/post-analysis/baseline.ts`
 - Test: `lib/post-analysis/baseline.test.ts`
 
@@ -1207,28 +1216,28 @@ In `loadOrBuildBaselineAnalysis`, after the `analysis === null` guard and before
 `mkdirSync(dirname(path), …)`, split the node list off the analysis:
 
 ```ts
-	// The node list rides out to its own file: the committed baseline is meant to
-	// stay readable in a diff, and thousands of records would end that.
-	const { nodeList, ...analysisWithoutNodes } = analysis as Analysis & {
-		nodeList?: NodeRecord[];
-	};
-	if (nodeList !== undefined) {
-		writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList);
-	}
+// The node list rides out to its own file: the committed baseline is meant to
+// stay readable in a diff, and thousands of records would end that.
+const { nodeList, ...analysisWithoutNodes } = analysis as Analysis & {
+	nodeList?: NodeRecord[];
+};
+if (nodeList !== undefined) {
+	writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList);
+}
 ```
 
 Use `analysisWithoutNodes` in the payload and in the returned/memoized value:
 
 ```ts
-	const payload: CommittedBaseline = {
-		repo: pin.repo,
-		ref: pin.ref,
-		metricsVersion: postAnalysis.metricsVersion,
-		analysis: analysisWithoutNodes,
-	};
-	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
+const payload: CommittedBaseline = {
+	repo: pin.repo,
+	ref: pin.ref,
+	metricsVersion: postAnalysis.metricsVersion,
+	analysis: analysisWithoutNodes,
+};
+writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 
-	const built = { dir, analysis: analysisWithoutNodes };
+const built = { dir, analysis: analysisWithoutNodes };
 ```
 
 - [ ] **Step 4: Make the baseline branch produce a node list**
@@ -1237,22 +1246,22 @@ In `lib/agentic-reference/post-analysis.ts`, change the `baseline` branch of
 `analyzeRun` so the pinned tree is censused with nodes on:
 
 ```ts
-	if (context.mode === 'baseline') {
-		const dsPackages = dsPackagesForPin(context.pin);
-		return {
-			...complexityForTree(context.projectDir),
-			dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
-			// Whole tree, once per pin: baseline.ts moves this into the sidecar.
-			nodeList:
-				dsPackages === null
-					? undefined
-					: analyzeDsCoverage({
-							projectDir: context.projectDir,
-							dsPackages,
-							includeNodes: true,
-						}).nodeList,
-		};
-	}
+if (context.mode === 'baseline') {
+	const dsPackages = dsPackagesForPin(context.pin);
+	return {
+		...complexityForTree(context.projectDir),
+		dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
+		// Whole tree, once per pin: baseline.ts moves this into the sidecar.
+		nodeList:
+			dsPackages === null
+				? undefined
+				: analyzeDsCoverage({
+						projectDir: context.projectDir,
+						dsPackages,
+						includeNodes: true,
+					}).nodeList,
+	};
+}
 ```
 
 Add the import:
@@ -1298,6 +1307,7 @@ Then rebuild the baselines and confirm the sidecar appears:
 pnpm results:analyze --recompute --latest
 ls baselines baselines/ds-nodes
 ```
+
 Expected: `baselines/<pinSlug>.json` files and a matching `baselines/ds-nodes/<pinSlug>.json`.
 If there are no local results, skip this — CI covers it.
 
@@ -1308,10 +1318,12 @@ If there are no local results, skip this — CI covers it.
 ### Task 8: `tree-patch.ts` — the run's diff against its baseline
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/tree-patch.ts`
 - Test: `lib/agentic-reference/metrics/ds-misuse/tree-patch.test.ts`
 
 Two facts about `git diff --no-index` that drive the implementation:
+
 - it **exits 1 when there are differences**, which is success here, not failure;
 - it emits the two absolute directory paths in every header, so without rewriting
   the judge would see two cache paths instead of `src/components/Foo.tsx`.
@@ -1477,11 +1489,11 @@ export function treePatch(
 
 	let raw = '';
 	try {
-		raw = execFileSync(
-			'git',
-			['diff', '--no-index', '--no-color', '--', baselineDir, projectDir],
-			{ encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout: DIFF_TIMEOUT_SECONDS * 1000 },
-		);
+		raw = execFileSync('git', ['diff', '--no-index', '--no-color', '--', baselineDir, projectDir], {
+			encoding: 'utf8',
+			maxBuffer: 256 * 1024 * 1024,
+			timeout: DIFF_TIMEOUT_SECONDS * 1000,
+		});
 	} catch (error) {
 		// Exit 1 is "the trees differ", which is the normal case here.
 		const failure = error as { status?: number; stdout?: string; stderr?: string };
@@ -1493,10 +1505,7 @@ export function treePatch(
 
 	// Longest first, so a root that prefixes the other cannot leave a fragment.
 	const roots = [baselineDir, projectDir].sort((a, b) => b.length - a.length);
-	const relative = roots.reduce(
-		(text, root) => text.split(`${root}/`).join(''),
-		raw,
-	);
+	const relative = roots.reduce((text, root) => text.split(`${root}/`).join(''), raw);
 
 	const blocks = relative
 		.split(/^(?=diff --git )/m)
@@ -1553,6 +1562,7 @@ the cap cuts at a file boundary, since half a hunk reads as a real edit."
 ### Task 9: `ds-docs.ts` — the pinned guideline corpus
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/ds-docs.ts`
 - Test: `lib/agentic-reference/metrics/ds-misuse/ds-docs.test.ts`
 
@@ -1744,6 +1754,7 @@ Expected: PASS, 5 tests.
 - [ ] **Step 6: Verify the pin resolves for real (one network call)**
 
 Run:
+
 ```bash
 node -e "
 const { collectDsDocs } = await import('./lib/agentic-reference/metrics/ds-misuse/ds-docs.ts');
@@ -1752,6 +1763,7 @@ console.log(docs.length, 'docs,', docs.reduce((n, d) => n + d.text.length, 0), '
 console.log(docs.filter(d => d.path.startsWith('src/docs')).map(d => d.path).join('\n'));
 " --input-type=module
 ```
+
 Expected: `43 docs, ~379842 chars`, and the `src/docs` list includes
 `BrandGuidelines.mdx`, `ChoosingComponents.mdx`, `TechnicalGuidelines.mdx`,
 `AccessibilityGuidelines.mdx`. If the count differs, the pin moved — stop and
@@ -1777,6 +1789,7 @@ the cached prefix of every request."
 ### Task 10: Result types and the output schema
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/types.ts`
 
 - [ ] **Step 1: Write the types and schema**
@@ -1916,6 +1929,7 @@ no correct-ds-decision to give, and a null there would read as a zero."
 ### Task 11: `score.ts` — summary arithmetic
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/score.ts`
 - Test: `lib/agentic-reference/metrics/ds-misuse/score.test.ts`
 
@@ -2007,7 +2021,10 @@ import type { DsMisuseSummary, JudgedNode } from './types.ts';
 /** Four decimals, matching coverage.ts: a mean rounded to two flattens a small move. */
 const SCORE_DIGITS = 4;
 
-function meanOf(nodes: JudgedNode[], read: (node: JudgedNode) => number | undefined): number | null {
+function meanOf(
+	nodes: JudgedNode[],
+	read: (node: JudgedNode) => number | undefined,
+): number | null {
 	const scores = nodes.flatMap((node) => {
 		const score = read(node);
 		return typeof score === 'number' ? [score] : [];
@@ -2055,19 +2072,20 @@ and a stored 0 would drag every later mean."
 ### Task 12: `prompt.md` — the judge's instructions
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/prompt.md`
 
 - [ ] **Step 1: Write the prompt**
 
 Create `prompt.md` verbatim:
 
-````markdown
+```markdown
 You are auditing how well a coding agent used a design system.
 
 An agent was given a task in a React application and made changes. You are given
 the design system's complete documentation, the application's component census
 before and after the agent's work, and the diff of what it changed. Your job is
-to decide which component usages the agent *introduced*, and to score the design
+to decide which component usages the agent _introduced_, and to score the design
 system decisions behind them.
 
 ## Step 1 — decide what is new
@@ -2146,7 +2164,7 @@ cases — not as a hedge when you have not looked closely.
   it, and omit the rest rather than guessing.
 - Return every new DS node and every new local node. Return nothing else — no
   moved nodes, no external nodes, no pre-existing nodes.
-````
+```
 
 - [ ] **Step 2: Verify it loads as an asset**
 
@@ -2160,6 +2178,7 @@ const text = readFileSync(new URL('./lib/agentic-reference/metrics/ds-misuse/pro
 console.log(text.length, 'chars,', text.split('\n').length, 'lines');
 " --input-type=module
 ```
+
 Expected: a non-zero character count.
 
 - [ ] **Step 3: Commit**
@@ -2177,6 +2196,7 @@ how to tell a new usage from a relocated one before it scores anything."
 ### Task 13: Add the Anthropic SDK dependency
 
 **Files:**
+
 - Modify: `agent-eval/package.json`
 
 - [ ] **Step 1: Install**
@@ -2203,6 +2223,7 @@ git commit -m "Add @anthropic-ai/sdk for the DS misuse judge"
 ### Task 14: `context.ts` — assembling the request
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/context.ts`
 - Test: `lib/agentic-reference/metrics/ds-misuse/context.test.ts`
 
@@ -2239,7 +2260,12 @@ function build(overrides: Partial<Parameters<typeof buildJudgeRequest>[0]> = {})
 		docs: DOCS,
 		baselineNodes: [],
 		treatmentNodes: [NODE],
-		patch: { text: 'diff --git a/src/App.tsx b/src/App.tsx\n', files: ['src/App.tsx'], truncated: false, droppedFiles: 0 },
+		patch: {
+			text: 'diff --git a/src/App.tsx b/src/App.tsx\n',
+			files: ['src/App.tsx'],
+			truncated: false,
+			droppedFiles: 0,
+		},
 		fixtureRef: 'yannbf/mealdrop@refs/tags/x',
 		...overrides,
 	});
@@ -2284,7 +2310,12 @@ describe('buildJudgeRequest', () => {
 		const text = String(
 			(
 				build({
-					patch: { text: 'diff --git a/src/A.tsx b/src/A.tsx\n', files: ['src/A.tsx'], truncated: true, droppedFiles: 4 },
+					patch: {
+						text: 'diff --git a/src/A.tsx b/src/A.tsx\n',
+						files: ['src/A.tsx'],
+						truncated: true,
+						droppedFiles: 4,
+					},
 				}).messages[0]!.content as Array<{ text: string }>
 			)[0]!.text,
 		);
@@ -2346,9 +2377,7 @@ export interface JudgeRequestInput {
 }
 
 function docsBlock(docs: DsDoc[]): string {
-	return docs
-		.map((doc) => `<document path="${doc.path}">\n${doc.text}\n</document>`)
-		.join('\n\n');
+	return docs.map((doc) => `<document path="${doc.path}">\n${doc.text}\n</document>`).join('\n\n');
 }
 
 /** One node per line: far cheaper than pretty-printed JSON, and just as readable. */
@@ -2432,6 +2461,7 @@ into a full write."
 ### Task 15: `judge.ts` — the API call
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/judge.ts`
 - Test: `lib/agentic-reference/metrics/ds-misuse/judge.test.ts`
 
@@ -2471,7 +2501,10 @@ describe('runJudge', () => {
 		finalMessage.mockResolvedValue({
 			stop_reason: 'end_turn',
 			content: [
-				{ type: 'text', text: '{"nodes":[{"path":"App/A[0]","file":"a.tsx","line":1,"tag":"A","kind":"ds"}]}' },
+				{
+					type: 'text',
+					text: '{"nodes":[{"path":"App/A[0]","file":"a.tsx","line":1,"tag":"A","kind":"ds"}]}',
+				},
 			],
 		});
 		await expect(runJudge(REQUEST)).resolves.toEqual({
@@ -2572,7 +2605,9 @@ export async function runJudge(request: JudgeRequest): Promise<JudgeResponse> {
 
 	const text = message.content.find((block) => block.type === 'text');
 	if (text === undefined) {
-		throw new Error(`ds-misuse: the judge returned no text block (stop_reason: ${message.stop_reason}).`);
+		throw new Error(
+			`ds-misuse: the judge returned no text block (stop_reason: ${message.stop_reason}).`,
+		);
 	}
 
 	return JSON.parse(text.text) as JudgeResponse;
@@ -2606,6 +2641,7 @@ JSON; both would otherwise surface as a parse error frames from the cause."
 ### Task 16: Extract run discovery so both scripts share it
 
 **Files:**
+
 - Create: `lib/post-analysis/discovery.ts`
 - Create: `lib/post-analysis/discovery.test.ts`
 - Modify: `scripts/analyze-results.ts` (delete the moved code, import instead)
@@ -2843,6 +2879,7 @@ a run is and what --experiment/--since/--latest select."
 ### Task 17: `index.ts` — orchestration and the artifact
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-misuse/index.ts`
 - Test: `lib/agentic-reference/metrics/ds-misuse/index.test.ts`
 
@@ -3083,6 +3120,7 @@ comparable with a fresh one."
 ### Task 18: `scripts/judge-ds-misuse.ts` — the CLI
 
 **Files:**
+
 - Create: `scripts/judge-ds-misuse.ts`
 - Modify: `package.json` (scripts)
 
@@ -3288,6 +3326,7 @@ Each must name its cause. With no results tree:
 ```bash
 pnpm judge:ds-misuse
 ```
+
 Expected: `No results/ directory; nothing to judge.` (or `No runs matched.`)
 
 With an unknown flag:
@@ -3295,6 +3334,7 @@ With an unknown flag:
 ```bash
 pnpm judge:ds-misuse --nope
 ```
+
 Expected: exit 1, `Unknown argument "--nope".`
 
 With the key unset and at least one judgeable run present:
@@ -3302,6 +3342,7 @@ With the key unset and at least one judgeable run present:
 ```bash
 env -u ANTHROPIC_API_KEY pnpm judge:ds-misuse --latest
 ```
+
 Expected: exit 1, a message naming `ANTHROPIC_API_KEY` and `.env.local`. With no
 local runs it prints `No runs matched.` instead — also a pass.
 
@@ -3353,6 +3394,7 @@ starting Phase F.
 ### Task 19: Register `--misuse` and merge the artifact after the cache
 
 **Files:**
+
 - Modify: `lib/post-analysis/types.ts` (`SummarizeOptions`)
 - Modify: `scripts/analyze-results.ts`
 
@@ -3395,7 +3437,7 @@ Extend the usage comment near the top of the file, after the `--coverage` line:
 
 - [ ] **Step 3: Merge the artifact after the cache lookup**
 
-> **This ordering is the point of the task.** The judge runs *after*
+> **This ordering is the point of the task.** The judge runs _after_
 > `results:analyze` in the normal workflow. A row baked into
 > `post-analysis-meta.json` on the first pass would carry no scores, and every
 > later `results:analyze` would keep serving that cached row — the numbers would
@@ -3429,21 +3471,21 @@ function strip(row: SuccessfulAnalysis): Record<string, unknown> {
 In `main()`, immediately after the `successfulAnalyses.sort(...)` call:
 
 ```ts
-	// A silently absent metric is the failure mode worth shouting about, so this
-	// fires whichever table families were selected.
-	const unjudged = successfulAnalyses.filter(
-		(row) => readMisuseReport(row.__run.runDir) === null,
-	).length;
-	if (unjudged > 0) {
-		const bold = '\x1b[1;31m';
-		const reset = '\x1b[0m';
-		console.error(
-			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
-				'  Run: pnpm judge:ds-misuse' +
-				(options.experiment === null ? '' : ` --experiment=${options.experiment}`) +
-				(options.latest ? ' --latest' : ''),
-		);
-	}
+// A silently absent metric is the failure mode worth shouting about, so this
+// fires whichever table families were selected.
+const unjudged = successfulAnalyses.filter(
+	(row) => readMisuseReport(row.__run.runDir) === null,
+).length;
+if (unjudged > 0) {
+	const bold = '\x1b[1;31m';
+	const reset = '\x1b[0m';
+	console.error(
+		`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+			'  Run: pnpm judge:ds-misuse' +
+			(options.experiment === null ? '' : ` --experiment=${options.experiment}`) +
+			(options.latest ? ' --latest' : ''),
+	);
+}
 ```
 
 - [ ] **Step 5: Typecheck**
@@ -3468,6 +3510,7 @@ the first pass would never gain the scores without --recompute."
 ### Task 20: Render the misuse tables
 
 **Files:**
+
 - Modify: `lib/agentic-reference/post-analysis.ts`
 - Test: `lib/agentic-reference/post-analysis.test.ts`
 
@@ -3548,12 +3591,12 @@ import type { DsMisuseSummary } from './metrics/ds-misuse/types.ts';
 Inside `makeGeneralSummary`'s per-group body, beside the coverage numbers:
 
 ```ts
-		const misuseDecision = numbersAt(group, (row) => misuseOf(row)?.correctDsDecision);
-		const misuseUsage = numbersAt(group, (row) => misuseOf(row)?.correctDsUsage);
-		const misuseLocal = numbersAt(group, (row) => misuseOf(row)?.correctLocalDecision);
-		const misuseJudged = group.filter((row) => misuseOf(row) !== null).length;
-		const misuseDsNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.ds);
-		const misuseLocalNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.local);
+const misuseDecision = numbersAt(group, (row) => misuseOf(row)?.correctDsDecision);
+const misuseUsage = numbersAt(group, (row) => misuseOf(row)?.correctDsUsage);
+const misuseLocal = numbersAt(group, (row) => misuseOf(row)?.correctLocalDecision);
+const misuseJudged = group.filter((row) => misuseOf(row) !== null).length;
+const misuseDsNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.ds);
+const misuseLocalNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.local);
 ```
 
 and in the returned object, after the coverage keys:
@@ -3579,60 +3622,60 @@ In `summarize`, after the coverage block and before the "no families selected"
 fallback:
 
 ```ts
-	// Absolute scores only — unlike coverage there is no before side to move
-	// against, because a decision the run did not make has no baseline value.
-	// judged is the escape hatch: a mean over one judged run of ten is not the
-	// arm's number, and the column says so.
-	const withMisuse = analyses.filter((row) => misuseOf(row) !== null);
-	const printedMisuse = options.misuse && withMisuse.length > 0;
-	if (printedMisuse) {
-		console.table(
-			withMisuse.map((row) => {
-				const misuse = misuseOf(row);
-				return {
-					experiment: shortExperiment(row.experiment),
-					run: row.run,
-					dsNodes: misuse?.evaluated.ds ?? null,
-					localNodes: misuse?.evaluated.local ?? null,
-					decision: misuse?.correctDsDecision ?? null,
-					usage: misuse?.correctDsUsage ?? null,
-					localDecision: misuse?.correctLocalDecision ?? null,
-				};
-			}),
-		);
+// Absolute scores only — unlike coverage there is no before side to move
+// against, because a decision the run did not make has no baseline value.
+// judged is the escape hatch: a mean over one judged run of ten is not the
+// arm's number, and the column says so.
+const withMisuse = analyses.filter((row) => misuseOf(row) !== null);
+const printedMisuse = options.misuse && withMisuse.length > 0;
+if (printedMisuse) {
+	console.table(
+		withMisuse.map((row) => {
+			const misuse = misuseOf(row);
+			return {
+				experiment: shortExperiment(row.experiment),
+				run: row.run,
+				dsNodes: misuse?.evaluated.ds ?? null,
+				localNodes: misuse?.evaluated.local ?? null,
+				decision: misuse?.correctDsDecision ?? null,
+				usage: misuse?.correctDsUsage ?? null,
+				localDecision: misuse?.correctLocalDecision ?? null,
+			};
+		}),
+	);
 
-		console.table(
-			summary.map((group) => ({
-				experiment: shortExperiment(group.experiment),
-				judged: `${group.misuseJudged as number}/${group.runs as number}`,
-				dsNodes: (group.misuseEvaluated as { ds: number }).ds,
-				localNodes: (group.misuseEvaluated as { local: number }).local,
-				decisionMean: (group.misuseDecision as { mean: number | null }).mean,
-				usageMean: (group.misuseUsage as { mean: number | null }).mean,
-				localMean: (group.misuseLocalDecision as { mean: number | null }).mean,
-			})),
-		);
-	}
+	console.table(
+		summary.map((group) => ({
+			experiment: shortExperiment(group.experiment),
+			judged: `${group.misuseJudged as number}/${group.runs as number}`,
+			dsNodes: (group.misuseEvaluated as { ds: number }).ds,
+			localNodes: (group.misuseEvaluated as { local: number }).local,
+			decisionMean: (group.misuseDecision as { mean: number | null }).mean,
+			usageMean: (group.misuseUsage as { mean: number | null }).mean,
+			localMean: (group.misuseLocalDecision as { mean: number | null }).mean,
+		})),
+	);
+}
 ```
 
 Extend the empty-selection fallback so `--misuse` with no data says something
 useful rather than printing a bare header:
 
 ```ts
-	if (!options.general && !printedComplexity && !printedCoverage && !printedMisuse) {
-		if (options.misuse && withMisuse.length === 0) {
-			console.log('No DS misuse judgement for these runs. Run: pnpm judge:ds-misuse');
-		} else if (options.coverage && withCoverage.length === 0) {
-			console.log(
-				'No DS coverage for these runs: their external-repo pin declares no DS packages. ' +
-					'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
-			);
-		} else if (options.complexity) {
-			console.log('Nothing to show: these runs carry no baseline delta.');
-		} else {
-			console.log('No table families selected.');
-		}
+if (!options.general && !printedComplexity && !printedCoverage && !printedMisuse) {
+	if (options.misuse && withMisuse.length === 0) {
+		console.log('No DS misuse judgement for these runs. Run: pnpm judge:ds-misuse');
+	} else if (options.coverage && withCoverage.length === 0) {
+		console.log(
+			'No DS coverage for these runs: their external-repo pin declares no DS packages. ' +
+				'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
+		);
+	} else if (options.complexity) {
+		console.log('Nothing to show: these runs carry no baseline delta.');
+	} else {
+		console.log('No table families selected.');
 	}
+}
 ```
 
 Finally, update `summarize`'s default parameter so a direct programmatic call
@@ -3658,12 +3701,14 @@ Expected: no errors.
 ```bash
 pnpm results:analyze --misuse --latest
 ```
+
 Expected: the per-run and grouped misuse tables, and — if any run is unjudged —
 the bold red warning naming the count and the `judge:ds-misuse` command.
 
 ```bash
 pnpm results:analyze --latest
 ```
+
 Expected: the coverage tables as before, plus the same warning. The misuse tables
 must NOT print: `DEFAULT_TABLES` is still `['coverage']`.
 
@@ -3683,6 +3728,7 @@ run of ten is not the arm's number, and the column says so."
 ### Task 21: Document the metric
 
 **Files:**
+
 - Modify: `agent-eval/README.md`
 
 - [ ] **Step 1: Add a section after "Known Failures"**
@@ -3690,8 +3736,8 @@ run of ten is not the arm's number, and the column says so."
 ````markdown
 ## Design-system misuse judging
 
-`ds-coverage` measures how *much* of a run's UI comes from the design system.
-`ds-misuse` measures whether the agent used it *well*, scoring the JSX nodes a
+`ds-coverage` measures how _much_ of a run's UI comes from the design system.
+`ds-misuse` measures whether the agent used it _well_, scoring the JSX nodes a
 run introduced against the Droppy design system's own documentation:
 
 - `correct-ds-decision` — was this the right DS component, or did a better DS
@@ -3701,6 +3747,12 @@ run introduced against the Droppy design system's own documentation:
   with a relevant API exist?
 
 Each is scored 1 / 0.5 / 0 per node and summarised as a mean in `[0, 1]`.
+
+`pnpm exec node scripts/ds-coverage.ts <dir> --ds <pattern> --nodes` lists the
+census records a tree produces. Note its `Nodes (N)` count is much smaller than
+the `JSX nodes: N weighted` line above it — the former counts only judgeable
+component elements, since hosts and unresolved tags are deliberately excluded.
+The two are not meant to reconcile.
 
 Unlike every other metric here, this one **costs money** — one Claude call per
 run — so it lives behind its own command rather than running as part of
@@ -3745,6 +3797,7 @@ pnpm exec tsc --noEmit
 pnpm lint
 pnpm format:check
 ```
+
 Expected: all green. Run `pnpm format` if `format:check` complains.
 
 - [ ] **End to end on real runs**
@@ -3810,7 +3863,7 @@ cheap-to-get-wrong parts:
 
 1. **Task 1's naming collision.** `DsCoverageReport.nodes` already means
    `NodeTotals`, so the record list is `nodeList` on both the report and
-   `CensusResult`. Note what this does *not* guard: committed baselines are
+   `CensusResult`. Note what this does _not_ guard: committed baselines are
    protected by `measureDsCoverage`'s named-field whitelist in
    `metrics/coverage.ts`, not by the report's shape. Anyone adding a field that
    must reach a baseline has to edit that whitelist.
