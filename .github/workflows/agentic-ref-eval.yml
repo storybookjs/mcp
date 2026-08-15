@@ -13,16 +13,16 @@ name: Agentic-reference eval
 on:
   workflow_dispatch:
     inputs:
-      cases:
-        description: 'Comma-separated case names or globs, e.g. agentic-ref-cc-control-none-opus-high,agentic-ref-cc-docs-full-opus-high — empty runs every case'
+      experiments:
+        description: 'Comma-separated experiment (case) names or globs, e.g. agentic-ref-cc-control-none-opus-high,agentic-ref-cc-* — empty runs every experiment'
         type: string
         default: ''
-      flows:
-        description: "Comma-separated workflow fixtures; a full name, a number (703), or a glob (70*) all work — empty runs each case's full workflow set"
+      evals:
+        description: "Comma-separated evals (flows); a full name, a number (703), or a glob (70*) all work — empty runs each experiment's full eval set"
         type: string
         default: ''
       runs:
-        description: 'Repetitions per (case, workflow) cell (AGENTIC_REF_RUNS). Default 10, the batch size the comparison tooling expects'
+        description: 'Repetitions per (experiment, eval) cell. Default 10, the batch size the comparison tooling expects'
         type: string
         default: '10'
       force:
@@ -94,93 +94,17 @@ jobs:
 
           exit "$missing"
 
-      - name: Resolve the selection
-        shell: bash
-        env:
-          RAW_CASES: ${{ inputs.cases }}
-          RAW_FLOWS: ${{ inputs.flows }}
-        run: |
-          # Cases arrive comma-separated; run-all wants one argument per case,
-          # so normalize to spaces here and let the run step split.
-          CASES=$(tr ',' ' ' <<< "$RAW_CASES" | tr -s ' ' | sed 's/^ //; s/ $//')
-
-          # Flows may be full names, bare numbers (703) or globs (70*). Tokens
-          # expand against the ACTIVE eval registry (AGENTIC_REF_EVALS in
-          # cases.ts) rather than the evals/ directory: fixtures can exist on
-          # disk while parked out of the registry, and the runner rejects those.
-          FLOWS=""
-          if [[ -n "$RAW_FLOWS" ]]; then
-            mapfile -t active < <(sed -n "/^export const AGENTIC_REF_EVALS/,/^\];/ s/^[[:space:]]*'\([0-9][^']*\)'.*/\1/p" \
-              agent-eval/lib/agentic-reference/cases.ts)
-            if [[ ${#active[@]} -eq 0 ]]; then
-              echo "::error title=No registry::Could not read AGENTIC_REF_EVALS from cases.ts on this ref. Nothing was run."
-              exit 1
-            fi
-
-            resolved=()
-            IFS=',' read -r -a tokens <<< "$RAW_FLOWS"
-            for token in "${tokens[@]}"; do
-              token=$(tr -d ' ' <<< "$token")
-              [[ -z "$token" ]] && continue
-              pattern="$token"
-              # A bare number selects every active flow with that number prefix.
-              [[ "$pattern" != *[*?]* && "$pattern" =~ ^[0-9]+$ ]] && pattern="$token-*"
-              matches=()
-              for name in "${active[@]}"; do
-                [[ "$name" == $pattern ]] && matches+=("$name")
-              done
-              if [[ ${#matches[@]} -eq 0 ]]; then
-                echo "::error title=Unknown flow::'$token' matches no ACTIVE flow. Active: ${active[*]}. Nothing was run."
-                exit 1
-              fi
-              resolved+=("${matches[@]}")
-            done
-            FLOWS=$(printf '%s\n' "${resolved[@]}" | sort -u | paste -sd, -)
-            echo "Flows resolved: $FLOWS"
-          fi
-
-          {
-            echo "RESOLVED_CASES=$CASES"
-            echo "RESOLVED_FLOWS=$FLOWS"
-          } >> "$GITHUB_ENV"
-
-      - name: Enforce the expected plan size
-        if: ${{ inputs.expect != '' }}
-        shell: bash
-        env:
-          CASES: ${{ env.RESOLVED_CASES }}
-          EXPECT: ${{ inputs.expect }}
-          AGENTIC_REF_FLOW: ${{ env.RESOLVED_FLOWS }}
-          AGENTIC_REF_RUNS: ${{ inputs.runs }}
-        run: |
-          args=()
-          if [[ -n "$CASES" ]]; then
-            read -r -a case_args <<< "$CASES"
-            args+=("${case_args[@]}")
-          fi
-
-          plan=$(pnpm --dir agent-eval run eval:agentic-ref:dry -- "${args[@]}")
-          echo "$plan"
-          resolved=$(grep -oE '[0-9]+ evals? to run' <<< "$plan" | grep -oE '^[0-9]+' | head -1)
-
-          if [[ -z "$resolved" ]]; then
-            echo "::error title=Spend guard::Could not read the resolved eval count from the dry-run plan."
-            exit 1
-          fi
-          if [[ "$resolved" != "$EXPECT" ]]; then
-            echo "::error title=Spend guard::The selection resolves to $resolved evals, but expect=$EXPECT. Nothing was run."
-            exit 1
-          fi
-          echo "Plan matches: $resolved evals."
-
       - name: Run agentic-reference evals
-        shell: bash
         env:
-          CASES: ${{ env.RESOLVED_CASES }}
-          DRY: ${{ inputs.dry }}
-          FORCE: ${{ inputs.force }}
-          AGENTIC_REF_FLOW: ${{ env.RESOLVED_FLOWS }}
+          # All options live in the runner (agent-eval/scripts/run-agentic-ref.ts).
+          # Passing them as env keeps a glob like agentic-ref-cc-* clear of shell
+          # pathname expansion.
+          AGENTIC_REF_EXPERIMENTS: ${{ inputs.experiments }}
+          AGENTIC_REF_EVALS: ${{ inputs.evals }}
           AGENTIC_REF_RUNS: ${{ inputs.runs }}
+          AGENTIC_REF_FORCE: ${{ inputs.force }}
+          AGENTIC_REF_DRY: ${{ inputs.dry }}
+          AGENTIC_REF_EXPECT: ${{ inputs.expect }}
           # The runner drives coding agents through Vercel AI Gateway and skips
           # an experiment with exit 0 when this is unset — the job goes green
           # having run nothing.
@@ -190,25 +114,7 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          # The :dry variant is a separate script rather than a --dry argument:
-          # pnpm consumes leading dashes before the script sees them.
-          script=eval:agentic-ref
-          [[ "$DRY" == "true" ]] && script=eval:agentic-ref:dry
-
-          args=()
-          [[ "$FORCE" == "true" ]] && args+=(--force)
-
-          # Split on whitespace so each case reaches run-all as its own
-          # argument, without the pathname expansion an unquoted $CASES would
-          # get: a case glob like agentic-ref-cc-* must stay literal for
-          # run-all to match it against experiment names.
-          if [[ -n "$CASES" ]]; then
-            read -r -a case_args <<< "$CASES"
-            args+=("${case_args[@]}")
-          fi
-
-          pnpm --dir agent-eval run "$script" -- "${args[@]}"
+        run: pnpm --dir agent-eval run eval:agentic-ref
 
       - name: Compute metrics and archive results
         if: ${{ always() && inputs.dry == false }}
