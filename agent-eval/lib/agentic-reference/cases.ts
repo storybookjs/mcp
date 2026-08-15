@@ -2,7 +2,7 @@
 // pure data — a design-system MCP package or URL or none, an agent, a model,
 // overrides — resolved into an ExperimentConfig by agenticRefCaseExperiment.
 // .agentic-ref/experiments/ holds one generated stub per case; see
-// scripts/generate-agentic-ref-experiments.mts.
+// scripts/generate-agentic-ref-experiments.ts.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,9 +11,11 @@ import type { ExperimentConfig } from '@vercel/agent-eval';
 import type { EvalAgent, EvalIntegration, McpServerSpec } from '../templates.ts';
 import { AGENT_NAME_PARTS, agenticRefExperiment } from './experiment.ts';
 import type { StorybookMcpPackageSpec } from './local-mcp.ts';
+import { resolveEvalSelection } from './selection.ts';
 
-/** The full agentic-reference workflow list; every case runs all of them unless it pins its own `evals`. */
-export const AGENTIC_REF_EVALS: string[] = [
+/** The active eval list; every case runs all of them unless it specifies its own `evals`. */
+
+export const AGENTIC_REF_EVAL_REGISTRY: string[] = [
 	'701-new-ui-flow',
 	'702-rework-ui-flow',
 	'703-fix-bug-flow',
@@ -25,7 +27,7 @@ export const AGENTIC_REF_EVALS: string[] = [
 
 // The workflows the Storybook content variants treat; the migration flows are
 // excluded.
-const DS_APP_WORKFLOWS = AGENTIC_REF_EVALS.filter(
+const DS_APP_WORKFLOWS = AGENTIC_REF_EVAL_REGISTRY.filter(
 	(evalName) => !['705-migrate-to-ds-flow'].includes(evalName),
 );
 
@@ -53,7 +55,7 @@ export interface AgenticRefCase {
 	editPrompt?: (prompt: string) => string;
 	/** Coding agent to evaluate. Default 'claude-code'. */
 	agent?: EvalAgent;
-	/** Workflow evals to run. Defaults to AGENTIC_REF_EVALS. */
+	/** Workflow evals to run. Defaults to AGENTIC_REF_EVAL_REGISTRY. */
 	evals?: string[];
 	overrides?: Partial<ExperimentConfig>;
 }
@@ -158,30 +160,25 @@ if (duplicateNames.length > 0) {
 	throw new Error(`AGENTIC_REF_CASES: duplicate case names: ${duplicateNames.join(', ')}`);
 }
 
-// AGENTIC_REF_FLOW=<eval>[,<eval>] narrows every case to those workflows (the
-// standard EVAL_ONLY knows nothing about this eval line). A case whose eval
-// set does not include a requested workflow simply runs nothing; a name that
-// is no workflow at all throws rather than silently running zero evals.
-function applyEvalFilter(evals: string[]): string[] {
-	const raw = process.env.AGENTIC_REF_FLOW;
+// AGENTIC_REF_EVALS=<eval>[,<eval>] narrows every case's supported workflow evals
+// to the ones matching the environment variable. This is a filtering mechanism
+// rather than an overriding one.
+function applyEvalSelection(evals: string[]): string[] {
+	const raw = process.env.AGENTIC_REF_EVALS;
 	if (raw === undefined || raw === '') {
 		return evals;
 	}
-	const wanted = raw
+	const tokens = raw
 		.split(',')
 		.map((name) => name.trim())
 		.filter(Boolean);
-	if (wanted.length === 0) {
+	if (tokens.length === 0) {
 		throw new Error(
-			`AGENTIC_REF_FLOW: no workflow names in "${raw}". Valid: ${AGENTIC_REF_EVALS.join(', ')}`,
+			`AGENTIC_REF_EVALS: no workflow names in "${raw}". Valid: ${AGENTIC_REF_EVAL_REGISTRY.join(', ')}`,
 		);
 	}
-	const unknown = wanted.filter((name) => !AGENTIC_REF_EVALS.includes(name));
-	if (unknown.length > 0) {
-		throw new Error(
-			`AGENTIC_REF_FLOW: unknown eval(s) ${unknown.join(', ')}. Valid: ${AGENTIC_REF_EVALS.join(', ')}`,
-		);
-	}
+
+	const wanted = resolveEvalSelection(tokens, AGENTIC_REF_EVAL_REGISTRY);
 	return evals.filter((name) => wanted.includes(name));
 }
 
@@ -211,7 +208,10 @@ export function agenticRefCaseExperiment(name: string): ExperimentConfig {
 
 	return agenticRefExperiment({
 		name: agenticRefCase.name,
-		evals: assertEvalsExist(name, applyEvalFilter(agenticRefCase.evals ?? AGENTIC_REF_EVALS)),
+		evals: assertEvalsExist(
+			name,
+			applyEvalSelection(agenticRefCase.evals ?? AGENTIC_REF_EVAL_REGISTRY),
+		),
 		agent: agenticRefCase.agent,
 		storybookMcpUrl: agenticRefCase.storybookMcpUrl,
 		storybookMcpPackage: agenticRefCase.storybookMcpPackage,

@@ -30,18 +30,29 @@
 // output instead of recomputing it. Pass --recompute after changing a metric
 // definition to force every matched run to be recomputed.
 //
-// Usage: pnpm results:analyze [--experiment=<name>] [--eval=<name>] [--since=<ISO date>] [--latest] [--recompute]
-//                             [--general] [--complexity] [--coverage]
+// Usage: pnpm results:analyze [--experiments <list>] [--evals <list>] [--since <ISO date>]
+//                             [--latest] [--recompute] [--general] [--complexity] [--coverage]
 //
-//   --experiment=<name>  only runs under results/<name>/
-//   --eval=<name>        only runs of the named eval (e.g. 706-new-ui-scheduled-flow)
-//   --since=<ISO date>   only runs whose result directory is stamped on or after
-//   --latest             only the newest result directory per experiment
-//   --recompute          recompute analysis, and rebuild committed baselines,
-//                        even where a cached result exists
-//   --general            print the per-run vitals and grouped summary tables
-//   --complexity         print the complexity tables
-//   --coverage           print the design-system coverage tables
+//   --experiments <list>  only runs under results/<name>/, by name or glob
+//   --evals <list>        only runs of these evals, by name, number (706) or glob
+//   --since <ISO date>    only runs whose result directory is stamped on or after
+//   --latest              only the newest result directory per experiment
+//   --recompute           recompute analysis, and rebuild committed baselines,
+//                         even where a cached result exists (alias: --force)
+//   --general             print the per-run vitals and grouped summary tables
+//   --complexity          print the complexity tables
+//   --coverage            print the design-system coverage tables
+//
+// Selection follows the shared grammar in lib/agentic-reference/selection.ts:
+// --cases and --flows are aliases, singular and plural spellings are the same
+// flag, lists take commas or repetition, and --flag=value works as well as
+// --flag value. Every flag also falls back to AGENTIC_REF_<FLAG>, so one
+// exported selection narrows a run and the analysis that follows it alike.
+//
+// Fallbacks key off the canonical flag name, so --recompute reads
+// AGENTIC_REF_RECOMPUTE; its --force spelling stays command-line only, since an
+// AGENTIC_REF_FORCE exported to re-run a case should not go on to rebuild every
+// committed baseline here.
 //
 // The three table flags select what is *printed*; everything is measured and
 // written either way. Passing any of them prints exactly that set; passing none
@@ -56,6 +67,7 @@ import { postAnalysisFrom } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
+import { matchesAnySelector, selectionFlags } from '#lib/agentic-reference/selection';
 
 import type {
 	Analysis,
@@ -78,51 +90,61 @@ type TableSection = (typeof TABLE_SECTIONS)[number];
 const DEFAULT_TABLES: TableSection[] = ['coverage'];
 
 interface PostAnalysisOptions {
-	experiment: string | null;
-	evalName: string | null;
+	experiments: string[];
+	evals: string[];
 	since: string | null;
 	latest: boolean;
 	recompute: boolean;
 	tables: SummarizeOptions;
 }
 
-function isTableSection(name: string): name is TableSection {
-	return (TABLE_SECTIONS as readonly string[]).includes(name);
-}
+// Same grammar as the runner (lib/agentic-reference/selection.ts): canonical
+// experiment/eval wording, case/flow accepted as aliases, singular and plural
+// interchangeable, lists by comma or repetition, and each flag falling back to
+// AGENTIC_REF_<FLAG>.
+function parseOptions(argv: string[]): PostAnalysisOptions {
+	const flags = selectionFlags(process.env);
+	const parsed = flags
+		.parser(
+			argv,
+			{ scriptName: 'results:analyze', usage: 'Usage: pnpm results:analyze [flags]' },
+			{
+				experiments: flags.experiments,
+				evals: flags.evals,
+				since: flags.text('since', 'Only runs stamped on or after this ISO date'),
+				latest: flags.switch('latest', 'Only the newest result directory per experiment'),
+				recompute: {
+					...flags.switch(
+						'recompute',
+						'Recompute analysis and baselines even where a cached result exists',
+					),
+					alias: ['force'],
+				},
+				general: flags.switch('general', 'Print the per-run vitals and grouped summary tables'),
+				complexity: flags.switch('complexity', 'Print the complexity tables'),
+				coverage: flags.switch('coverage', 'Print the design-system coverage tables'),
+			},
+		)
+		.parseSync();
 
-function parseArgs(argv: string[]) {
-	const options: PostAnalysisOptions = {
-		experiment: null,
-		evalName: null,
-		since: null,
-		latest: false,
-		recompute: false,
-		tables: { general: false, complexity: false, coverage: false },
-	};
-	const sections = new Set<TableSection>();
-	for (const arg of argv) {
-		const [flag, value] = arg.split('=');
-		if (flag === '--latest') options.latest = true;
-		else if (flag === '--recompute') options.recompute = true;
-		else if (flag === '--experiment' && value) options.experiment = value;
-		else if (flag === '--eval' && value) options.evalName = value;
-		else if (flag === '--since' && value) options.since = value;
-		else if (flag?.startsWith('--') && isTableSection(flag.slice(2))) {
-			sections.add(flag.slice(2) as TableSection);
-		} else
-			throw new Error(
-				`Unknown argument "${arg}". See the usage comment in scripts/analyze-results.ts.`,
-			);
-	}
-
+	const sections = TABLE_SECTIONS.filter((section) => parsed[section] === true);
 	// Naming any section selects exactly that set, so `--complexity` means "just
 	// the complexity tables" rather than "the default plus complexity" — no
 	// --no-<section> negation needed to get back to one family.
-	const chosen = sections.size === 0 ? DEFAULT_TABLES : [...sections];
-	for (const section of TABLE_SECTIONS) {
-		options.tables[section] = chosen.includes(section);
-	}
-	return options;
+	const chosen = sections.length === 0 ? DEFAULT_TABLES : sections;
+
+	return {
+		experiments: parsed.experiments,
+		evals: parsed.evals,
+		since: parsed.since ?? null,
+		latest: parsed.latest === true,
+		recompute: parsed.recompute === true,
+		tables: {
+			general: chosen.includes('general'),
+			complexity: chosen.includes('complexity'),
+			coverage: chosen.includes('coverage'),
+		},
+	};
 }
 
 // --- discovery ---
@@ -174,12 +196,11 @@ function parseTimestamp(timestamp: string): Date {
 
 function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
 	let selected = runs;
-	if (options.experiment) {
-		selected = selected.filter((run) => run.experiment === options.experiment);
-	}
-	if (options.evalName) {
-		selected = selected.filter((run) => run.evalName === options.evalName);
-	}
+	selected = selected.filter(
+		(run) =>
+			matchesAnySelector(run.experiment, options.experiments) &&
+			matchesAnySelector(run.evalName, options.evals),
+	);
 	if (options.since) {
 		const since = new Date(options.since);
 		if (Number.isNaN(since.getTime())) {
@@ -342,7 +363,7 @@ function strip(row: SuccessfulAnalysis): Record<string, unknown> {
 }
 
 async function main() {
-	const options = parseArgs(process.argv.slice(2));
+	const options = parseOptions(process.argv.slice(2));
 	const runs = selectRuns(findRuns(RESULTS_DIR), options);
 
 	const successfulAnalyses: SuccessfulAnalysis[] = [];
