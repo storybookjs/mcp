@@ -8,6 +8,7 @@ import type { Transcript } from '@vercel/agent-eval';
 import { expect } from 'vitest';
 
 import {
+	findStorybookAiSetupInvocations,
 	getNestedWorkflowInput,
 	isRecord,
 	isSameWorkflowCall,
@@ -293,10 +294,22 @@ function getDisplayReviewStoryIds(input: Record<string, unknown>): string[] {
 	);
 }
 
-const STORY_FILE_PATTERN = /\.stories\.[jt]sx?$/;
-const SKIPPED_SCAN_DIRECTORIES = new Set(['node_modules', 'dist', '.git', '__agent_eval__']);
+const STORY_FILE_PATTERN = /\.stories\.[cm]?[jt]sx?$/;
+// Directories that hold dependencies, build output, or eval-harness files in
+// the sandbox; story files inside them are not project source.
+const SKIPPED_SCAN_DIRECTORIES = new Set([
+	'node_modules',
+	'dist',
+	'storybook-static',
+	'local-packages',
+	'.git',
+	'.agent-eval',
+	'__agent_eval__',
+]);
 
-function findStoryFiles(rootDir: string): string[] {
+// All project-source story files under rootDir, as rootDir-prefixed paths
+// (relative when rootDir is relative, absolute when it is absolute).
+export function findStoryFiles(rootDir = '.'): string[] {
 	return readdirSync(rootDir, { withFileTypes: true }).flatMap((entry) => {
 		const entryPath = join(rootDir, entry.name);
 		if (entry.isDirectory()) {
@@ -304,6 +317,30 @@ function findStoryFiles(rootDir: string): string[] {
 		}
 		return STORY_FILE_PATTERN.test(entry.name) ? [entryPath] : [];
 	});
+}
+
+// Story-gate check for the setup decision tree (storybookjs/mcp#364): the
+// project must end the run with exactly the seeded story file paths — an
+// agent that generates story files on a project that already has user-written
+// ones fails here. Path-set only; pair with expectStoryExportsExactly to also
+// catch stories generated into an existing file.
+export function expectStoryFilesExactly(expectedPaths: string[]): void {
+	expect(
+		findStoryFiles().sort(),
+		'Expected the project story files to be exactly the seeded set',
+	).toEqual([...expectedPaths].sort());
+}
+
+// Companion to expectStoryFilesExactly: the seeded story file must keep
+// exactly its seeded story exports, so stories generated into the existing
+// file (invisible to the path-set check) fail too. Only export names are
+// compared — legitimate content changes such as upgrade-codemod import
+// rewrites stay green.
+export function expectStoryExportsExactly(storyFilePath: string, exportNames: string[]): void {
+	expect(
+		getStoryExportNames(readFileSync(storyFilePath, 'utf8')).sort(),
+		`Expected ${storyFilePath} to keep exactly its seeded story exports`,
+	).toEqual([...exportNames].sort());
 }
 
 function getStoryExportNames(storyFileSource: string): string[] {
@@ -846,15 +883,7 @@ export function expectStorybookDependenciesAtLeast(
 		ifPresent?: string[];
 	},
 ): void {
-	const packageJson = parseJson(readFileSync('package.json', 'utf8'));
-	if (!isRecord(packageJson)) {
-		expect.fail('Expected package.json to contain a JSON object');
-	}
-
-	const dependencies = {
-		...(isRecord(packageJson.dependencies) ? packageJson.dependencies : {}),
-		...(isRecord(packageJson.devDependencies) ? packageJson.devDependencies : {}),
-	};
+	const dependencies = readMergedDependencies();
 
 	const minimum = parseSemverTriple(minInclusiveVersion);
 	if (minimum === undefined) {
@@ -916,6 +945,77 @@ export function expectShellCommandMatching(pattern: RegExp): void {
 		`Expected a shell command matching ${pattern}. Received: ${truncateForMessage(
 			JSON.stringify(commands),
 		)}`,
+	).toBe(true);
+}
+
+// The positive side of the setup decision tree's story gate
+// (storybookjs/mcp#364): a story-less project must get story generation.
+// Token-aware (see findStorybookAiSetupInvocations) so a help call or a
+// command that merely mentions the text does not count.
+export function expectStorybookAiSetupRan(): void {
+	const commands = getShellCommands();
+	expect(
+		findStorybookAiSetupInvocations(commands).length > 0,
+		`Expected a \`storybook ai setup\` invocation. Received: ${truncateForMessage(
+			JSON.stringify(commands),
+		)}`,
+	).toBe(true);
+}
+
+// The negative side of the story gate: a project with user-written stories
+// must not get story generation. Token-aware, so a correct agent that only
+// greps or echoes the command text does not false-fail.
+export function expectNoStorybookAiSetup(): void {
+	const invocations = findStorybookAiSetupInvocations(getShellCommands());
+	expect(
+		invocations.length === 0,
+		`Expected no \`storybook ai setup\` invocation. Received: ${truncateForMessage(
+			JSON.stringify(invocations),
+		)}`,
+	).toBe(true);
+}
+
+function readMergedDependencies(): Record<string, unknown> {
+	const packageJson = parseJson(readFileSync('package.json', 'utf8'));
+	if (!isRecord(packageJson)) {
+		expect.fail('Expected package.json to contain a JSON object');
+	}
+
+	return {
+		...(isRecord(packageJson.dependencies) ? packageJson.dependencies : {}),
+		...(isRecord(packageJson.devDependencies) ? packageJson.devDependencies : {}),
+	};
+}
+
+export function expectDependencyInstalled(packageName: string, hint?: string): void {
+	const spec = readMergedDependencies()[packageName];
+	expect(
+		typeof spec === 'string' && spec.length > 0,
+		`Expected the ${packageName} dependency${hint === undefined ? '' : ` (${hint})`}. Received: ${String(spec)}`,
+	).toBe(true);
+}
+
+// Setup decision-tree step 3 (storybookjs/mcp#364): @storybook/addon-mcp must
+// be a package.json dependency and registered in the .storybook/main.* addons.
+export function expectMcpAddonInstalled(): void {
+	expectDependencyInstalled(
+		'@storybook/addon-mcp',
+		'setup skill: npx storybook add @storybook/addon-mcp',
+	);
+
+	const mainFile = readdirSync('.storybook').find((entry) => /^main\.[cm]?[jt]sx?$/.test(entry));
+	if (mainFile === undefined) {
+		expect.fail('Expected a .storybook/main config file to exist');
+	}
+
+	// Scoped to the addons array (quoted directly or wrapped, e.g. in
+	// getAbsolutePath(...)), so a mention elsewhere in the file — an import or
+	// a comment — does not count as registration.
+	expect(
+		/addons['"]?\s*:\s*\[[^\]]*['"`]@storybook\/addon-mcp['"`]/.test(
+			readFileSync(`.storybook/${mainFile}`, 'utf8'),
+		),
+		'Expected @storybook/addon-mcp to be registered in the Storybook config addons',
 	).toBe(true);
 }
 
