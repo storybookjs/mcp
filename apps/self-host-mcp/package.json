@@ -8,8 +8,8 @@
 		"start": "node ./server.ts"
 	},
 	"dependencies": {
-		"@storybook/mcp": "latest",
-		"srvx": "^0.8.16"
+		"@storybook/mcp": "workspace:*",
+		"srvx": "^0.12.4"
 	},
 	"devDependencies": {
 		"@types/node": "^24.0.0",

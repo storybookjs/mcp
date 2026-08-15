@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@vercel/agent-eval@1.2.0':
-    hash: 520e4f098b755dc01fa085794294d8a8eeaeeb3201772fff6eccb717edaf62e4
-    path: ../../agent-eval/patches/@vercel__agent-eval@1.2.0.patch
+  '@vercel/agent-eval@1.4.0':
+    hash: 5e953198efcb64e2988da199168c57145a4a7089ff8085f22bf542ec04c62845
+    path: ../../agent-eval/patches/@vercel__agent-eval@1.4.0.patch
 
 importers:
 
@@ -15,14 +15,14 @@ importers:
     devDependencies:
       tinyexec:
         specifier: ^1.0.2
-        version: 1.1.2
+        version: 1.2.4
 
 packages:
 
-  tinyexec@1.1.2:
-    resolution: {integrity: sha512-dAqSqE/RabpBKI8+h26GfLq6Vb3JVXs30XYQjdMjaj/c2tS8IYYMbIzP599KtRj7c57/wYApb3QjgRgXmrCukA==}
+  tinyexec@1.2.4:
+    resolution: {integrity: sha512-SHf/r48b7vOrjve9PxJo3MN5v5yuyjHvdUcrQffT3WXMUfnGmHDVbC4k3sHJaJTgZCwpUplIaAo5ANtMyp3YHg==}
     engines: {node: '>=18'}
 
 snapshots:
 
-  tinyexec@1.1.2: {}
+  tinyexec@1.2.4: {}

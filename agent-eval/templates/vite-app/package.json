@@ -19,10 +19,10 @@
 		"@types/node": "24.10.1",
 		"@types/react": "19.2.6",
 		"@types/react-dom": "19.2.3",
-		"@vercel/agent-eval": "1.2.0",
+		"@vercel/agent-eval": "1.4.0",
 		"@vitejs/plugin-react-swc": "4.2.2",
 		"typescript": "5.9.3",
-		"vite": "7.2.2",
-		"vitest": "4.0.6"
+		"vite": "7.3.6",
+		"vitest": "4.1.10"
 	}
 }

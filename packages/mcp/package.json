@@ -42,7 +42,7 @@
 		"@tmcp/transport-stdio": "catalog:",
 		"react-docgen": "^8.0.2",
 		"react-docgen-typescript": "^2.4.0",
-		"srvx": "^0.8.16",
+		"srvx": "^0.12.4",
 		"tinyexec": "^1.0.2"
 	}
 }
