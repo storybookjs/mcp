@@ -127,9 +127,11 @@ export const createStorybookMcpHandler = async (
 		server.on('initialize', onSessionInitialize);
 	}
 
+	const multiSource = (defaultContext.sources?.length ?? 0) > 1;
+
 	await addListAllDocumentationTool(server);
-	await addGetStoryDocumentationTool(server);
-	await addGetDocumentationTool(server);
+	await addGetStoryDocumentationTool(server, undefined, { multiSource });
+	await addGetDocumentationTool(server, undefined, { multiSource });
 
 	const transport = new HttpTransport(server, { path: null });
 
