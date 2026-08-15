@@ -8,10 +8,7 @@ export default {
 	// handle Codex's Responses namespace tool shape yet:
 	// https://github.com/openai/codex/issues/26234
 	agent: 'codex',
-	// Pin the model: the Codex CLI's native default under API-key auth is
-	// gpt-5.2-codex, which is deprecated (retiring July 2026). Medium is the
-	// reasoning effort the adapter already defaults to when a model is pinned.
-	model: 'gpt-5.5?reasoningEffort=medium',
+	model: 'gpt-5.4?reasoningEffort=medium',
 	// Runs zero evals unless EVAL_EXTRA_MODELS=1 is set; see EXTRA_MODEL_EVALS.
 	evals: EXTRA_MODEL_EVALS,
 	setup: async (sandbox) => {
