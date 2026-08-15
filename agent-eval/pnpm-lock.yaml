@@ -51,6 +51,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
+      '@types/yargs':
+        specifier: ^17.0.35
+        version: 17.0.35
       '@vercel/agent-eval':
         specifier: 1.2.0
         version: 1.2.0(patch_hash=26466f3670f210363a5257ad9b1e0f0874f6a2881ae162ef9deb301be67c6dc5)
@@ -87,6 +90,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.6(@edge-runtime/vm@3.2.0)(@types/node@24.10.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)
+      yargs:
+        specifier: ^17.7.3
+        version: 17.7.3
 
 packages:
 
@@ -2194,6 +2200,12 @@ packages:
 
   '@types/react@19.2.17':
     resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
+
+  '@types/yargs-parser@21.0.3':
+    resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
+
+  '@types/yargs@17.0.35':
+    resolution: {integrity: sha512-qUHkeCyQFxMXg79wQfTtfndEC+N9ZZg76HJftDJp+qH2tV7Gj4OJi7l+PiWwJ+pWtW8GwSmqsDj/oymhrTWXjg==}
 
   '@vercel/agent-eval-playground@0.1.3':
     resolution: {integrity: sha512-ZzjuDZ9efpT7y51KQoZMZ5R4u38ahY4PJBkry3NlADKExcVs+EsY+U0k3k0cHJ+gr/KsBhioLDfMTPxBbl4U9Q==}
@@ -5796,6 +5808,12 @@ snapshots:
   '@types/react@19.2.17':
     dependencies:
       csstype: 3.2.3
+
+  '@types/yargs-parser@21.0.3': {}
+
+  '@types/yargs@17.0.35':
+    dependencies:
+      '@types/yargs-parser': 21.0.3
 
   '@vercel/agent-eval-playground@0.1.3(@opentelemetry/api@1.9.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)':
     dependencies:

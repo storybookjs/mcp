@@ -3,8 +3,8 @@
 // locally from a pkg.pr.new preview package (`storybookMcpPackage`) or at an
 // external URL (`storybookMcpUrl`) — other MCP servers (`mcpServers`), skills
 // (`skillDirs`), a prompt transform (`editPrompt`) — or nothing at all,
-// the bare control. Gated behind EVAL_AGENTIC_REFERENCE=1 so the default
-// matrix never spends on it.
+// the bare control. Gated behind EVAL_AGENTIC_REFERENCE=1 — which only
+// scripts/run-agentic-ref.ts sets — so the default matrix never spends on it.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -35,6 +35,7 @@ import {
 	setupLocalStorybookMcp,
 } from './local-mcp.ts';
 import { postAnalysis } from './post-analysis.ts';
+import { parsePositiveInteger } from './selection.ts';
 
 import type { PostAnalysisExperiment } from '../post-analysis/types.ts';
 
@@ -98,17 +99,12 @@ export const AGENT_NAME_PARTS: Record<EvalAgent, { prefix: string; modelSuffix: 
 	codex: { prefix: 'codex', modelSuffix: 'gpt-5.5-medium' },
 };
 
-/** Research sample size, from AGENTIC_REF_RUNS. */
+/** Research sample size, from --runs (AGENTIC_REF_RUNS). */
 function resolveRuns(): number {
-	const raw = process.env.AGENTIC_REF_RUNS;
-	if (raw === undefined || raw === '') {
-		return AGENTIC_REF_DEFAULT_RUN_COUNT;
-	}
-	const parsed = Number.parseInt(raw, 10);
-	if (!Number.isInteger(parsed) || parsed < 1) {
-		throw new Error(`AGENTIC_REF_RUNS must be a positive integer; received "${raw}"`);
-	}
-	return parsed;
+	return (
+		parsePositiveInteger('AGENTIC_REF_RUNS', process.env.AGENTIC_REF_RUNS) ??
+		AGENTIC_REF_DEFAULT_RUN_COUNT
+	);
 }
 
 // Snapshot the fixture's external-repo pin at execution time. The offline
