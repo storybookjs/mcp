@@ -295,10 +295,6 @@ function localMinute(at: Date): string {
 /**
  * How a run is labelled in a per-run table: when it was collected, in the
  * reader's own timezone, and which repetition of that collection it was.
- *
- * `run-3` alone stopped identifying a row once the tables started aggregating
- * every comparable collection of a cell — three result directories each hold a
- * run-3, and they are three different runs.
  */
 function runLabel(row: Record<string, unknown>): string {
 	const timestamp = typeof row.timestamp === 'string' ? row.timestamp : null;
