@@ -82,3 +82,9 @@ cases — not as a hedge when you have not looked closely.
   it, and omit the rest rather than guessing.
 - Return every new DS node and every new local node. Return nothing else — no
   moved nodes, no external nodes, no pre-existing nodes.
+- A node's `kind` decides which questions it carries, and both sides are
+  required. A `"ds"` node must answer `correctDsDecision` **and**
+  `correctDsUsage`, and must not carry `correctLocalDecision`. A `"local"` node
+  must answer `correctLocalDecision` and neither DS question. There is no
+  partial node: if you cannot answer a question, score it `0.5` and say why in
+  the reason rather than omitting it.

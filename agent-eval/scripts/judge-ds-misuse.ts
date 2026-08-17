@@ -165,6 +165,13 @@ async function judgeOne(
 		metricsVersion: postAnalysis.metricsVersion,
 		refCacheDir: REF_CACHE_DIR,
 	});
+	if (report === null) {
+		console.error(
+			`${label}: its diff touches no judgeable source file, so there are no new ` +
+				'nodes to score. Nothing was spent.',
+		);
+		return 'skipped';
+	}
 	writeMisuseReport(run.runDir, report);
 
 	const { correctDsDecision, correctDsUsage, correctLocalDecision, evaluated } = report.summary;

@@ -16,19 +16,35 @@ export interface ScoredAnswer {
 	reason: string;
 }
 
-export interface JudgedNode {
+/** Where a judged node is, whichever kind it turned out to be. */
+interface JudgedNodeIdentity {
 	path: string;
 	file: string;
 	line: number;
 	tag: string;
-	kind: 'ds' | 'local';
-	/** DS nodes only. */
-	correctDsDecision?: ScoredAnswer;
-	/** DS nodes only. */
-	correctDsUsage?: ScoredAnswer;
-	/** Local nodes only. */
-	correctLocalDecision?: ScoredAnswer;
 }
+
+/** A node the run took from the design system. Both DS questions are answered. */
+export interface JudgedDsNode extends JudgedNodeIdentity {
+	kind: 'ds';
+	correctDsDecision: ScoredAnswer;
+	correctDsUsage: ScoredAnswer;
+}
+
+/** A node the run wrote itself. Only the local question applies. */
+export interface JudgedLocalNode extends JudgedNodeIdentity {
+	kind: 'local';
+	correctLocalDecision: ScoredAnswer;
+}
+
+/**
+ * Discriminated on `kind`, mirroring JUDGE_OUTPUT_SCHEMA: which questions a node
+ * carries is decided by which kind it is, never by which keys happen to be
+ * present. Optional score groups let a `ds` node arrive with no DS scores at
+ * all, or with a local one, and a summary averaging by key presence would count
+ * it either way.
+ */
+export type JudgedNode = JudgedDsNode | JudgedLocalNode;
 
 /** Exactly what the model is constrained to return. */
 export interface JudgeResponse {
@@ -69,34 +85,63 @@ const SCORED_ANSWER = {
 	additionalProperties: false,
 } as const;
 
+const NODE_IDENTITY = {
+	path: { type: 'string' },
+	file: { type: 'string' },
+	line: { type: 'integer' },
+	tag: { type: 'string' },
+} as const;
+
+const IDENTITY_REQUIRED = ['path', 'file', 'line', 'tag'] as const;
+
+/** A DS usage: both DS questions required, and the local one not offered. */
+const DS_NODE_SCHEMA = {
+	type: 'object',
+	properties: {
+		...NODE_IDENTITY,
+		kind: { type: 'string', enum: ['ds'] },
+		correctDsDecision: SCORED_ANSWER,
+		correctDsUsage: SCORED_ANSWER,
+	},
+	required: [...IDENTITY_REQUIRED, 'kind', 'correctDsDecision', 'correctDsUsage'],
+	additionalProperties: false,
+} as const;
+
+/** A local usage: the local question required, and neither DS one offered. */
+const LOCAL_NODE_SCHEMA = {
+	type: 'object',
+	properties: {
+		...NODE_IDENTITY,
+		kind: { type: 'string', enum: ['local'] },
+		correctLocalDecision: SCORED_ANSWER,
+	},
+	required: [...IDENTITY_REQUIRED, 'kind', 'correctLocalDecision'],
+	additionalProperties: false,
+} as const;
+
 /**
  * The JSON schema handed to output_config.format.
  *
  * Written out rather than generated: `additionalProperties: false` is required
- * on every object, recursion is unsupported, and the two per-kind score groups
- * are deliberately optional rather than nullable — a local node has no
- * correct-ds-decision to give, and a null there would read as a zero.
+ * on every object and recursion is unsupported.
+ *
+ * The two kinds are separate `anyOf` variants rather than one object with
+ * optional score groups. Optional groups made the schema accept a `ds` node
+ * carrying no DS scores — which summariseJudgement counted as evaluated while
+ * returning null means — and a `local` node carrying a `correctDsDecision`,
+ * which landed in the DS mean. Each variant pins `kind` to a single value and
+ * requires exactly the questions that kind is asked, so the wrong shape is
+ * rejected by the API rather than averaged by us.
+ *
+ * `anyOf` and not `if`/`then`/`else`: the conditional keywords are not part of
+ * the schema subset structured outputs supports.
  */
 export const JUDGE_OUTPUT_SCHEMA = {
 	type: 'object',
 	properties: {
 		nodes: {
 			type: 'array',
-			items: {
-				type: 'object',
-				properties: {
-					path: { type: 'string' },
-					file: { type: 'string' },
-					line: { type: 'integer' },
-					tag: { type: 'string' },
-					kind: { type: 'string', enum: ['ds', 'local'] },
-					correctDsDecision: SCORED_ANSWER,
-					correctDsUsage: SCORED_ANSWER,
-					correctLocalDecision: SCORED_ANSWER,
-				},
-				required: ['path', 'file', 'line', 'tag', 'kind'],
-				additionalProperties: false,
-			},
+			items: { anyOf: [DS_NODE_SCHEMA, LOCAL_NODE_SCHEMA] },
 		},
 	},
 	required: ['nodes'],

@@ -59,14 +59,21 @@ export function writeMisuseReport(runDir: string, report: DsMisuseReport): void 
  * Whether a stored judgement can still be trusted.
  *
  * A moved guidelines pin means the run was scored against a different standard;
- * a moved metricsVersion means its node paths were built by different rules.
- * Either way the number is not comparable with a fresh one, so it is re-spent.
+ * a moved metricsVersion means its node paths were built by different rules; a
+ * moved JUDGE_MODEL means a different grader. Any of the three makes the number
+ * incomparable with a fresh one, so it is re-spent.
+ *
+ * The model belongs here for the same reason as the rest, and it is the easiest
+ * one to overlook: swapping the judge is a one-line edit that would otherwise
+ * leave old and new scores sitting in the same column, differing by grader
+ * rather than by the arm being measured.
  */
 export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
 	return (
 		report.schemaVersion !== DS_MISUSE_SCHEMA_VERSION ||
 		report.dsGuidelinesRef !== current.dsGuidelinesRef ||
-		report.metricsVersion !== current.metricsVersion
+		report.metricsVersion !== current.metricsVersion ||
+		report.model !== JUDGE_MODEL
 	);
 }
 
@@ -123,9 +130,22 @@ export function readUsableMisuseReports(runs: readonly MisuseReportRequest[]): U
 	return { byRunDir, stale, absent };
 }
 
-/** Judge one run and return its report. Makes exactly one model call. */
-export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
+/**
+ * Judge one run and return its report, or null when there is nothing to judge.
+ *
+ * Makes exactly one model call, and only when it returns a report.
+ */
+export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport | null> {
 	const patch = treePatch(input.baselineDir, input.projectDir);
+
+	// An empty file list means "no filter" to analyzeDsCoverage, so handing it one
+	// would census the entire project and send every node in the tree as
+	// "treatment" — a whole-tree request, at full token cost, describing a run
+	// that touched no judgeable source file. There is nothing here to score, so
+	// the run is left unjudged rather than judged against the wrong thing.
+	if (patch.files.length === 0) {
+		return null;
+	}
 
 	// Targeted: the graph is still whole so imports resolve, but only the files
 	// the run touched are counted — a new JSX node can appear nowhere else.
