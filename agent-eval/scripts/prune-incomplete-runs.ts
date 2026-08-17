@@ -25,7 +25,7 @@ import {
 	readRunOutcomes,
 } from '../lib/agentic-reference/collected-runs.ts';
 import { matchesAnySelector, selectionFlags } from '../lib/agentic-reference/selection.ts';
-import { RESULTS_DIR } from '#lib/agentic-reference/constants';
+import { RESULTS_DIR, RUN_DIR } from '#lib/agentic-reference/constants';
 
 /** One eval directory, with the runs in it that produced nothing. */
 interface IncompleteEvalDir {
@@ -36,8 +36,6 @@ interface IncompleteEvalDir {
 	/** Runs in the same directory that did produce a tree. */
 	collected: number;
 }
-
-const RUN_DIR = /^run-\d+$/;
 
 /** Every directory under `dir` that holds run directories. */
 function findEvalDirs(dir: string): string[] {
