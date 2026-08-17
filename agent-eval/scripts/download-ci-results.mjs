@@ -112,7 +112,9 @@ for (const artifact of artifacts) {
 		downloaded += 1;
 		console.log(`- ${label}`);
 	} catch (error) {
-		const detail = String(error.stderr ?? error.message ?? error).trim().split('\n')[0];
+		const detail = String(error.stderr ?? error.message ?? error)
+			.trim()
+			.split('\n')[0];
 		skipped.push({ label, reason: detail || 'download or extraction failed' });
 		console.warn(`- skipped ${label}: ${detail}`);
 	} finally {
