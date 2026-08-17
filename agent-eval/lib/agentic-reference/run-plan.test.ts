@@ -40,7 +40,7 @@ function plan(overrides: Partial<RunPlan> = {}): RunPlan {
 		experiments: EXPERIMENTS,
 		evals: ['701', '702'],
 		runs: 10,
-		parallelMax: 20,
+		parallelMax: 10,
 		...overrides,
 	};
 }

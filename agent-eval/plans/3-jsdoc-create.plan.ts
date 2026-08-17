@@ -19,7 +19,7 @@ export default {
 	experiments: ['agentic-ref-cc-purge-jsdoc-opus-high', 'agentic-ref-cc-full-opus-high'],
 	evals: ['701', '706'],
 	runs: 10,
-	parallelMax: 20,
+	parallelMax: 10,
 	// Off, so an interrupted plan resumes and repeated arms are collected once.
 	force: false,
 	// Off, so infra and timeout runs are dropped rather than mixed into the
