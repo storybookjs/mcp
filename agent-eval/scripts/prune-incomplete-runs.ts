@@ -1,0 +1,227 @@
+#!/usr/bin/env node
+// Finds — and, when asked, deletes — run directories that hold no run.
+//
+//   pnpm results:prune [--experiments <list>] [--evals <list>] [--delete]
+//
+//   --experiments <list>  only under results/<name>/, by name or glob
+//   --evals <list>        only these evals, by name, number (706) or glob
+//   --delete              remove them; without it nothing is touched
+//
+// A run stopped by something outside the experiment — a 402 from the gateway, an
+// eval timeout, an MCP endpoint that would not answer, the host killing a
+// container — still leaves a directory behind: result.json with an `error`, a
+// transcript of however far it got, and no `project`. The project tree is what
+// every metric is measured from, so there is nothing in such a directory to
+// measure. See lib/agentic-reference/collected-runs.ts.
+//
+// They are not harmless clutter. Until this ran, `pnpm eval:plan` counted them
+// as collected runs, so a cell whose ten attempts had all died on billing looked
+// complete and was never re-collected, while the analysis — which skips them —
+// reported the cell as empty. Both readers now count only runs that produced a
+// tree, and this is how the directories themselves go away, along with the disk
+// their transcripts are sitting on.
+//
+// Nothing else has to be cleaned up afterwards: an eval directory left with no
+// runs is removed with them, and so is a result directory left with no evals.
+// The next `pnpm eval:plan` will see the gap and collect it.
+//
+// Selection follows the shared grammar in lib/agentic-reference/selection.ts,
+// AGENTIC_REF_<FLAG> fallbacks included, so the selection that ran an
+// experiment also narrows this.
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+	type RunOutcome,
+	classifyRunError,
+	deleteRunDirs,
+	readRunOutcomes,
+} from '../lib/agentic-reference/collected-runs.ts';
+import { matchesAnySelector, selectionFlags } from '../lib/agentic-reference/selection.ts';
+
+const AGENT_EVAL_ROOT = fileURLToPath(new URL('..', import.meta.url));
+const RESULTS_DIR = join(AGENT_EVAL_ROOT, 'results');
+
+// --- finding them ----------------------------------------------------------
+
+/** One eval directory, with the runs in it that produced nothing. */
+interface IncompleteEvalDir {
+	dir: string;
+	experiment: string;
+	evalName: string;
+	incomplete: RunOutcome[];
+	/** Runs in the same directory that did produce a tree. */
+	collected: number;
+}
+
+const RUN_DIR = /^run-\d+$/;
+
+/** Every directory under `dir` that holds run directories. */
+function findEvalDirs(dir: string): string[] {
+	if (!existsSync(dir)) {
+		return [];
+	}
+	const found: string[] = [];
+	const entries = readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+	if (entries.some((entry) => RUN_DIR.test(entry.name))) {
+		return [dir];
+	}
+	for (const entry of entries) {
+		found.push(...findEvalDirs(join(dir, entry.name)));
+	}
+	return found;
+}
+
+// Layout: results/<experiment>/[<model>/]<timestamp>/<eval>.
+function describeEvalDir(dir: string): { experiment: string; evalName: string } {
+	const parts = relative(RESULTS_DIR, dir).split('/');
+	return { experiment: parts[0]!, evalName: parts.at(-1)! };
+}
+
+function findIncomplete(selection: {
+	experiments: string[];
+	evals: string[];
+}): IncompleteEvalDir[] {
+	const found: IncompleteEvalDir[] = [];
+	for (const dir of findEvalDirs(RESULTS_DIR)) {
+		const { experiment, evalName } = describeEvalDir(dir);
+		if (
+			!matchesAnySelector(experiment, selection.experiments) ||
+			!matchesAnySelector(evalName, selection.evals)
+		) {
+			continue;
+		}
+		const outcomes = readRunOutcomes(dir);
+		const incomplete = outcomes.filter((outcome) => !outcome.collected);
+		if (incomplete.length > 0) {
+			found.push({
+				dir,
+				experiment,
+				evalName,
+				incomplete,
+				collected: outcomes.length - incomplete.length,
+			});
+		}
+	}
+	return found;
+}
+
+// --- reporting -------------------------------------------------------------
+
+function directorySize(dir: string): number {
+	let bytes = 0;
+	for (const entry of readdirSync(dir, { withFileTypes: true })) {
+		const path = join(dir, entry.name);
+		// Symlinks are not followed: their target is someone else's disk.
+		if (entry.isDirectory()) {
+			bytes += directorySize(path);
+		} else if (entry.isFile()) {
+			bytes += statSync(path).size;
+		}
+	}
+	return bytes;
+}
+
+function formatBytes(bytes: number): string {
+	const units = ['B', 'kB', 'MB', 'GB'];
+	let value = bytes;
+	let unit = 0;
+	while (value >= 1000 && unit < units.length - 1) {
+		value /= 1000;
+		unit += 1;
+	}
+	return `${value.toFixed(value >= 100 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+/** The kinds present, as `billing (7), timeout (1)`, commonest first. */
+function summarizeKinds(outcomes: readonly RunOutcome[]): string {
+	const counts = new Map<string, number>();
+	for (const outcome of outcomes) {
+		const kind = classifyRunError(outcome.error);
+		counts.set(kind, (counts.get(kind) ?? 0) + 1);
+	}
+	return [...counts]
+		.sort((a, b) => b[1] - a[1])
+		.map(([kind, count]) => `${kind} (${count})`)
+		.join(', ');
+}
+
+function firstError(outcomes: readonly RunOutcome[]): string | null {
+	const error = outcomes.find((outcome) => outcome.error !== null)?.error ?? null;
+	return error === null ? null : error.length > 120 ? `${error.slice(0, 117)}…` : error;
+}
+
+function report(evalDirs: readonly IncompleteEvalDir[]): void {
+	for (const entry of evalDirs) {
+		const total = entry.incomplete.length + entry.collected;
+		console.log(`\n  ${relative(RESULTS_DIR, entry.dir)}`);
+		console.log(
+			`    ${entry.incomplete.length}/${total} runs left no project tree — ` +
+				summarizeKinds(entry.incomplete),
+		);
+		console.log(`    runs ${entry.incomplete.map((outcome) => outcome.run).join(', ')}`);
+		const error = firstError(entry.incomplete);
+		if (error !== null) {
+			console.log(`    ${error}`);
+		}
+	}
+}
+
+// --- main ------------------------------------------------------------------
+
+function main(): void {
+	const flags = selectionFlags(process.env);
+	const argv = flags
+		.parser(
+			process.argv.slice(2),
+			{ scriptName: 'results:prune', usage: 'Usage: pnpm results:prune [flags]' },
+			{
+				experiments: flags.experiments,
+				evals: flags.evals,
+				delete: flags.switch('delete', 'Remove the directories; without it nothing is touched'),
+			},
+		)
+		.parseSync();
+
+	const evalDirs = findIncomplete({ experiments: argv.experiments, evals: argv.evals });
+	if (evalDirs.length === 0) {
+		console.log('No incomplete runs under results/: every run directory holds a project tree.');
+		return;
+	}
+
+	const runs = evalDirs.reduce((total, entry) => total + entry.incomplete.length, 0);
+	// Measured before anything is deleted, which is also what makes it printable
+	// in a dry report.
+	const bytes = evalDirs.reduce(
+		(total, entry) =>
+			total + entry.incomplete.reduce((sum, outcome) => sum + directorySize(outcome.dir), 0),
+		0,
+	);
+
+	console.log(
+		`Incomplete runs under results/ — ${runs} run director${runs === 1 ? 'y' : 'ies'} across ` +
+			`${evalDirs.length} eval director${evalDirs.length === 1 ? 'y' : 'ies'}, ${formatBytes(bytes)}.`,
+	);
+	report(evalDirs);
+
+	if (argv.delete !== true) {
+		console.log('\nNothing deleted. Pass --delete to remove them.');
+		return;
+	}
+
+	const deleted = deleteRunDirs(
+		evalDirs.flatMap((entry) => entry.incomplete.map((outcome) => outcome.dir)),
+		RESULTS_DIR,
+	);
+	console.log(
+		`\nDeleted ${deleted.runs} run director${deleted.runs === 1 ? 'y' : 'ies'} ` +
+			`(${formatBytes(bytes)})` +
+			(deleted.directories === 0
+				? '.'
+				: `, and ${deleted.directories} director${deleted.directories === 1 ? 'y' : 'ies'} left empty.`),
+	);
+	console.log('Run `pnpm eval:plan --config <plan> --dry` to see what is now missing.');
+}
+
+main();

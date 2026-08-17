@@ -253,6 +253,16 @@ Once runs have been captured, the agentic reference post-analysis computes
 metrics for a control case and Storybook cases. This happens in
 `scripts/analyze-results.ts`, via `pnpm results:analyze`.
 
+Its tables cover one comparable set each — every stored run of one case, one
+eval and one configuration, however many result directories they were collected
+in, since a plan tops a cell up in as many invocations as it takes. What counts
+as comparable is decided exactly as `pnpm eval:plan` decides what it can reuse
+(`lib/agentic-reference/comparability.ts`), so runs collected as one sample are
+analysed as one. Runs whose fixture or case config has since changed are kept in
+a group of their own, headed `superseded config`, rather than averaged into the
+sample being collected today. Each result directory's own `summary.json` still
+describes only the runs beside it.
+
 Once all metrics have been computed, a separate script compares them for
 statistical significance between experiments. The command for that is
 `pnpm results:compare`.
@@ -340,6 +350,27 @@ Requires an authenticated GitHub CLI (`gh auth login`) and a `tar` binary
 keyed by experiment name and run timestamp, so artifacts from multiple CI runs
 merge into `agent-eval/results` without colliding, and re-running the command
 is idempotent. Each artifact is roughly 20–40 MB extracted.
+
+### Clear Out Interrupted Runs
+
+A run stopped by something outside the experiment — a 402 from the gateway, an
+eval timeout, an MCP endpoint that would not answer, the host killing a
+container — still leaves a `run-N` directory behind, holding a transcript of how
+far it got and no `project` tree. There is nothing in it to measure, so the
+analysis skips it and the plan runner does not count it towards a cell's sample.
+
+`pnpm results:prune` is what removes them:
+
+```bash
+pnpm results:prune                                  # list them, delete nothing
+pnpm results:prune --experiments "agentic-ref-cc-*" # same selection grammar as the runner
+pnpm results:prune --delete                         # remove them
+```
+
+It reports what stopped each run (billing, timeout, network), and `--delete`
+removes the directories, along with any eval or result directory they leave
+empty. Re-run `pnpm eval:plan --dry` afterwards to see the gaps they were
+hiding.
 
 ### Deploy Results Playground
 

@@ -1,5 +1,6 @@
 // Planning logic for scripts/run-plan.ts: turning one plan config into a
-// sequence of agent-eval invocations that each fit on this machine.
+// sequence of agent-eval invocations that each fit on this machine, and that
+// collect only the repetitions still missing.
 //
 // Why a plan runner exists at all. `agent-eval run-all` starts every
 // (experiment × eval × run) attempt at once — the runner has no concurrency
@@ -15,9 +16,23 @@
 // sandboxes caps the blast radius at one batch, because each batch is its own
 // invocation with its own saveResults.
 //
-// This module is pure: it resolves selections, cuts batches, and reads meaning
-// out of runner output. All the IO — spawning, counting what landed on disk,
-// reporting — lives in scripts/run-plan.ts.
+// WHY THE PLAN COUNTS RUNS ITSELF rather than leaning on the harness's cache.
+// That cache is all-or-nothing: a cell either matches its fingerprint and is
+// skipped entirely, or does not and is collected in full. It cannot express
+// "this cell has 6 of its 10, collect 4 more". Worse, `runs` is one of the
+// fields the fingerprint hashes, so a 4-run top-up saves under a *different*
+// fingerprint than a 10-run collection — meaning the cache could never
+// recognise its own top-ups either.
+//
+// So the plan counts qualifying runs on disk and asks for the difference. A
+// stored sample qualifies when its fingerprint is the current one at *some*
+// sample size (the same fixture and config, collected in a run of any depth)
+// and it was saved at or after the plan's cutoff. Everything else — a
+// superseded fixture, a run from before the cutoff — counts for nothing.
+//
+// This module is pure: it resolves selections, decides deficits, and cuts
+// batches. All the IO — computing fingerprints, reading the results tree,
+// spawning, reporting — lives in scripts/run-plan.ts.
 import { matchesAnySelector, resolveEvalSelection } from './selection.ts';
 
 /** The `agentic-ref-` prefix generated experiment stubs (and results dirs) carry. */
@@ -37,10 +52,8 @@ export interface RunPlan {
 	/** Evals to collect, by name, number (703) or glob (70*). */
 	evals: string[];
 	/**
-	 * Repetitions per (experiment, eval) cell. One invocation collects all of
-	 * them: the runner starts a cell's repetitions together and saves them
-	 * together, so this is the granularity at which data arrives — and the
-	 * granularity at which it can be lost.
+	 * Target sample size per (experiment, eval) cell. Qualifying runs already on
+	 * disk count towards it, so a cell holding 6 of 10 collects 4.
 	 */
 	runs: number;
 	/**
@@ -48,19 +61,21 @@ export interface RunPlan {
 	 * hardware; every batch is cut to stay at or under it.
 	 */
 	parallelMax: number;
-	/** Re-collect cells that already have saved results. Default false. */
+	/**
+	 * Ignore what is already on disk and collect the full target for every cell.
+	 * Default false.
+	 */
 	force?: boolean;
 	/**
-	 * Reuse cutoff: an ISO date (`2026-08-16`) or datetime. A cell whose newest
-	 * saved sample predates it is re-collected even though the harness would
-	 * happily reuse it.
+	 * Reuse cutoff: an ISO date (`2026-08-16`) or datetime. Runs saved before it
+	 * do not count towards a cell's target.
 	 *
-	 * The harness's own cache keys on a fingerprint of the fixture and the
-	 * experiment config, which is blind to everything else the run depends on —
-	 * the design-system MCP package a branch resolves to, a template, the sandbox
-	 * image, the agent CLI version. This is the knob for those: change the
-	 * environment, set the cutoff to the change date, and the runs that predate
-	 * it are re-collected while everything since is kept.
+	 * The fingerprint a stored run carries covers the fixture and the experiment
+	 * config, which is blind to everything else the run depends on — the design
+	 * system MCP package a branch resolves to, a template, the sandbox image, the
+	 * agent CLI. This is the knob for those: change the environment, set the
+	 * cutoff to the change date, and older runs stop counting while everything
+	 * since is kept.
 	 */
 	since?: string;
 	/**
@@ -69,16 +84,6 @@ export interface RunPlan {
 	 * shortfall shows up as an honest gap in the report.
 	 */
 	ackFailures?: boolean;
-}
-
-/** One agent-eval invocation: a rectangle of the matrix, one eval wide. */
-export interface PlanBatch {
-	/** 1-based position in the plan. */
-	index: number;
-	evalName: string;
-	experiments: string[];
-	/** Sandboxes this batch starts at once: experiments.length × runs. */
-	parallel: number;
 }
 
 export interface ResolvedPlanOptions {
@@ -90,15 +95,20 @@ export interface ResolvedPlanOptions {
 	since: Date | null;
 }
 
+/** One (experiment, eval) pair the plan covers. */
+export interface PlanCell {
+	experiment: string;
+	evalName: string;
+}
+
 export interface ResolvedRunPlan {
 	plan: ResolvedPlanOptions;
 	/** Experiment names, in the order the plan listed them. */
 	experiments: string[];
 	/** Eval names, in registry order. */
 	evals: string[];
-	/** Cells per batch: floor(parallelMax / runs). */
-	cellsPerBatch: number;
-	batches: PlanBatch[];
+	/** Every cell the plan covers, eval-major. */
+	cells: PlanCell[];
 }
 
 /**
@@ -139,7 +149,7 @@ function assertPositiveInteger(field: string, value: unknown): number {
 }
 
 /**
- * Resolves a plan into the batches that will run, eval-major.
+ * Resolves a plan's selections into the cells it covers, eval-major.
  *
  * Eval-major — every experiment for eval A, then every experiment for eval B —
  * so that a plan cut short still holds a balanced sample: each arm has the same
@@ -154,10 +164,8 @@ export function resolveRunPlan(
 	const parallelMax = assertPositiveInteger('parallelMax', plan.parallelMax);
 
 	// A cell's repetitions all start together inside one invocation, so a cell
-	// is indivisible here. Splitting it across invocations would mean a second
-	// forced invocation appending a fresh sample to the first — a different
-	// experiment design, not a smaller batch, so the plan refuses instead of
-	// quietly doing it.
+	// is indivisible here. A deficit is never larger than the target, so this
+	// bound covers every batch the plan can cut.
 	if (runs > parallelMax) {
 		throw new Error(
 			`runs (${runs}) exceeds parallelMax (${parallelMax}): one cell's repetitions all start ` +
@@ -167,18 +175,11 @@ export function resolveRunPlan(
 
 	const experiments = resolveExperimentSelection(plan.experiments, known.experiments);
 	const evals = resolveEvalSelection(plan.evals, known.evals);
-	const cellsPerBatch = Math.floor(parallelMax / runs);
 
-	const batches: PlanBatch[] = [];
+	const cells: PlanCell[] = [];
 	for (const evalName of evals) {
-		for (let start = 0; start < experiments.length; start += cellsPerBatch) {
-			const chunk = experiments.slice(start, start + cellsPerBatch);
-			batches.push({
-				index: batches.length + 1,
-				evalName,
-				experiments: chunk,
-				parallel: chunk.length * runs,
-			});
+		for (const experiment of experiments) {
+			cells.push({ experiment, evalName });
 		}
 	}
 
@@ -192,8 +193,7 @@ export function resolveRunPlan(
 		},
 		experiments,
 		evals,
-		cellsPerBatch,
-		batches,
+		cells,
 	};
 }
 
@@ -218,67 +218,164 @@ export function parseSince(value: string | undefined): Date | null {
 	return parsed;
 }
 
-// Result directories are the run's ISO start time with the colons swapped out,
-// e.g. 2026-08-15T13-20-41.492Z — so the name is the timestamp, and dating a
-// saved sample needs no file reads at all.
-const RESULT_TIMESTAMP = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})([.,]\d+)?Z$/;
+// --- counting what is already collected ------------------------------------
 
-/** The instant a result directory name stands for, or null if it is not one. */
-export function parseResultTimestamp(dirName: string): Date | null {
-	const match = RESULT_TIMESTAMP.exec(dirName);
-	if (match === null) {
-		return null;
+/** One eval directory found under a result directory. */
+export interface StoredSample {
+	/** Result directory, relative to the experiment's results directory. */
+	dir: string;
+	/** When it was collected, from the directory name. */
+	at: Date | null;
+	/** The fingerprint its summary.json records, or null when unreadable. */
+	fingerprint: string | null;
+	/** How many run directories it holds. */
+	runs: number;
+}
+
+export type SampleVerdict = 'qualifying' | 'superseded' | 'predates-cutoff' | 'undatable';
+
+/**
+ * Whether a stored sample counts towards its cell's target.
+ *
+ * `acceptable` holds the current fingerprint at every sample size the plan
+ * could have used, because `runs` is hashed into it: a 4-run top-up of the same
+ * fixture and config is the same measurement as a 10-run collection, and has to
+ * count as one.
+ */
+export function judgeSample(
+	sample: StoredSample,
+	acceptable: ReadonlySet<string>,
+	since: Date | null,
+): SampleVerdict {
+	if (sample.fingerprint === null || !acceptable.has(sample.fingerprint)) {
+		return 'superseded';
 	}
-	const [, date, hours, minutes, seconds, fraction = ''] = match;
-	const parsed = new Date(`${date}T${hours}:${minutes}:${seconds}${fraction.replace(',', '.')}Z`);
-	return Number.isNaN(parsed.getTime()) ? null : parsed;
+	if (since === null) {
+		return 'qualifying';
+	}
+	if (sample.at === null) {
+		return 'undatable';
+	}
+	return sample.at.getTime() < since.getTime() ? 'predates-cutoff' : 'qualifying';
 }
 
-/** A cell the harness would reuse, with the date of the sample it would reuse. */
-export interface CachedCell {
-	experiment: string;
-	/** Newest saved sample for the cell, or null when none could be dated. */
-	newestSample: Date | null;
-}
-
-export interface CutoffPartition {
-	/** Cells to re-collect: their newest sample predates the cutoff. */
-	stale: string[];
-	/** Cells to keep: their sample is at or after the cutoff. */
-	fresh: string[];
+/** A cell, with what it already has and what is left to collect. */
+export interface CellPlan extends PlanCell {
+	/** The plan's target sample size. */
+	target: number;
+	/** Runs already on disk that count towards the target. */
+	qualifying: number;
+	/** Runs still to collect. */
+	deficit: number;
+	/** Runs on disk that do not count, by reason — for explaining the deficit. */
+	discounted: Record<Exclude<SampleVerdict, 'qualifying'>, number>;
 }
 
 /**
- * Splits the cells the harness would reuse by the plan's cutoff.
+ * Works out how much of a cell is still missing.
  *
- * Dating a cell by its newest saved sample assumes that sample is the one the
- * harness would reuse. The two only diverge when a *newer* directory exists
- * that the fingerprint rejects — a fixture or config that changed and changed
- * back — and in that case the harness re-runs the cell anyway, so it never
- * reaches this function as cached.
- *
- * An undatable sample counts as stale. A directory that is not a timestamp is
- * not something this can vouch for, and the point of a cutoff is to be able to
- * trust what stays in.
+ * Qualifying runs are capped at the target: a cell over-collected by an earlier
+ * round has a deficit of zero, never a negative one.
  */
-export function partitionCachedCells(
-	cached: readonly CachedCell[],
-	since: Date | null,
-): CutoffPartition {
-	if (since === null) {
-		return { stale: [], fresh: cached.map((cell) => cell.experiment) };
-	}
+export function planCell(
+	cell: PlanCell,
+	samples: readonly StoredSample[],
+	options: { target: number; acceptable: ReadonlySet<string>; since: Date | null; force: boolean },
+): CellPlan {
+	const discounted = { superseded: 0, 'predates-cutoff': 0, undatable: 0 };
+	let qualifying = 0;
 
-	const stale: string[] = [];
-	const fresh: string[] = [];
-	for (const cell of cached) {
-		if (cell.newestSample === null || cell.newestSample.getTime() < since.getTime()) {
-			stale.push(cell.experiment);
-		} else {
-			fresh.push(cell.experiment);
+	if (!options.force) {
+		for (const sample of samples) {
+			const verdict = judgeSample(sample, options.acceptable, options.since);
+			if (verdict === 'qualifying') {
+				qualifying += sample.runs;
+			} else {
+				discounted[verdict] += sample.runs;
+			}
 		}
 	}
-	return { stale, fresh };
+
+	qualifying = Math.min(qualifying, options.target);
+	return {
+		...cell,
+		target: options.target,
+		qualifying,
+		deficit: options.target - qualifying,
+		discounted,
+	};
+}
+
+/** Why a cell has to be collected, in one phrase, for the plan output. */
+export function explainDeficit(cell: CellPlan): string {
+	const discounted = Object.entries(cell.discounted)
+		.filter(([, runs]) => runs > 0)
+		.map(([reason, runs]) => `${runs} ${reason.replace('-', ' ')}`);
+	const discardedNote = discounted.length === 0 ? '' : ` (discounting ${discounted.join(', ')})`;
+
+	if (cell.qualifying === 0) {
+		return `no qualifying runs${discardedNote}`;
+	}
+	return `${cell.qualifying}/${cell.target} runs already collected${discardedNote}`;
+}
+
+// --- batches ---------------------------------------------------------------
+
+/** One agent-eval invocation: cells of one eval, sharing one sample size. */
+export interface PlanBatch {
+	/** 1-based position in the plan. */
+	index: number;
+	evalName: string;
+	experiments: string[];
+	/** Repetitions this invocation asks for — the shared deficit of its cells. */
+	runs: number;
+	/** Sandboxes it starts at once: experiments.length × runs. */
+	parallel: number;
+}
+
+/**
+ * Cuts the cells that still need work into invocations.
+ *
+ * One invocation carries a single `--runs`, so cells can only share a batch
+ * when their deficits match; within an eval they are grouped by deficit,
+ * deepest first, so the cells furthest from a full sample are collected before
+ * the shallow top-ups. Batches stay one eval wide, keeping the eval-major order
+ * that makes an interrupted plan leave a balanced sample.
+ */
+export function planBatches(
+	cells: readonly CellPlan[],
+	evals: readonly string[],
+	parallelMax: number,
+): PlanBatch[] {
+	const batches: PlanBatch[] = [];
+
+	for (const evalName of evals) {
+		const outstanding = cells.filter((cell) => cell.evalName === evalName && cell.deficit > 0);
+
+		const byDeficit = new Map<number, string[]>();
+		for (const cell of outstanding) {
+			const group = byDeficit.get(cell.deficit) ?? [];
+			group.push(cell.experiment);
+			byDeficit.set(cell.deficit, group);
+		}
+
+		for (const deficit of [...byDeficit.keys()].sort((a, b) => b - a)) {
+			const experiments = byDeficit.get(deficit)!;
+			const perBatch = Math.max(1, Math.floor(parallelMax / deficit));
+			for (let start = 0; start < experiments.length; start += perBatch) {
+				const chunk = experiments.slice(start, start + perBatch);
+				batches.push({
+					index: batches.length + 1,
+					evalName,
+					experiments: chunk,
+					runs: deficit,
+					parallel: chunk.length * deficit,
+				});
+			}
+		}
+	}
+
+	return batches;
 }
 
 // --- reading the runner's output -------------------------------------------
@@ -290,25 +387,6 @@ const ANSI = /\x1B\[[0-9;]*m/g;
 
 export function stripAnsi(text: string): string {
 	return text.replace(ANSI, '');
-}
-
-// The dry-run plan prints one line per experiment that has work left:
-// `  <name><padding> N to run[, M cached]`, and a `N cached` line for the rest.
-// A batch is one eval wide, so an experiment appearing here means exactly one
-// cell of this batch will run — which is how a batch tells "cached, nothing to
-// do" apart from "ran and saved nothing".
-const PLANNED_EXPERIMENT = /^ {2}(\S+)\s+\d+ to run/;
-
-/** Experiment names the dry-run plan says still have work, in the order printed. */
-export function parsePlannedExperiments(output: string): string[] {
-	const planned: string[] = [];
-	for (const line of stripAnsi(output).split('\n')) {
-		const match = PLANNED_EXPERIMENT.exec(line);
-		if (match !== null && !planned.includes(match[1]!)) {
-			planned.push(match[1]!);
-		}
-	}
-	return planned;
 }
 
 export type ResourceSignalKind = 'memory' | 'disk' | 'billing';
@@ -371,7 +449,7 @@ export function narrowedParallelMax(parallelMax: number, runs: number): number |
 export interface CellOutcome {
 	experiment: string;
 	evalName: string;
-	/** Repetitions this batch set out to collect: `runs`, or 0 for a cached cell. */
+	/** Repetitions this batch set out to collect. */
 	expected: number;
 	/** Repetitions that reached disk. */
 	collected: number;
@@ -381,9 +459,9 @@ export interface CellOutcome {
  * The command that collects a cell's missing repetitions.
  *
  * --force is required: the shortfall leaves saved results behind, so the
- * fingerprint cache would treat the cell as done. The top-up lands in its own
- * timestamp directory, which the offline analyzer already walks alongside the
- * first.
+ * harness's own cache would treat the cell as done. The top-up lands in its own
+ * timestamp directory, which both the plan's own counting and the offline
+ * analyzer read alongside the first.
  */
 export function topUpCommand(cell: CellOutcome): string {
 	return (

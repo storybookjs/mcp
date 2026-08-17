@@ -94,6 +94,13 @@ export interface SummarizeOptions {
 	complexity: boolean;
 	/** The design-system coverage family, where a module measures one. */
 	coverage: boolean;
+	/**
+	 * Compute the rows and print nothing at all. The runner folds each eval
+	 * directory on its own to keep that directory's summary.json scoped to it,
+	 * and prints the comparable set those runs belong to instead — which is
+	 * usually wider than one directory, and would otherwise be printed twice.
+	 */
+	quiet?: boolean;
 }
 
 export interface PostAnalysis {

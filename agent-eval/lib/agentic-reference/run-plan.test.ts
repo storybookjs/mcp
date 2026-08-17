@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	type CellPlan,
+	type PlanCell,
 	type RunPlan,
+	type StoredSample,
+	explainDeficit,
 	isPlanStoppingSignal,
+	judgeSample,
 	narrowedParallelMax,
-	parsePlannedExperiments,
-	parseResultTimestamp,
 	parseSince,
-	partitionCachedCells,
+	planBatches,
+	planCell,
 	resolveExperimentSelection,
 	resolveRunPlan,
 	scanResourceSignals,
@@ -41,6 +45,20 @@ function plan(overrides: Partial<RunPlan> = {}): RunPlan {
 	};
 }
 
+const CURRENT = 'fingerprint-runs-10';
+const ACCEPTABLE = new Set([CURRENT, 'fingerprint-runs-4']);
+const CELL: PlanCell = { experiment: 'arm', evalName: '701-new-ui-flow' };
+
+function sample(overrides: Partial<StoredSample> = {}): StoredSample {
+	return {
+		dir: '2026-08-15T13-20-41.492Z',
+		at: new Date('2026-08-15T13:20:41.492Z'),
+		fingerprint: CURRENT,
+		runs: 10,
+		...overrides,
+	};
+}
+
 describe('resolveExperimentSelection', () => {
 	it('expands globs while keeping the order the plan listed', () => {
 		expect(
@@ -67,41 +85,20 @@ describe('resolveExperimentSelection', () => {
 });
 
 describe('resolveRunPlan', () => {
-	it('cuts batches eval-major, so a plan cut short leaves a balanced sample', () => {
-		const { batches } = resolveRunPlan(plan(), KNOWN);
+	it('lists cells eval-major, so a plan cut short leaves a balanced sample', () => {
+		const { cells } = resolveRunPlan(plan(), KNOWN);
 
-		expect(batches.map((batch) => [batch.evalName, batch.experiments])).toEqual([
-			['701-new-ui-flow', [EXPERIMENTS[0], EXPERIMENTS[1]]],
-			['701-new-ui-flow', [EXPERIMENTS[2]]],
-			['702-rework-ui-flow', [EXPERIMENTS[0], EXPERIMENTS[1]]],
-			['702-rework-ui-flow', [EXPERIMENTS[2]]],
+		expect(cells.map((cell) => `${cell.evalName} × ${cell.experiment}`)).toEqual([
+			`701-new-ui-flow × ${EXPERIMENTS[0]}`,
+			`701-new-ui-flow × ${EXPERIMENTS[1]}`,
+			`701-new-ui-flow × ${EXPERIMENTS[2]}`,
+			`702-rework-ui-flow × ${EXPERIMENTS[0]}`,
+			`702-rework-ui-flow × ${EXPERIMENTS[1]}`,
+			`702-rework-ui-flow × ${EXPERIMENTS[2]}`,
 		]);
 	});
 
-	it('never starts more sandboxes than parallelMax', () => {
-		const { batches, cellsPerBatch } = resolveRunPlan(plan(), KNOWN);
-
-		expect(cellsPerBatch).toBe(2);
-		for (const batch of batches) {
-			expect(batch.parallel).toBeLessThanOrEqual(20);
-		}
-	});
-
-	it('numbers batches from 1, across evals', () => {
-		const { batches } = resolveRunPlan(plan(), KNOWN);
-
-		expect(batches.map((batch) => batch.index)).toEqual([1, 2, 3, 4]);
-	});
-
-	it('widens the batch when the sample is small enough to fit more cells', () => {
-		const { cellsPerBatch, batches } = resolveRunPlan(plan({ runs: 5 }), KNOWN);
-
-		expect(cellsPerBatch).toBe(4);
-		expect(batches).toHaveLength(2);
-		expect(batches[0]!.experiments).toEqual(EXPERIMENTS);
-	});
-
-	// A cell's repetitions all start together inside one invocation.
+	// A deficit never exceeds the target, so this bound covers every batch.
 	it('refuses a plan whose sample cannot fit in one batch', () => {
 		expect(() => resolveRunPlan(plan({ runs: 30 }), KNOWN)).toThrow(/exceeds parallelMax/);
 	});
@@ -114,13 +111,18 @@ describe('resolveRunPlan', () => {
 	});
 
 	it('resolves evals in registry order, whatever order the plan listed them', () => {
-		const { evals } = resolveRunPlan(plan({ evals: ['703', '701'] }), KNOWN);
-
-		expect(evals).toEqual(['701-new-ui-flow', '703-fix-bug-flow']);
+		expect(resolveRunPlan(plan({ evals: ['703', '701'] }), KNOWN).evals).toEqual([
+			'701-new-ui-flow',
+			'703-fix-bug-flow',
+		]);
 	});
 
-	it('defaults force and ackFailures off', () => {
-		expect(resolveRunPlan(plan(), KNOWN).plan).toMatchObject({ force: false, ackFailures: false });
+	it('defaults force and ackFailures off, and the cutoff to none', () => {
+		expect(resolveRunPlan(plan(), KNOWN).plan).toMatchObject({
+			force: false,
+			ackFailures: false,
+			since: null,
+		});
 	});
 });
 
@@ -139,59 +141,6 @@ describe('the reuse cutoff', () => {
 		expect(() => parseSince('last tuesday')).toThrow(/must be an ISO date/);
 	});
 
-	it('dates a result directory from its name', () => {
-		expect(parseResultTimestamp('2026-08-15T13-20-41.492Z')?.toISOString()).toBe(
-			'2026-08-15T13:20:41.492Z',
-		);
-	});
-
-	it('reads a directory that is not a timestamp as undatable', () => {
-		expect(parseResultTimestamp('run-plan-2026-08-15.json')).toBeNull();
-		expect(parseResultTimestamp('.tmp')).toBeNull();
-	});
-
-	const SINCE = new Date('2026-08-16T00:00:00Z');
-
-	it('re-collects samples that predate the cutoff and keeps the rest', () => {
-		const partition = partitionCachedCells(
-			[
-				{ experiment: 'old', newestSample: new Date('2026-08-15T23:59:59Z') },
-				{ experiment: 'exactly-on', newestSample: SINCE },
-				{ experiment: 'new', newestSample: new Date('2026-08-17T09:00:00Z') },
-			],
-			SINCE,
-		);
-
-		expect(partition).toEqual({ stale: ['old'], fresh: ['exactly-on', 'new'] });
-	});
-
-	// The point of a cutoff is being able to trust what stays in.
-	it('treats an undatable sample as stale', () => {
-		expect(partitionCachedCells([{ experiment: 'mystery', newestSample: null }], SINCE)).toEqual({
-			stale: ['mystery'],
-			fresh: [],
-		});
-	});
-
-	it('keeps every cell when the plan sets no cutoff', () => {
-		const partition = partitionCachedCells(
-			[
-				{ experiment: 'ancient', newestSample: new Date('2020-01-01T00:00:00Z') },
-				{ experiment: 'mystery', newestSample: null },
-			],
-			null,
-		);
-
-		expect(partition).toEqual({ stale: [], fresh: ['ancient', 'mystery'] });
-	});
-
-	it('resolves the cutoff into a Date, and defaults it to none', () => {
-		expect(resolveRunPlan(plan({ since: '2026-08-16' }), KNOWN).plan.since?.toISOString()).toBe(
-			'2026-08-16T00:00:00.000Z',
-		);
-		expect(resolveRunPlan(plan(), KNOWN).plan.since).toBeNull();
-	});
-
 	it('fails the whole plan on an unreadable cutoff, before anything runs', () => {
 		expect(() => resolveRunPlan(plan({ since: 'yesterday' }), KNOWN)).toThrow(
 			/must be an ISO date/,
@@ -199,35 +148,160 @@ describe('the reuse cutoff', () => {
 	});
 });
 
-describe('parsePlannedExperiments', () => {
-	// The shape agent-eval's dry run prints; a batch is one eval wide, so an
-	// experiment listed here has exactly one cell left to collect.
-	const DRY_OUTPUT = [
-		'Discovered 2 experiment(s):',
-		'  - agentic-ref-cc-full-opus-high',
-		'',
-		'  1 evals to run, 1 cached',
-		'',
-		'  agentic-ref-cc-full-opus-high      1 to run',
-		'                                     → 701-new-ui-flow',
-		'  agentic-ref-cc-control-none-opus-high  1 cached',
-		'',
-	].join('\n');
+describe('judgeSample', () => {
+	const SINCE = new Date('2026-08-14T00:00:00Z');
 
-	it('names only the experiments with work left', () => {
-		expect(parsePlannedExperiments(DRY_OUTPUT)).toEqual(['agentic-ref-cc-full-opus-high']);
+	it('counts a sample carrying the current fingerprint', () => {
+		expect(judgeSample(sample(), ACCEPTABLE, null)).toBe('qualifying');
 	});
 
-	it('reads through colour codes', () => {
-		const coloured = `  \u001B[37magentic-ref-cc-full-opus-high\u001B[39m\u001B[34m 1 to run\u001B[39m`;
-
-		expect(parsePlannedExperiments(coloured)).toEqual(['agentic-ref-cc-full-opus-high']);
-	});
-
-	it('returns nothing for a fully cached plan', () => {
+	// runs is hashed into the fingerprint, so a top-up carries a different one.
+	it('counts a top-up collected at a smaller sample size', () => {
 		expect(
-			parsePlannedExperiments('  All 4 evals cached across 2 experiments. Nothing to run.'),
-		).toEqual([]);
+			judgeSample(sample({ fingerprint: 'fingerprint-runs-4', runs: 4 }), ACCEPTABLE, null),
+		).toBe('qualifying');
+	});
+
+	it('discounts a sample whose fixture or config has moved on', () => {
+		expect(judgeSample(sample({ fingerprint: 'stale-fingerprint' }), ACCEPTABLE, null)).toBe(
+			'superseded',
+		);
+		expect(judgeSample(sample({ fingerprint: null }), ACCEPTABLE, null)).toBe('superseded');
+	});
+
+	it('discounts a qualifying sample collected before the cutoff', () => {
+		expect(judgeSample(sample({ at: new Date('2026-08-13T23:59:59Z') }), ACCEPTABLE, SINCE)).toBe(
+			'predates-cutoff',
+		);
+		expect(judgeSample(sample({ at: SINCE }), ACCEPTABLE, SINCE)).toBe('qualifying');
+	});
+
+	it('discounts an undatable sample only when a cutoff is set', () => {
+		expect(judgeSample(sample({ at: null }), ACCEPTABLE, SINCE)).toBe('undatable');
+		expect(judgeSample(sample({ at: null }), ACCEPTABLE, null)).toBe('qualifying');
+	});
+});
+
+describe('planCell', () => {
+	const options = { target: 10, acceptable: ACCEPTABLE, since: null, force: false };
+
+	it('asks only for the runs a cell is missing', () => {
+		const planned = planCell(CELL, [sample({ runs: 6 })], options);
+
+		expect(planned).toMatchObject({ qualifying: 6, deficit: 4 });
+	});
+
+	it('adds up samples spread across result directories', () => {
+		const planned = planCell(
+			CELL,
+			[sample({ runs: 6 }), sample({ dir: 'later', fingerprint: 'fingerprint-runs-4', runs: 4 })],
+			options,
+		);
+
+		expect(planned).toMatchObject({ qualifying: 10, deficit: 0 });
+	});
+
+	it('never reports a negative deficit for an over-collected cell', () => {
+		expect(planCell(CELL, [sample({ runs: 14 })], options)).toMatchObject({
+			qualifying: 10,
+			deficit: 0,
+		});
+	});
+
+	it('counts nothing when every sample is discounted, and says why', () => {
+		const planned = planCell(
+			CELL,
+			[sample({ fingerprint: 'stale-fingerprint', runs: 10 }), sample({ runs: 3 })],
+			{ ...options, since: new Date('2026-08-20T00:00:00Z') },
+		);
+
+		expect(planned).toMatchObject({ qualifying: 0, deficit: 10 });
+		expect(planned.discounted).toEqual({ superseded: 10, 'predates-cutoff': 3, undatable: 0 });
+	});
+
+	it('ignores what is on disk under force', () => {
+		expect(planCell(CELL, [sample({ runs: 10 })], { ...options, force: true })).toMatchObject({
+			qualifying: 0,
+			deficit: 10,
+		});
+	});
+
+	it('explains a deficit in terms of what it counted and what it threw out', () => {
+		expect(explainDeficit(planCell(CELL, [sample({ runs: 6 })], options))).toBe(
+			'6/10 runs already collected',
+		);
+		expect(explainDeficit(planCell(CELL, [], options))).toBe('no qualifying runs');
+		expect(
+			explainDeficit(planCell(CELL, [sample({ fingerprint: 'stale-fingerprint' })], options)),
+		).toBe('no qualifying runs (discounting 10 superseded)');
+	});
+});
+
+describe('planBatches', () => {
+	function cell(experiment: string, evalName: string, deficit: number): CellPlan {
+		return {
+			experiment,
+			evalName,
+			target: 10,
+			qualifying: 10 - deficit,
+			deficit,
+			discounted: { superseded: 0, 'predates-cutoff': 0, undatable: 0 },
+		};
+	}
+
+	it('packs cells of equal deficit up to parallelMax', () => {
+		const batches = planBatches(
+			[cell('a', '701', 5), cell('b', '701', 5), cell('c', '701', 5), cell('d', '701', 5)],
+			['701'],
+			20,
+		);
+
+		expect(batches).toEqual([
+			{ index: 1, evalName: '701', experiments: ['a', 'b', 'c', 'd'], runs: 5, parallel: 20 },
+		]);
+	});
+
+	// One invocation carries a single --runs, so mixed deficits cannot share it.
+	it('splits cells of differing deficits into their own batches, deepest first', () => {
+		const batches = planBatches([cell('a', '701', 4), cell('b', '701', 10)], ['701'], 20);
+
+		expect(batches.map((batch) => [batch.experiments, batch.runs])).toEqual([
+			[['b'], 10],
+			[['a'], 4],
+		]);
+	});
+
+	it('never starts more sandboxes than parallelMax', () => {
+		const batches = planBatches(
+			[cell('a', '701', 10), cell('b', '701', 10), cell('c', '701', 10)],
+			['701'],
+			20,
+		);
+
+		expect(batches.map((batch) => batch.parallel)).toEqual([20, 10]);
+	});
+
+	it('skips cells that already have their full sample', () => {
+		expect(planBatches([cell('a', '701', 0), cell('b', '701', 0)], ['701'], 20)).toEqual([]);
+	});
+
+	it('keeps batches one eval wide, in registry order', () => {
+		const batches = planBatches(
+			[cell('a', '701', 10), cell('a', '702', 10), cell('b', '701', 10)],
+			['701', '702'],
+			20,
+		);
+
+		expect(batches.map((batch) => [batch.evalName, batch.experiments])).toEqual([
+			['701', ['a', 'b']],
+			['702', ['a']],
+		]);
+	});
+
+	it('numbers batches from 1, across evals', () => {
+		const batches = planBatches([cell('a', '701', 10), cell('a', '702', 10)], ['701', '702'], 20);
+
+		expect(batches.map((batch) => batch.index)).toEqual([1, 2]);
 	});
 });
 

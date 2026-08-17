@@ -30,6 +30,7 @@ import {
 } from './metrics/coverage.ts';
 import { readCost, readSpeed } from './metrics/run-signals.ts';
 import { classifyToolUse } from './metrics/tool-taxonomy.ts';
+import { parseResultTimestamp } from './comparability.ts';
 import { diffTrees } from './tree/tree-diff.ts';
 
 import type { FileComplexity } from './metrics/complexity.ts';
@@ -42,6 +43,7 @@ import type {
 	SummarizeOptions,
 } from '../post-analysis/types.ts';
 import { finiteNumbers, mean, round, sum } from '../utils/math.ts';
+import { printTable } from '../utils/table.ts';
 import { isRecord } from '../utils/type.ts';
 
 /** Transcript events, or null when the transcript has no usable `events` array. */
@@ -269,14 +271,42 @@ function percent(value: number | null | undefined): string | null {
 }
 
 /**
- * A share *delta* in percentage points. The difference between two percentages
- * is not itself a percentage: printed as `+1.2%` it would read as a relative
- * change, when 4.9% -> 6.1% is what actually happened. Signed, because the
- * direction is the whole point of the column.
+ * A share *delta*, signed: the direction is the whole point of the column, and
+ * its Δ heading says the number is a difference of two shares rather than a
+ * relative change.
  */
-function percentPoints(value: number | null | undefined): string | null {
+function percentDelta(value: number | null | undefined): string | null {
 	const scaled = value === null || value === undefined ? null : round(value * 100, 2);
-	return scaled === null ? null : `${scaled > 0 ? '+' : ''}${scaled}pp`;
+	return scaled === null ? null : `${scaled > 0 ? '+' : ''}${scaled}%`;
+}
+
+function pad(value: number): string {
+	return String(value).padStart(2, '0');
+}
+
+/** A minute of local wall-clock time: 2026-08-15 15:20. */
+function localMinute(at: Date): string {
+	return (
+		`${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} ` +
+		`${pad(at.getHours())}:${pad(at.getMinutes())}`
+	);
+}
+
+/**
+ * How a run is labelled in a per-run table: when it was collected, in the
+ * reader's own timezone, and which repetition of that collection it was.
+ *
+ * `run-3` alone stopped identifying a row once the tables started aggregating
+ * every comparable collection of a cell — three result directories each hold a
+ * run-3, and they are three different runs.
+ */
+function runLabel(row: Record<string, unknown>): string {
+	const timestamp = typeof row.timestamp === 'string' ? row.timestamp : null;
+	const stamp = timestamp === null ? null : parseResultTimestamp(timestamp);
+	// A directory name that is not a timestamp is still the only thing that
+	// dates the run, so it is printed as it stands rather than dropped.
+	const when = stamp === null ? (timestamp ?? '?') : localMinute(stamp);
+	return `${when} #${typeof row.run === 'number' ? row.run : '?'}`;
 }
 
 function numbersAt(
@@ -402,10 +432,16 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 }
 
 /**
- * Called with run-1..run-N of a single eval directory, so the experiment::eval
- * grouping below collapses to one row: the averages for that arm at that
- * timestamp. The runner writes it into that directory's summary.json under
- * `postAnalysis` and collects every row into results/analysis-summary.json.
+ * Called with the runs of one comparable set — every stored run of one arm, one
+ * eval and one configuration, however many result directories they arrived in —
+ * so the experiment::eval grouping below collapses to one row: that arm's
+ * averages over its whole sample. The runner collects those rows into
+ * results/analysis-summary.json, and folds each result directory separately
+ * (with `quiet`) for the summary.json that sits in it.
+ *
+ * Runs of one arm no longer share a result directory, so a row is labelled with
+ * the minute it was collected and its repetition number rather than with the
+ * repetition number alone.
  *
  * Prints up to six tables, in three selectable families: per-run vitals and the
  * grouped summary (`general`), then — when any run carries a baseline delta —
@@ -430,12 +466,22 @@ export function summarize(
 ): Array<Record<string, unknown>> {
 	// Computed whichever tables print: these are the rows the runner persists.
 	const summary = makeGeneralSummary(analyses);
+	if (options.quiet === true) {
+		return summary;
+	}
+
+	// The arm column earns its width only where the rows hold more than one arm.
+	// A single-arm set is named by the heading the runner printed above it, and
+	// repeating that name in every row costs a column the numbers could have had.
+	const manyArms = new Set(analyses.map((row) => String(row.experiment))).size > 1;
+	const arm = (row: Record<string, unknown>): Record<string, unknown> =>
+		manyArms ? { experiment: shortExperiment(row.experiment) } : {};
 
 	if (options.general) {
-		console.table(
+		printTable(
 			analyses.map((row) => ({
-				experiment: shortExperiment(row.experiment),
-				run: row.run,
+				run: runLabel(row),
+				...arm(row),
 				status: row.status,
 				seconds: (row.speed as { durationSeconds?: number } | null)?.durationSeconds ?? null,
 				turns: (row.speed as { turns?: number } | null)?.turns ?? null,
@@ -448,7 +494,7 @@ export function summarize(
 			})),
 		);
 
-		console.table(
+		printTable(
 			summary.map((group) => ({
 				experiment: shortExperiment(group.experiment),
 				fixtureRef:
@@ -473,12 +519,12 @@ export function summarize(
 	const withDeltas = analyses.filter((row) => deltaOf(row).complexity !== undefined);
 	const printedComplexity = options.complexity && withDeltas.length > 0;
 	if (printedComplexity) {
-		console.table(
+		printTable(
 			withDeltas.map((row) => {
 				const complexity = deltaOf(row).complexity ?? {};
 				return {
-					experiment: shortExperiment(row.experiment),
-					run: row.run,
+					run: runLabel(row),
+					...arm(row),
 					slocNet: deltaOf(row).diff?.sloc?.net ?? null,
 					cyclo: complexity.cyclomatic?.delta ?? null,
 					cog: complexity.cognitive?.delta ?? null,
@@ -493,7 +539,7 @@ export function summarize(
 			}),
 		);
 
-		console.table(
+		printTable(
 			summary.map((group) => ({
 				experiment: shortExperiment(group.experiment),
 				cycloMean: (group.cyclomaticDelta as { mean: number | null }).mean,
@@ -517,27 +563,27 @@ export function summarize(
 	const withCoverage = analyses.filter((row) => coverageOf(row) !== null);
 	const printedCoverage = options.coverage && withCoverage.length > 0;
 	if (printedCoverage) {
-		console.table(
+		printTable(
 			withCoverage.map((row) => {
 				const coverage = coverageOf(row);
 				const delta = deltaOf(row).coverageDelta ?? null;
 				return {
-					experiment: shortExperiment(row.experiment),
-					run: row.run,
+					run: runLabel(row),
+					...arm(row),
 					nodes: coverage?.nodes.all ?? null,
 					dsNodes: coverage?.nodes.ds ?? null,
 					compNodes: coverage?.nodes.component ?? null,
 					shareAll: percent(coverage?.dsShareOfAllNodes),
 					shareComp: percent(coverage?.dsShareOfComponentNodes),
 					unres: coverage?.nodes.unresolved ?? null,
-					dsNodesD: delta?.nodes.ds.delta ?? null,
-					shareAllD: percentPoints(delta?.dsShareOfAllNodes.delta),
-					shareCompD: percentPoints(delta?.dsShareOfComponentNodes.delta),
+					dsNodesΔ: delta?.nodes.ds.delta ?? null,
+					shareAllΔ: percentDelta(delta?.dsShareOfAllNodes.delta),
+					shareCompΔ: percentDelta(delta?.dsShareOfComponentNodes.delta),
 				};
 			}),
 		);
 
-		console.table(
+		printTable(
 			summary.map((group) => ({
 				experiment: shortExperiment(group.experiment),
 				dsNodesMean: (group.dsNodes as { mean: number | null }).mean,
@@ -545,11 +591,9 @@ export function summarize(
 				shareAllMean: percent((group.dsShareOfAllNodes as { mean: number | null }).mean),
 				shareCompMean: percent((group.dsShareOfComponentNodes as { mean: number | null }).mean),
 				unresMean: (group.unresolvedNodes as { mean: number | null }).mean,
-				dsNodesDMean: (group.dsNodesDelta as { mean: number | null }).mean,
-				shareAllDMean: percentPoints(
-					(group.dsShareOfAllNodesDelta as { mean: number | null }).mean,
-				),
-				shareCompDMean: percentPoints(
+				dsNodesΔMean: (group.dsNodesDelta as { mean: number | null }).mean,
+				shareAllΔMean: percentDelta((group.dsShareOfAllNodesDelta as { mean: number | null }).mean),
+				shareCompΔMean: percentDelta(
 					(group.dsShareOfComponentNodesDelta as { mean: number | null }).mean,
 				),
 			})),

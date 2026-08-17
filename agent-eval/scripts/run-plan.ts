@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // The plan runner: collects a research sample on local hardware without ever
-// putting more than `parallelMax` sandboxes on this machine at once.
+// putting more than `parallelMax` sandboxes on this machine at once, and
+// without re-collecting a repetition it already has.
 //
 //   pnpm eval:plan --config plans/<name>.plan.ts [--dry]
 //
 //   --config <path>  the plan config (default AGENTIC_REF_CONFIG, then plans/default.plan.ts)
-//   --dry            print the batch plan and spend nothing
+//   --dry            print what would be collected and spend nothing
 //
 // A plan config is a TS module default-exporting a RunPlan — experiments,
 // evals, runs, parallelMax — see lib/agentic-reference/run-plan.ts and
@@ -16,59 +17,71 @@
 // a container, a dockerode socket error, a full disk) unwinds past saveResults
 // and discards every completed sibling run with it. On Vercel's fleet that is
 // rare; on a laptop at 20 sandboxes it is the normal way an afternoon of
-// collection disappears. This script cuts the matrix into batches of
-// floor(parallelMax / runs) cells, runs them strictly one after another through
-// the existing eval:agentic-ref runner, and so caps the loss at a single batch.
+// collection disappears. This script cuts the matrix into batches that fit,
+// runs them strictly one after another through the existing eval:agentic-ref
+// runner, and so caps the loss at a single batch.
 //
 // WHY IT SHELLS OUT rather than calling runExperiment directly: the runner
 // script already generates the .agentic-ref work directory, links .env.local
 // into it, validates the selection against the case registry, and lets the CLI
-// do fingerprint reuse, failure classification and housekeeping. Driving it as
-// a child process keeps one code path for "run some evals" and gets process
-// isolation for free — a batch that dies takes its own process down, not this
-// one.
+// do failure classification and housekeeping. Driving it as a child process
+// keeps one code path for "run some evals" and gets process isolation for free
+// — a batch that dies takes its own process down, not this one.
+//
+// WHAT IT COLLECTS. The plan counts the qualifying runs each cell already has
+// and asks only for the difference, so a cell holding 6 of its 10 collects 4.
+// A run qualifies when its stored fingerprint is the current one for that
+// fixture and experiment config — at any sample size, since `runs` is hashed
+// into the fingerprint and a top-up is otherwise unrecognisable — and when it
+// was saved at or after the plan's cutoff. That judgement lives in
+// lib/agentic-reference/comparability.ts, shared with the offline analyzer so
+// that runs collected as one sample are also analysed as one. It takes the
+// reuse decision away
+// from the harness's own cache, which is all-or-nothing and cannot express a
+// partial sample, so every invocation runs with --force.
 //
 // HOW A BATCH IS JUDGED. Not by exit code: `run-all` exits 1 whenever any eval
 // has a 0% pass rate, which for a control arm is the measurement, not a fault.
 // The verdict comes from disk instead — the run-* directories the batch wrote,
-// against the number it planned to write. A cell short of its sample means the
+// against the number it asked for. A cell short of its request means the
 // classifier deleted infra/timeout runs (or the batch died before saving);
 // either way the report names the cell and prints the command that tops it up.
 //
 // Nothing is retried. A batch that fails is recorded and the plan moves on, so
 // an unattended overnight run always ends with a complete account of what it
 // did and did not collect.
-//
-// THE REUSE CUTOFF. The harness reuses a saved result when its fingerprint —
-// the fixture plus the experiment config — still matches, which is blind to
-// everything else a run depends on: the sha a design-system MCP branch resolves
-// to, a template, the sandbox image, the agent CLI. A plan's `since` closes
-// that gap. Cells whose newest sample predates it are re-collected (forced past
-// the cache), cells sampled since are kept, and the report says which was which.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { AGENTIC_REF_CASES, AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
+import { countCollectedRuns } from '../lib/agentic-reference/collected-runs.ts';
+import {
+	acceptableFingerprints,
+	parseResultTimestamp,
+	readStoredFingerprint,
+} from '../lib/agentic-reference/comparability.ts';
 import { selectionFlags } from '../lib/agentic-reference/selection.ts';
 import {
-	type CachedCell,
 	type CellOutcome,
+	type CellPlan,
 	EXPERIMENT_NAME_PREFIX,
 	type PlanBatch,
 	type ResolvedRunPlan,
 	type ResourceSignal,
 	type RunPlan,
+	type StoredSample,
+	explainDeficit,
 	isPlanStoppingSignal,
 	narrowedParallelMax,
-	parsePlannedExperiments,
-	parseResultTimestamp,
-	partitionCachedCells,
+	planBatches,
+	planCell,
 	resolveRunPlan,
 	scanResourceSignals,
 	topUpCommand,
 } from '../lib/agentic-reference/run-plan.ts';
+import { generateAgenticRefWorkdir } from './generate-agentic-ref-experiments.ts';
 
 const AGENT_EVAL_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const RESULTS_DIR = join(AGENT_EVAL_ROOT, 'results');
@@ -86,10 +99,6 @@ interface BatchOutcome {
 	batch: PlanBatch;
 	/** Cells this batch set out to collect. */
 	cells: CellOutcome[];
-	/** Cells skipped: the harness would reuse them and the cutoff kept them. */
-	cached: string[];
-	/** Cells re-collected because their saved sample predates the plan's cutoff. */
-	invalidated: string[];
 	exitCode: number | null;
 	durationMs: number;
 	signals: ResourceSignal[];
@@ -105,7 +114,7 @@ function expectedRuns(outcome: BatchOutcome): number {
 	return outcome.cells.reduce((total, cell) => total + cell.expected, 0);
 }
 
-// --- reading what landed on disk -------------------------------------------
+// --- reading what is already on disk ---------------------------------------
 
 /**
  * Every result directory of an experiment, relative to its results directory.
@@ -142,51 +151,62 @@ function resultDirs(experiment: string): string[] {
 }
 
 /**
- * Repetitions of one cell saved under the timestamp directories a batch added.
- *
- * Scoped to the new directories so a re-collection is never credited with the
- * sample a previous plan run left behind. A missing eval directory counts as
- * zero: that is exactly what the classifier leaves behind when it removes an
- * infra or timeout failure.
+ * Runs of one cell across a set of result directories, counting only those that
+ * produced a project tree — a batch whose attempts all died on billing or a
+ * timeout collected nothing, however many directories it left behind. See
+ * lib/agentic-reference/collected-runs.ts.
  */
-function countSavedRuns(experiment: string, evalName: string, newResultDirs: string[]): number {
+function countSavedRuns(experiment: string, evalName: string, dirs: readonly string[]): number {
 	let total = 0;
-	for (const resultDir of newResultDirs) {
-		const evalDir = join(RESULTS_DIR, experiment, resultDir, evalName);
-		if (!existsSync(evalDir)) {
-			continue;
-		}
-		total += readdirSync(evalDir, { withFileTypes: true }).filter(
-			(entry) => entry.isDirectory() && entry.name.startsWith('run-'),
-		).length;
+	for (const dir of dirs) {
+		total += countCollectedRuns(join(RESULTS_DIR, experiment, dir, evalName));
 	}
 	return total;
 }
 
-/**
- * When this cell was last sampled, by the newest result directory that actually
- * holds runs for it.
- *
- * Directories the classifier emptied do not count: a cell whose only recent
- * directory lost its runs to an infra failure has not been sampled recently.
- */
-function newestSampleAt(experiment: string, evalName: string): Date | null {
-	let newest: Date | null = null;
-	for (const resultDir of resultDirs(experiment)) {
-		if (countSavedRuns(experiment, evalName, [resultDir]) === 0) {
+/** Every stored sample of one cell, whether or not it still counts. */
+function storedSamples(experiment: string, evalName: string): StoredSample[] {
+	const samples: StoredSample[] = [];
+	for (const dir of resultDirs(experiment)) {
+		const evalDir = join(RESULTS_DIR, experiment, dir, evalName);
+		const runs = countCollectedRuns(evalDir);
+		if (runs === 0) {
 			continue;
 		}
-		const at = parseResultTimestamp(basename(resultDir));
-		if (at === null) {
-			// Undatable, but it does hold runs — partitionCachedCells reads this as
-			// stale, which is the safe reading for a cutoff meant to be trusted.
-			return null;
-		}
-		if (newest === null || at.getTime() > newest.getTime()) {
-			newest = at;
-		}
+		samples.push({
+			dir,
+			at: parseResultTimestamp(basename(dir)),
+			fingerprint: readStoredFingerprint(evalDir),
+			runs,
+		});
 	}
-	return newest;
+	return samples;
+}
+
+// --- what every cell still needs -------------------------------------------
+
+/** Works out what every cell of the plan still needs. */
+async function planCells(resolved: ResolvedRunPlan): Promise<CellPlan[]> {
+	const { runs, since, force } = resolved.plan;
+	const planned: CellPlan[] = [];
+
+	for (const cell of resolved.cells) {
+		// Skipped under force: the answer is the full target either way, and
+		// loading every stub to hash fixtures would be pure latency.
+		const acceptable = force
+			? new Set<string>()
+			: await acceptableFingerprints(cell.experiment, cell.evalName, runs);
+		planned.push(
+			planCell(cell, force ? [] : storedSamples(cell.experiment, cell.evalName), {
+				target: runs,
+				acceptable,
+				since,
+				force,
+			}),
+		);
+	}
+
+	return planned;
 }
 
 // --- driving the runner ----------------------------------------------------
@@ -199,13 +219,12 @@ interface ChildResult {
 /**
  * Runs the agentic-ref runner as a child process.
  *
- * `tee` streams the child's output as it arrives *and* keeps a copy: the copy
- * is what resource signals are scanned out of. Piping costs the CLI's live
- * dashboard (it only renders on a TTY) and falls back to its line-by-line
- * progress handler — the better trade for a multi-hour run whose log is the
- * artifact you keep.
+ * Output is streamed as it arrives *and* kept: the copy is what resource
+ * signals are scanned out of. Piping costs the CLI's live dashboard (it only
+ * renders on a TTY) and falls back to its line-by-line progress handler — the
+ * better trade for a multi-hour run whose log is the artifact you keep.
  */
-function runRunner(args: string[], tee: boolean): Promise<ChildResult> {
+function runRunner(args: string[]): Promise<ChildResult> {
 	return new Promise((resolvePromise, rejectPromise) => {
 		const child = spawn(process.execPath, [RUNNER, ...args], {
 			cwd: AGENT_EVAL_ROOT,
@@ -218,9 +237,7 @@ function runRunner(args: string[], tee: boolean): Promise<ChildResult> {
 			stream.setEncoding('utf8');
 			stream.on('data', (chunk: string) => {
 				output += chunk;
-				if (tee) {
-					sink.write(chunk);
-				}
+				sink.write(chunk);
 			});
 		};
 		capture(child.stdout, process.stdout);
@@ -231,179 +248,36 @@ function runRunner(args: string[], tee: boolean): Promise<ChildResult> {
 	});
 }
 
-function runnerArgs(
-	experiments: readonly string[],
-	batch: PlanBatch,
-	resolved: ResolvedRunPlan,
-	force: boolean,
-): string[] {
+/**
+ * --force on every invocation: this script has already decided what is missing,
+ * and the harness's own cache would otherwise skip a cell whose fingerprint
+ * happens to match — including one it has only a partial sample of.
+ */
+function runnerArgs(batch: PlanBatch, resolved: ResolvedRunPlan): string[] {
 	return [
 		'--experiments',
-		experiments.join(','),
+		batch.experiments.join(','),
 		'--evals',
 		batch.evalName,
 		'--runs',
-		String(resolved.plan.runs),
-		...(force ? ['--force'] : []),
+		String(batch.runs),
+		'--force',
 		...(resolved.plan.ackFailures ? ['--ack-failures'] : []),
 	];
 }
 
-/** What a batch has left to do, once the cache and the cutoff have had their say. */
-interface BatchWork {
-	/** Cells the harness itself means to run: no reusable result, or a stale fingerprint. */
-	planned: string[];
-	/** Cells the harness would reuse, re-collected anyway because they predate the cutoff. */
-	stale: string[];
-	/** Cells the harness would reuse and the cutoff kept. */
-	fresh: string[];
-	/** planned ∪ stale, in batch order. */
-	toRun: string[];
-	/** Why each cell of toRun has to be collected, keyed by experiment. */
-	reasons: Map<string, string>;
-	/** Set when the dry pass could not answer, in which case nothing should run. */
-	error?: string;
-}
-
-/**
- * Decides what a batch has to collect, without collecting anything.
- *
- * The dry pass answers a question the live run cannot: which cells the
- * fingerprint cache will skip. Without it, a cached cell and a cell whose batch
- * died before saving look identical afterwards — both wrote nothing. The cutoff
- * then re-admits the cells whose saved sample is too old to trust.
- */
-async function resolveBatchWork(batch: PlanBatch, resolved: ResolvedRunPlan): Promise<BatchWork> {
-	const { force, since } = resolved.plan;
-	const plan = await runRunner(
-		[...runnerArgs(batch.experiments, batch, resolved, force), '--dry'],
-		false,
-	);
-	if (plan.exitCode !== 0) {
-		return {
-			planned: [],
-			stale: [],
-			fresh: [],
-			toRun: [],
-			reasons: new Map(),
-			error: `dry pass failed (exit ${plan.exitCode}); nothing was run.\n${plan.output.trim()}`,
-		};
-	}
-
-	const planned = parsePlannedExperiments(plan.output).filter((name) =>
-		batch.experiments.includes(name),
-	);
-
-	const sampledAt = new Map(
-		batch.experiments.map((experiment) => [experiment, newestSampleAt(experiment, batch.evalName)]),
-	);
-
-	// Cells the harness already means to run are not consulted: they have no
-	// reusable sample to age out in the first place.
-	const reusable: CachedCell[] = batch.experiments
-		.filter((name) => !planned.includes(name))
-		.map((experiment) => ({ experiment, newestSample: sampledAt.get(experiment) ?? null }));
-	const { stale, fresh } = partitionCachedCells(reusable, since);
-
-	// Order follows the batch, so logs and the report read the same way however
-	// the groups interleave.
-	const toRun = batch.experiments.filter((name) => planned.includes(name) || stale.includes(name));
-
-	const reasons = new Map(
-		toRun.map((experiment) => [experiment, collectionReason(experiment, sampledAt, stale)]),
-	);
-
-	return { planned, stale, fresh, toRun, reasons };
-}
-
-/** A saved sample's date, to the minute — enough to line up against a cutoff. */
-function formatSample(at: Date): string {
-	return `${at.toISOString().slice(0, 16)}Z`;
-}
-
-/**
- * Why a cell has to be collected.
- *
- * The three answers are worth telling apart. "Never collected" is the plain
- * case. A sample the *harness* rejects means its fingerprint moved — the
- * fixture or the experiment config changed since — and the cutoff had no say.
- * A sample the *cutoff* rejects is the one the plan chose to invalidate. Only
- * the last is the plan's own doing, so reporting all three as one number is how
- * a repinned fixture gets mistaken for a broken cutoff.
- */
-function collectionReason(
-	experiment: string,
-	sampledAt: ReadonlyMap<string, Date | null>,
-	stale: readonly string[],
-): string {
-	const sample = sampledAt.get(experiment) ?? null;
-	if (stale.includes(experiment)) {
-		return sample === null
-			? 'saved sample cannot be dated'
-			: `sample ${formatSample(sample)} predates the cutoff`;
-	}
-	return sample === null
-		? 'never collected'
-		: `sample ${formatSample(sample)} superseded — fixture or experiment config changed since`;
-}
-
-function describeWork(work: BatchWork): void {
-	if (work.fresh.length > 0) {
-		console.log(`  already collected: ${work.fresh.join(', ')}`);
-	}
-	for (const experiment of work.toRun) {
-		console.log(`  collecting ${experiment}: ${work.reasons.get(experiment) ?? 'unknown'}`);
-	}
-}
-
 async function runBatch(batch: PlanBatch, resolved: ResolvedRunPlan): Promise<BatchOutcome> {
 	const started = Date.now();
-	const work = await resolveBatchWork(batch, resolved);
+	const before = new Map(batch.experiments.map((name) => [name, new Set(resultDirs(name))]));
 
-	if (work.error !== undefined) {
-		return {
-			batch,
-			cells: [],
-			cached: [],
-			invalidated: [],
-			exitCode: null,
-			durationMs: Date.now() - started,
-			signals: [],
-			error: work.error,
-		};
-	}
+	const run = await runRunner(runnerArgs(batch, resolved));
 
-	const { stale, fresh, toRun } = work;
-
-	if (toRun.length === 0) {
-		console.log('  already collected — skipping.');
-		return {
-			batch,
-			cells: [],
-			cached: fresh,
-			invalidated: [],
-			exitCode: 0,
-			durationMs: Date.now() - started,
-			signals: [],
-		};
-	}
-	describeWork(work);
-
-	// --force is what makes a stale cell re-run at all: the harness's cache would
-	// otherwise skip it. Cells in `planned` would have run either way, so forcing
-	// the whole invocation costs nothing — toRun holds only cells that need work.
-	const before = new Map(toRun.map((name) => [name, new Set(resultDirs(name))]));
-	const run = await runRunner(
-		runnerArgs(toRun, batch, resolved, resolved.plan.force || stale.length > 0),
-		true,
-	);
-
-	const cells: CellOutcome[] = toRun.map((experiment) => {
+	const cells: CellOutcome[] = batch.experiments.map((experiment) => {
 		const added = resultDirs(experiment).filter((name) => !before.get(experiment)!.has(name));
 		return {
 			experiment,
 			evalName: batch.evalName,
-			expected: resolved.plan.runs,
+			expected: batch.runs,
 			collected: countSavedRuns(experiment, batch.evalName, added),
 		};
 	});
@@ -411,8 +285,6 @@ async function runBatch(batch: PlanBatch, resolved: ResolvedRunPlan): Promise<Ba
 	return {
 		batch,
 		cells,
-		cached: fresh,
-		invalidated: stale,
 		exitCode: run.exitCode,
 		durationMs: Date.now() - started,
 		signals: scanResourceSignals(run.output),
@@ -427,37 +299,51 @@ function formatDuration(ms: number): string {
 	return minutes === 0 ? `${seconds}s` : `${minutes}m${String(seconds).padStart(2, '0')}s`;
 }
 
-function describeBatch(batch: PlanBatch, total: number, runs: number): string {
+function describeBatch(batch: PlanBatch, total: number): string {
 	return (
 		`[${batch.index}/${total}] ${batch.evalName} × ${batch.experiments.join(', ')} ` +
-		`(${batch.experiments.length} cell(s) × ${runs} runs = ${batch.parallel} sandboxes)`
+		`(${batch.experiments.length} cell(s) × ${batch.runs} runs = ${batch.parallel} sandboxes)`
 	);
 }
 
-function printPlan(resolved: ResolvedRunPlan): void {
-	const { plan, batches, experiments, evals, cellsPerBatch } = resolved;
-	const cells = experiments.length * evals.length;
+function printPlan(resolved: ResolvedRunPlan, cells: CellPlan[], batches: PlanBatch[]): void {
+	const { plan } = resolved;
+	const outstanding = cells.filter((cell) => cell.deficit > 0);
+	const toCollect = outstanding.reduce((total, cell) => total + cell.deficit, 0);
+	const alreadyHave = cells.reduce((total, cell) => total + cell.qualifying, 0);
+
 	console.log(
-		`Plan: ${experiments.length} experiment(s) × ${evals.length} eval(s) × ${plan.runs} run(s) ` +
-			`= ${cells} cells, ${cells * plan.runs} runs total.`,
-	);
-	console.log(
-		`Batches: ${batches.length}, at most ${cellsPerBatch} cell(s) ` +
-			`(${cellsPerBatch * plan.runs} sandboxes) at once, parallelMax ${plan.parallelMax}.`,
+		`Plan: ${resolved.experiments.length} experiment(s) × ${resolved.evals.length} eval(s) ` +
+			`× ${plan.runs} run(s) = ${cells.length} cells, ${cells.length * plan.runs} runs.`,
 	);
 	if (plan.force) {
-		console.log('force: re-collecting cells that already have results.');
+		console.log('force: collecting the full target for every cell, ignoring what is on disk.');
 	} else if (plan.since !== null) {
-		console.log(
-			`since ${plan.since.toISOString()}: cells whose newest sample predates this are re-collected.`,
-		);
+		console.log(`since ${plan.since.toISOString()}: earlier runs do not count towards a target.`);
 	}
 	if (plan.ackFailures) {
 		console.log('ackFailures: infra and timeout runs are kept as final results.');
 	}
+
 	console.log('');
+	for (const evalName of resolved.evals) {
+		console.log(`  ${evalName}`);
+		for (const cell of cells.filter((candidate) => candidate.evalName === evalName)) {
+			const state =
+				cell.deficit === 0
+					? `complete (${cell.qualifying}/${cell.target})`
+					: `collect ${cell.deficit} — ${explainDeficit(cell)}`;
+			console.log(`    ${cell.experiment.padEnd(42)} ${state}`);
+		}
+	}
+
+	console.log(
+		`\n  ${alreadyHave} run(s) already qualify; ${toCollect} to collect across ` +
+			`${outstanding.length} cell(s), in ${batches.length} batch(es) of at most ` +
+			`${plan.parallelMax} sandboxes.\n`,
+	);
 	for (const batch of batches) {
-		console.log(`  ${describeBatch(batch, batches.length, plan.runs)}`);
+		console.log(`  ${describeBatch(batch, batches.length)}`);
 	}
 	console.log('');
 }
@@ -469,6 +355,8 @@ interface PlanReport {
 	completedAt: string;
 	config: string;
 	plan: Omit<ResolvedRunPlan['plan'], 'since'> & { since: string | null };
+	/** What every cell already had and what the plan asked for. */
+	cells: CellPlan[];
 	batches: BatchOutcome[];
 	gaps: CellOutcome[];
 	stoppedAt: number | null;
@@ -487,10 +375,6 @@ function printReport(report: PlanReport, totalBatches: number): void {
 			console.log(`  ${label}  ERROR — ${outcome.error.split('\n')[0]}`);
 			continue;
 		}
-		if (outcome.cells.length === 0) {
-			console.log(`  ${label}  cached, nothing to collect`);
-			continue;
-		}
 		const collected = collectedRuns(outcome);
 		const expected = expectedRuns(outcome);
 		const state = collected === expected ? 'ok' : `GAP ${expected - collected} run(s)`;
@@ -501,24 +385,14 @@ function printReport(report: PlanReport, totalBatches: number): void {
 
 	const totalCollected = batches.reduce((sum, outcome) => sum + collectedRuns(outcome), 0);
 	const totalExpected = batches.reduce((sum, outcome) => sum + expectedRuns(outcome), 0);
-	console.log(`\n  Collected ${totalCollected}/${totalExpected} planned runs.`);
-
-	const invalidated = batches.flatMap((outcome) =>
-		outcome.invalidated.map((experiment) => `${outcome.batch.evalName} × ${experiment}`),
+	const reused = report.cells.reduce((sum, cell) => sum + cell.qualifying, 0);
+	console.log(
+		`\n  Collected ${totalCollected}/${totalExpected} requested runs, on top of ${reused} ` +
+			`that already qualified.`,
 	);
-	const kept = batches.reduce((sum, outcome) => sum + outcome.cached.length, 0);
-	if (report.plan.since !== null) {
-		console.log(
-			`  Cutoff ${report.plan.since}: re-collected ${invalidated.length} cell(s), ` +
-				`kept ${kept} already-collected cell(s).`,
-		);
-		for (const cell of invalidated) {
-			console.log(`    re-collected ${cell}`);
-		}
-	}
 
 	if (gaps.length > 0) {
-		console.log(`\n  Gaps (${gaps.length} cell(s) short of their sample):`);
+		console.log(`\n  Gaps (${gaps.length} cell(s) short of what was requested):`);
 		for (const cell of gaps) {
 			console.log(
 				`    ${cell.evalName} × ${cell.experiment}  ${cell.collected}/${cell.expected} runs`,
@@ -527,8 +401,8 @@ function printReport(report: PlanReport, totalBatches: number): void {
 		}
 		console.log(
 			'\n  A shortfall means the classifier removed infra or timeout runs, or the batch died\n' +
-				'  before saving. The commands above collect the missing repetitions into a new\n' +
-				'  timestamp directory; the offline analyzer reads them alongside the first.',
+				'  before saving. Re-running the plan collects the difference on its own; the\n' +
+				'  commands above do it one cell at a time.',
 		);
 	}
 
@@ -561,49 +435,11 @@ function printReport(report: PlanReport, totalBatches: number): void {
 				: 'the remaining batches would fail the same way';
 		console.log(
 			`\n  Plan stopped after batch ${report.stoppedAt} of ${totalBatches} (${why}).\n` +
-				'  Re-run the same config to continue — collected cells are cached and skipped.',
+				'  Re-run the same config to continue — collected runs count towards their targets.',
 		);
 	}
 
 	console.log('─'.repeat(72));
-}
-
-/**
- * Resolves every batch without running any, and prints what each would collect.
- *
- * Free — each batch costs one dry pass — and it is the only way to see the
- * cutoff's effect before paying for it: how many cells it re-admits, and how
- * many the cache still covers.
- */
-async function printDryWork(resolved: ResolvedRunPlan): Promise<void> {
-	let toRun = 0;
-	let stale = 0;
-	let fresh = 0;
-
-	for (const batch of resolved.batches) {
-		const work = await resolveBatchWork(batch, resolved);
-		const label = `[${batch.index}/${resolved.batches.length}] ${batch.evalName}`;
-		if (work.error !== undefined) {
-			console.log(`  ${label}  ERROR — ${work.error.split('\n')[0]}`);
-			continue;
-		}
-		toRun += work.toRun.length;
-		stale += work.stale.length;
-		fresh += work.fresh.length;
-		console.log(
-			`  ${label}  ${work.toRun.length} to collect` +
-				(work.stale.length > 0 ? `, ${work.stale.length} past the cutoff` : '') +
-				(work.fresh.length > 0 ? `, ${work.fresh.length} cached` : ''),
-		);
-		for (const experiment of work.toRun) {
-			console.log(`      → ${experiment} (${work.reasons.get(experiment) ?? 'unknown'})`);
-		}
-	}
-
-	console.log(
-		`\n  ${toRun} cell(s) to collect — ${toRun * resolved.plan.runs} runs — of which ` +
-			`${stale} re-admitted by the cutoff. ${fresh} cell(s) already covered.`,
-	);
 }
 
 function writeReport(report: PlanReport): string {
@@ -666,7 +502,7 @@ async function main(): Promise<void> {
 			{ scriptName: 'eval:plan', usage: 'Usage: pnpm eval:plan --config <path> [--dry]' },
 			{
 				config: flags.text('config', 'Plan config module (default plans/default.plan.ts)'),
-				dry: flags.switch('dry', 'Print the batch plan and spend nothing'),
+				dry: flags.switch('dry', 'Print what would be collected and spend nothing'),
 			},
 		)
 		.parseSync();
@@ -680,11 +516,21 @@ async function main(): Promise<void> {
 		evals: AGENTIC_REF_EVAL_REGISTRY,
 	});
 
+	// The stubs are what fingerprints are computed from, so they have to exist
+	// before any counting — the runner would otherwise be the first to build them.
+	generateAgenticRefWorkdir();
+
+	const cells = await planCells(resolved);
+	const batches = planBatches(cells, resolved.evals, resolved.plan.parallelMax);
+
 	console.log(`Config: ${relative(AGENT_EVAL_ROOT, configPath)}`);
-	printPlan(resolved);
+	printPlan(resolved, cells, batches);
 
 	if (argv.dry) {
-		await printDryWork(resolved);
+		return;
+	}
+	if (batches.length === 0) {
+		console.log('Nothing to collect: every cell already has its full sample.');
 		return;
 	}
 
@@ -695,8 +541,8 @@ async function main(): Promise<void> {
 	let stoppedAt: number | null = null;
 	let stoppedBy: StopReason | null = null;
 
-	for (const batch of resolved.batches) {
-		console.log(`\n${describeBatch(batch, resolved.batches.length, resolved.plan.runs)}`);
+	for (const batch of batches) {
+		console.log(`\n${describeBatch(batch, batches.length)}`);
 
 		let outcome: BatchOutcome;
 		try {
@@ -705,8 +551,6 @@ async function main(): Promise<void> {
 			outcome = {
 				batch,
 				cells: [],
-				cached: [],
-				invalidated: [],
 				exitCode: null,
 				durationMs: 0,
 				signals: [],
@@ -747,6 +591,7 @@ async function main(): Promise<void> {
 		completedAt: new Date().toISOString(),
 		config: relative(AGENT_EVAL_ROOT, configPath),
 		plan: { ...resolved.plan, since: resolved.plan.since?.toISOString() ?? null },
+		cells,
 		batches: outcomes,
 		gaps,
 		stoppedAt,
@@ -756,7 +601,7 @@ async function main(): Promise<void> {
 			: null,
 	};
 
-	printReport(report, resolved.batches.length);
+	printReport(report, batches.length);
 	console.log(`\nReport: ${relative(AGENT_EVAL_ROOT, writeReport(report))}`);
 
 	// Non-zero on an incomplete sample: a gap, a batch that could not run, or a

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { deltaToBaseline, analyzeRun, summarize } from './post-analysis.ts';
 import goldenResult from './__fixtures__/golden-run/result.json' with { type: 'json' };
@@ -453,24 +453,80 @@ describe('summarize', () => {
 	// carries a baseline delta — a per-run and a grouped complexity table, then
 	// — only when a run measured DS coverage — a per-run and a grouped coverage
 	// table, and returns the grouped rows for the runner to persist. These tests
-	// read the printed tables by console.table call order: vitals at 0 and 1,
-	// the complexity pair at 2 and 3, the coverage pair after whichever ran.
-	function tables(
+	// read the printed tables in order: vitals at 0 and 1, the complexity pair
+	// at 2 and 3, the coverage pair after whichever ran.
+	//
+	// The tables are read back out of what was printed rather than out of the
+	// values handed to a renderer, because how a cell reads — a bare 29.59%, a
+	// signed delta, the label a row carries — is the whole point of these views.
+	function printed(
 		rows: Array<Record<string, unknown>>,
 		options?: SummarizeOptions,
-	): Array<Array<Record<string, unknown>>> {
-		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+	): Array<string> {
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		try {
 			summarize(rows, options);
-			return spy.mock.calls.map((call) => call[0] as Array<Record<string, unknown>>);
+			return spy.mock.calls
+				.map((call) => String(call[0]))
+				.filter((output) => output.startsWith('┌'));
 		} finally {
 			spy.mockRestore();
 		}
 	}
 
-	function groupedRows(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+	/** One rendered table as its cells, keyed by column header. */
+	function readTable(rendered: string): Array<Record<string, string>> {
+		const [header, ...body] = rendered
+			.split('\n')
+			.filter((line) => line.startsWith('│'))
+			.map((line) =>
+				line
+					.split('│')
+					.slice(1, -1)
+					.map((cell) => cell.trim()),
+			);
+		return body.map((cells) =>
+			Object.fromEntries(cells.map((cell, index) => [header![index]!, cell])),
+		);
+	}
+
+	function tables(
+		rows: Array<Record<string, unknown>>,
+		options?: SummarizeOptions,
+	): Array<Array<Record<string, string>>> {
+		return printed(rows, options).map(readTable);
+	}
+
+	function groupedRows(rows: Array<Record<string, unknown>>): Array<Record<string, string>> {
 		return tables(rows)[1] ?? [];
 	}
+
+	// A run is labelled in the reader's own timezone, so these tests fix one
+	// rather than passing wherever they happen to run.
+	const localZone = process.env.TZ;
+	beforeAll(() => {
+		process.env.TZ = 'Europe/Paris';
+	});
+	afterAll(() => {
+		process.env.TZ = localZone;
+	});
+
+	// run-3 stopped identifying a row once the tables started aggregating every
+	// comparable collection of a cell: three result directories each hold one.
+	it('labels a run with the local minute it was collected and its number', () => {
+		// The row was stamped 13:20 UTC, which is 15:20 where this is read.
+		expect(tables(armRows())[0]?.[0]?.run).toBe('2026-08-15 15:20 #1');
+	});
+
+	// The heading above a table names the arm, so a single-arm table spends no
+	// column repeating it — but a set spanning arms has to say which is which.
+	it('names the arm in every row only where the rows span more than one', () => {
+		expect(tables(armRows())[0]?.[0]).not.toHaveProperty('experiment');
+
+		const mixed = tables([...armRows(), { ...armRows()[0], experiment: 'y' }])[0];
+		expect(mixed?.[0]).toMatchObject({ experiment: 'x' });
+		expect(mixed?.[2]).toMatchObject({ experiment: 'y' });
+	});
 
 	// Returning these is what puts them in results/analysis-summary.json; a
 	// summarize that only printed would silently empty that file.
@@ -486,7 +542,7 @@ describe('summarize', () => {
 				toolUse: null,
 			},
 		];
-		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		try {
 			expect(summarize(rows)).toEqual(groupedRowsShape());
 		} finally {
@@ -513,6 +569,7 @@ describe('summarize', () => {
 				experiment: 'x',
 				eval: 'e',
 				run: 1,
+				timestamp: '2026-08-15T13-20-41.492Z',
 				status: 'passed',
 				fixtureRef: 'r@1',
 				cost: { estimatedCostUsd: 1 },
@@ -537,6 +594,7 @@ describe('summarize', () => {
 				experiment: 'x',
 				eval: 'e',
 				run: 2,
+				timestamp: '2026-08-16T09-02-00.000Z',
 				status: 'failed',
 				fixtureRef: 'r@1',
 				cost: { estimatedCostUsd: 3 },
@@ -565,12 +623,12 @@ describe('summarize', () => {
 		expect(group).toMatchObject({
 			experiment: 'x',
 			fixtureRef: 'r@1',
-			runs: 2,
-			passed: 1,
-			costUsd: 4,
-			secondsMean: 15,
-			docsMean: 1,
-			slocMean: 15,
+			runs: '2',
+			passed: '1',
+			costUsd: '4',
+			secondsMean: '15',
+			docsMean: '1',
+			slocMean: '15',
 		});
 		// Complexity moved to its own tables; the vitals stay lean.
 		expect(group).not.toHaveProperty('cognitiveMean');
@@ -579,36 +637,35 @@ describe('summarize', () => {
 	it('prints a per-run complexity table with the whole family', () => {
 		const [, , perRun] = tables(armRows());
 		expect(perRun?.[0]).toEqual({
-			experiment: 'x',
-			run: 1,
-			slocNet: 8,
-			cyclo: 2,
-			cog: 3,
-			jsxCyclo: 4,
-			jsxCog: 7,
-			jsxLen: 4,
-			jsxBind: 2,
-			jsxDepth: 1,
-			density: 0.375,
-			parseFails: 0,
+			run: '2026-08-15 15:20 #1',
+			slocNet: '8',
+			cyclo: '2',
+			cog: '3',
+			jsxCyclo: '4',
+			jsxCog: '7',
+			jsxLen: '4',
+			jsxBind: '2',
+			jsxDepth: '1',
+			density: '0.375',
+			parseFails: '0',
 		});
 		// A run whose delta skirted unparseable files is flagged, not hidden.
-		expect(perRun?.[1]).toMatchObject({ run: 2, parseFails: 1 });
+		expect(perRun?.[1]).toMatchObject({ run: '2026-08-16 11:02 #2', parseFails: '1' });
 	});
 
 	it('prints a grouped complexity table with the family means', () => {
 		const [, , , grouped] = tables(armRows());
 		expect(grouped?.[0]).toEqual({
 			experiment: 'x',
-			cycloMean: 3,
-			cogMean: 4,
-			jsxCycloMean: 5,
-			jsxCogMean: 9,
-			jsxLenMean: 6,
-			jsxBindMean: 3,
-			jsxDepthMean: 2,
-			densityMean: 0.344,
-			parseFailRuns: 1,
+			cycloMean: '3',
+			cogMean: '4',
+			jsxCycloMean: '5',
+			jsxCogMean: '9',
+			jsxLenMean: '6',
+			jsxBindMean: '3',
+			jsxDepthMean: '2',
+			densityMean: '0.344',
+			parseFailRuns: '1',
 		});
 	});
 
@@ -635,7 +692,7 @@ describe('summarize', () => {
 				},
 			},
 		];
-		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		try {
 			expect(summarize(rows)[0]).toMatchObject({
 				cyclomaticDelta: { mean: 2 },
@@ -675,6 +732,7 @@ describe('summarize', () => {
 			experiment: 'x',
 			eval: 'e',
 			run,
+			timestamp: '2026-08-15T13-20-41.492Z',
 			status: 'passed',
 			fixtureRef: 'r@1',
 			cost: {},
@@ -706,17 +764,16 @@ describe('summarize', () => {
 	it('prints a per-run coverage table with absolutes beside the delta', () => {
 		const [, , perRun] = tables(coverageRows());
 		expect(perRun?.[0]).toEqual({
-			experiment: 'x',
-			run: 1,
-			nodes: 20,
-			dsNodes: 6,
-			compNodes: 8,
+			run: '2026-08-15 15:20 #1',
+			nodes: '20',
+			dsNodes: '6',
+			compNodes: '8',
 			shareAll: '30%',
 			shareComp: '75%',
-			unres: 0,
-			dsNodesD: 2,
-			shareAllD: '+10pp',
-			shareCompD: '+25pp',
+			unres: '0',
+			dsNodesΔ: '2',
+			shareAllΔ: '+10%',
+			shareCompΔ: '+25%',
 		});
 	});
 
@@ -724,21 +781,21 @@ describe('summarize', () => {
 		const [, , , grouped] = tables(coverageRows());
 		expect(grouped?.[0]).toEqual({
 			experiment: 'x',
-			dsNodesMean: 8,
-			compNodesMean: 10,
+			dsNodesMean: '8',
+			compNodesMean: '10',
 			shareAllMean: '40%',
 			shareCompMean: '79.17%',
-			unresMean: 0,
-			dsNodesDMean: 4,
-			shareAllDMean: '+20pp',
-			shareCompDMean: '+37.5pp',
+			unresMean: '0',
+			dsNodesΔMean: '4',
+			shareAllΔMean: '+20%',
+			shareCompΔMean: '+37.5%',
 		});
 	});
 
 	// The percentages are for reading; what gets persisted stays the fraction it
 	// was measured as, so a later reader can do arithmetic on it.
 	it('returns the coverage means in the stored rows', () => {
-		const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		try {
 			expect(summarize(coverageRows())[0]).toMatchObject({
 				dsNodes: { mean: 8 },
@@ -760,7 +817,7 @@ describe('summarize', () => {
 			.deltaToBaseline.coverageDelta;
 		delta.dsShareOfAllNodes = { before: 0.4, after: 0.3, delta: -0.1 };
 		const [, , perRun] = tables([fallen!]);
-		expect(perRun?.[0]?.shareAllD).toBe('-10pp');
+		expect(perRun?.[0]?.shareAllΔ).toBe('-10%');
 	});
 
 	it('skips the coverage tables for an eval that measures no DS', () => {
@@ -803,36 +860,53 @@ describe('summarize', () => {
 		// analysis rather than "this eval measures none of what you asked for".
 		it('says why nothing printed when the selected family has no data', () => {
 			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-			const table = vi.spyOn(console, 'table').mockImplementation(() => {});
 			try {
 				// armRows carries complexity but no coverage.
 				summarize(armRows(), { general: false, complexity: false, coverage: true });
-				expect(table).not.toHaveBeenCalled();
+				expect(log.mock.calls.map(String).filter((line) => line.startsWith('┌'))).toEqual([]);
 				// The one thing that stops a run being measured is an unmapped pin,
 				// so the note names the table to edit rather than shrugging.
 				expect(log).toHaveBeenCalledWith(expect.stringContaining('DS_PACKAGES_BY_PIN'));
 			} finally {
 				log.mockRestore();
-				table.mockRestore();
 			}
 		});
 
-		it('stays quiet when a selected family does have data', () => {
+		it('says nothing beyond the tables when a selected family does have data', () => {
 			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-			const table = vi.spyOn(console, 'table').mockImplementation(() => {});
 			try {
 				summarize(coverageRows(), { general: false, complexity: false, coverage: true });
-				expect(log).not.toHaveBeenCalled();
+				expect(log.mock.calls.map(String).filter((line) => !line.startsWith('┌'))).toEqual([]);
 			} finally {
 				log.mockRestore();
-				table.mockRestore();
+			}
+		});
+
+		// The runner folds each result directory on its own to keep that
+		// directory's summary.json scoped to it, and prints the comparable set
+		// those runs belong to instead — so folding has to be able to say nothing.
+		it('prints nothing at all when the caller asks to be quiet', () => {
+			const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+			try {
+				const quiet = summarize(everything(), {
+					general: true,
+					complexity: true,
+					coverage: true,
+					quiet: true,
+				});
+				expect(log).not.toHaveBeenCalled();
+				expect(quiet).toEqual(
+					summarize(everything(), { general: false, complexity: false, coverage: false }),
+				);
+			} finally {
+				log.mockRestore();
 			}
 		});
 
 		// The rows are what lands in summary.json and analysis-summary.json; which
 		// tables were printed must not touch them.
 		it('returns the same rows whatever prints', () => {
-			const spy = vi.spyOn(console, 'table').mockImplementation(() => {});
+			const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 			try {
 				const all = summarize(everything(), { general: true, complexity: true, coverage: true });
 				const none = summarize(everything(), {
@@ -859,7 +933,7 @@ describe('summarize', () => {
 				toolUse: null,
 			},
 		];
-		expect(groupedRows(rows)[0]?.costUsd).toBeNull();
+		expect(groupedRows(rows)[0]?.costUsd).toBe('null');
 	});
 
 	it('survives a row with no delta, e.g. an eval with no baseline', () => {
@@ -869,7 +943,7 @@ describe('summarize', () => {
 		const printed = tables(rows);
 		// No baseline delta anywhere: the complexity tables are not printed.
 		expect(printed).toHaveLength(2);
-		expect(printed[1]?.[0]).toMatchObject({ runs: 1, slocMean: null });
+		expect(printed[1]?.[0]).toMatchObject({ runs: '1', slocMean: 'null' });
 	});
 
 	it('flags a group spanning more than one fixture pin', () => {

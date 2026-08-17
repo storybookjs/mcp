@@ -9,9 +9,21 @@
 // same task and setup, differing only in prompt or MCP endpoint — share one set
 // of metrics, and lets one experiment span several evals.
 //
-// summarize is scoped to one eval directory — the folder holding that eval's
-// run-* dirs — and its rows are written back into that folder's summary.json
-// under `postAnalysis`, next to the harness's own pass rate and mean duration.
+// WHAT IS SUMMARIZED TOGETHER. A sample of one cell is spread over as many
+// result directories as it took to collect: a plan tops a cell up until it has
+// its full depth, and each invocation writes a directory of its own. Folding
+// per directory would report ten runs as "10, then 2, then 1" and average each
+// separately, so the tables are folded per *comparable set* instead — every
+// stored run of one arm, one eval and one configuration, whatever timestamps
+// they arrived under. Which runs those are is decided exactly as the plan
+// runner decides what it can reuse; see lib/agentic-reference/comparability.ts.
+//
+// Runs collected under a configuration the experiment has since replaced stay a
+// group of their own rather than being averaged into the current one.
+//
+// Each directory's own summary.json still gets rows scoped to that directory,
+// under `postAnalysis`, next to the harness's own pass rate and mean duration —
+// it describes the runs beside it, not the wider set they belong to.
 //
 // Every metric is a pure function of stored artifacts, so this can be re-run
 // over historical results as often as a metric definition changes, without
@@ -22,8 +34,9 @@
 // — through the module's own analyzeRun, in `baseline` mode — commits the result
 // under baselines/, and hands both sets of numbers to deltaToBaseline.
 //
-// Every group's rows are also collected into results/analysis-summary.json, so
-// comparing arms is a single read rather than a walk over the tree.
+// Every comparable set's rows are also collected into
+// results/analysis-summary.json, so comparing arms is a single read rather than
+// a walk over the tree.
 //
 // Analysis can still be expensive, so once a run has been analyzed, we record
 // its output in post-analysis-meta.json. Later invocations reuse that cached
@@ -58,9 +71,16 @@
 // written either way. Passing any of them prints exactly that set; passing none
 // falls back to DEFAULT_TABLES below.
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { readRunOutcome } from '#lib/agentic-reference/collected-runs';
+import {
+	groupComparableRuns,
+	isCurrentSample,
+	parseResultTimestamp,
+	readStoredFingerprint,
+} from '#lib/agentic-reference/comparability';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
@@ -69,6 +89,7 @@ import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
 import { matchesAnySelector, selectionFlags } from '#lib/agentic-reference/selection';
 
+import type { ComparableGroup } from '#lib/agentic-reference/comparability';
 import type {
 	Analysis,
 	PostAnalysis,
@@ -157,8 +178,18 @@ interface Run {
 	timestamp: string;
 	evalName: string;
 	run: number;
+	/**
+	 * Whether the run left a project tree behind. A run stopped by billing, a
+	 * timeout or an unreachable endpoint leaves a directory with nothing in it to
+	 * measure; those are carried this far anyway so that the selection narrows
+	 * them like everything else, and are then reported rather than passed over in
+	 * silence — they are the difference between the sample a plan believes it
+	 * collected and the one these tables report. `pnpm results:prune` clears them.
+	 */
+	collected: boolean;
 }
 
+/** Every run directory under `dir`, collected or not. */
 function findRuns(dir: string): Run[] {
 	if (!existsSync(dir)) return [];
 	const runs: Run[] = [];
@@ -168,7 +199,7 @@ function findRuns(dir: string): Run[] {
 				continue;
 			}
 			const path = join(current, entry.name);
-			if (!/^run-\d+$/.test(entry.name) || !existsSync(join(path, 'project'))) {
+			if (!/^run-\d+$/.test(entry.name)) {
 				walk(path);
 				continue;
 			}
@@ -181,17 +212,12 @@ function findRuns(dir: string): Run[] {
 				timestamp: parts.at(-3)!,
 				evalName: parts.at(-2)!,
 				run: Number.parseInt(entry.name.slice('run-'.length), 10),
+				collected: readRunOutcome(path).collected,
 			});
 		}
 	};
 	walk(dir);
 	return runs;
-}
-
-// Result directories are ISO timestamps with the time's ':' replaced by '-',
-// e.g. 2026-07-27T10-43-55.864Z.
-function parseTimestamp(timestamp: string): Date {
-	return new Date(timestamp.replace(/T(\d\d)-(\d\d)-(\d\d)/, 'T$1:$2:$3'));
 }
 
 function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
@@ -206,7 +232,12 @@ function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
 		if (Number.isNaN(since.getTime())) {
 			throw new Error(`--since must be a parseable date; received "${options.since}"`);
 		}
-		selected = selected.filter((run) => parseTimestamp(run.timestamp) >= since);
+		// A directory whose name is not a timestamp cannot be vouched for, and the
+		// point of a cutoff is to trust what stays in — so it stays out.
+		selected = selected.filter((run) => {
+			const at = parseResultTimestamp(run.timestamp);
+			return at !== null && at >= since;
+		});
 	}
 	if (options.latest) {
 		const newest = new Map<string, string>();
@@ -362,9 +393,50 @@ function strip(row: SuccessfulAnalysis): Record<string, unknown> {
 	);
 }
 
+/**
+ * Each result directory's fingerprint, and whether it is one the experiment's
+ * configuration still produces — the two facts that decide what can be folded
+ * with what.
+ */
+async function judgeSamples(
+	byEvalDir: ReadonlyMap<string, SuccessfulAnalysis[]>,
+): Promise<Map<string, { fingerprint: string | null; current: boolean }>> {
+	const judged = new Map<string, { fingerprint: string | null; current: boolean }>();
+	for (const [evalDir, analyses] of byEvalDir) {
+		const { experiment, evalName } = analyses[0]!.__run;
+		const fingerprint = readStoredFingerprint(evalDir);
+		judged.set(evalDir, {
+			fingerprint,
+			current: await isCurrentSample({
+				experiment,
+				evalName,
+				fingerprint,
+				// Runs the analysis could read, which is a lower bound on the sample
+				// size the collection asked for — enough, since what is tried anyway
+				// covers every size a plan on this hardware could have requested.
+				runsOnDisk: analyses.length,
+			}),
+		});
+	}
+	return judged;
+}
+
+/** A comparable set's heading: which arm, which eval, which generation. */
+function heading(group: ComparableGroup<SuccessfulAnalysis>): string {
+	const arm = [group.experiment, group.model].filter((part) => part !== '').join('/');
+	const cell = `${arm} · ${group.evalName}`;
+	// Named by the fingerprint they share, which is all that distinguishes two
+	// replaced generations of one cell from each other.
+	return group.current
+		? cell
+		: `${cell}  (superseded config ${group.fingerprint?.slice(0, 8) ?? 'unknown'})`;
+}
+
 async function main() {
 	const options = parseOptions(process.argv.slice(2));
-	const runs = selectRuns(findRuns(RESULTS_DIR), options);
+	const selected = selectRuns(findRuns(RESULTS_DIR), options);
+	const runs = selected.filter((run) => run.collected);
+	const incomplete = selected.length - runs.length;
 
 	const successfulAnalyses: SuccessfulAnalysis[] = [];
 	const failedAnalyses: string[] = [];
@@ -413,6 +485,13 @@ async function main() {
 		}
 	}
 
+	if (incomplete > 0) {
+		console.log(
+			`Skipped ${incomplete} run director${incomplete === 1 ? 'y' : 'ies'} holding no project ` +
+				'tree: those runs stopped on billing, a timeout or another infra failure. ' +
+				'Run `pnpm results:prune` to see and clear them.',
+		);
+	}
 	if (withoutHook > 0) {
 		console.log(
 			`Skipped ${withoutHook} ${withoutHook === 1 ? 'run' : 'runs'} whose experiment carries no postAnalysis.`,
@@ -435,9 +514,9 @@ async function main() {
 			a.__run.run - b.__run.run,
 	);
 
-	// Grouped by the directory holding the run-* dirs, i.e. one group per eval of
-	// one experiment at one timestamp. That is the unit summary.json describes,
-	// so summarize is scoped to it and every run in a group shares one module.
+	// summary.json belongs to the directory it sits in, so it is folded from that
+	// directory's runs alone — quietly, since what gets printed is the wider set
+	// those runs belong to.
 	const byEvalDir = new Map<string, SuccessfulAnalysis[]>();
 	for (const row of successfulAnalyses) {
 		const evalDir = dirname(row.__run.runDir);
@@ -445,12 +524,30 @@ async function main() {
 		list.push(row);
 		byEvalDir.set(evalDir, list);
 	}
+	for (const [evalDir, analyses] of byEvalDir) {
+		const rows = analyses[0]!.__postAnalysis.summarize(analyses.map(strip), {
+			...options.tables,
+			quiet: true,
+		});
+		mergeIntoEvalSummary(evalDir, rows);
+	}
+
+	const comparability = await judgeSamples(byEvalDir);
+	const groups = groupComparableRuns(successfulAnalyses, (row) => ({
+		experiment: row.__run.experiment,
+		model: row.__run.model,
+		evalName: row.__run.evalName,
+		...comparability.get(dirname(row.__run.runDir))!,
+	}));
 
 	const summary: Analysis[] = [];
-	for (const [evalDir, analyses] of byEvalDir) {
-		console.log(`\n===  ${relative(RESULTS_DIR, evalDir)}  ===\n`);
-		const rows = analyses[0]!.__postAnalysis.summarize(analyses.map(strip), options.tables);
-		mergeIntoEvalSummary(evalDir, rows);
+	for (const group of groups) {
+		console.log(`\n===  ${heading(group)}  ===\n`);
+		// Every run of a comparable set is one arm's, so they share one module.
+		const rows = group.members[0]!.__postAnalysis.summarize(
+			group.members.map(strip),
+			options.tables,
+		);
 		summary.push(...rows);
 	}
 
