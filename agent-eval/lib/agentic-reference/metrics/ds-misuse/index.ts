@@ -70,6 +70,59 @@ export function isStale(report: DsMisuseReport, current: StalenessCheck): boolea
 	);
 }
 
+/** A run to look for an artifact beside, and the rules to judge it against. */
+export interface MisuseReportRequest {
+	runDir: string;
+	/** The metricsVersion of the module that measured *this* run. */
+	metricsVersion: number | undefined;
+}
+
+export interface UsableMisuseReports {
+	/** One entry per requested run; null where there is nothing usable. */
+	byRunDir: Map<string, DsMisuseReport | null>;
+	/** Judged, but against a standard that has since moved. */
+	stale: number;
+	/** Never judged at all. */
+	absent: number;
+}
+
+/**
+ * Every run's usable artifact, read once.
+ *
+ * Once, because a caller printing tables wants it several times over and the
+ * file carries one record per judged JSX node.
+ *
+ * Usable, because a stale artifact is worse than none to a reader. It was
+ * scored against a different guidelines pin, judge model, or set of node-path
+ * rules, so putting it in a column beside a fresh score files two different
+ * measurements under one heading — and comparing arms is the whole point of the
+ * metric. The two reasons are counted apart so a caller can tell "never judged"
+ * from "judged, then the standard moved".
+ */
+export function readUsableMisuseReports(runs: readonly MisuseReportRequest[]): UsableMisuseReports {
+	const dsGuidelinesRef = dsDocsRefLabel();
+	const byRunDir = new Map<string, DsMisuseReport | null>();
+	let stale = 0;
+	let absent = 0;
+
+	for (const run of runs) {
+		const report = readMisuseReport(run.runDir);
+		if (report === null) {
+			absent += 1;
+			byRunDir.set(run.runDir, null);
+			continue;
+		}
+		if (isStale(report, { dsGuidelinesRef, metricsVersion: run.metricsVersion })) {
+			stale += 1;
+			byRunDir.set(run.runDir, null);
+			continue;
+		}
+		byRunDir.set(run.runDir, report);
+	}
+
+	return { byRunDir, stale, absent };
+}
+
 /** Judge one run and return its report. Makes exactly one model call. */
 export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 	const patch = treePatch(input.baselineDir, input.projectDir);

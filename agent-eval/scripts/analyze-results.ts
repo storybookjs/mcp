@@ -63,7 +63,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { pinOfResult } from '#lib/agentic-reference/external-repo';
-import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
+import { readUsableMisuseReports } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
 import {
 	findRuns,
@@ -79,6 +79,7 @@ import { messageOf } from '#lib/utils/error';
 import { readJson } from '#lib/utils/files';
 import { selectionFlags } from '#lib/agentic-reference/selection';
 
+import type { DsMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/types';
 import type {
 	Analysis,
 	PostAnalysis,
@@ -260,19 +261,26 @@ interface SuccessfulAnalysis extends Record<string, unknown> {
 	__run: Run;
 	__postAnalysis: PostAnalysis;
 }
-// Internal routing state, stripped before anything sees a record.
-//
-// Read fresh on every invocation and merged here rather than into the cached
-// analysis: the judge runs after this script, so a cached row would never gain
-// the scores without --recompute.
+/** Internal routing state, removed before anything sees a record. */
 function strip(row: SuccessfulAnalysis): Record<string, unknown> {
-	const report = readMisuseReport(row.__run.runDir);
-	return {
-		...Object.fromEntries(
-			Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
-		),
-		...(report === null ? {} : { dsMisuse: report }),
-	};
+	return Object.fromEntries(
+		Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
+	);
+}
+
+/**
+ * A row as the tables and analysis-summary.json see it.
+ *
+ * The artifact is merged here rather than into the cached analysis because the
+ * judge runs *after* this script: folded in before the cache lookup it would
+ * store a scoreless row that no later pass refreshes without --recompute.
+ */
+function withMisuse(
+	row: SuccessfulAnalysis,
+	reports: ReadonlyMap<string, DsMisuseReport | null>,
+): Record<string, unknown> {
+	const report = reports.get(row.__run.runDir) ?? null;
+	return { ...strip(row), ...(report === null ? {} : { dsMisuse: report }) };
 }
 
 async function main() {
@@ -349,15 +357,28 @@ async function main() {
 	);
 
 	// A silently absent metric is the failure mode worth shouting about, so this
-	// fires whichever table families were selected.
-	const unjudged = successfulAnalyses.filter(
-		(row) => readMisuseReport(row.__run.runDir) === null,
-	).length;
+	// fires whichever table families were selected. A stale artifact counts as
+	// unjudged: it is left out of the tables below, so saying otherwise here
+	// would point at a column that is not there. Re-judging needs no --recompute,
+	// since the judge does not reuse a stale artifact either.
+	const misuseReports = readUsableMisuseReports(
+		successfulAnalyses.map((row) => ({
+			runDir: row.__run.runDir,
+			metricsVersion: row.__postAnalysis.metricsVersion,
+		})),
+	);
+	const unjudged = misuseReports.absent + misuseReports.stale;
 	if (unjudged > 0) {
 		const bold = '\x1b[1;31m';
 		const reset = '\x1b[0m';
+		const breakdown =
+			misuseReports.stale === 0
+				? ''
+				: ` (${misuseReports.stale} judged against a superseded standard, ` +
+					`${misuseReports.absent} never judged)`;
 		console.error(
-			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+			`\n${bold}No usable ds-misuse judgement for ${unjudged} of ` +
+				`${successfulAnalyses.length} run(s)${breakdown}.${reset}\n` +
 				`  Run: ${rejudgeCommand(options)}`,
 		);
 	}
@@ -376,7 +397,10 @@ async function main() {
 	const summary: Analysis[] = [];
 	for (const [evalDir, analyses] of byEvalDir) {
 		console.log(`\n===  ${relative(RESULTS_DIR, evalDir)}  ===\n`);
-		const rows = analyses[0]!.__postAnalysis.summarize(analyses.map(strip), options.tables);
+		const rows = analyses[0]!.__postAnalysis.summarize(
+			analyses.map((row) => withMisuse(row, misuseReports.byRunDir)),
+			options.tables,
+		);
 		mergeIntoEvalSummary(evalDir, rows);
 		summary.push(...rows);
 	}
@@ -385,7 +409,14 @@ async function main() {
 	// matched run in one file, so comparing arms is a single read.
 	writeFileSync(
 		join(RESULTS_DIR, 'analysis-summary.json'),
-		JSON.stringify({ runs: successfulAnalyses.map(strip), summary }, null, 2) + '\n',
+		JSON.stringify(
+			{
+				runs: successfulAnalyses.map((row) => withMisuse(row, misuseReports.byRunDir)),
+				summary,
+			},
+			null,
+			2,
+		) + '\n',
 	);
 }
 
