@@ -102,6 +102,8 @@ export interface SummarizeOptions {
 	complexity: boolean;
 	/** The design-system coverage family, where a module measures one. */
 	coverage: boolean;
+	/** The design-system misuse family, from artifacts `pnpm judge:ds-misuse` wrote. */
+	misuse: boolean;
 }
 
 export interface PostAnalysis {
