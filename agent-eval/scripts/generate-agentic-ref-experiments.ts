@@ -21,14 +21,10 @@ import {
 	writeFileSync,
 } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
 import { AGENTIC_REF_CASES } from '../lib/agentic-reference/cases.ts';
-
-const AGENT_EVAL_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const WORK_DIR = join(AGENT_EVAL_ROOT, '.agentic-ref');
-const EXPERIMENTS_DIR = join(WORK_DIR, 'experiments');
-const STUB_PATTERN = /^agentic-ref-.+\.ts$/;
+import { AGENT_EVAL_ROOT, EXPERIMENT_STUB_PATTERN, EXPERIMENTS_DIR, GENERATED_EVALS_WORK_DIR } from '#lib/agentic-reference/constants';
 
 function experimentFileName(caseName: string): string {
 	return `agentic-ref-${caseName}.ts`;
@@ -78,7 +74,7 @@ export function generateAgenticRefWorkdir(): void {
 		]),
 	);
 	const existingNames = new Set(
-		readdirSync(EXPERIMENTS_DIR).filter((name) => STUB_PATTERN.test(name)),
+		readdirSync(EXPERIMENTS_DIR).filter((name) => EXPERIMENT_STUB_PATTERN.test(name)),
 	);
 
 	let written = 0;
@@ -106,15 +102,15 @@ export function generateAgenticRefWorkdir(): void {
 		removed++;
 	}
 
-	ensureRelativeSymlink(join(WORK_DIR, 'evals'), join(AGENT_EVAL_ROOT, 'evals'));
-	ensureRelativeSymlink(join(WORK_DIR, 'results'), join(AGENT_EVAL_ROOT, 'results'));
+	ensureRelativeSymlink(join(GENERATED_EVALS_WORK_DIR, 'evals'), join(AGENT_EVAL_ROOT, 'evals'));
+	ensureRelativeSymlink(join(GENERATED_EVALS_WORK_DIR, 'results'), join(AGENT_EVAL_ROOT, 'results'));
 
 	// The agent-eval CLI loads .env.local and .env from process.cwd(), which is
 	// this work directory when running agentic-ref evals — without these links a
 	// local run silently skips every experiment for missing API keys.
 	for (const envFile of ['.env', '.env.local']) {
 		if (existsSync(join(AGENT_EVAL_ROOT, envFile))) {
-			ensureRelativeSymlink(join(WORK_DIR, envFile), join(AGENT_EVAL_ROOT, envFile));
+			ensureRelativeSymlink(join(GENERATED_EVALS_WORK_DIR, envFile), join(AGENT_EVAL_ROOT, envFile));
 		}
 	}
 

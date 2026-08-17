@@ -8,12 +8,17 @@ import { fileURLToPath } from 'node:url';
  * parent-directory count stays a single visible segment.
  */
 export const AGENT_EVAL_ROOT = fileURLToPath(new URL('../../', import.meta.url));
-
-/** Prefix the generated agentic-reference stubs and their results dirs carry. */
-export const EXPERIMENT_NAME_PREFIX = 'agentic-ref-';
-
-/** Location of the evals definitions. */
 export const EVALS_DIR = join(AGENT_EVAL_ROOT, 'evals');
+export const RESULTS_DIR = join(AGENT_EVAL_ROOT, 'results');
+export const GENERATED_EVALS_WORK_DIR = join(AGENT_EVAL_ROOT, '.agentic-ref');
+export const EXPERIMENTS_DIR = join(GENERATED_EVALS_WORK_DIR, 'experiments');
+
+export const EXPERIMENT_NAME_PREFIX = 'agentic-ref-';
+export const EXPERIMENT_STUB_PATTERN = /^agentic-ref-.+\.ts$/;
+export const RUN_DIR = /^run-(\d+)$/;
+
+export const AGENT_EVAL_BIN = join(AGENT_EVAL_ROOT, 'node_modules', '.bin', 'agent-eval');
+export const RUNNER = join(AGENT_EVAL_ROOT, 'scripts', 'run-agentic-ref.ts');
 
 /** Where an experiment's definition lives, or null when it has none on disk. */
 export function experimentDefinition(experiment: string): string | null {

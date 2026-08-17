@@ -51,7 +51,7 @@
 // none falls back to DEFAULT_TABLES below.
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
 import { readRunOutcome } from '#lib/agentic-reference/collected-runs';
 import { groupComparableRuns, parseResultTimestamp } from '#lib/agentic-reference/comparability';
@@ -77,10 +77,7 @@ import type {
 	RunContext,
 	SummarizeOptions,
 } from '#lib/post-analysis/types';
-
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const RESULTS_DIR = join(ROOT, 'results');
-const EVALS_DIR = join(ROOT, 'evals');
+import { EVALS_DIR, experimentDefinition, RESULTS_DIR } from '#lib/agentic-reference/constants';
 
 // --- options ---
 const TABLE_SECTIONS = ['general', 'complexity', 'coverage'] as const;
@@ -248,10 +245,7 @@ async function loadPostAnalysis(
 
 	// Agentic-reference experiments generate their definitions under
 	// .agentic-ref/experiments/ rather than experiments/.
-	const definition = [
-		join(ROOT, 'experiments', `${experiment}.ts`),
-		join(ROOT, '.agentic-ref', 'experiments', `${experiment}.ts`),
-	].find(existsSync);
+	const definition = experimentDefinition(experiment);
 	// A renamed or deleted experiment leaves its runs on disk; skipped, not fatal.
 	let postAnalysis: PostAnalysis | null = null;
 	if (definition) {

@@ -17,7 +17,6 @@
 // experiment also narrows this.
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import {
 	type RunOutcome,
@@ -26,9 +25,7 @@ import {
 	readRunOutcomes,
 } from '../lib/agentic-reference/collected-runs.ts';
 import { matchesAnySelector, selectionFlags } from '../lib/agentic-reference/selection.ts';
-
-const AGENT_EVAL_ROOT = fileURLToPath(new URL('..', import.meta.url));
-const RESULTS_DIR = join(AGENT_EVAL_ROOT, 'results');
+import { RESULTS_DIR } from '#lib/agentic-reference/constants';
 
 /** One eval directory, with the runs in it that produced nothing. */
 interface IncompleteEvalDir {

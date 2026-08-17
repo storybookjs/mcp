@@ -60,7 +60,7 @@ export function countCurrentRuns(
 	evalDir: string,
 	cell: { experiment: string; evalName: string },
 ): number {
-	return isCurrentSample(evalDir, cell) ? countCollectedRuns(evalDir) : 0;
+	return isCurrentSample(evalDir, cell) ? countCollectedRuns(evalDir, true) : 0;
 }
 
 // --- grouping --------------------------------------------------------------

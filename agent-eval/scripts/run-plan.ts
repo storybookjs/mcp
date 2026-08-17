@@ -21,12 +21,12 @@
 // so an unattended run ends with a complete account of what it collected.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { basename, isAbsolute, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { AGENTIC_REF_CASES, AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
 import { countCollectedRuns } from '../lib/agentic-reference/collected-runs.ts';
-import { EXPERIMENT_NAME_PREFIX } from '../lib/agentic-reference/constants.ts';
+import { AGENT_EVAL_ROOT, EXPERIMENT_NAME_PREFIX, RESULTS_DIR, RUNNER } from '../lib/agentic-reference/constants.ts';
 import { isCurrentSample, parseResultTimestamp } from '../lib/agentic-reference/comparability.ts';
 import { selectionFlags } from '../lib/agentic-reference/selection.ts';
 import {
@@ -48,9 +48,6 @@ import {
 } from '../lib/agentic-reference/run-plan.ts';
 import { generateAgenticRefWorkdir } from './generate-agentic-ref-experiments.ts';
 
-const AGENT_EVAL_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const RESULTS_DIR = join(AGENT_EVAL_ROOT, 'results');
-const RUNNER = join(AGENT_EVAL_ROOT, 'scripts', 'run-agentic-ref.ts');
 const DEFAULT_CONFIG = join('plans', 'default.plan.ts');
 
 function fail(message: string): never {

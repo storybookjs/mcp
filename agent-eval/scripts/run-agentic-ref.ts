@@ -23,8 +23,6 @@
 // out of the registry, and a token matching nothing fails here rather than
 // running the wrong thing.
 import { spawn, spawnSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
 import {
@@ -33,14 +31,7 @@ import {
 	selectionFlags,
 } from '../lib/agentic-reference/selection.ts';
 import { generateAgenticRefWorkdir } from './generate-agentic-ref-experiments.ts';
-
-const AGENT_EVAL_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const WORK_DIR = join(AGENT_EVAL_ROOT, '.agentic-ref');
-// Resolved here rather than run through `pnpm agent-eval`: the CLI runs with
-// .agentic-ref/ as its cwd, which has no node_modules of its own, so a package
-// runner would only find the bin when this script itself was launched from a
-// pnpm script that had already put node_modules/.bin on PATH.
-const AGENT_EVAL_BIN = join(AGENT_EVAL_ROOT, 'node_modules', '.bin', 'agent-eval');
+import { AGENT_EVAL_BIN, GENERATED_EVALS_WORK_DIR } from '#lib/agentic-reference/constants';
 
 function fail(message: string): never {
 	console.error(`eval:agentic-ref: ${message}`);
@@ -109,7 +100,7 @@ function main(): void {
 		}
 	}
 
-	const child = spawn(AGENT_EVAL_BIN, cliArgs, { cwd: WORK_DIR, env: childEnv, stdio: 'inherit' });
+	const child = spawn(AGENT_EVAL_BIN, cliArgs, { cwd: GENERATED_EVALS_WORK_DIR, env: childEnv, stdio: 'inherit' });
 	child.on('exit', (code, signal) => {
 		process.exit(signal !== null ? 1 : (code ?? 1));
 	});
@@ -118,7 +109,7 @@ function main(): void {
 /** Runs the selection as a dry run, echoes the plan, and returns its eval count. */
 function printPlan(cliArgs: string[], childEnv: NodeJS.ProcessEnv): number | null {
 	const plan = spawnSync(AGENT_EVAL_BIN, [...cliArgs, '--dry'], {
-		cwd: WORK_DIR,
+		cwd: GENERATED_EVALS_WORK_DIR,
 		env: childEnv,
 		encoding: 'utf8',
 	});
