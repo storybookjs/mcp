@@ -60,13 +60,7 @@ export function writeMisuseReport(runDir: string, report: DsMisuseReport): void 
  *
  * A moved guidelines pin means the run was scored against a different standard;
  * a moved metricsVersion means its node paths were built by different rules; a
- * moved JUDGE_MODEL means a different grader. Any of the three makes the number
- * incomparable with a fresh one, so it is re-spent.
- *
- * The model belongs here for the same reason as the rest, and it is the easiest
- * one to overlook: swapping the judge is a one-line edit that would otherwise
- * leave old and new scores sitting in the same column, differing by grader
- * rather than by the arm being measured.
+ * moved JUDGE_MODEL means a different grader.
  */
 export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
 	return (
