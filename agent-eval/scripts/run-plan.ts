@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// The plan runner: collects a research sample on local hardware without ever
-// putting more than `parallelMax` sandboxes on this machine at once, and
-// without re-collecting a repetition it already has.
+// Runs a plan config in batches. One `agent-eval run-all` invocation starts
+// every attempt at once and saves once, at the end, so a single resource
+// failure can discard every completed run with it; batching caps that loss
+// at one batch.
 //
 //   pnpm eval:plan --config plans/<name>.plan.ts [--dry]
 //
@@ -12,41 +13,12 @@
 // evals, runs, parallelMax — see lib/agentic-reference/run-plan.ts and
 // plans/example.plan.ts.
 //
-// WHAT THIS BUYS. `agent-eval run-all` starts the whole matrix at once and
-// saves once, at the end, so one resource failure that throws (Docker refusing
-// a container, a dockerode socket error, a full disk) unwinds past saveResults
-// and discards every completed sibling run with it. On Vercel's fleet that is
-// rare; on a laptop at 20 sandboxes it is the normal way an afternoon of
-// collection disappears. This script cuts the matrix into batches that fit,
-// runs them strictly one after another through the existing eval:agentic-ref
-// runner, and so caps the loss at a single batch.
+// The plan counts the qualifying runs each experiment/eval pair already has
+// and asks only for the difference. Which stored runs qualify is decided in
+// lib/agentic-reference/comparability.ts, shared with the offline analyzer.
 //
-// WHY IT SHELLS OUT rather than calling runExperiment directly: the runner
-// script already generates the .agentic-ref work directory, links .env.local
-// into it, validates the selection against the case registry, and lets the CLI
-// do failure classification and housekeeping. Driving it as a child process
-// keeps one code path for "run some evals" and gets process isolation for free
-// — a batch that dies takes its own process down, not this one.
-//
-// WHAT IT COLLECTS. The plan counts the qualifying runs each cell already has
-// and asks only for the difference, so a cell holding 6 of its 10 collects 4.
-// A run qualifies when it measures what its cell measures today and was saved
-// at or after the plan's cutoff. That judgement lives in
-// lib/agentic-reference/comparability.ts, shared with the offline analyzer so
-// that runs collected as one sample are also analysed as one. It takes the
-// reuse decision away from the harness's own cache, which is all-or-nothing and
-// cannot express a partial sample, so every invocation runs with --force.
-//
-// HOW A BATCH IS JUDGED. Not by exit code: `run-all` exits 1 whenever any eval
-// has a 0% pass rate, which for a control arm is the measurement, not a fault.
-// The verdict comes from disk instead — the run-* directories the batch wrote,
-// against the number it asked for. A cell short of its request means the
-// classifier deleted infra/timeout runs (or the batch died before saving);
-// either way the report names the cell and prints the command that tops it up.
-//
-// Nothing is retried. A batch that fails is recorded and the plan moves on, so
-// an unattended overnight run always ends with a complete account of what it
-// did and did not collect.
+// Nothing is retried. A batch that fails is recorded and the plan moves on,
+// so an unattended run ends with a complete account of what it collected.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
@@ -86,8 +58,6 @@ function fail(message: string): never {
 	process.exit(1);
 }
 
-// --- batch outcomes --------------------------------------------------------
-
 interface BatchOutcome {
 	batch: PlanBatch;
 	/** Cells this batch set out to collect. */
@@ -107,18 +77,7 @@ function expectedRuns(outcome: BatchOutcome): number {
 	return outcome.cells.reduce((total, cell) => total + cell.expected, 0);
 }
 
-// --- reading what is already on disk ---------------------------------------
-
-/**
- * Every result directory of an experiment, relative to its results directory.
- *
- * Usually one segment — `<timestamp>` — but an experiment that pins several
- * models saves under `<model>/<timestamp>`, since the CLI names those runs
- * `<experiment>/<model>`. Descending one level keeps such an experiment's runs
- * visible; its cells are then dated and counted across all of its models
- * together, which is the right reading for a plan that selects the experiment
- * as a whole.
- */
+/** Every result directory of an experiment, relative to its results directory. */
 function resultDirs(experiment: string): string[] {
 	const experimentDir = join(RESULTS_DIR, experiment);
 	if (!existsSync(experimentDir)) {
@@ -143,12 +102,8 @@ function resultDirs(experiment: string): string[] {
 	return dirs;
 }
 
-/**
- * Runs of one cell across a set of result directories, counting only those that
- * produced a project tree — a batch whose attempts all died on billing or a
- * timeout collected nothing, however many directories it left behind. See
- * lib/agentic-reference/collected-runs.ts.
- */
+// Runs without a project tree hold nothing to measure (see
+// lib/agentic-reference/collected-runs.ts).
 function countSavedRuns(experiment: string, evalName: string, dirs: readonly string[]): number {
 	let total = 0;
 	for (const dir of dirs) {
@@ -157,7 +112,7 @@ function countSavedRuns(experiment: string, evalName: string, dirs: readonly str
 	return total;
 }
 
-/** Every stored sample of one cell, whether or not it still counts. */
+/** Every stored sample of one pair, whether or not it still counts. */
 function storedSamples(experiment: string, evalName: string): StoredSample[] {
 	const samples: StoredSample[] = [];
 	for (const dir of resultDirs(experiment)) {
@@ -176,9 +131,6 @@ function storedSamples(experiment: string, evalName: string): StoredSample[] {
 	return samples;
 }
 
-// --- what every cell still needs -------------------------------------------
-
-/** Works out what every cell of the plan still needs. */
 function planCells(resolved: ResolvedRunPlan): CellPlan[] {
 	const { runs, since, force } = resolved.plan;
 
@@ -191,21 +143,14 @@ function planCells(resolved: ResolvedRunPlan): CellPlan[] {
 	);
 }
 
-// --- driving the runner ----------------------------------------------------
-
 interface ChildResult {
 	exitCode: number | null;
 	output: string;
 }
 
-/**
- * Runs the agentic-ref runner as a child process.
- *
- * Output is streamed as it arrives *and* kept: the copy is what resource
- * signals are scanned out of. Piping costs the CLI's live dashboard (it only
- * renders on a TTY) and falls back to its line-by-line progress handler — the
- * better trade for a multi-hour run whose log is the artifact you keep.
- */
+// Runs the agentic-ref runner as a child process: one code path, with
+// process isolation. Output is streamed live and kept, for scanning
+// resource signals afterward.
 function runRunner(args: string[]): Promise<ChildResult> {
 	return new Promise((resolvePromise, rejectPromise) => {
 		const child = spawn(process.execPath, [RUNNER, ...args], {
@@ -230,11 +175,8 @@ function runRunner(args: string[]): Promise<ChildResult> {
 	});
 }
 
-/**
- * --force on every invocation: this script has already decided what is missing,
- * and the harness's own cache would otherwise skip a cell whose fingerprint
- * happens to match — including one it has only a partial sample of.
- */
+// --force on every invocation: the harness's own cache is all-or-nothing and
+// would skip a pair that only has a partial sample.
 function runnerArgs(batch: PlanBatch, resolved: ResolvedRunPlan): string[] {
 	return [
 		'--experiments',
@@ -272,8 +214,6 @@ async function runBatch(batch: PlanBatch, resolved: ResolvedRunPlan): Promise<Ba
 		signals: scanResourceSignals(run.output),
 	};
 }
-
-// --- reporting -------------------------------------------------------------
 
 function formatDuration(ms: number): string {
 	const minutes = Math.floor(ms / 60_000);
@@ -337,7 +277,7 @@ interface PlanReport {
 	completedAt: string;
 	config: string;
 	plan: Omit<ResolvedRunPlan['plan'], 'since'> & { since: string | null };
-	/** What every cell already had and what the plan asked for. */
+	/** What every pair already had and what the plan asked for. */
 	cells: CellPlan[];
 	batches: BatchOutcome[];
 	gaps: CellOutcome[];
@@ -432,8 +372,6 @@ function writeReport(report: PlanReport): string {
 	return path;
 }
 
-// --- config loading --------------------------------------------------------
-
 /** Experiment names the generated stubs (and results directories) carry. */
 function knownExperiments(): string[] {
 	return AGENTIC_REF_CASES.map(
@@ -453,16 +391,8 @@ async function loadPlanConfig(configPath: string): Promise<RunPlan> {
 	return plan as RunPlan;
 }
 
-// --- main ------------------------------------------------------------------
-
-/**
- * Ctrl-C stops the plan between batches rather than killing this process.
- *
- * The signal reaches the whole process group, so the running batch dies either
- * way and its in-flight sandboxes are lost — but the batches already collected
- * still get their report, which is the entire point of collecting in batches.
- * A second Ctrl-C gives up on that and exits.
- */
+// Ctrl-C stops the plan between batches so collected batches still get
+// their report. A second Ctrl-C exits immediately.
 let interrupted = false;
 
 function watchForInterrupt(): void {
@@ -498,8 +428,6 @@ async function main(): Promise<void> {
 		evals: AGENTIC_REF_EVAL_REGISTRY,
 	});
 
-	// The stubs are what fingerprints are computed from, so they have to exist
-	// before any counting — the runner would otherwise be the first to build them.
 	generateAgenticRefWorkdir();
 
 	const cells = planCells(resolved);
@@ -586,8 +514,7 @@ async function main(): Promise<void> {
 	printReport(report, batches.length);
 	console.log(`\nReport: ${relative(AGENT_EVAL_ROOT, writeReport(report))}`);
 
-	// Non-zero on an incomplete sample: a gap, a batch that could not run, or a
-	// plan cut short. Ordinary eval failures are data and do not count.
+	// Non-zero on an incomplete sample only; ordinary eval failures are data.
 	const incomplete =
 		gaps.length > 0 ||
 		stoppedAt !== null ||

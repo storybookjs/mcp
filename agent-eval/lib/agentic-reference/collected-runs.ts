@@ -1,22 +1,10 @@
-// Which stored run directories are actually runs.
-//
-// A run that stops on something outside the experiment — a 402 from the
-// gateway, an eval timeout, an MCP endpoint that would not answer, the host
-// killing a container — still leaves a directory behind: result.json with an
-// `error`, a transcript of however far it got, and no `project`. The project
-// tree is what every metric is measured from, so such a directory is a record
-// of an interruption, not a measurement.
-//
-// WHY BOTH READERS OF THE TREE NEED THIS. The offline analyzer skipped those
-// directories already, silently; the plan runner counted them, so a cell whose
-// ten attempts had all died on billing looked complete and was never
-// re-collected. One tree, two answers, and the wrong one was the one deciding
-// what to collect. Both now count the same thing: runs that produced a tree.
-//
-// The harness has its own failure classifier, which deletes infra and timeout
-// runs unless `--ack-failures` is passed. This is the backstop for what it
-// leaves behind — a batch that died before classification, results downloaded
-// from CI, a run acknowledged at the time and regretted later.
+// Classifies stored run directories. A run stopped by something outside the
+// experiment (billing, a timeout, an unreachable endpoint, a killed container)
+// leaves result.json and a transcript behind but no `project` tree — and the
+// project tree is what every metric is measured from. The plan runner and the
+// analyzer both count only runs that produced one, so they agree on what has
+// been collected. The harness's own failure classifier deletes most such runs;
+// this covers what it leaves behind.
 import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 
@@ -31,10 +19,9 @@ export interface RunOutcome {
 	/** Its 1-based repetition number, from the directory name. */
 	run: number;
 	/**
-	 * Whether the run produced a project tree — the thing every metric reads, and
-	 * so the thing that makes a directory a measurement rather than a record of
-	 * an interruption. A run whose eval *failed* still collected: the tree it
-	 * left behind is exactly what the analysis is there to measure.
+	 * Whether the run produced a project tree — the thing every metric reads.
+	 * A run whose eval failed still collected: the tree it left behind is
+	 * exactly what the analysis measures.
 	 */
 	collected: boolean;
 	/** What the harness recorded as the reason it stopped, where it recorded one. */
@@ -53,11 +40,7 @@ export function readRunOutcome(runDir: string): RunOutcome {
 	};
 }
 
-/**
- * Every run directory an eval directory holds, in run order. A directory that
- * does not exist holds nothing — results are read from trees that may have been
- * pruned or never downloaded.
- */
+/** Every run directory an eval directory holds, in run order. */
 export function readRunOutcomes(evalDir: string): RunOutcome[] {
 	if (!existsSync(evalDir)) {
 		return [];
@@ -83,15 +66,10 @@ function removeIfEmpty(dir: string): boolean {
 }
 
 /**
- * Deletes run directories, and then the directories they leave behind.
- *
- * An eval directory whose last run this removed goes with it, summary.json
- * included: that file describes runs nobody can read any more, and leaving it
- * would leave a sample claiming a size it no longer has. Result and experiment
- * directories left empty follow, up to but never including `stopAt` — normally
- * results/ itself.
- *
- * `directories` counts those, not the runs.
+ * Deletes run directories, then any eval/result/experiment directories they
+ * leave empty, up to but not including `stopAt` (normally results/ itself).
+ * An eval directory's summary.json goes with it, since it would describe runs
+ * that no longer exist. `directories` counts removed directories, not runs.
  */
 export function deleteRunDirs(
 	runDirs: readonly string[],
@@ -135,9 +113,8 @@ const ERROR_KINDS: Array<{ kind: RunErrorKind; pattern: RegExp }> = [
 ];
 
 /**
- * Sorts a recorded error into a kind. Billing before timeout, because an
- * unreachable gateway that answered 402 often reports both and the account is
- * the thing to fix.
+ * Sorts a recorded error into a kind. Billing is checked before timeout: a
+ * 402 response often mentions both, and the account is what needs fixing.
  */
 export function classifyRunError(error: string | null): RunErrorKind {
 	if (error === null) {

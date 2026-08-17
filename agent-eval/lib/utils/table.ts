@@ -1,15 +1,11 @@
 // Box-drawn tables for the console, in place of console.table.
 //
-// console.table renders every cell through util.inspect, so a string cell comes
-// out quoted — '29.59%' rather than 29.59%. Percentages are the one thing these
-// tables are read for, and quoting them costs two characters per cell in views
-// that are already at the width of a terminal. This renders values as text
-// instead: strings bare, numbers right-aligned so magnitudes line up.
+// console.table renders every cell through util.inspect, so a string cell
+// comes out quoted — '29.59%' rather than 29.59%. This renders strings bare
+// and right-aligns numbers instead.
 //
-// Columns are the union of the rows' keys, in the order they are first seen, so
-// the caller decides the order by the order it builds its rows in — and the
-// first key is the row's label, which is what console.table's (index) column
-// used to be.
+// Columns are the union of the rows' keys, in the order first seen, so the
+// caller controls column order by the order it builds its rows in.
 
 /** A value as it should read in a cell, and whether it aligns as a number. */
 function render(value: unknown): { text: string; numeric: boolean } {
@@ -25,8 +21,7 @@ function render(value: unknown): { text: string; numeric: boolean } {
 	if (value === undefined) {
 		return { text: '', numeric: false };
 	}
-	// Not a shape any caller means to print. As JSON rather than as the
-	// [object Object] a bare String() would leave, which says nothing at all.
+	// Rendered as JSON rather than the [object Object] a bare String() gives.
 	if (typeof value === 'object') {
 		return { text: JSON.stringify(value) ?? '', numeric: false };
 	}
@@ -67,8 +62,7 @@ export function formatTable(rows: ReadonlyArray<Record<string, unknown>>): strin
 	}
 
 	const cells = rows.map((row) => columns.map((column) => render(row[column])));
-	// A column aligns right only when every value in it is a number: one mixing
-	// numbers with text reads better flush left, and a blank cell decides nothing.
+	// A column aligns right only when every value in it is a number.
 	const numeric = columns.map((_, index) =>
 		cells.every((row) => row[index]!.numeric || row[index]!.text === ''),
 	);

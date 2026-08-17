@@ -7,22 +7,9 @@
 //   --evals <list>        only these evals, by name, number (706) or glob
 //   --delete              remove them; without it nothing is touched
 //
-// A run stopped by something outside the experiment — a 402 from the gateway, an
-// eval timeout, an MCP endpoint that would not answer, the host killing a
-// container — still leaves a directory behind: result.json with an `error`, a
-// transcript of however far it got, and no `project`. The project tree is what
-// every metric is measured from, so there is nothing in such a directory to
-// measure. See lib/agentic-reference/collected-runs.ts.
-//
-// They are not harmless clutter. Until this ran, `pnpm eval:plan` counted them
-// as collected runs, so a cell whose ten attempts had all died on billing looked
-// complete and was never re-collected, while the analysis — which skips them —
-// reported the cell as empty. Both readers now count only runs that produced a
-// tree, and this is how the directories themselves go away, along with the disk
-// their transcripts are sitting on.
-//
-// Nothing else has to be cleaned up afterwards: an eval directory left with no
-// runs is removed with them, and so is a result directory left with no evals.
+// Runs without a project tree hold nothing to measure (see
+// lib/agentic-reference/collected-runs.ts). Deleting them removes any eval
+// directory left with no runs, and any result directory left with no evals.
 // The next `pnpm eval:plan` will see the gap and collect it.
 //
 // Selection follows the shared grammar in lib/agentic-reference/selection.ts,
@@ -42,8 +29,6 @@ import { matchesAnySelector, selectionFlags } from '../lib/agentic-reference/sel
 
 const AGENT_EVAL_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(AGENT_EVAL_ROOT, 'results');
-
-// --- finding them ----------------------------------------------------------
 
 /** One eval directory, with the runs in it that produced nothing. */
 interface IncompleteEvalDir {
@@ -107,13 +92,11 @@ function findIncomplete(selection: {
 	return found;
 }
 
-// --- reporting -------------------------------------------------------------
-
 function directorySize(dir: string): number {
 	let bytes = 0;
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
 		const path = join(dir, entry.name);
-		// Symlinks are not followed: their target is someone else's disk.
+		// Symlinks are not followed, to avoid counting bytes outside this tree.
 		if (entry.isDirectory()) {
 			bytes += directorySize(path);
 		} else if (entry.isFile()) {
@@ -168,8 +151,6 @@ function report(evalDirs: readonly IncompleteEvalDir[]): void {
 	}
 }
 
-// --- main ------------------------------------------------------------------
-
 function main(): void {
 	const flags = selectionFlags(process.env);
 	const argv = flags
@@ -191,8 +172,7 @@ function main(): void {
 	}
 
 	const runs = evalDirs.reduce((total, entry) => total + entry.incomplete.length, 0);
-	// Measured before anything is deleted, which is also what makes it printable
-	// in a dry report.
+	// Measured before any deletion, so a dry run can print it too.
 	const bytes = evalDirs.reduce(
 		(total, entry) =>
 			total + entry.incomplete.reduce((sum, outcome) => sum + directorySize(outcome.dir), 0),

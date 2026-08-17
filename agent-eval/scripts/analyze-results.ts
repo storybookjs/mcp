@@ -1,49 +1,29 @@
 #!/usr/bin/env node
-// Offline metrics pass over stored eval runs.
+// Offline metrics pass over stored eval runs. It discovers run directories
+// and hands each run to the module its *experiment* names in `postAnalysis`
+// (see lib/post-analysis/types.ts); runs whose experiment names none are
+// skipped. Keying on the experiment rather than the eval lets a family of
+// experiments sharing a task and setup share one set of metrics, and lets
+// one experiment span several evals.
 //
-// This script measures nothing itself. It discovers run directories and hands
-// each run to the module its *experiment* names in `postAnalysis` — see
-// lib/post-analysis/types.ts. Runs whose experiment names none are skipped.
+// A sample of one experiment/eval pair spans several result directories,
+// since a plan tops it up over more than one invocation. Tables fold per
+// comparable set instead of per directory (see
+// lib/agentic-reference/comparability.ts). Superseded groups print only
+// with --superseded. Each directory's own summary.json still describes
+// only its own runs.
 //
-// Keying on the experiment rather than the eval is what lets a family of arms —
-// same task and setup, differing only in prompt or MCP endpoint — share one set
-// of metrics, and lets one experiment span several evals.
+// Every metric is a pure function of stored artifacts, so this can be
+// re-run any time a metric definition changes, at no cost in model calls.
+// Results are cached per run in post-analysis-meta.json; pass --recompute
+// to force recomputation. Every comparable set's rows also land in
+// results/analysis-summary.json, for a single-read comparison across
+// experiments.
 //
-// WHAT IS SUMMARIZED TOGETHER. A sample of one cell is spread over as many
-// result directories as it took to collect: a plan tops a cell up until it has
-// its full depth, and each invocation writes a directory of its own. Folding
-// per directory would report ten runs as "10, then 2, then 1" and average each
-// separately, so the tables are folded per *comparable set* instead — every
-// stored run measuring the same thing, whatever timestamps they arrived under.
-// Which runs those are is decided exactly as the plan runner decides what it
-// can reuse; see lib/agentic-reference/comparability.ts.
-//
-// Runs measuring something their cell no longer measures stay a group of their
-// own rather than being averaged into the current one, and are not printed
-// unless --superseded is passed. When they are, each group says which part of
-// its measurement moved.
-//
-// Each directory's own summary.json still gets rows scoped to that directory,
-// under `postAnalysis`, next to the harness's own pass rate and mean duration —
-// it describes the runs beside it, not the wider set they belong to.
-//
-// Every metric is a pure function of stored artifacts, so this can be re-run
-// over historical results as often as a metric definition changes, without
-// spending anything on model calls.
-//
-// A module measuring its runs against a pristine upstream tree also provides
-// deltaToBaseline. For those, this script measures the pinned tree once per pin
-// — through the module's own analyzeRun, in `baseline` mode — commits the result
-// under baselines/, and hands both sets of numbers to deltaToBaseline.
-//
-// Every comparable set's rows are also collected into
-// results/analysis-summary.json, so comparing arms is a single read rather than
-// a walk over the tree.
-//
-// Analysis can still be expensive, so once a run has been analyzed, we record
-// its output in post-analysis-meta.json. Later invocations reuse that cached
-// output instead of recomputing it. Pass --recompute after changing a metric
-// definition to force every matched run to be recomputed.
+// A module measuring against a pristine upstream tree also provides
+// deltaToBaseline: this script analyzes the pinned tree once per pin, in
+// `baseline` mode, commits the result under baselines/, and passes both
+// sets of numbers to deltaToBaseline.
 //
 // Usage: pnpm results:analyze [--experiments <list>] [--evals <list>] [--since <ISO date>]
 //                             [--latest] [--recompute] [--superseded]
@@ -61,20 +41,14 @@
 //   --complexity          print the complexity tables
 //   --coverage            print the design-system coverage tables
 //
-// Selection follows the shared grammar in lib/agentic-reference/selection.ts:
-// --cases and --flows are aliases, singular and plural spellings are the same
-// flag, lists take commas or repetition, and --flag=value works as well as
-// --flag value. Every flag also falls back to AGENTIC_REF_<FLAG>, so one
-// exported selection narrows a run and the analysis that follows it alike.
+// Selection follows the shared grammar in lib/agentic-reference/selection.ts,
+// with each flag falling back to AGENTIC_REF_<FLAG>. --recompute reads
+// AGENTIC_REF_RECOMPUTE; its --force alias stays command-line only, so an
+// AGENTIC_REF_FORCE exported to re-run a case does not also rebuild baselines.
 //
-// Fallbacks key off the canonical flag name, so --recompute reads
-// AGENTIC_REF_RECOMPUTE; its --force spelling stays command-line only, since an
-// AGENTIC_REF_FORCE exported to re-run a case should not go on to rebuild every
-// committed baseline here.
-//
-// The three table flags select what is *printed*; everything is measured and
-// written either way. Passing any of them prints exactly that set; passing none
-// falls back to DEFAULT_TABLES below.
+// The three table flags select what is printed; everything is measured and
+// written either way. Passing any of them prints exactly that set; passing
+// none falls back to DEFAULT_TABLES below.
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -112,9 +86,8 @@ const EVALS_DIR = join(ROOT, 'evals');
 const TABLE_SECTIONS = ['general', 'complexity', 'coverage'] as const;
 type TableSection = (typeof TABLE_SECTIONS)[number];
 
-// What prints when no table flag is passed. Coverage alone for now: it is the
-// number the agentic-reference round is actually reading, and the other two
-// families push it off the bottom of a terminal.
+// What prints when no table flag is passed: coverage alone, since the other
+// two families push it off the bottom of a terminal.
 const DEFAULT_TABLES: TableSection[] = ['coverage'];
 
 interface PostAnalysisOptions {
@@ -127,10 +100,6 @@ interface PostAnalysisOptions {
 	tables: SummarizeOptions;
 }
 
-// Same grammar as the runner (lib/agentic-reference/selection.ts): canonical
-// experiment/eval wording, case/flow accepted as aliases, singular and plural
-// interchangeable, lists by comma or repetition, and each flag falling back to
-// AGENTIC_REF_<FLAG>.
 function parseOptions(argv: string[]): PostAnalysisOptions {
 	const flags = selectionFlags(process.env);
 	const parsed = flags
@@ -161,9 +130,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 		.parseSync();
 
 	const sections = TABLE_SECTIONS.filter((section) => parsed[section] === true);
-	// Naming any section selects exactly that set, so `--complexity` means "just
-	// the complexity tables" rather than "the default plus complexity" — no
-	// --no-<section> negation needed to get back to one family.
+	// Naming any section selects exactly that set, not the default plus it.
 	const chosen = sections.length === 0 ? DEFAULT_TABLES : sections;
 
 	return {
@@ -192,12 +159,10 @@ interface Run {
 	evalName: string;
 	run: number;
 	/**
-	 * Whether the run left a project tree behind. A run stopped by billing, a
-	 * timeout or an unreachable endpoint leaves a directory with nothing in it to
-	 * measure; those are carried this far anyway so that the selection narrows
-	 * them like everything else, and are then reported rather than passed over in
-	 * silence — they are the difference between the sample a plan believes it
-	 * collected and the one these tables report. `pnpm results:prune` clears them.
+	 * Whether the run left a project tree behind (see
+	 * lib/agentic-reference/collected-runs.ts). Runs without one are still
+	 * carried through selection and reported, not silently dropped.
+	 * `pnpm results:prune` clears them.
 	 */
 	collected: boolean;
 }
@@ -269,9 +234,9 @@ function messageOf(error: unknown): string {
 }
 
 // --- post-analysis loading ---
-// Which module analyses a run is the experiment's call, not the eval's. The
-// module comes across as a live object, so arms that share one share it by
-// reference — which is exactly what groups their runs into a single summary.
+// Which module analyses a run is the experiment's call, not the eval's.
+// Experiments sharing a module share it by reference, grouping their runs
+// into a single summary.
 const byExperiment = new Map<string, PostAnalysis | null>();
 
 async function loadPostAnalysis(
@@ -281,22 +246,18 @@ async function loadPostAnalysis(
 	const cached = byExperiment.get(experiment);
 	if (cached !== undefined) return cached;
 
-	// Agentic-reference arms are run from .agentic-ref/, so their generated
-	// definitions live under .agentic-ref/experiments/ rather than experiments/.
+	// Agentic-reference experiments generate their definitions under
+	// .agentic-ref/experiments/ rather than experiments/.
 	const definition = [
 		join(ROOT, 'experiments', `${experiment}.ts`),
 		join(ROOT, '.agentic-ref', 'experiments', `${experiment}.ts`),
 	].find(existsSync);
-	// Results outlive experiment definitions: a renamed or deleted arm leaves its
-	// runs on disk, and those are skipped rather than fatal.
+	// A renamed or deleted experiment leaves its runs on disk; skipped, not fatal.
 	let postAnalysis: PostAnalysis | null = null;
 	if (definition) {
 		try {
 			postAnalysis = postAnalysisFrom(await import(pathToFileURL(definition).href), experiment);
 		} catch (error) {
-			// A definition that will not import, or names a malformed module, must
-			// not cost every other arm its analysis. Reported once: the outcome is
-			// cached below, so the remaining runs of this arm skip quietly.
 			failures.push(`experiments/${experiment}.ts: ${messageOf(error)}`);
 		}
 	}
@@ -324,9 +285,8 @@ function writeCacheEntry(runDir: string, output: Record<string, unknown> | null)
 }
 
 // --- per-run analysis ---
-// The pin the run itself recorded, not the fixture's pin as it stands today:
-// reading today's would retroactively change every historical delta the moment
-// the fixture moves.
+// The pin the run itself recorded, not the fixture's current pin, so a
+// historical delta does not change retroactively when the fixture moves.
 function pinOf(result: unknown) {
 	const analysis = isRecord(result) && isRecord(result.analysis) ? result.analysis : {};
 	try {
@@ -406,14 +366,14 @@ function strip(row: SuccessfulAnalysis): Record<string, unknown> {
 	);
 }
 
-/** A comparable set's heading: which arm, which eval, which generation. */
+/** A comparable set's heading: which experiment, which eval, which generation. */
 function heading(group: ComparableGroup<SuccessfulAnalysis>): string {
 	const arm = [group.experiment, group.model].filter((part) => part !== '').join('/');
 	const cell = `${arm} · ${group.evalName}`;
 	return group.current ? cell : `${cell}  (superseded)`;
 }
 
-/** What about a superseded group its cell no longer measures. */
+/** What a superseded group's pair no longer measures. */
 function supersessionNote(group: ComparableGroup<SuccessfulAnalysis>): string {
 	const current = currentMeasurement(group.experiment, group.evalName);
 	if (group.measurement === null) {
@@ -445,7 +405,6 @@ async function main() {
 			continue;
 		}
 
-		// Fetch cached post analysis output unless --recompute was passed.
 		const cached = options.recompute ? null : readCacheEntry(run.runDir);
 		if (cached) {
 			reused += 1;
@@ -461,7 +420,6 @@ async function main() {
 
 		try {
 			const analysisOutput = await analyzeOneRun(run, postAnalysis, options);
-			// The hooks compute; the runner owns where the numbers land.
 			if (analysisOutput) {
 				writeFileSync(
 					join(run.runDir, 'analysis.json'),
@@ -473,7 +431,6 @@ async function main() {
 				successfulAnalyses.push({ ...analysisOutput, __run: run, __postAnalysis: postAnalysis });
 			}
 		} catch (error) {
-			// One broken run must not cost us the others.
 			failedAnalyses.push(`${run.evalName} run-${run.run}: ${messageOf(error)}`);
 		}
 	}
@@ -507,9 +464,8 @@ async function main() {
 			a.__run.run - b.__run.run,
 	);
 
-	// summary.json belongs to the directory it sits in, so it is folded from that
-	// directory's runs alone — quietly, since what gets printed is the wider set
-	// those runs belong to.
+	// summary.json belongs to the directory it sits in, so it is folded from
+	// that directory's runs alone.
 	const byEvalDir = new Map<string, SuccessfulAnalysis[]>();
 	for (const row of successfulAnalyses) {
 		const evalDir = dirname(row.__run.runDir);
@@ -541,11 +497,9 @@ async function main() {
 		};
 	});
 
-	// Superseded generations are not what anyone came to read: they are the
-	// measurement the cell used to make, kept apart so they are not averaged into
-	// the one it makes now. So they print on request — but they are folded and
-	// stored either way, like every other selection here, and the rows say which
-	// generation they came from so a later reader can tell without re-deriving it.
+	// Superseded groups are the measurement a pair used to make, kept apart so
+	// they are not averaged into the one it makes now. They are folded and
+	// stored either way, and only print on request.
 	let hidden = 0;
 	const summary: Analysis[] = [];
 
@@ -553,7 +507,6 @@ async function main() {
 		const show = options.superseded || group.current;
 		if (show) {
 			console.log(`\n===  ${heading(group)}  ===\n`);
-			// Only for what is being read: the note walks the fixture's git history.
 			if (!group.current) {
 				console.log(`  superseded — ${supersessionNote(group)}\n`);
 			}
@@ -561,7 +514,7 @@ async function main() {
 			hidden += 1;
 		}
 
-		// Every run of a comparable set is one arm's, so they share one module.
+		// Every run of a comparable set is one experiment's, so they share one module.
 		const rows = group.members[0]!.__postAnalysis.summarize(group.members.map(strip), {
 			...options.tables,
 			quiet: !show,
@@ -582,8 +535,7 @@ async function main() {
 		);
 	}
 
-	// The console view is for reading now; this is what gets loaded later. Every
-	// matched run in one file, so comparing arms is a single read.
+	// Every matched run in one file, so comparing experiments is a single read.
 	writeFileSync(
 		join(RESULTS_DIR, 'analysis-summary.json'),
 		JSON.stringify({ runs: successfulAnalyses.map(strip), summary }, null, 2) + '\n',

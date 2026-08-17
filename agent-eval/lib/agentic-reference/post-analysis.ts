@@ -5,10 +5,10 @@
 // Which metrics matter, and how they are computed, lives here and under
 // metrics/ and tree/; where the numbers are stored is the runner's business.
 //
-// It lives in lib/ rather than beside an eval because the arms sharing it differ
-// only in prompt and MCP endpoint — and because nothing under lib/ is uploaded to
-// a sandbox, so the agent under evaluation cannot read the definitions of the
-// metrics scoring it.
+// It lives in lib/ rather than beside an eval because the experiments sharing
+// it differ only in prompt and MCP endpoint — and because nothing under lib/
+// is uploaded to a sandbox, so the agent under evaluation cannot read the
+// definitions of the metrics scoring it.
 //
 // analyzeRun measures a single tree — a run's collected project, or (in
 // `baseline` mode) the pinned upstream tree the runner materialized for us.
@@ -276,11 +276,7 @@ function percent(value: number | null | undefined): string | null {
 	return scaled === null ? null : `${scaled}%`;
 }
 
-/**
- * A share *delta*, signed: the direction is the whole point of the column, and
- * its Δ heading says the number is a difference of two shares rather than a
- * relative change.
- */
+/** A share delta, signed, since direction is the point of the column. */
 function percentDelta(value: number | null | undefined): string | null {
 	const scaled = value === null || value === undefined ? null : round(value * 100, 2);
 	return scaled === null ? null : `${scaled > 0 ? '+' : ''}${scaled}%`;
@@ -298,10 +294,7 @@ function localMinute(at: Date): string {
 	);
 }
 
-/**
- * How a run is labelled in a per-run table: when it was collected, in the
- * reader's own timezone, and which repetition of that collection it was.
- */
+/** How a run is labelled in a per-run table: when it was collected (local time) and its repetition number. */
 function runLabel(row: Record<string, unknown>): string {
 	const timestamp = typeof row.timestamp === 'string' ? row.timestamp : null;
 	const stamp = timestamp === null ? null : parseResultTimestamp(timestamp);
@@ -482,10 +475,10 @@ export function summarize(
 		);
 	}
 
-	// Classic and jsx pairs side by side, so "the logic barely moved but the
-	// markup grew" is visible in one row. jsxDepth and density are the only
-	// ratios, rounded for display; parseFails marks runs whose numbers are
-	// understated because the parser gave up on some files.
+	// Classic and jsx complexity side by side, so markup growth is visible
+	// separately from logic growth. jsxDepth and density are ratios, rounded
+	// for display; parseFails flags runs whose numbers are understated by
+	// parse failures.
 	const withDeltas = analyses.filter((row) => deltaOf(row).complexity !== undefined);
 	const printedComplexity = options.complexity && withDeltas.length > 0;
 	if (printedComplexity) {
@@ -525,11 +518,9 @@ export function summarize(
 		);
 	}
 
-	// Absolute coverage and its movement in one row: a share is only readable
-	// next to where it started, and "+3 points" means something very different
-	// at 10% than at 80%. unres is the escape hatch on both — nodes no analysis
-	// could classify sit in shareAll's denominator, so a large count caps how
-	// much of it is known.
+	// Absolute coverage and its movement in one row, since a share only reads
+	// meaningfully next to where it started. unres counts nodes no analysis
+	// could classify; a large count means shareAll is less certain.
 	const withCoverage = analyses.filter((row) => coverageOf(row) !== null);
 	const printedCoverage = options.coverage && withCoverage.length > 0;
 	if (printedCoverage) {
@@ -570,10 +561,9 @@ export function summarize(
 		);
 	}
 
-	// A selected family this eval has no data for prints nothing at all, leaving
-	// a bare header that reads as a broken analysis. Coverage gets a pointer
-	// rather than a shrug: the one thing that stops a run being measured is a
-	// pin nobody has mapped, and the fix is a one-line edit.
+	// A selected family with no data would otherwise print a bare header. For
+	// coverage, point at the fix: an unmapped pin is the only thing that stops
+	// a run being measured.
 	if (!options.general && !printedComplexity && !printedCoverage) {
 		if (options.coverage && withCoverage.length === 0) {
 			console.log(

@@ -1,9 +1,8 @@
 // Which stored runs measure the same thing: the plan runner reuses them, the
-// analyzer averages them.
-//
-// Two runs are comparable when their measurements match (identity.ts). A run
-// whose measurement is not the one its cell makes today is superseded — kept
-// apart rather than dropped, since it is still a measurement.
+// analyzer averages them. Two runs are comparable when their measurements
+// match (see identity.ts). A run whose measurement differs from what its
+// (experiment, eval) pair measures today is superseded — kept apart, not
+// dropped, since it's still a measurement.
 import { existsSync } from 'node:fs';
 
 import { countCollectedRuns, readRunOutcomes } from './collected-runs.ts';
@@ -46,7 +45,7 @@ export function readSampleMeasurement(
 	return null;
 }
 
-/** Whether an eval directory holds what its cell measures today. */
+/** Whether an eval directory holds what its (experiment, eval) pair measures today. */
 export function isCurrentSample(
 	evalDir: string,
 	cell: { experiment: string; evalName: string },
@@ -56,7 +55,7 @@ export function isCurrentSample(
 	return stored !== null && current !== null && measurementKey(stored) === measurementKey(current);
 }
 
-/** Runs of one cell's current measurement, across every result directory. */
+/** Runs of one pair's current measurement, across every result directory. */
 export function countCurrentRuns(
 	evalDir: string,
 	cell: { experiment: string; evalName: string },
@@ -74,7 +73,7 @@ export interface Comparability {
 	evalName: string;
 	/** What the run measured, or null when it recorded nothing readable. */
 	measurement: Measurement | null;
-	/** Whether that is what its cell measures today. */
+	/** Whether that is what its (experiment, eval) pair measures today. */
 	current: boolean;
 }
 
@@ -93,7 +92,8 @@ const UNREADABLE = 'unreadable';
 
 /**
  * Collects runs into the sets that can be aggregated as one measurement, each
- * replaced generation staying a set of its own. Ordered current-first per cell.
+ * replaced generation staying a set of its own. Ordered current-first within
+ * each group.
  */
 export function groupComparableRuns<T>(
 	items: readonly T[],
@@ -121,8 +121,8 @@ export function groupComparableRuns<T>(
 		}
 	}
 
-	// Current before the generations it replaced, so the group being collected
-	// today reads first under a cell's heading.
+	// Current groups sort before superseded ones, so today's data reads first
+	// under each pair's heading.
 	return [...groups.values()].sort(
 		(a, b) =>
 			a.experiment.localeCompare(b.experiment) ||

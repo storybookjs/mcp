@@ -1,11 +1,7 @@
-// What a stored run measured, read from the run's own artifacts.
-//
-// Deliberately not the harness's fingerprint, which hashes the sample size and
-// the whole fixture: two collections of one cell never match, an unrelated
-// fixture edit invalidates everything, and two arms serving different MCPs hash
-// alike. A measurement holds only what decides the outcome, and each part is
-// recorded per run, so historical runs stay identifiable and two samples that
-// differ say how.
+// Identity is read from a run's own artifacts, not the harness's fingerprint:
+// the fingerprint hashes the sample size and the whole fixture, so a top-up
+// of the same measurement never matches it. This holds only what decides the
+// outcome, one field per run, so two samples that differ say how.
 import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
@@ -21,7 +17,7 @@ import type { ExternalRepoPin } from './external-repo.ts';
 
 /** Everything that decides what a run measured. */
 export interface Measurement {
-	/** Arm, i.e. results/<experiment>. */
+	/** Experiment name, i.e. results/<experiment>. */
 	experiment: string;
 	evalName: string;
 	/** Model id, e.g. `opus`. */
@@ -30,7 +26,7 @@ export interface Measurement {
 	pin: string;
 	/** Design-system MCP served: `none`, a URL, or `<repo>#<branch>`. */
 	mcp: string;
-	/** Whether the arm rewrote the fixture's prompt. */
+	/** Whether the experiment rewrote the fixture's prompt. */
 	editedPrompt: boolean;
 	/** Digest of the task: the fixture's PROMPT.md and EVAL.ts. */
 	task: string;
@@ -182,7 +178,7 @@ export function readRunMeasurement(
 
 // --- what a cell measures today --------------------------------------------
 
-/** What this arm and eval measure as they stand, or null when either is gone. */
+/** What this experiment and eval measure as they stand, or null when either is gone. */
 export function currentMeasurement(experiment: string, evalName: string): Measurement | null {
 	const agenticRefCase = AGENTIC_REF_CASES.find(
 		(candidate) => `${EXPERIMENT_NAME_PREFIX}${candidate.name}` === experiment,

@@ -95,10 +95,10 @@ export interface SummarizeOptions {
 	/** The design-system coverage family, where a module measures one. */
 	coverage: boolean;
 	/**
-	 * Compute the rows and print nothing at all. The runner folds each eval
-	 * directory on its own to keep that directory's summary.json scoped to it,
-	 * and prints the comparable set those runs belong to instead — which is
-	 * usually wider than one directory, and would otherwise be printed twice.
+	 * Compute the rows without printing. The runner folds each eval directory
+	 * on its own (so its summary.json stays scoped to that directory) but
+	 * prints the wider comparable group instead, to avoid printing the same
+	 * rows twice.
 	 */
 	quiet?: boolean;
 }

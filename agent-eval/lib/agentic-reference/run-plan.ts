@@ -1,31 +1,13 @@
-// Planning logic for scripts/run-plan.ts: turning one plan config into a
-// sequence of agent-eval invocations that each fit on this machine, and that
+// Planning logic for scripts/run-plan.ts: turns one plan config into a
+// sequence of agent-eval invocations, each sized to fit this machine, that
 // collect only the repetitions still missing.
 //
-// Why a plan runner exists at all. `agent-eval run-all` starts every
-// (experiment × eval × run) attempt at once — the runner has no concurrency
-// cap, only a start-rate limiter — and it calls saveResults once, after the
-// last attempt settles. So a single resource failure that *throws* rather than
-// returning a failed run (Docker createContainer, a dockerode socket error, a
-// full disk) rejects the runner's Promise.all and unwinds past saveResults,
-// discarding every completed sibling run in the same experiment. Locally,
-// where the matrix is bounded by RAM and CPU rather than by Vercel's fleet,
-// that is the failure that costs a whole afternoon of collection.
-//
-// Slicing the matrix into batches that each start at most `parallelMax`
-// sandboxes caps the blast radius at one batch, because each batch is its own
-// invocation with its own saveResults.
-//
-// WHY THE PLAN COUNTS RUNS ITSELF rather than leaning on the harness's cache:
-// that cache is all-or-nothing, and cannot express "this cell has 6 of its 10,
-// collect 4 more". The plan counts qualifying runs on disk and asks for the
-// difference. A run qualifies when it measures what its cell measures today
-// (lib/agentic-reference/comparability.ts) and was saved at or after the plan's
-// cutoff.
-//
-// This module is pure: it resolves selections, decides deficits, and cuts
-// batches. All the IO — reading the results tree, spawning, reporting — lives
-// in scripts/run-plan.ts.
+// `agent-eval run-all` has no concurrency cap and calls saveResults once,
+// after every attempt settles. A resource failure that throws instead of
+// returning a failed run (a full disk, a Docker socket error) unwinds past
+// saveResults and discards every completed sibling run in the same
+// experiment. Slicing the matrix into batches of at most `parallelMax`
+// sandboxes each, with their own saveResults, caps that loss to one batch.
 import { matchesAnySelector, resolveEvalSelection } from './selection.ts';
 
 /**
@@ -42,8 +24,8 @@ export interface RunPlan {
 	/** Evals to collect, by name, number (703) or glob (70*). */
 	evals: string[];
 	/**
-	 * Target sample size per (experiment, eval) cell. Qualifying runs already on
-	 * disk count towards it, so a cell holding 6 of 10 collects 4.
+	 * Target sample size per (experiment, eval) pair. Runs already on disk
+	 * count towards it, so a pair holding 6 of 10 collects 4.
 	 */
 	runs: number;
 	/**
@@ -57,18 +39,15 @@ export interface RunPlan {
 	 */
 	force?: boolean;
 	/**
-	 * Reuse cutoff: an ISO date (`2026-08-16`) or datetime. Runs saved before it
-	 * do not count towards a cell's target.
-	 *
-	 * For environment changes a measurement cannot see — a rebuilt MCP package at
-	 * the same branch, a new sandbox image, a new agent CLI. Set it to the change
-	 * date and older runs stop counting.
+	 * Reuse cutoff: an ISO date or datetime. Runs saved before it don't count
+	 * towards a pair's target. Use it for environment changes a measurement
+	 * can't see, e.g. a rebuilt MCP package at the same branch or a new
+	 * sandbox image.
 	 */
 	since?: string;
 	/**
 	 * Keep infra/timeout runs as final results instead of letting the classifier
-	 * delete them. Default false, so infra noise stays out of the sample and the
-	 * shortfall shows up as an honest gap in the report.
+	 * delete them. Default false, so infra noise stays out of the sample.
 	 */
 	ackFailures?: boolean;
 }
@@ -94,16 +73,14 @@ export interface ResolvedRunPlan {
 	experiments: string[];
 	/** Eval names, in registry order. */
 	evals: string[];
-	/** Every cell the plan covers, eval-major. */
+	/** Every (experiment, eval) pair the plan covers, eval-major. */
 	cells: PlanCell[];
 }
 
 /**
  * Expands experiment selection tokens against the known experiment names.
- *
- * Mirrors resolveEvalSelection: a token matching nothing throws, because
- * resolving it to an empty set would read as a successful collection of zero
- * runs — the one outcome this line can least afford to report as a success.
+ * Mirrors resolveEvalSelection: a token matching nothing throws, rather than
+ * silently resolving to zero experiments.
  */
 export function resolveExperimentSelection(
 	tokens: readonly string[],
@@ -136,12 +113,11 @@ function assertPositiveInteger(field: string, value: unknown): number {
 }
 
 /**
- * Resolves a plan's selections into the cells it covers, eval-major.
- *
- * Eval-major — every experiment for eval A, then every experiment for eval B —
- * so that a plan cut short still holds a balanced sample: each arm has the same
- * evals, which is the comparison the analysis is built on. Experiment-major
- * would leave the last arms with nothing.
+ * Resolves a plan's selections into the cells it covers, eval-major: every
+ * experiment for eval A, then every experiment for eval B. That way a plan
+ * cut short still holds a balanced sample, since every experiment has the
+ * same evals collected first — experiment-major would leave the last
+ * experiments with nothing.
  */
 export function resolveRunPlan(
 	plan: RunPlan,
@@ -150,9 +126,9 @@ export function resolveRunPlan(
 	const runs = assertPositiveInteger('runs', plan.runs);
 	const parallelMax = assertPositiveInteger('parallelMax', plan.parallelMax);
 
-	// A cell's repetitions all start together inside one invocation, so a cell
-	// is indivisible here. A deficit is never larger than the target, so this
-	// bound covers every batch the plan can cut.
+	// A pair's repetitions all start in one invocation, so a pair is
+	// indivisible here. A deficit never exceeds the target, so this bound
+	// covers every batch.
 	if (runs > parallelMax) {
 		throw new Error(
 			`runs (${runs}) exceeds parallelMax (${parallelMax}): one cell's repetitions all start ` +
@@ -187,10 +163,8 @@ export function resolveRunPlan(
 // --- the reuse cutoff ------------------------------------------------------
 
 /**
- * Reads the `since` cutoff out of a plan config.
- *
- * A bare date means UTC midnight, matching how the result directory names this
- * is compared against are stamped.
+ * Reads the `since` cutoff out of a plan config. A bare date means UTC
+ * midnight, matching how result directory names are stamped.
  */
 export function parseSince(value: string | undefined): Date | null {
 	if (value === undefined || value.trim() === '') {
@@ -235,7 +209,7 @@ export function judgeSample(sample: StoredSample, since: Date | null): SampleVer
 	return sample.at.getTime() < since.getTime() ? 'predates-cutoff' : 'qualifying';
 }
 
-/** A cell, with what it already has and what is left to collect. */
+/** A pair, with what it already has and what is left to collect. */
 export interface CellPlan extends PlanCell {
 	/** The plan's target sample size. */
 	target: number;
@@ -248,10 +222,10 @@ export interface CellPlan extends PlanCell {
 }
 
 /**
- * Works out how much of a cell is still missing.
+ * Works out how much of a pair is still missing.
  *
- * Qualifying runs are capped at the target: a cell over-collected by an earlier
- * round has a deficit of zero, never a negative one.
+ * Qualifying runs are capped at the target: a pair over-collected by an
+ * earlier round has a deficit of zero, never a negative one.
  */
 export function planCell(
 	cell: PlanCell,
@@ -282,7 +256,7 @@ export function planCell(
 	};
 }
 
-/** Why a cell has to be collected, in one phrase, for the plan output. */
+/** Why a pair has to be collected, in one phrase, for the plan output. */
 export function explainDeficit(cell: CellPlan): string {
 	const discounted = Object.entries(cell.discounted)
 		.filter(([, runs]) => runs > 0)
@@ -310,13 +284,10 @@ export interface PlanBatch {
 }
 
 /**
- * Cuts the cells that still need work into invocations.
- *
- * One invocation carries a single `--runs`, so cells can only share a batch
- * when their deficits match; within an eval they are grouped by deficit,
- * deepest first, so the cells furthest from a full sample are collected before
- * the shallow top-ups. Batches stay one eval wide, keeping the eval-major order
- * that makes an interrupted plan leave a balanced sample.
+ * Cuts the pairs that still need work into invocations. One invocation
+ * carries a single `--runs`, so pairs share a batch only when their deficits
+ * match; within an eval they're grouped by deficit, deepest first, so batches
+ * stay one eval wide and keep the eval-major order intact.
  */
 export function planBatches(
 	cells: readonly CellPlan[],
@@ -399,21 +370,18 @@ export function scanResourceSignals(output: string): ResourceSignal[] {
 }
 
 /**
- * Signals where continuing would burn wall-clock for nothing: a full disk saves
- * no results, and a billing failure fails identically on every later batch.
- * Memory pressure is not one of them — each batch's containers are gone before
- * the next starts, so the plan keeps collecting and reports a narrower
- * parallelMax at the end.
+ * Signals where continuing wastes wall-clock: a full disk saves no results,
+ * and billing fails identically on every later batch. Memory pressure isn't
+ * one of them — each batch's containers are gone before the next starts.
  */
 export function isPlanStoppingSignal(signal: ResourceSignal): boolean {
 	return signal.kind === 'disk' || signal.kind === 'billing';
 }
 
 /**
- * The parallelMax to suggest after memory pressure: half, but never below one
- * cell, since a batch cannot be cut smaller than a single cell's repetitions.
- * Returns null when already at that floor — there the only remaining knob is
- * `runs`.
+ * The parallelMax to suggest after memory pressure: halved, but never below
+ * `runs` (a batch can't be smaller than one pair's repetitions). Returns null
+ * when already at that floor, where `runs` is the only remaining knob.
  */
 export function narrowedParallelMax(parallelMax: number, runs: number): number | null {
 	const halved = Math.floor(parallelMax / 2);
@@ -432,12 +400,9 @@ export interface CellOutcome {
 }
 
 /**
- * The command that collects a cell's missing repetitions.
- *
- * --force is required: the shortfall leaves saved results behind, so the
- * harness's own cache would treat the cell as done. The top-up lands in its own
- * timestamp directory, which both the plan's own counting and the offline
- * analyzer read alongside the first.
+ * The command that collects a pair's missing repetitions. --force is required
+ * because the shortfall already left saved results, which the harness would
+ * otherwise treat as done.
  */
 export function topUpCommand(cell: CellOutcome): string {
 	return (
