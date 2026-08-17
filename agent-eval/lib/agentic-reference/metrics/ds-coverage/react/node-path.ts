@@ -38,7 +38,7 @@
 // judge's job, weighing both node lists against the diff.
 import ts from 'typescript';
 
-type JsxNode = ts.JsxElement | ts.JsxSelfClosingElement;
+export type JsxNode = ts.JsxElement | ts.JsxSelfClosingElement;
 
 function isJsxNode(node: ts.Node): node is JsxNode {
 	return ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node);
@@ -56,9 +56,20 @@ function tagText(name: ts.JsxTagNameExpression): string {
 	return `${tagText(name.expression)}.${name.name.text}`;
 }
 
+/**
+ * The tag-name node, for either element spelling.
+ *
+ * The one place this dispatch is written. Callers needing the resolvable node
+ * (rather than its text) take it from here, so an element spelling can only be
+ * added in one place.
+ */
+export function tagNameOf(element: JsxNode): ts.JsxTagNameExpression {
+	return ts.isJsxElement(element) ? element.openingElement.tagName : element.tagName;
+}
+
 /** The tag as written, for either element spelling. */
 export function elementTag(element: JsxNode): string {
-	return tagText(ts.isJsxElement(element) ? element.openingElement.tagName : element.tagName);
+	return tagText(tagNameOf(element));
 }
 
 /**
