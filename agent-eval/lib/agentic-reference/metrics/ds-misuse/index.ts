@@ -89,16 +89,7 @@ export interface UsableMisuseReports {
 
 /**
  * Every run's usable artifact, read once.
- *
- * Once, because a caller printing tables wants it several times over and the
- * file carries one record per judged JSX node.
- *
- * Usable, because a stale artifact is worse than none to a reader. It was
- * scored against a different guidelines pin, judge model, or set of node-path
- * rules, so putting it in a column beside a fresh score files two different
- * measurements under one heading — and comparing arms is the whole point of the
- * metric. The two reasons are counted apart so a caller can tell "never judged"
- * from "judged, then the standard moved".
+ * Detects missing and stale reports and counts them.
  */
 export function readUsableMisuseReports(runs: readonly MisuseReportRequest[]): UsableMisuseReports {
 	const dsGuidelinesRef = dsDocsRefLabel();
