@@ -24,6 +24,7 @@ import { computeChurn } from './metrics/churn.ts';
 import { analyzeDsCoverage } from './metrics/ds-coverage/index.ts';
 import {
 	coverageDelta,
+	dsCoverageOf,
 	dsPackagesForPin,
 	isDsCoverage,
 	measureDsCoverage,
@@ -61,7 +62,7 @@ function transcriptEvents(transcript: unknown): unknown[] | null {
  * been renamed or deleted is still measured: what the tree is made of did not
  * change when the fixture did.
  */
-function dsCoverageOf(context: PostAnalysisContext): DsCoverage | null {
+function treeCoverageOf(context: PostAnalysisContext): DsCoverage | null {
 	const dsPackages = dsPackagesForPin(context.pin);
 	return dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages);
 }
@@ -71,18 +72,19 @@ export function analyzeRun(context: PostAnalysisContext): Analysis {
 	// until a run has been diffed against it, and by then it may be long gone.
 	if (context.mode === 'baseline') {
 		const dsPackages = dsPackagesForPin(context.pin);
+		// One census, read twice. The stored coverage slice and the node list are
+		// the same measurement — the second analyzeDsCoverage call differed from
+		// the first by one boolean, and its report already contained every field
+		// the first one projected.
+		const census =
+			dsPackages === null
+				? null
+				: analyzeDsCoverage({ projectDir: context.projectDir, dsPackages, includeNodes: true });
 		return {
 			...complexityForTree(context.projectDir),
-			dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
-			// Whole tree, once per pin: baseline.ts moves this into the sidecar.
-			nodeList:
-				dsPackages === null
-					? undefined
-					: analyzeDsCoverage({
-							projectDir: context.projectDir,
-							dsPackages,
-							includeNodes: true,
-						}).nodeList,
+			dsCoverage: census === null ? null : dsCoverageOf(census),
+			// Whole tree, once per pin: baseline.ts moves this into its own file.
+			nodeList: census?.nodeList,
 		};
 	}
 
@@ -109,7 +111,7 @@ export function analyzeRun(context: PostAnalysisContext): Analysis {
 		// Absolute, not comparative: how much of the UI the run left behind comes
 		// from the design system. deltaToBaseline reuses this rather than
 		// re-measuring, and turns it into coverageDelta against the pinned tree.
-		dsCoverage: dsCoverageOf(context),
+		dsCoverage: treeCoverageOf(context),
 	};
 }
 
