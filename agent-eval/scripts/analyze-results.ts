@@ -49,11 +49,12 @@
 // The three table flags select what is printed; everything is measured and
 // written either way. Passing any of them prints exactly that set; passing
 // none falls back to DEFAULT_TABLES below.
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { readRunOutcome } from '#lib/agentic-reference/collected-runs';
+import { readRunOutcomes } from '#lib/agentic-reference/collected-runs';
+import { findStoredEvalDirs } from '#lib/agentic-reference/results-tree';
 import { groupComparableRuns, parseResultTimestamp } from '#lib/agentic-reference/comparability';
 import {
 	currentMeasurement,
@@ -102,7 +103,10 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 	const parsed = flags
 		.parser(
 			argv,
-			{ scriptName: 'results:analyze', usage: 'Usage: pnpm results:analyze [flags]' },
+			{
+				scriptName: 'results:analyze',
+				usage: 'Usage: pnpm results:analyze [flags]',
+			},
 			{
 				experiments: flags.experiments,
 				evals: flags.evals,
@@ -166,33 +170,18 @@ interface Run {
 
 /** Every run directory under `dir`, collected or not. */
 function findRuns(dir: string): Run[] {
-	if (!existsSync(dir)) return [];
-	const runs: Run[] = [];
-	const walk = (current: string) => {
-		for (const entry of readdirSync(current, { withFileTypes: true })) {
-			if (!entry.isDirectory()) {
-				continue;
-			}
-			const path = join(current, entry.name);
-			if (!/^run-\d+$/.test(entry.name)) {
-				walk(path);
-				continue;
-			}
-			const parts = path.slice(RESULTS_DIR.length + 1).split('/');
-			runs.push({
-				runDir: path,
-				projectDir: join(path, 'project'),
-				experiment: parts[0]!,
-				model: parts.slice(1, -3).join('/'),
-				timestamp: parts.at(-3)!,
-				evalName: parts.at(-2)!,
-				run: Number.parseInt(entry.name.slice('run-'.length), 10),
-				collected: readRunOutcome(path).collected,
-			});
-		}
-	};
-	walk(dir);
-	return runs;
+	return findStoredEvalDirs(dir).flatMap((evalDir) =>
+		readRunOutcomes(evalDir.dir).map((outcome) => ({
+			runDir: outcome.dir,
+			projectDir: join(outcome.dir, 'project'),
+			experiment: evalDir.experiment,
+			model: evalDir.model,
+			timestamp: evalDir.timestamp,
+			evalName: evalDir.evalName,
+			run: outcome.run,
+			collected: outcome.collected,
+		})),
+	);
 }
 
 function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
@@ -422,7 +411,11 @@ async function main() {
 			}
 			writeCacheEntry(run.runDir, analysisOutput ?? null);
 			if (analysisOutput) {
-				successfulAnalyses.push({ ...analysisOutput, __run: run, __postAnalysis: postAnalysis });
+				successfulAnalyses.push({
+					...analysisOutput,
+					__run: run,
+					__postAnalysis: postAnalysis,
+				});
 			}
 		} catch (error) {
 			failedAnalyses.push(`${run.evalName} run-${run.run}: ${messageOf(error)}`);
@@ -438,7 +431,9 @@ async function main() {
 	}
 	if (withoutHook > 0) {
 		console.log(
-			`Skipped ${withoutHook} ${withoutHook === 1 ? 'run' : 'runs'} whose experiment carries no postAnalysis.`,
+			`Skipped ${withoutHook} ${
+				withoutHook === 1 ? 'run' : 'runs'
+			} whose experiment carries no postAnalysis.`,
 		);
 	}
 	if (reused > 0) {
@@ -514,7 +509,11 @@ async function main() {
 			quiet: !show,
 		});
 		summary.push(
-			...rows.map((row) => ({ ...row, measurement: group.measurement, current: group.current })),
+			...rows.map((row) => ({
+				...row,
+				measurement: group.measurement,
+				current: group.current,
+			})),
 		);
 	}
 

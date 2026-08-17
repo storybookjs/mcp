@@ -15,7 +15,7 @@
 // Selection follows the shared grammar in lib/agentic-reference/selection.ts,
 // AGENTIC_REF_<FLAG> fallbacks included, so the selection that ran an
 // experiment also narrows this.
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import {
@@ -25,7 +25,8 @@ import {
 	readRunOutcomes,
 } from '../lib/agentic-reference/collected-runs.ts';
 import { matchesAnySelector, selectionFlags } from '../lib/agentic-reference/selection.ts';
-import { RESULTS_DIR, RUN_DIR } from '#lib/agentic-reference/constants';
+import { RESULTS_DIR } from '#lib/agentic-reference/constants';
+import { findStoredEvalDirs } from '#lib/agentic-reference/results-tree';
 
 /** One eval directory, with the runs in it that produced nothing. */
 interface IncompleteEvalDir {
@@ -37,35 +38,12 @@ interface IncompleteEvalDir {
 	collected: number;
 }
 
-/** Every directory under `dir` that holds run directories. */
-function findEvalDirs(dir: string): string[] {
-	if (!existsSync(dir)) {
-		return [];
-	}
-	const found: string[] = [];
-	const entries = readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory());
-	if (entries.some((entry) => RUN_DIR.test(entry.name))) {
-		return [dir];
-	}
-	for (const entry of entries) {
-		found.push(...findEvalDirs(join(dir, entry.name)));
-	}
-	return found;
-}
-
-// Layout: results/<experiment>/[<model>/]<timestamp>/<eval>.
-function describeEvalDir(dir: string): { experiment: string; evalName: string } {
-	const parts = relative(RESULTS_DIR, dir).split('/');
-	return { experiment: parts[0]!, evalName: parts.at(-1)! };
-}
-
 function findIncomplete(selection: {
 	experiments: string[];
 	evals: string[];
 }): IncompleteEvalDir[] {
 	const found: IncompleteEvalDir[] = [];
-	for (const dir of findEvalDirs(RESULTS_DIR)) {
-		const { experiment, evalName } = describeEvalDir(dir);
+	for (const { dir, experiment, evalName } of findStoredEvalDirs(RESULTS_DIR)) {
 		if (
 			!matchesAnySelector(experiment, selection.experiments) ||
 			!matchesAnySelector(evalName, selection.evals)
@@ -151,7 +129,10 @@ function main(): void {
 	const argv = flags
 		.parser(
 			process.argv.slice(2),
-			{ scriptName: 'results:prune', usage: 'Usage: pnpm results:prune [flags]' },
+			{
+				scriptName: 'results:prune',
+				usage: 'Usage: pnpm results:prune [flags]',
+			},
 			{
 				experiments: flags.experiments,
 				evals: flags.evals,
@@ -160,7 +141,10 @@ function main(): void {
 		)
 		.parseSync();
 
-	const evalDirs = findIncomplete({ experiments: argv.experiments, evals: argv.evals });
+	const evalDirs = findIncomplete({
+		experiments: argv.experiments,
+		evals: argv.evals,
+	});
 	if (evalDirs.length === 0) {
 		console.log('No incomplete runs under results/: every run directory holds a project tree.');
 		return;
@@ -176,7 +160,9 @@ function main(): void {
 
 	console.log(
 		`Incomplete runs under results/ — ${runs} run director${runs === 1 ? 'y' : 'ies'} across ` +
-			`${evalDirs.length} eval director${evalDirs.length === 1 ? 'y' : 'ies'}, ${formatBytes(bytes)}.`,
+			`${evalDirs.length} eval director${
+				evalDirs.length === 1 ? 'y' : 'ies'
+			}, ${formatBytes(bytes)}.`,
 	);
 	report(evalDirs);
 
@@ -194,7 +180,9 @@ function main(): void {
 			`(${formatBytes(bytes)})` +
 			(deleted.directories === 0
 				? '.'
-				: `, and ${deleted.directories} director${deleted.directories === 1 ? 'y' : 'ies'} left empty.`),
+				: `, and ${deleted.directories} director${
+						deleted.directories === 1 ? 'y' : 'ies'
+					} left empty.`),
 	);
 	console.log('Run `pnpm eval:plan --config <plan> --dry` to see what is now missing.');
 }

@@ -20,14 +20,20 @@
 // Nothing is retried. A batch that fails is recorded and the plan moves on,
 // so an unattended run ends with a complete account of what it collected.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { AGENTIC_REF_CASES, AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
 import { countCollectedRuns } from '../lib/agentic-reference/collected-runs.ts';
-import { AGENT_EVAL_ROOT, EXPERIMENT_NAME_PREFIX, RESULTS_DIR, RUNNER } from '../lib/agentic-reference/constants.ts';
+import {
+	AGENT_EVAL_ROOT,
+	EXPERIMENT_NAME_PREFIX,
+	RESULTS_DIR,
+	RUNNER,
+} from '../lib/agentic-reference/constants.ts';
 import { isCurrentSample, parseResultTimestamp } from '../lib/agentic-reference/comparability.ts';
+import { findResultDirs } from '../lib/agentic-reference/results-tree.ts';
 import { selectionFlags } from '../lib/agentic-reference/selection.ts';
 import {
 	type CellOutcome,
@@ -46,7 +52,6 @@ import {
 	scanResourceSignals,
 	topUpCommand,
 } from '../lib/agentic-reference/run-plan.ts';
-import { generateAgenticRefWorkdir } from './generate-agentic-ref-experiments.ts';
 
 const DEFAULT_CONFIG = join('plans', 'default.plan.ts');
 
@@ -74,31 +79,6 @@ function expectedRuns(outcome: BatchOutcome): number {
 	return outcome.cells.reduce((total, cell) => total + cell.expected, 0);
 }
 
-/** Every result directory of an experiment, relative to its results directory. */
-function resultDirs(experiment: string): string[] {
-	const experimentDir = join(RESULTS_DIR, experiment);
-	if (!existsSync(experimentDir)) {
-		return [];
-	}
-
-	const dirs: string[] = [];
-	for (const entry of readdirSync(experimentDir, { withFileTypes: true })) {
-		if (!entry.isDirectory()) {
-			continue;
-		}
-		if (parseResultTimestamp(entry.name) !== null) {
-			dirs.push(entry.name);
-			continue;
-		}
-		for (const nested of readdirSync(join(experimentDir, entry.name), { withFileTypes: true })) {
-			if (nested.isDirectory()) {
-				dirs.push(join(entry.name, nested.name));
-			}
-		}
-	}
-	return dirs;
-}
-
 // Runs without a project tree hold nothing to measure (see
 // lib/agentic-reference/collected-runs.ts).
 function countSavedRuns(experiment: string, evalName: string, dirs: readonly string[]): number {
@@ -112,7 +92,7 @@ function countSavedRuns(experiment: string, evalName: string, dirs: readonly str
 /** Every stored sample of one pair, whether or not it still counts. */
 function storedSamples(experiment: string, evalName: string): StoredSample[] {
 	const samples: StoredSample[] = [];
-	for (const dir of resultDirs(experiment)) {
+	for (const dir of findResultDirs(experiment)) {
 		const evalDir = join(RESULTS_DIR, experiment, dir, evalName);
 		const runs = countCollectedRuns(evalDir);
 		if (runs === 0) {
@@ -189,12 +169,12 @@ function runnerArgs(batch: PlanBatch, resolved: ResolvedRunPlan): string[] {
 
 async function runBatch(batch: PlanBatch, resolved: ResolvedRunPlan): Promise<BatchOutcome> {
 	const started = Date.now();
-	const before = new Map(batch.experiments.map((name) => [name, new Set(resultDirs(name))]));
+	const before = new Map(batch.experiments.map((name) => [name, new Set(findResultDirs(name))]));
 
 	const run = await runRunner(runnerArgs(batch, resolved));
 
 	const cells: CellOutcome[] = batch.experiments.map((experiment) => {
-		const added = resultDirs(experiment).filter((name) => !before.get(experiment)!.has(name));
+		const added = findResultDirs(experiment).filter((name) => !before.get(experiment)!.has(name));
 		return {
 			experiment,
 			evalName: batch.evalName,
@@ -408,7 +388,10 @@ async function main(): Promise<void> {
 	const argv = flags
 		.parser(
 			process.argv.slice(2),
-			{ scriptName: 'eval:plan', usage: 'Usage: pnpm eval:plan --config <path> [--dry]' },
+			{
+				scriptName: 'eval:plan',
+				usage: 'Usage: pnpm eval:plan --config <path> [--dry]',
+			},
 			{
 				config: flags.text('config', 'Plan config module (default plans/default.plan.ts)'),
 				dry: flags.switch('dry', 'Print what would be collected and spend nothing'),
@@ -424,8 +407,6 @@ async function main(): Promise<void> {
 		experiments: knownExperiments(),
 		evals: AGENTIC_REF_EVAL_REGISTRY,
 	});
-
-	generateAgenticRefWorkdir();
 
 	const cells = planCells(resolved);
 	const batches = planBatches(cells, resolved.evals, resolved.plan.parallelMax);
@@ -497,7 +478,10 @@ async function main(): Promise<void> {
 		startedAt,
 		completedAt: new Date().toISOString(),
 		config: relative(AGENT_EVAL_ROOT, configPath),
-		plan: { ...resolved.plan, since: resolved.plan.since?.toISOString() ?? null },
+		plan: {
+			...resolved.plan,
+			since: resolved.plan.since?.toISOString() ?? null,
+		},
 		cells,
 		batches: outcomes,
 		gaps,
