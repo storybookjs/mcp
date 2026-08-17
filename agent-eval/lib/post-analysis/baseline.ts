@@ -137,6 +137,36 @@ function memoKeyFor(path: string, metricsVersion: number | undefined): string {
 	return `${path}#${metricsVersion ?? 'none'}`;
 }
 
+/**
+ * Whether a committed baseline's sidecar state is one this module can stand
+ * behind — that is, whether the file and the disk beside it still agree.
+ *
+ * The interesting case is silence. An absent flag means two different things,
+ * and reading them the same way is what let this repo ship three baselines at
+ * the current metricsVersion with no sidecar and no way to ever grow one:
+ *
+ * - On a file declaring no metricsVersion either, it means "predates the
+ *   field", which is the same thing as "never had one". Rebuilding every legacy
+ *   baseline to learn that is not worth what it costs.
+ * - On a file that *does* declare a version, it means the file was written
+ *   before the field existed and then version-bumped in place rather than
+ *   regenerated. Read permissively that is a permanent cache hit, so the
+ *   sidecar it should have written never gets written, `judge:ds-misuse` skips
+ *   every run for want of a census, and the fix it prints — a plain
+ *   `results:analyze` — silently does nothing. Read as a miss it costs one
+ *   rebuild, after which the file records its state explicitly and says so.
+ */
+function isSidecarIntact(
+	committed: CommittedBaseline | null,
+	baselinesDir: string,
+	pin: ExternalRepoPin,
+	metricsVersion: number | undefined,
+): boolean {
+	if (committed?.nodeSidecar === undefined) return committed?.metricsVersion === undefined;
+	if (!committed.nodeSidecar) return true;
+	return readNodeSidecar(baselinesDir, pin, metricsVersion) !== null;
+}
+
 export async function loadOrBuildBaselineAnalysis(
 	options: BaselineOptions,
 ): Promise<BaselineAnalysis> {
@@ -168,9 +198,7 @@ export async function loadOrBuildBaselineAnalysis(
 	// only produced by a rebuild, and a current-looking baseline suppresses one
 	// forever. Rebuilding is what makes "written together and only together" true
 	// of the files on disk rather than just of this function.
-	const sidecarIntact =
-		committed?.nodeSidecar !== true ||
-		readNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion) !== null;
+	const sidecarIntact = isSidecarIntact(committed, baselinesDir, pin, postAnalysis.metricsVersion);
 	if (versionMatches && sidecarIntact) {
 		const loaded = { dir, analysis: committed.analysis };
 		memo.set(memoKey, loaded);
@@ -185,7 +213,9 @@ export async function loadOrBuildBaselineAnalysis(
 		: !committed?.analysis
 			? 'no committed baseline'
 			: versionMatches
-				? 'node sidecar missing'
+				? committed.nodeSidecar === undefined
+					? 'baseline records no sidecar state'
+					: 'node sidecar missing'
 				: `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`;
 	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
 

@@ -115,6 +115,9 @@ describe('loadOrBuildBaselineAnalysis', () => {
 			JSON.stringify({
 				...PIN,
 				metricsVersion: 2,
+				// A file declaring a version has to declare its sidecar state too;
+				// silence there means "version-bumped without being regenerated".
+				nodeSidecar: false,
 				analysis: { files: { 'a.ts': 99 } },
 			}),
 		);
@@ -361,6 +364,42 @@ describe('node sidecar', () => {
 		const opts = options({ postAnalysis: withNodes() });
 		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
 		writeNodeSidecar(opts.baselinesDir, PIN, 7, PARTIAL_NODES);
+
+		const loaded = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(loaded.analysis).toEqual({ files: { 'a.ts': 99 } });
+		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
+	});
+
+	// Exactly the state this repo shipped: three baselines written before the
+	// sidecar field existed, then version-bumped in place rather than
+	// regenerated. Read permissively they are a permanent cache hit, so the
+	// sidecar never gets written, the judge skips every run for want of a census,
+	// and the plain results:analyze it tells you to run does nothing at all.
+	it('rebuilds a current-version baseline that records no sidecar state', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		commitBaseline(opts.baselinesDir, {});
+
+		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(rebuilt.analysis).toEqual({ files: {} });
+		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(true);
+		// And it now says so explicitly, so the next pass hits the cache.
+		expect(JSON.parse(readFileSync(baselinePath(opts.baselinesDir, PIN), 'utf8')).nodeSidecar).toBe(
+			true,
+		);
+	});
+
+	// A file declaring neither a version nor a sidecar predates both fields, and
+	// "absent" there really does mean "never had one". Rebuilding every legacy
+	// baseline to learn that is not worth what it costs.
+	it('still hits the cache for a legacy baseline declaring neither field', async () => {
+		const opts = options();
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(
+			baselinePath(opts.baselinesDir, PIN),
+			JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }),
+		);
 
 		const loaded = await loadOrBuildBaselineAnalysis(opts);
 
