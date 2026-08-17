@@ -50,6 +50,22 @@ export function typecheckExternalRepo(marker: unknown): ExternalRepoPin {
 }
 
 /**
+ * The pin a stored run recorded, or null when it recorded no usable one.
+ *
+ * The pin the run *itself* recorded, never the fixture's pin as it stands
+ * today: reading today's would retroactively change every historical delta the
+ * moment the fixture moves.
+ */
+export function pinOfResult(result: unknown): ExternalRepoPin | null {
+	const analysis = isRecord(result) && isRecord(result.analysis) ? result.analysis : {};
+	try {
+		return typecheckExternalRepo(analysis.externalRepo);
+	} catch {
+		return null;
+	}
+}
+
+/**
  * A single directory name for a pin. Both halves have their separators escaped:
  * SAFE_GITHUB_PATH admits refs like `heads/main`, which unescaped would turn the
  * slug into a nested path. SHA pins contain no separator, so existing cache

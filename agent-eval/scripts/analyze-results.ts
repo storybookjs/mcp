@@ -62,7 +62,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
+import { pinOfResult } from '#lib/agentic-reference/external-repo';
 import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
 import {
@@ -76,7 +76,6 @@ import {
 import { createPostAnalysisLoader } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { messageOf } from '#lib/utils/error';
-import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
 import { selectionFlags } from '#lib/agentic-reference/selection';
 
@@ -200,18 +199,6 @@ function writeCacheEntry(runDir: string, output: Record<string, unknown> | null)
 }
 
 // --- per-run analysis ---
-// The pin the run itself recorded, not the fixture's pin as it stands today:
-// reading today's would retroactively change every historical delta the moment
-// the fixture moves.
-function pinOf(result: unknown) {
-	const analysis = isRecord(result) && isRecord(result.analysis) ? result.analysis : {};
-	try {
-		return typecheckExternalRepo(analysis.externalRepo);
-	} catch {
-		return null;
-	}
-}
-
 async function analyzeOneRun(
 	run: Run,
 	postAnalysis: PostAnalysis,
@@ -235,7 +222,7 @@ async function analyzeOneRun(
 		run: run.run,
 		result,
 		transcript,
-		pin: pinOf(result),
+		pin: pinOfResult(result),
 	};
 
 	const runAnalysis = await postAnalysis.analyzeRun(context);

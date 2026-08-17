@@ -42,7 +42,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { prepareRef, typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
+import { pinOfResult, prepareRef } from '#lib/agentic-reference/external-repo';
 import { dsPackagesForPin } from '#lib/agentic-reference/metrics/coverage';
 import { dsDocsRefLabel } from '#lib/agentic-reference/metrics/ds-misuse/ds-docs';
 import {
@@ -65,7 +65,6 @@ import {
 import { createPostAnalysisLoader } from '#lib/post-analysis/hooks';
 import { readJson } from '#lib/utils/files';
 import { messageOf } from '#lib/utils/error';
-import { isRecord } from '#lib/utils/type';
 
 import type { PostAnalysis } from '#lib/post-analysis/types';
 
@@ -76,7 +75,7 @@ const REF_CACHE_DIR = join(ROOT, '.eval-cache/refs');
 
 // Which module measured a run is the experiment's call, exactly as it is in
 // results:analyze — and it decides both what this costs and whether it is right.
-// A run whose experiment names no module is not ours to judge, and the sidecar
+// A run whose experiment names no module is not ours to judge, and the node-list
 // and staleness checks below are keyed on *that* module's metricsVersion rather
 // than on whichever one happened to be imported at the top of this file.
 const loadPostAnalysis = createPostAnalysisLoader([
@@ -107,17 +106,6 @@ function parseOptions(argv: string[]): Options {
 	return { ...toRunSelection(parsed), recompute: parsed.recompute === true };
 }
 
-/** The pin the run itself recorded — never today's fixture pin. */
-function pinOf(runDir: string) {
-	const result = readJson(join(runDir, 'result.json'));
-	const analysis = isRecord(result) && isRecord(result.analysis) ? result.analysis : {};
-	try {
-		return typecheckExternalRepo(analysis.externalRepo);
-	} catch {
-		return null;
-	}
-}
-
 /** Judge one run, or explain why it cannot be judged. */
 async function judgeOne(
 	run: Run,
@@ -126,7 +114,7 @@ async function judgeOne(
 ): Promise<'judged' | 'reused' | 'skipped'> {
 	const label = `${run.experiment}/${run.evalName}/run-${run.run}`;
 
-	const pin = pinOf(run.runDir);
+	const pin = pinOfResult(readJson(join(run.runDir, 'result.json')));
 	if (pin === null) {
 		console.error(`${label}: recorded no usable evals.externalRepo pin, so it has no baseline.`);
 		return 'skipped';

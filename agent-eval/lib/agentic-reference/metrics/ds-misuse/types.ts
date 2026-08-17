@@ -3,7 +3,6 @@
 // The schema is handed to the Messages API as output_config.format, so the model
 // cannot return a shape this file does not describe. That is why there is no
 // defensive parsing anywhere downstream.
-import type { NodeRecord } from '../ds-coverage/types.ts';
 
 /** Bump when the artifact's shape changes in a way a reader must notice. */
 export const DS_MISUSE_SCHEMA_VERSION = 1;
@@ -58,11 +57,6 @@ export interface DsMisuseReport {
 	diffTruncated: boolean;
 	summary: DsMisuseSummary;
 	nodes: JudgedNode[];
-}
-
-/** What the judge is given about one side of the comparison. */
-export interface NodeCensus {
-	nodes: NodeRecord[];
 }
 
 const SCORED_ANSWER = {
