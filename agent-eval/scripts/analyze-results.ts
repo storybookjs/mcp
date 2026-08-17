@@ -42,7 +42,7 @@
 //   --general             print the per-run vitals and grouped summary tables
 //   --complexity          print the complexity tables
 //   --coverage            print the design-system coverage tables
-//   --misuse             print the design-system misuse tables (see judge:ds-misuse)
+//   --misuse              print the design-system misuse tables (see judge:ds-misuse)
 //
 // Selection follows the shared grammar in lib/agentic-reference/selection.ts:
 // --cases and --flows are aliases, singular and plural spellings are the same
