@@ -1,36 +1,14 @@
 // Measure the pristine tree a pin's runs are compared against, once per pin.
 //
 // The "before" side of any delta only changes when the pin moves, so measuring
-// it per run is wasted work — for a complexity metric that means re-parsing a
-// few hundred files for every repetition of every experiment. Keying by
-// repo@sha means a moved pin misses the cache rather than silently reusing
-// numbers from a different tree.
+// it per run is wasted work for both deterministic and LLM-based metrics.
 //
-// The pin is the whole key. What a pinned tree is made of does not depend on
-// which eval is about to run against it, so keying on eval-plus-pin only bought
-// one byte-identical file per eval sharing a pin.
+// Pins are references on a repo. This lets us make non-breaking changes to pinned
+// repos and moving the ref to their new branch head if needed.
 //
-// Baselines are committed rather than left in the gitignored .eval-cache/, so
-// CI never recomputes one and a reviewer sees the numbers change when a pin
-// moves. `--recompute` rebuilds them, which is the only time the analyzer needs
-// to measure the upstream tree at all.
-//
-// What a baseline *contains* is the eval's business: this module calls the
-// eval's own analyzeRun against the pinned tree and stores whatever comes back.
-// An eval wanting a diff-friendly committed file should emit stable key order,
-// as nothing here reorders its output.
-//
-// One key is not opaque. A `nodeList` is split off into baselines/ds-nodes/ and
-// never lands in the committed baseline, because that file is meant to stay
-// readable in a diff and a whole-tree node census is thousands of records.
-//
-// The two are written together and only together, and that is enforced rather
-// than hoped for: a baseline records whether it had a sidecar, and one whose
-// sidecar has since gone missing is a cache miss like any other stale file. Half
-// a pair on disk would otherwise be permanent — a rebuild is the only thing that
-// writes a sidecar, and a current-looking baseline is exactly what suppresses
-// one. Anything reading a sidecar can therefore trust that a current baseline
-// implies a current sidecar.
+// Pinned baselines are shared for *all* agentic reference evals. If you need to
+// pin different metrics based on the eval or MCP being used in an experiment,
+// you will need to make pins more specific again, at the expense of cache reuse.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
