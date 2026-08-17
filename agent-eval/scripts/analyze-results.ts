@@ -14,12 +14,14 @@
 // its full depth, and each invocation writes a directory of its own. Folding
 // per directory would report ten runs as "10, then 2, then 1" and average each
 // separately, so the tables are folded per *comparable set* instead — every
-// stored run of one arm, one eval and one configuration, whatever timestamps
-// they arrived under. Which runs those are is decided exactly as the plan
-// runner decides what it can reuse; see lib/agentic-reference/comparability.ts.
+// stored run measuring the same thing, whatever timestamps they arrived under.
+// Which runs those are is decided exactly as the plan runner decides what it
+// can reuse; see lib/agentic-reference/comparability.ts.
 //
-// Runs collected under a configuration the experiment has since replaced stay a
-// group of their own rather than being averaged into the current one.
+// Runs measuring something their cell no longer measures stay a group of their
+// own rather than being averaged into the current one, and are not printed
+// unless --superseded is passed. When they are, each group says which part of
+// its measurement moved.
 //
 // Each directory's own summary.json still gets rows scoped to that directory,
 // under `postAnalysis`, next to the harness's own pass rate and mean duration —
@@ -44,7 +46,8 @@
 // definition to force every matched run to be recomputed.
 //
 // Usage: pnpm results:analyze [--experiments <list>] [--evals <list>] [--since <ISO date>]
-//                             [--latest] [--recompute] [--general] [--complexity] [--coverage]
+//                             [--latest] [--recompute] [--superseded]
+//                             [--general] [--complexity] [--coverage]
 //
 //   --experiments <list>  only runs under results/<name>/, by name or glob
 //   --evals <list>        only runs of these evals, by name, number (706) or glob
@@ -52,6 +55,8 @@
 //   --latest              only the newest result directory per experiment
 //   --recompute           recompute analysis, and rebuild committed baselines,
 //                         even where a cached result exists (alias: --force)
+//   --superseded          also print the groups measuring something their cell
+//                         no longer measures, and what moved under each
 //   --general             print the per-run vitals and grouped summary tables
 //   --complexity          print the complexity tables
 //   --coverage            print the design-system coverage tables
@@ -75,12 +80,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { readRunOutcome } from '#lib/agentic-reference/collected-runs';
+import { groupComparableRuns, parseResultTimestamp } from '#lib/agentic-reference/comparability';
 import {
-	groupComparableRuns,
-	isCurrentSample,
-	parseResultTimestamp,
-	readStoredFingerprint,
-} from '#lib/agentic-reference/comparability';
+	currentMeasurement,
+	describeDifferences,
+	measurementDifferences,
+	measurementKey,
+	readRunMeasurement,
+} from '#lib/agentic-reference/identity';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
@@ -116,6 +123,7 @@ interface PostAnalysisOptions {
 	since: string | null;
 	latest: boolean;
 	recompute: boolean;
+	superseded: boolean;
 	tables: SummarizeOptions;
 }
 
@@ -141,6 +149,10 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 					),
 					alias: ['force'],
 				},
+				superseded: flags.switch(
+					'superseded',
+					'Also print groups collected under a configuration since replaced',
+				),
 				general: flags.switch('general', 'Print the per-run vitals and grouped summary tables'),
 				complexity: flags.switch('complexity', 'Print the complexity tables'),
 				coverage: flags.switch('coverage', 'Print the design-system coverage tables'),
@@ -160,6 +172,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 		since: parsed.since ?? null,
 		latest: parsed.latest === true,
 		recompute: parsed.recompute === true,
+		superseded: parsed.superseded === true,
 		tables: {
 			general: chosen.includes('general'),
 			complexity: chosen.includes('complexity'),
@@ -393,43 +406,23 @@ function strip(row: SuccessfulAnalysis): Record<string, unknown> {
 	);
 }
 
-/**
- * Each result directory's fingerprint, and whether it is one the experiment's
- * configuration still produces — the two facts that decide what can be folded
- * with what.
- */
-async function judgeSamples(
-	byEvalDir: ReadonlyMap<string, SuccessfulAnalysis[]>,
-): Promise<Map<string, { fingerprint: string | null; current: boolean }>> {
-	const judged = new Map<string, { fingerprint: string | null; current: boolean }>();
-	for (const [evalDir, analyses] of byEvalDir) {
-		const { experiment, evalName } = analyses[0]!.__run;
-		const fingerprint = readStoredFingerprint(evalDir);
-		judged.set(evalDir, {
-			fingerprint,
-			current: await isCurrentSample({
-				experiment,
-				evalName,
-				fingerprint,
-				// Runs the analysis could read, which is a lower bound on the sample
-				// size the collection asked for — enough, since what is tried anyway
-				// covers every size a plan on this hardware could have requested.
-				runsOnDisk: analyses.length,
-			}),
-		});
-	}
-	return judged;
-}
-
 /** A comparable set's heading: which arm, which eval, which generation. */
 function heading(group: ComparableGroup<SuccessfulAnalysis>): string {
 	const arm = [group.experiment, group.model].filter((part) => part !== '').join('/');
 	const cell = `${arm} · ${group.evalName}`;
-	// Named by the fingerprint they share, which is all that distinguishes two
-	// replaced generations of one cell from each other.
-	return group.current
-		? cell
-		: `${cell}  (superseded config ${group.fingerprint?.slice(0, 8) ?? 'unknown'})`;
+	return group.current ? cell : `${cell}  (superseded)`;
+}
+
+/** What about a superseded group its cell no longer measures. */
+function supersessionNote(group: ComparableGroup<SuccessfulAnalysis>): string {
+	const current = currentMeasurement(group.experiment, group.evalName);
+	if (group.measurement === null) {
+		return 'these runs recorded no measurement.';
+	}
+	if (current === null) {
+		return 'this arm or eval no longer exists.';
+	}
+	return describeDifferences(measurementDifferences(group.measurement, current));
 }
 
 async function main() {
@@ -532,23 +525,61 @@ async function main() {
 		mergeIntoEvalSummary(evalDir, rows);
 	}
 
-	const comparability = await judgeSamples(byEvalDir);
-	const groups = groupComparableRuns(successfulAnalyses, (row) => ({
-		experiment: row.__run.experiment,
-		model: row.__run.model,
-		evalName: row.__run.evalName,
-		...comparability.get(dirname(row.__run.runDir))!,
-	}));
+	const groups = groupComparableRuns(successfulAnalyses, (row) => {
+		const { experiment, evalName, model, runDir } = row.__run;
+		const measurement = readRunMeasurement(runDir, { experiment, evalName });
+		const current = currentMeasurement(experiment, evalName);
+		return {
+			experiment,
+			model,
+			evalName,
+			measurement,
+			current:
+				measurement !== null &&
+				current !== null &&
+				measurementKey(measurement) === measurementKey(current),
+		};
+	});
 
+	// Superseded generations are not what anyone came to read: they are the
+	// measurement the cell used to make, kept apart so they are not averaged into
+	// the one it makes now. So they print on request — but they are folded and
+	// stored either way, like every other selection here, and the rows say which
+	// generation they came from so a later reader can tell without re-deriving it.
+	let hidden = 0;
 	const summary: Analysis[] = [];
+
 	for (const group of groups) {
-		console.log(`\n===  ${heading(group)}  ===\n`);
+		const show = options.superseded || group.current;
+		if (show) {
+			console.log(`\n===  ${heading(group)}  ===\n`);
+			// Only for what is being read: the note walks the fixture's git history.
+			if (!group.current) {
+				console.log(`  superseded — ${supersessionNote(group)}\n`);
+			}
+		} else {
+			hidden += 1;
+		}
+
 		// Every run of a comparable set is one arm's, so they share one module.
-		const rows = group.members[0]!.__postAnalysis.summarize(
-			group.members.map(strip),
-			options.tables,
+		const rows = group.members[0]!.__postAnalysis.summarize(group.members.map(strip), {
+			...options.tables,
+			quiet: !show,
+		});
+		summary.push(
+			...rows.map((row) => ({ ...row, measurement: group.measurement, current: group.current })),
 		);
-		summary.push(...rows);
+	}
+
+	if (hidden > 0) {
+		const runs = groups
+			.filter((group) => !group.current)
+			.reduce((total, group) => total + group.members.length, 0);
+		console.log(
+			`\nHid ${hidden} superseded group(s) holding ${runs} run(s), measuring something their ` +
+				'cell no longer measures. They are still in analysis-summary.json, marked ' +
+				'`current: false`. Pass --superseded to print them, with what moved under each.',
+		);
 	}
 
 	// The console view is for reading now; this is what gets loaded later. Every

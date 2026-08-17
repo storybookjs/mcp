@@ -1,67 +1,23 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
-	acceptableFingerprints,
+	countCurrentRuns,
 	groupComparableRuns,
+	isCurrentSample,
 	parseResultTimestamp,
-	readStoredFingerprint,
+	readSampleMeasurement,
 } from './comparability.ts';
+import { EVALS_DIR } from './constants.ts';
+import { currentMeasurement } from './identity.ts';
 
 import type { Comparability } from './comparability.ts';
+import type { Measurement } from './identity.ts';
 
-describe('readStoredFingerprint', () => {
-	let root: string;
-
-	beforeEach(() => {
-		root = mkdtempSync(join(tmpdir(), 'comparability-'));
-	});
-	afterEach(() => {
-		rmSync(root, { recursive: true, force: true });
-	});
-
-	function evalDir(summary: string | null): string {
-		const dir = join(root, 'eval');
-		mkdirSync(dir, { recursive: true });
-		if (summary !== null) {
-			writeFileSync(join(dir, 'summary.json'), summary);
-		}
-		return dir;
-	}
-
-	it('reads the fingerprint the harness stored beside the runs', () => {
-		expect(readStoredFingerprint(evalDir('{"fingerprint":"abc"}'))).toBe('abc');
-	});
-
-	// A sample nobody can date or identify is not one this can vouch for, and
-	// every caller treats null as "not comparable to anything".
-	it('returns null for a missing, malformed or fingerprintless summary', () => {
-		expect(readStoredFingerprint(evalDir(null))).toBeNull();
-		expect(readStoredFingerprint(evalDir('{'))).toBeNull();
-		expect(readStoredFingerprint(evalDir('{"totalRuns":3}'))).toBeNull();
-	});
-});
-
-describe('acceptableFingerprints', () => {
-	// Results outlive the fixtures and arms that produced them: an eval renamed
-	// or deleted since a run was collected leaves the run on disk, and the
-	// analysis still measures it. Nothing about it is current any more, which is
-	// an empty set — not a crash that costs every other cell its analysis.
-	it('yields nothing for an eval whose fixture is gone', async () => {
-		await expect(
-			acceptableFingerprints('agentic-ref-cc-full-opus-high', 'deleted-eval', 3),
-		).resolves.toEqual(new Set());
-	});
-
-	it('yields nothing for an experiment with no definition on disk', async () => {
-		await expect(acceptableFingerprints('deleted-arm', 'deleted-eval', 3)).resolves.toEqual(
-			new Set(),
-		);
-	});
-});
+const CELL = { experiment: 'agentic-ref-cc-full-opus-high', evalName: '701-new-ui-flow' };
 
 describe('parseResultTimestamp', () => {
 	it('dates a result directory from its name', () => {
@@ -76,35 +32,121 @@ describe('parseResultTimestamp', () => {
 	});
 });
 
+describe('reading a stored sample', () => {
+	let root: string;
+
+	beforeEach(() => {
+		root = mkdtempSync(join(tmpdir(), 'comparability-'));
+	});
+	afterEach(() => {
+		rmSync(root, { recursive: true, force: true });
+	});
+
+	/** An eval directory of runs pinned to `ref`, carrying the fixture as it stands. */
+	function writeSample(ref: string, runs = 2): string {
+		const evalDir = join(root, 'sample');
+		for (let run = 1; run <= runs; run++) {
+			const runDir = join(evalDir, `run-${run}`);
+			mkdirSync(join(runDir, 'project'), { recursive: true });
+			writeFileSync(
+				join(runDir, 'result.json'),
+				JSON.stringify({
+					model: 'opus',
+					analysis: {
+						externalRepo: { repo: 'yannbf/mealdrop', ref },
+						case: {
+							integration: 'mcp',
+							storybookMcpPackage: { repo: 'yannbf/droppy-ds', branch: 'experiment/full' },
+							editPrompt: true,
+						},
+					},
+				}),
+			);
+			for (const file of ['PROMPT.md', 'EVAL.ts']) {
+				writeFileSync(
+					join(runDir, 'project', file),
+					readFileSync(join(EVALS_DIR, CELL.evalName, file), 'utf8'),
+				);
+			}
+		}
+		return evalDir;
+	}
+
+	/** The ref the fixture pins today, as it appears in a result.json. */
+	function currentRef(): string {
+		const label = currentMeasurement(CELL.experiment, CELL.evalName)!.pin.split('@')[1]!;
+		return `refs/tags/agentic-reference/${label}-v4`;
+	}
+
+	it('reads the measurement its runs recorded', () => {
+		expect(
+			readSampleMeasurement(writeSample('refs/tags/agentic-reference/droppy-v2'), CELL),
+		).toMatchObject({
+			pin: 'yannbf/mealdrop@droppy-v2',
+			mcp: 'yannbf/droppy-ds#experiment/full',
+		});
+	});
+
+	it('reads a directory that does not exist as holding no measurement', () => {
+		expect(readSampleMeasurement(join(root, 'nowhere'), CELL)).toBeNull();
+	});
+
+	it('counts a sample that measures what its cell measures today', () => {
+		const sample = writeSample(currentRef(), 3);
+		expect(isCurrentSample(sample, CELL)).toBe(true);
+		expect(countCurrentRuns(sample, CELL)).toBe(3);
+	});
+
+	// The whole point of the bundle: a re-tag of one tree is not a new tree.
+	it('counts a sample pinned to a bundled ref as current', () => {
+		expect(isCurrentSample(writeSample('refs/tags/agentic-reference/droppy-70pc-v2'), CELL)).toBe(
+			true,
+		);
+	});
+
+	it('does not count a sample pinned to another tree', () => {
+		const sample = writeSample('refs/tags/agentic-reference/base-ui-v1', 4);
+		expect(isCurrentSample(sample, CELL)).toBe(false);
+		expect(countCurrentRuns(sample, CELL)).toBe(0);
+	});
+});
+
 describe('groupComparableRuns', () => {
-	/** A run, described by hand rather than read off disk. */
+	function measurement(overrides: Partial<Measurement> = {}): Measurement {
+		return {
+			experiment: 'exp',
+			evalName: '701',
+			model: 'opus',
+			pin: 'repo@v4',
+			mcp: 'ds#full',
+			editedPrompt: true,
+			task: 'abc',
+			...overrides,
+		};
+	}
+
 	function run(name: string, overrides: Partial<Comparability> = {}) {
 		const comparability: Comparability = {
 			experiment: 'exp',
 			model: '',
 			evalName: '701',
-			fingerprint: 'fp',
+			measurement: measurement(),
 			current: true,
 			...overrides,
 		};
 		return { name, comparability };
 	}
 
-	function group(items: ReturnType<typeof run>[]) {
-		return groupComparableRuns(items, (item) => item.comparability);
-	}
-
 	function names(items: ReturnType<typeof run>[]): string[][] {
-		return group(items).map((entry) => entry.members.map((member) => member.name));
+		return groupComparableRuns(items, (item) => item.comparability).map((group) =>
+			group.members.map((member) => member.name),
+		);
 	}
 
-	// The point of the whole module: two collections of the same cell are one
-	// sample, whatever timestamps they were saved under, and their fingerprints
-	// differ because `runs` is hashed into them.
-	it('puts runs of one cell together whatever sample size each was collected at', () => {
-		expect(
-			names([run('monday', { fingerprint: 'fp-10' }), run('friday', { fingerprint: 'fp-4' })]),
-		).toEqual([['monday', 'friday']]);
+	// Two collections of one cell are one sample, whatever result directories
+	// they arrived in.
+	it('puts runs of one measurement together', () => {
+		expect(names([run('monday'), run('friday')])).toEqual([['monday', 'friday']]);
 	});
 
 	it('keeps different experiments, models and evals apart', () => {
@@ -118,55 +160,49 @@ describe('groupComparableRuns', () => {
 		).toEqual([['a'], ['c'], ['d'], ['b']]);
 	});
 
-	// Aggregating these with the current ones would average two measurements of
-	// different things and call it one number.
-	it('separates runs whose configuration the experiment no longer has', () => {
-		expect(names([run('now'), run('before', { current: false, fingerprint: 'old' })])).toEqual([
-			['now'],
-			['before'],
-		]);
+	it('separates runs whose measurement its cell no longer makes', () => {
+		expect(
+			names([
+				run('now'),
+				run('before', { current: false, measurement: measurement({ pin: 'repo@v1' }) }),
+			]),
+		).toEqual([['now'], ['before']]);
 	});
 
 	it('separates two superseded generations of one cell from each other', () => {
 		expect(
 			names([
-				run('older', { current: false, fingerprint: 'a' }),
-				run('newer', { current: false, fingerprint: 'b' }),
-				run('older-again', { current: false, fingerprint: 'a' }),
+				run('older', { current: false, measurement: measurement({ pin: 'repo@v1' }) }),
+				run('newer', { current: false, measurement: measurement({ pin: 'repo@v2' }) }),
+				run('older-again', { current: false, measurement: measurement({ pin: 'repo@v1' }) }),
 			]),
 		).toEqual([['older', 'older-again'], ['newer']]);
 	});
 
-	it('groups samples whose fingerprint could not be read together', () => {
+	it('groups runs whose measurement could not be read together', () => {
 		expect(
 			names([
-				run('a', { current: false, fingerprint: null }),
-				run('b', { current: false, fingerprint: null }),
+				run('a', { current: false, measurement: null }),
+				run('b', { current: false, measurement: null }),
 			]),
 		).toEqual([['a', 'b']]);
 	});
 
-	// The fingerprint is what tells two superseded generations apart in a header;
-	// a current group's samples do not share one, so it carries none.
-	it('carries the shared fingerprint of a superseded group and none of a current one', () => {
-		const [current, superseded] = group([
-			run('now', { fingerprint: 'fp-10' }),
-			run('before', { current: false, fingerprint: 'old' }),
-		]);
-		expect(current).toMatchObject({ current: true, fingerprint: null, experiment: 'exp' });
-		expect(superseded).toMatchObject({ current: false, fingerprint: 'old' });
-	});
-
-	// Stable output: the same tree analysed twice prints its groups in the same
-	// order, current before the generations it replaced.
 	it('orders groups by experiment, then eval, then current first', () => {
-		const ordered = group([
-			run('b-old', { experiment: 'b', current: false, fingerprint: 'x' }),
-			run('a-702', { experiment: 'a', evalName: '702' }),
-			run('b-now', { experiment: 'b' }),
-			run('a-701', { experiment: 'a' }),
-		]);
-		expect(ordered.map((entry) => entry.members[0]?.name)).toEqual([
+		const ordered = groupComparableRuns(
+			[
+				run('b-old', {
+					experiment: 'b',
+					current: false,
+					measurement: measurement({ pin: 'repo@v1' }),
+				}),
+				run('a-702', { experiment: 'a', evalName: '702' }),
+				run('b-now', { experiment: 'b' }),
+				run('a-701', { experiment: 'a' }),
+			],
+			(item) => item.comparability,
+		);
+		expect(ordered.map((group) => group.members[0]?.name)).toEqual([
 			'a-701',
 			'a-702',
 			'b-now',

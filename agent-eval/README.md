@@ -253,15 +253,29 @@ Once runs have been captured, the agentic reference post-analysis computes
 metrics for a control case and Storybook cases. This happens in
 `scripts/analyze-results.ts`, via `pnpm results:analyze`.
 
-Its tables cover one comparable set each — every stored run of one case, one
-eval and one configuration, however many result directories they were collected
-in, since a plan tops a cell up in as many invocations as it takes. What counts
-as comparable is decided exactly as `pnpm eval:plan` decides what it can reuse
-(`lib/agentic-reference/comparability.ts`), so runs collected as one sample are
-analysed as one. Runs whose fixture or case config has since changed are kept in
-a group of their own, headed `superseded config`, rather than averaged into the
-sample being collected today. Each result directory's own `summary.json` still
-describes only the runs beside it.
+Its tables cover one comparable set each — every stored run measuring the same
+thing, however many result directories they were collected in, since a plan tops
+a cell up in as many invocations as it takes.
+
+What a run measured is read from the run's own artifacts
+(`lib/agentic-reference/identity.ts`): the external-repo pin, the design-system
+MCP served, the model, whether the case rewrote the prompt, and a digest of the
+fixture's `PROMPT.md` and `EVAL.ts`. The harness's own fingerprint is not used —
+it hashes the sample size and the whole fixture, so two collections of one cell
+never match and an unrelated fixture edit invalidates everything.
+
+Runs measuring something their cell no longer measures are kept in a group of
+their own rather than averaged into the sample being collected today, and are
+not printed unless `--superseded` is passed. With it, each such group says which
+part of its measurement moved, e.g. `pin: yannbf/mealdrop@droppy-v2 →
+yannbf/mealdrop@droppy-70pc`.
+
+Where two external-repo pins name the same upstream tree — a re-tag, say — list
+them in `BUNDLED_PINS` (`lib/agentic-reference/identity.ts`) and their runs are
+aggregated as one sample.
+
+Each result directory's own `summary.json` still describes only the runs beside
+it.
 
 Once all metrics have been computed, a separate script compares them for
 statistical significance between experiments. The command for that is
@@ -288,8 +302,8 @@ These options take comma-separated values. Each value can be a full name, or a g
 The same options drive both `pnpm eval:agentic-ref:dry` and `pnpm results:analyze`,
 env fallbacks included — so one exported selection narrows a run and the analysis
 that follows it alike. `results:analyze` adds `--since <ISO date>`, `--latest`,
-`--recompute` and the `--general`/`--complexity`/`--coverage` table flags, each
-with the same `AGENTIC_REF_` fallback.
+`--recompute`, `--superseded` and the `--general`/`--complexity`/`--coverage`
+table flags, each with the same `AGENTIC_REF_` fallback.
 
 Fallbacks key off the canonical flag name, never an alternative one:
 `--recompute` reads `AGENTIC_REF_RECOMPUTE`, and its `--force` spelling stays

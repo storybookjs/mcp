@@ -261,7 +261,13 @@ function coverageOf(row: Record<string, unknown>): DsCoverage | null {
 
 /** Experiment names share a long prefix; the tables read better without it. */
 function shortExperiment(value: unknown): string {
-	return String(value).replace(/^agentic-ref-/, '');
+	return String(value)
+		.replace(/^agentic-ref-cc-/, '')
+		.replace(/-opus-[^-]+$/, '');
+}
+
+function shortCase(value: unknown): string {
+	return String(value).replace(/(-[^\d]+)+$/, '');
 }
 
 /** A stored share (0.0845) as a percentage for display. */
@@ -428,33 +434,8 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 }
 
 /**
- * Called with the runs of one comparable set — every stored run of one arm, one
- * eval and one configuration, however many result directories they arrived in —
- * so the experiment::eval grouping below collapses to one row: that arm's
- * averages over its whole sample. The runner collects those rows into
- * results/analysis-summary.json, and folds each result directory separately
- * (with `quiet`) for the summary.json that sits in it.
- *
- * Runs of one arm no longer share a result directory, so a row is labelled with
- * the minute it was collected and its repetition number rather than with the
- * repetition number alone.
- *
- * Prints up to six tables, in three selectable families: per-run vitals and the
- * grouped summary (`general`), then — when any run carries a baseline delta —
- * a per-run and a grouped complexity table, and — when any run measured DS
- * coverage — a per-run and a grouped coverage table. Each family gets tables of
- * its own because each is many measures wide: folded into the vitals they would
- * drown them, and an eval without a baseline or without declared DS packages
- * has nothing to put there at all.
- *
- * `options` narrows that to the families the runner asked for; omitting it
- * prints every family that has data. What is returned never varies with it.
- *
- * The console view and the returned rows are deliberately different shapes —
- * the tables flatten costUsd to a number and render shares as percentages to
- * stay readable, while the stored rows keep {total, reported} so a later reader
- * can tell 0 from unpriced, and keep shares as the fractions they were measured
- * as.
+ * Called with the runs of one comparable set (every run of the same experiment,
+ * eval and configuration, however many result directories they arrived in).
  */
 export function summarize(
 	analyses: Array<Record<string, unknown>>,
@@ -466,18 +447,10 @@ export function summarize(
 		return summary;
 	}
 
-	// The arm column earns its width only where the rows hold more than one arm.
-	// A single-arm set is named by the heading the runner printed above it, and
-	// repeating that name in every row costs a column the numbers could have had.
-	const manyArms = new Set(analyses.map((row) => String(row.experiment))).size > 1;
-	const arm = (row: Record<string, unknown>): Record<string, unknown> =>
-		manyArms ? { experiment: shortExperiment(row.experiment) } : {};
-
 	if (options.general) {
 		printTable(
 			analyses.map((row) => ({
 				run: runLabel(row),
-				...arm(row),
 				status: row.status,
 				seconds: (row.speed as { durationSeconds?: number } | null)?.durationSeconds ?? null,
 				turns: (row.speed as { turns?: number } | null)?.turns ?? null,
@@ -493,6 +466,7 @@ export function summarize(
 		printTable(
 			summary.map((group) => ({
 				experiment: shortExperiment(group.experiment),
+				case: shortCase(group.eval),
 				fixtureRef:
 					(group.fixtureRefs as string[]).length === 1
 						? (group.fixtureRefs as string[])[0]
@@ -500,10 +474,10 @@ export function summarize(
 				runs: group.runs,
 				passed: group.passed,
 				costUsd: (group.costUsd as { total: number | null }).total,
-				secondsMean: (group.durationSeconds as { mean: number | null }).mean,
-				docsMean: (group.docCalls as { mean: number | null }).mean,
-				exploreMean: (group.explorationCalls as { mean: number | null }).mean,
-				slocMean: (group.slocAdded as { mean: number | null }).mean,
+				'μ seconds': (group.durationSeconds as { mean: number | null }).mean,
+				'μ docs': (group.docCalls as { mean: number | null }).mean,
+				'μ explore': (group.explorationCalls as { mean: number | null }).mean,
+				'μ sloc': (group.slocAdded as { mean: number | null }).mean,
 			})),
 		);
 	}
@@ -520,7 +494,6 @@ export function summarize(
 				const complexity = deltaOf(row).complexity ?? {};
 				return {
 					run: runLabel(row),
-					...arm(row),
 					slocNet: deltaOf(row).diff?.sloc?.net ?? null,
 					cyclo: complexity.cyclomatic?.delta ?? null,
 					cog: complexity.cognitive?.delta ?? null,
@@ -538,14 +511,15 @@ export function summarize(
 		printTable(
 			summary.map((group) => ({
 				experiment: shortExperiment(group.experiment),
-				cycloMean: (group.cyclomaticDelta as { mean: number | null }).mean,
-				cogMean: (group.cognitiveDelta as { mean: number | null }).mean,
-				jsxCycloMean: (group.jsxCyclomaticDelta as { mean: number | null }).mean,
-				jsxCogMean: (group.jsxCognitiveDelta as { mean: number | null }).mean,
-				jsxLenMean: (group.jsxLengthDelta as { mean: number | null }).mean,
-				jsxBindMean: (group.jsxBindingsDelta as { mean: number | null }).mean,
-				jsxDepthMean: (group.jsxDepthDelta as { mean: number | null }).mean,
-				densityMean: (group.densityPerSloc as { mean: number | null }).mean,
+				case: shortCase(group.eval),
+				'μ cyclo': (group.cyclomaticDelta as { mean: number | null }).mean,
+				'μ cog': (group.cognitiveDelta as { mean: number | null }).mean,
+				'μ jsxCyclo': (group.jsxCyclomaticDelta as { mean: number | null }).mean,
+				'μ jsxCog': (group.jsxCognitiveDelta as { mean: number | null }).mean,
+				'μ jsxLen': (group.jsxLengthDelta as { mean: number | null }).mean,
+				'μ jsxBind': (group.jsxBindingsDelta as { mean: number | null }).mean,
+				'μ jsxDepth': (group.jsxDepthDelta as { mean: number | null }).mean,
+				'μ density': (group.densityPerSloc as { mean: number | null }).mean,
 				parseFailRuns: (group.parseFailures as { runs: number }).runs,
 			})),
 		);
@@ -565,7 +539,6 @@ export function summarize(
 				const delta = deltaOf(row).coverageDelta ?? null;
 				return {
 					run: runLabel(row),
-					...arm(row),
 					nodes: coverage?.nodes.all ?? null,
 					dsNodes: coverage?.nodes.ds ?? null,
 					compNodes: coverage?.nodes.component ?? null,
@@ -582,14 +555,15 @@ export function summarize(
 		printTable(
 			summary.map((group) => ({
 				experiment: shortExperiment(group.experiment),
-				dsNodesMean: (group.dsNodes as { mean: number | null }).mean,
-				compNodesMean: (group.componentNodes as { mean: number | null }).mean,
-				shareAllMean: percent((group.dsShareOfAllNodes as { mean: number | null }).mean),
-				shareCompMean: percent((group.dsShareOfComponentNodes as { mean: number | null }).mean),
-				unresMean: (group.unresolvedNodes as { mean: number | null }).mean,
-				dsNodesΔMean: (group.dsNodesDelta as { mean: number | null }).mean,
-				shareAllΔMean: percentDelta((group.dsShareOfAllNodesDelta as { mean: number | null }).mean),
-				shareCompΔMean: percentDelta(
+				case: shortCase(group.eval),
+				'μ dsNodes': (group.dsNodes as { mean: number | null }).mean,
+				'μ compNodes': (group.componentNodes as { mean: number | null }).mean,
+				'μ shareAll': percent((group.dsShareOfAllNodes as { mean: number | null }).mean),
+				'μ shareComp': percent((group.dsShareOfComponentNodes as { mean: number | null }).mean),
+				'μ unres': (group.unresolvedNodes as { mean: number | null }).mean,
+				'μ dsNodesΔ': (group.dsNodesDelta as { mean: number | null }).mean,
+				'μ shareAllΔ': percentDelta((group.dsShareOfAllNodesDelta as { mean: number | null }).mean),
+				'μ shareCompΔ': percentDelta(
 					(group.dsShareOfComponentNodesDelta as { mean: number | null }).mean,
 				),
 			})),

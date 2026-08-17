@@ -45,15 +45,13 @@ function plan(overrides: Partial<RunPlan> = {}): RunPlan {
 	};
 }
 
-const CURRENT = 'fingerprint-runs-10';
-const ACCEPTABLE = new Set([CURRENT, 'fingerprint-runs-4']);
 const CELL: PlanCell = { experiment: 'arm', evalName: '701-new-ui-flow' };
 
 function sample(overrides: Partial<StoredSample> = {}): StoredSample {
 	return {
 		dir: '2026-08-15T13-20-41.492Z',
 		at: new Date('2026-08-15T13:20:41.492Z'),
-		fingerprint: CURRENT,
+		current: true,
 		runs: 10,
 		...overrides,
 	};
@@ -151,39 +149,29 @@ describe('the reuse cutoff', () => {
 describe('judgeSample', () => {
 	const SINCE = new Date('2026-08-14T00:00:00Z');
 
-	it('counts a sample carrying the current fingerprint', () => {
-		expect(judgeSample(sample(), ACCEPTABLE, null)).toBe('qualifying');
+	it('counts a sample measuring what its cell measures today', () => {
+		expect(judgeSample(sample(), null)).toBe('qualifying');
 	});
 
-	// runs is hashed into the fingerprint, so a top-up carries a different one.
-	it('counts a top-up collected at a smaller sample size', () => {
-		expect(
-			judgeSample(sample({ fingerprint: 'fingerprint-runs-4', runs: 4 }), ACCEPTABLE, null),
-		).toBe('qualifying');
-	});
-
-	it('discounts a sample whose fixture or config has moved on', () => {
-		expect(judgeSample(sample({ fingerprint: 'stale-fingerprint' }), ACCEPTABLE, null)).toBe(
-			'superseded',
-		);
-		expect(judgeSample(sample({ fingerprint: null }), ACCEPTABLE, null)).toBe('superseded');
+	it('discounts a sample whose measurement has been replaced', () => {
+		expect(judgeSample(sample({ current: false }), null)).toBe('superseded');
 	});
 
 	it('discounts a qualifying sample collected before the cutoff', () => {
-		expect(judgeSample(sample({ at: new Date('2026-08-13T23:59:59Z') }), ACCEPTABLE, SINCE)).toBe(
+		expect(judgeSample(sample({ at: new Date('2026-08-13T23:59:59Z') }), SINCE)).toBe(
 			'predates-cutoff',
 		);
-		expect(judgeSample(sample({ at: SINCE }), ACCEPTABLE, SINCE)).toBe('qualifying');
+		expect(judgeSample(sample({ at: SINCE }), SINCE)).toBe('qualifying');
 	});
 
 	it('discounts an undatable sample only when a cutoff is set', () => {
-		expect(judgeSample(sample({ at: null }), ACCEPTABLE, SINCE)).toBe('undatable');
-		expect(judgeSample(sample({ at: null }), ACCEPTABLE, null)).toBe('qualifying');
+		expect(judgeSample(sample({ at: null }), SINCE)).toBe('undatable');
+		expect(judgeSample(sample({ at: null }), null)).toBe('qualifying');
 	});
 });
 
 describe('planCell', () => {
-	const options = { target: 10, acceptable: ACCEPTABLE, since: null, force: false };
+	const options = { target: 10, since: null, force: false };
 
 	it('asks only for the runs a cell is missing', () => {
 		const planned = planCell(CELL, [sample({ runs: 6 })], options);
@@ -194,7 +182,7 @@ describe('planCell', () => {
 	it('adds up samples spread across result directories', () => {
 		const planned = planCell(
 			CELL,
-			[sample({ runs: 6 }), sample({ dir: 'later', fingerprint: 'fingerprint-runs-4', runs: 4 })],
+			[sample({ runs: 6 }), sample({ dir: 'later', runs: 4 })],
 			options,
 		);
 
@@ -209,11 +197,10 @@ describe('planCell', () => {
 	});
 
 	it('counts nothing when every sample is discounted, and says why', () => {
-		const planned = planCell(
-			CELL,
-			[sample({ fingerprint: 'stale-fingerprint', runs: 10 }), sample({ runs: 3 })],
-			{ ...options, since: new Date('2026-08-20T00:00:00Z') },
-		);
+		const planned = planCell(CELL, [sample({ current: false, runs: 10 }), sample({ runs: 3 })], {
+			...options,
+			since: new Date('2026-08-20T00:00:00Z'),
+		});
 
 		expect(planned).toMatchObject({ qualifying: 0, deficit: 10 });
 		expect(planned.discounted).toEqual({ superseded: 10, 'predates-cutoff': 3, undatable: 0 });
@@ -231,9 +218,9 @@ describe('planCell', () => {
 			'6/10 runs already collected',
 		);
 		expect(explainDeficit(planCell(CELL, [], options))).toBe('no qualifying runs');
-		expect(
-			explainDeficit(planCell(CELL, [sample({ fingerprint: 'stale-fingerprint' })], options)),
-		).toBe('no qualifying runs (discounting 10 superseded)');
+		expect(explainDeficit(planCell(CELL, [sample({ current: false })], options))).toBe(
+			'no qualifying runs (discounting 10 superseded)',
+		);
 	});
 });
 

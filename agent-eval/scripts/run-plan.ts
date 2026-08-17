@@ -30,15 +30,12 @@
 //
 // WHAT IT COLLECTS. The plan counts the qualifying runs each cell already has
 // and asks only for the difference, so a cell holding 6 of its 10 collects 4.
-// A run qualifies when its stored fingerprint is the current one for that
-// fixture and experiment config — at any sample size, since `runs` is hashed
-// into the fingerprint and a top-up is otherwise unrecognisable — and when it
-// was saved at or after the plan's cutoff. That judgement lives in
+// A run qualifies when it measures what its cell measures today and was saved
+// at or after the plan's cutoff. That judgement lives in
 // lib/agentic-reference/comparability.ts, shared with the offline analyzer so
 // that runs collected as one sample are also analysed as one. It takes the
-// reuse decision away
-// from the harness's own cache, which is all-or-nothing and cannot express a
-// partial sample, so every invocation runs with --force.
+// reuse decision away from the harness's own cache, which is all-or-nothing and
+// cannot express a partial sample, so every invocation runs with --force.
 //
 // HOW A BATCH IS JUDGED. Not by exit code: `run-all` exits 1 whenever any eval
 // has a 0% pass rate, which for a control arm is the measurement, not a fault.
@@ -57,16 +54,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { AGENTIC_REF_CASES, AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
 import { countCollectedRuns } from '../lib/agentic-reference/collected-runs.ts';
-import {
-	acceptableFingerprints,
-	parseResultTimestamp,
-	readStoredFingerprint,
-} from '../lib/agentic-reference/comparability.ts';
+import { EXPERIMENT_NAME_PREFIX } from '../lib/agentic-reference/constants.ts';
+import { isCurrentSample, parseResultTimestamp } from '../lib/agentic-reference/comparability.ts';
 import { selectionFlags } from '../lib/agentic-reference/selection.ts';
 import {
 	type CellOutcome,
 	type CellPlan,
-	EXPERIMENT_NAME_PREFIX,
 	type PlanBatch,
 	type ResolvedRunPlan,
 	type ResourceSignal,
@@ -176,7 +169,7 @@ function storedSamples(experiment: string, evalName: string): StoredSample[] {
 		samples.push({
 			dir,
 			at: parseResultTimestamp(basename(dir)),
-			fingerprint: readStoredFingerprint(evalDir),
+			current: isCurrentSample(evalDir, { experiment, evalName }),
 			runs,
 		});
 	}
@@ -186,27 +179,16 @@ function storedSamples(experiment: string, evalName: string): StoredSample[] {
 // --- what every cell still needs -------------------------------------------
 
 /** Works out what every cell of the plan still needs. */
-async function planCells(resolved: ResolvedRunPlan): Promise<CellPlan[]> {
+function planCells(resolved: ResolvedRunPlan): CellPlan[] {
 	const { runs, since, force } = resolved.plan;
-	const planned: CellPlan[] = [];
 
-	for (const cell of resolved.cells) {
-		// Skipped under force: the answer is the full target either way, and
-		// loading every stub to hash fixtures would be pure latency.
-		const acceptable = force
-			? new Set<string>()
-			: await acceptableFingerprints(cell.experiment, cell.evalName, runs);
-		planned.push(
-			planCell(cell, force ? [] : storedSamples(cell.experiment, cell.evalName), {
-				target: runs,
-				acceptable,
-				since,
-				force,
-			}),
-		);
-	}
-
-	return planned;
+	return resolved.cells.map((cell) =>
+		planCell(cell, force ? [] : storedSamples(cell.experiment, cell.evalName), {
+			target: runs,
+			since,
+			force,
+		}),
+	);
 }
 
 // --- driving the runner ----------------------------------------------------
@@ -520,7 +502,7 @@ async function main(): Promise<void> {
 	// before any counting — the runner would otherwise be the first to build them.
 	generateAgenticRefWorkdir();
 
-	const cells = await planCells(resolved);
+	const cells = planCells(resolved);
 	const batches = planBatches(cells, resolved.evals, resolved.plan.parallelMax);
 
 	console.log(`Config: ${relative(AGENT_EVAL_ROOT, configPath)}`);

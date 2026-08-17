@@ -1,155 +1,21 @@
-// Which stored runs measure the same thing.
+// Which stored runs measure the same thing: the plan runner reuses them, the
+// analyzer averages them.
 //
-// Both the plan runner and the offline analyzer have to answer one question:
-// are these saved runs the same measurement as those saved runs? A wrong
-// answer costs money and/or truthfulness.
-//
-// We use a hash of the eval fixture and the config fields that affect results,
-// which the harness writes into each eval directory's summary.json.
-//
-// The complication is that `runs` is one of the hashed fields, so a 4-run
-// top-up of an unchanged cell saves under a *different* fingerprint than a
-// 10-run collection of it, even though the two are one sample. Hence
-// acceptableFingerprints: the current configuration hashed at every sample size
-// a collection could plausibly have asked for, so a sample matches at whatever
-// depth it was taken.
-//
-// A sample matching none of those was collected under a configuration the
-// experiment no longer has — a fixture edit, a model change, a different
-// timeout. It is kept apart rather than dropped: it is still a measurement,
-// just not of what runs today.
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+// Two runs are comparable when their measurements match (identity.ts). A run
+// whose measurement is not the one its cell makes today is superseded — kept
+// apart rather than dropped, since it is still a measurement.
+import { existsSync } from 'node:fs';
 
+import { countCollectedRuns, readRunOutcomes } from './collected-runs.ts';
 import {
-	type ModelTier,
-	type ResolvedExperimentConfig,
-	computeFingerprint,
-	loadConfig,
-} from '@vercel/agent-eval';
-
-// The config shape computeFingerprint wants — one model picked out of a
-// resolved config. The package does not export the type by name.
-type RunnableConfig = Parameters<typeof computeFingerprint>[1];
-
-const AGENT_EVAL_ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const EVALS_DIR = join(AGENT_EVAL_ROOT, 'evals');
-
-/** Where an experiment's definition lives, or null when it has none on disk. */
-function experimentDefinition(experiment: string): string | null {
-	// Agentic-reference arms are generated into .agentic-ref/ rather than
-	// committed under experiments/, and are otherwise loaded identically.
-	return (
-		[
-			join(AGENT_EVAL_ROOT, 'experiments', `${experiment}.ts`),
-			join(AGENT_EVAL_ROOT, '.agentic-ref', 'experiments', `${experiment}.ts`),
-		].find(existsSync) ?? null
-	);
-}
-
-// The definition's own config, loaded exactly as the CLI loads it. Cached: jiti
-// has to compile the case registry on the first load of each stub.
-const configCache = new Map<string, Promise<ResolvedExperimentConfig> | null>();
-
-function experimentConfig(experiment: string): Promise<ResolvedExperimentConfig> | null {
-	const cached = configCache.get(experiment);
-	if (cached !== undefined) {
-		return cached;
-	}
-	const definition = experimentDefinition(experiment);
-	const loaded = definition === null ? null : loadConfig(definition);
-	configCache.set(experiment, loaded);
-	return loaded;
-}
-
-/**
- * The fingerprints a stored run of this cell could legitimately carry.
- *
- * One per sample size up to `target`, because computeFingerprint hashes `runs`
- * along with the fixture and the config: a 4-run top-up of an unchanged cell is
- * the same measurement as a 10-run collection, and a set built from a single
- * size would refuse to count it. Multi-model experiments contribute one
- * fingerprint per model, matching how the CLI fingerprints each in turn.
- *
- * An experiment with no definition on disk yields the empty set: results outlive
- * the arms that produced them, and a renamed or deleted arm has no current
- * configuration for anything to match.
- */
-export async function acceptableFingerprints(
-	experiment: string,
-	evalName: string,
-	target: number,
-): Promise<Set<string>> {
-	const fingerprints = new Set<string>();
-
-	// The fixture is hashed file by file, so an eval since renamed or deleted has
-	// nothing to hash. Its stored runs are still measurable — the analysis reads
-	// the tree they left behind, not the fixture — and this is what keeps them
-	// out of the current generation rather than failing the whole pass.
-	const fixture = join(EVALS_DIR, evalName);
-	if (!existsSync(fixture)) {
-		return fingerprints;
-	}
-
-	const config = await experimentConfig(experiment);
-	if (config === null) {
-		return fingerprints;
-	}
-
-	const models: ModelTier[] = Array.isArray(config.model) ? config.model : [config.model];
-
-	// Shaped exactly as the CLI shapes it before fingerprinting: the resolved
-	// config with one model picked out and the sample size applied.
-	for (const model of models) {
-		for (let runs = 1; runs <= target; runs++) {
-			const runnable: RunnableConfig = { ...config, model, runs };
-			fingerprints.add(computeFingerprint(fixture, runnable));
-		}
-	}
-	return fingerprints;
-}
-
-/**
- * We need to compute comparability hashes for every possible value of `runs`.
- * So we do just that assuming a max bound: the highest value we think we've
- * ever used for `--runs`.
- */
-export const AGENTIC_REF_HIGHEST_COUNT_EVER_USED = 20;
-
-const currentCache = new Map<string, { target: number; fingerprints: Set<string> }>();
-
-/**
- * Whether a stored sample is one the experiment's configuration produces today.
- *
- * `runsOnDisk` raises the sizes tried where a cell holds more runs than
- * {@link AGENTIC_REF_HIGHEST_COUNT_EVER_USED}; below that it changes nothing.
- */
-export async function isCurrentSample(sample: {
-	experiment: string;
-	evalName: string;
-	fingerprint: string | null;
-	runsOnDisk: number;
-}): Promise<boolean> {
-	if (sample.fingerprint === null) {
-		return false;
-	}
-
-	const key = `${sample.experiment}~~~${sample.evalName}`;
-	const target = Math.max(sample.runsOnDisk, AGENTIC_REF_HIGHEST_COUNT_EVER_USED);
-	const cached = currentCache.get(key);
-	if (cached === undefined || cached.target < target) {
-		currentCache.set(key, {
-			target,
-			fingerprints: await acceptableFingerprints(sample.experiment, sample.evalName, target),
-		});
-	}
-	return currentCache.get(key)!.fingerprints.has(sample.fingerprint);
-}
+	type Measurement,
+	currentMeasurement,
+	measurementKey,
+	readRunMeasurement,
+} from './identity.ts';
 
 // Result directories are the run's ISO start time with the colons swapped out,
-// e.g. 2026-08-15T13-20-41.492Z — so the name is the timestamp, and dating a
-// saved sample needs no file reads at all.
+// e.g. 2026-08-15T13-20-41.492Z.
 const RESULT_TIMESTAMP = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})([.,]\d+)?Z$/;
 
 /** The instant a result directory name stands for, or null if it is not one. */
@@ -163,15 +29,39 @@ export function parseResultTimestamp(dirName: string): Date | null {
 	return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-/** The fingerprint a saved eval directory records, or null when unreadable. */
-export function readStoredFingerprint(evalDir: string): string | null {
-	try {
-		const summary: unknown = JSON.parse(readFileSync(join(evalDir, 'summary.json'), 'utf8'));
-		const fingerprint = (summary as { fingerprint?: unknown }).fingerprint;
-		return typeof fingerprint === 'string' ? fingerprint : null;
-	} catch {
+/** The measurement an eval directory's runs share, or null when they record none. */
+export function readSampleMeasurement(
+	evalDir: string,
+	cell: { experiment: string; evalName: string },
+): Measurement | null {
+	if (!existsSync(evalDir)) {
 		return null;
 	}
+	for (const outcome of readRunOutcomes(evalDir)) {
+		const measurement = readRunMeasurement(outcome.dir, cell);
+		if (measurement !== null) {
+			return measurement;
+		}
+	}
+	return null;
+}
+
+/** Whether an eval directory holds what its cell measures today. */
+export function isCurrentSample(
+	evalDir: string,
+	cell: { experiment: string; evalName: string },
+): boolean {
+	const stored = readSampleMeasurement(evalDir, cell);
+	const current = currentMeasurement(cell.experiment, cell.evalName);
+	return stored !== null && current !== null && measurementKey(stored) === measurementKey(current);
+}
+
+/** Runs of one cell's current measurement, across every result directory. */
+export function countCurrentRuns(
+	evalDir: string,
+	cell: { experiment: string; evalName: string },
+): number {
+	return isCurrentSample(evalDir, cell) ? countCollectedRuns(evalDir) : 0;
 }
 
 // --- grouping --------------------------------------------------------------
@@ -182,9 +72,9 @@ export interface Comparability {
 	/** Model segment of the results path, empty for a single-model experiment. */
 	model: string;
 	evalName: string;
-	/** The fingerprint the run's eval directory stored, or null when unreadable. */
-	fingerprint: string | null;
-	/** Whether that fingerprint is one the experiment's configuration produces today. */
+	/** What the run measured, or null when it recorded nothing readable. */
+	measurement: Measurement | null;
+	/** Whether that is what its cell measures today. */
 	current: boolean;
 }
 
@@ -193,25 +83,17 @@ export interface ComparableGroup<T> {
 	experiment: string;
 	model: string;
 	evalName: string;
-	/** False when these runs were collected under a configuration since replaced. */
+	/** False when these runs were collected under a measurement since replaced. */
 	current: boolean;
-	/**
-	 * The fingerprint a superseded group's samples share, which is what tells two
-	 * replaced generations of one cell apart. Null for a current group, whose
-	 * samples differ by the size each was collected at.
-	 */
-	fingerprint: string | null;
+	measurement: Measurement | null;
 	members: T[];
 }
 
+const UNREADABLE = 'unreadable';
+
 /**
- * Collects runs into the sets that can be aggregated as one measurement.
- *
- * Current samples of a cell join up across result directories — which is the
- * whole point, since a plan tops a cell up in as many collections as it takes.
- * Superseded ones group by their own fingerprint instead, so each replaced
- * generation stays a measurement of its own rather than being averaged into the
- * one that replaced it.
+ * Collects runs into the sets that can be aggregated as one measurement, each
+ * replaced generation staying a set of its own. Ordered current-first per cell.
  */
 export function groupComparableRuns<T>(
 	items: readonly T[],
@@ -220,9 +102,9 @@ export function groupComparableRuns<T>(
 	const groups = new Map<string, ComparableGroup<T>>();
 
 	for (const item of items) {
-		const { experiment, model, evalName, fingerprint, current } = describe(item);
-		const generation = current ? '~~~current' : `~~~${fingerprint ?? 'unknown'}`;
-		const key = [experiment, model, evalName, generation].join('~~~');
+		const { experiment, model, evalName, measurement, current } = describe(item);
+		const generation = measurement === null ? UNREADABLE : measurementKey(measurement);
+		const key = [experiment, model, evalName, generation].join('\0');
 
 		const group = groups.get(key);
 		if (group === undefined) {
@@ -231,7 +113,7 @@ export function groupComparableRuns<T>(
 				model,
 				evalName,
 				current,
-				fingerprint: current ? null : fingerprint,
+				measurement,
 				members: [item],
 			});
 		} else {
@@ -247,6 +129,8 @@ export function groupComparableRuns<T>(
 			a.model.localeCompare(b.model) ||
 			a.evalName.localeCompare(b.evalName) ||
 			Number(b.current) - Number(a.current) ||
-			(a.fingerprint ?? '').localeCompare(b.fingerprint ?? ''),
+			(a.measurement === null ? '' : measurementKey(a.measurement)).localeCompare(
+				b.measurement === null ? '' : measurementKey(b.measurement),
+			),
 	);
 }

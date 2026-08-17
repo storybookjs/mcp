@@ -79,7 +79,7 @@ interface AgenticRefExperimentOptions {
 type AgentConfig = Pick<ExperimentConfig, 'agent' | 'model'> &
 	Partial<Pick<ExperimentConfig, 'agentOptions'>>;
 
-const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
+export const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	'claude-code': {
 		agent: 'vercel-ai-gateway/claude-code',
 		model: 'opus',

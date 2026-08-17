@@ -16,27 +16,17 @@
 // sandboxes caps the blast radius at one batch, because each batch is its own
 // invocation with its own saveResults.
 //
-// WHY THE PLAN COUNTS RUNS ITSELF rather than leaning on the harness's cache.
-// That cache is all-or-nothing: a cell either matches its fingerprint and is
-// skipped entirely, or does not and is collected in full. It cannot express
-// "this cell has 6 of its 10, collect 4 more". Worse, `runs` is one of the
-// fields the fingerprint hashes, so a 4-run top-up saves under a *different*
-// fingerprint than a 10-run collection — meaning the cache could never
-// recognise its own top-ups either.
-//
-// So the plan counts qualifying runs on disk and asks for the difference. A
-// stored sample qualifies when its fingerprint is the current one at *some*
-// sample size (the same fixture and config, collected in a run of any depth)
-// and it was saved at or after the plan's cutoff. Everything else — a
-// superseded fixture, a run from before the cutoff — counts for nothing.
+// WHY THE PLAN COUNTS RUNS ITSELF rather than leaning on the harness's cache:
+// that cache is all-or-nothing, and cannot express "this cell has 6 of its 10,
+// collect 4 more". The plan counts qualifying runs on disk and asks for the
+// difference. A run qualifies when it measures what its cell measures today
+// (lib/agentic-reference/comparability.ts) and was saved at or after the plan's
+// cutoff.
 //
 // This module is pure: it resolves selections, decides deficits, and cuts
-// batches. All the IO — computing fingerprints, reading the results tree,
-// spawning, reporting — lives in scripts/run-plan.ts.
+// batches. All the IO — reading the results tree, spawning, reporting — lives
+// in scripts/run-plan.ts.
 import { matchesAnySelector, resolveEvalSelection } from './selection.ts';
-
-/** The `agentic-ref-` prefix generated experiment stubs (and results dirs) carry. */
-export const EXPERIMENT_NAME_PREFIX = 'agentic-ref-';
 
 /**
  * A data-collection plan: which cells to sample, how deeply, and how much of
@@ -70,12 +60,9 @@ export interface RunPlan {
 	 * Reuse cutoff: an ISO date (`2026-08-16`) or datetime. Runs saved before it
 	 * do not count towards a cell's target.
 	 *
-	 * The fingerprint a stored run carries covers the fixture and the experiment
-	 * config, which is blind to everything else the run depends on — the design
-	 * system MCP package a branch resolves to, a template, the sandbox image, the
-	 * agent CLI. This is the knob for those: change the environment, set the
-	 * cutoff to the change date, and older runs stop counting while everything
-	 * since is kept.
+	 * For environment changes a measurement cannot see — a rebuilt MCP package at
+	 * the same branch, a new sandbox image, a new agent CLI. Set it to the change
+	 * date and older runs stop counting.
 	 */
 	since?: string;
 	/**
@@ -226,28 +213,17 @@ export interface StoredSample {
 	dir: string;
 	/** When it was collected, from the directory name. */
 	at: Date | null;
-	/** The fingerprint its summary.json records, or null when unreadable. */
-	fingerprint: string | null;
-	/** How many run directories it holds. */
+	/** Whether it measures what its cell measures today. */
+	current: boolean;
+	/** How many collected runs it holds. */
 	runs: number;
 }
 
 export type SampleVerdict = 'qualifying' | 'superseded' | 'predates-cutoff' | 'undatable';
 
-/**
- * Whether a stored sample counts towards its cell's target.
- *
- * `acceptable` holds the current fingerprint at every sample size the plan
- * could have used, because `runs` is hashed into it: a 4-run top-up of the same
- * fixture and config is the same measurement as a 10-run collection, and has to
- * count as one.
- */
-export function judgeSample(
-	sample: StoredSample,
-	acceptable: ReadonlySet<string>,
-	since: Date | null,
-): SampleVerdict {
-	if (sample.fingerprint === null || !acceptable.has(sample.fingerprint)) {
+/** Whether a stored sample counts towards its cell's target. */
+export function judgeSample(sample: StoredSample, since: Date | null): SampleVerdict {
+	if (!sample.current) {
 		return 'superseded';
 	}
 	if (since === null) {
@@ -280,14 +256,14 @@ export interface CellPlan extends PlanCell {
 export function planCell(
 	cell: PlanCell,
 	samples: readonly StoredSample[],
-	options: { target: number; acceptable: ReadonlySet<string>; since: Date | null; force: boolean },
+	options: { target: number; since: Date | null; force: boolean },
 ): CellPlan {
 	const discounted = { superseded: 0, 'predates-cutoff': 0, undatable: 0 };
 	let qualifying = 0;
 
 	if (!options.force) {
 		for (const sample of samples) {
-			const verdict = judgeSample(sample, options.acceptable, options.since);
+			const verdict = judgeSample(sample, options.since);
 			if (verdict === 'qualifying') {
 				qualifying += sample.runs;
 			} else {
