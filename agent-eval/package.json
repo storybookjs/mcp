@@ -13,6 +13,8 @@
 		"gen:agentic-ref": "node scripts/generate-agentic-ref-experiments.ts",
 		"eval:agentic-ref": "node scripts/run-agentic-ref.ts",
 		"eval:agentic-ref:dry": "node scripts/run-agentic-ref.ts --dry",
+		"eval:plan": "node scripts/run-plan.ts",
+		"eval:plan:dry": "node scripts/run-plan.ts --dry",
 		"playground": "agent-eval-playground --results-dir ./results --evals-dir ./evals",
 		"playground:build": "next build --webpack",
 		"playground:check-routes": "node ./scripts/check-playground-routes.mjs",

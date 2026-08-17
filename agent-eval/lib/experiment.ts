@@ -178,7 +178,7 @@ export const DEFAULT_EXPERIMENT_CONFIG = {
 	// The runner default of 600s is too tight for opus-high on the plugin
 	// path: passing runs have taken up to 458s (2026-07-03 CI runs).
 	timeout: 900,
-	sandbox: 'auto',
+	sandbox: 'docker',
 	copyFiles: 'all',
 	// Post-run script checks stay disabled: they fail on sandbox environment
 	// flakiness (installs, ports) more often than on agent mistakes, and the
