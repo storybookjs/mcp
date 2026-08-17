@@ -8,7 +8,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { matchesAnySelector } from '#lib/agentic-reference/selection';
+import { matchesAnySelector, type selectionFlags } from '#lib/agentic-reference/selection';
 
 export interface Run {
 	runDir: string;
@@ -25,6 +25,42 @@ export interface RunSelection {
 	evals: string[];
 	since: string | null;
 	latest: boolean;
+}
+
+/**
+ * The four selection flags, in the shared grammar, ready to be spread into
+ * whatever else a CLI declares of its own.
+ *
+ * Shared for the same reason findRuns and selectRuns are, and needed more: the
+ * two CLIs agreeing about what a run *is* buys nothing if they disagree about
+ * what --since selects. Declared once here, so a spelling can only be added to
+ * both at the same time.
+ *
+ * `flags` must be the same object the caller hands to `flags.parser`, because
+ * `switch` records the flag it built so `--latest=1` can be normalized.
+ */
+export function runSelectionOptions(flags: ReturnType<typeof selectionFlags>) {
+	return {
+		experiments: flags.experiments,
+		evals: flags.evals,
+		since: flags.text('since', 'Only runs stamped on or after this ISO date'),
+		latest: flags.switch('latest', 'Only the newest result directory per experiment'),
+	} as const;
+}
+
+/** What a parse of those flags selects. */
+export function toRunSelection(parsed: {
+	experiments: string[];
+	evals: string[];
+	since?: string | undefined;
+	latest?: boolean | undefined;
+}): RunSelection {
+	return {
+		experiments: parsed.experiments,
+		evals: parsed.evals,
+		since: parsed.since ?? null,
+		latest: parsed.latest === true,
+	};
 }
 
 export function findRuns(resultsDir: string): Run[] {

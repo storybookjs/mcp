@@ -65,7 +65,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
-import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
+import {
+	findRuns,
+	runSelectionOptions,
+	selectRuns,
+	toRunSelection,
+	type Run,
+	type RunSelection,
+} from '#lib/post-analysis/discovery';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
@@ -92,11 +99,7 @@ type TableSection = (typeof TABLE_SECTIONS)[number];
 // families push it off the bottom of a terminal.
 const DEFAULT_TABLES: TableSection[] = ['coverage'];
 
-interface PostAnalysisOptions {
-	experiments: string[];
-	evals: string[];
-	since: string | null;
-	latest: boolean;
+interface PostAnalysisOptions extends RunSelection {
 	recompute: boolean;
 	tables: SummarizeOptions;
 }
@@ -104,7 +107,8 @@ interface PostAnalysisOptions {
 // Same grammar as the runner (lib/agentic-reference/selection.ts): canonical
 // experiment/eval wording, case/flow accepted as aliases, singular and plural
 // interchangeable, lists by comma or repetition, and each flag falling back to
-// AGENTIC_REF_<FLAG>.
+// AGENTIC_REF_<FLAG>. The selection flags themselves come from discovery.ts, so
+// this CLI and judge:ds-misuse cannot drift on what a selection means.
 function parseOptions(argv: string[]): PostAnalysisOptions {
 	const flags = selectionFlags(process.env);
 	const parsed = flags
@@ -112,10 +116,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 			argv,
 			{ scriptName: 'results:analyze', usage: 'Usage: pnpm results:analyze [flags]' },
 			{
-				experiments: flags.experiments,
-				evals: flags.evals,
-				since: flags.text('since', 'Only runs stamped on or after this ISO date'),
-				latest: flags.switch('latest', 'Only the newest result directory per experiment'),
+				...runSelectionOptions(flags),
 				recompute: {
 					...flags.switch(
 						'recompute',
@@ -138,10 +139,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 	const chosen = sections.length === 0 ? DEFAULT_TABLES : sections;
 
 	return {
-		experiments: parsed.experiments,
-		evals: parsed.evals,
-		since: parsed.since ?? null,
-		latest: parsed.latest === true,
+		...toRunSelection(parsed),
 		recompute: parsed.recompute === true,
 		tables: {
 			general: chosen.includes('general'),
@@ -154,6 +152,25 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 
 function messageOf(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * The judge invocation covering exactly the runs this pass looked at.
+ *
+ * Every selection flag is carried, not just the ones that are easy to spell: the
+ * judge costs a model call per run, so a command that drops --since or --evals
+ * sends the operator off to judge runs they had deliberately excluded.
+ */
+function rejudgeCommand(selection: RunSelection): string {
+	const list = (flag: string, values: string[]) =>
+		values.length === 0 ? '' : ` --${flag}=${values.join(',')}`;
+	return (
+		'pnpm judge:ds-misuse' +
+		list('experiments', selection.experiments) +
+		list('evals', selection.evals) +
+		(selection.since === null ? '' : ` --since=${selection.since}`) +
+		(selection.latest ? ' --latest' : '')
+	);
 }
 
 // --- post-analysis loading ---
@@ -383,9 +400,7 @@ async function main() {
 		const reset = '\x1b[0m';
 		console.error(
 			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
-				'  Run: pnpm judge:ds-misuse' +
-				(options.experiments.length ? ` --experiments=${options.experiments.join(',')}` : '') +
-				(options.latest ? ' --latest' : ''),
+				`  Run: ${rejudgeCommand(options)}`,
 		);
 	}
 
