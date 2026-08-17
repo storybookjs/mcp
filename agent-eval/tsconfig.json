@@ -18,6 +18,7 @@
 		"evals/**/post-analysis.ts",
 		"evals/**/__analysis__/**/*.ts",
 		"lib/**/*.ts",
+		"plans/**/*.ts",
 		"scripts/**/*.ts",
 		"vitest.config.ts"
 	],
