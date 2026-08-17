@@ -4,7 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { findRuns, selectRuns } from './discovery.ts';
+import { selectionFlags } from '../agentic-reference/selection.ts';
+import { findRuns, runSelectionOptions, selectRuns, toRunSelection } from './discovery.ts';
 
 let root: string;
 
@@ -110,5 +111,57 @@ describe('selectRuns', () => {
 				latest: false,
 			}),
 		).toThrow(/parseable date/);
+	});
+});
+
+describe('runSelectionOptions', () => {
+	// The two CLIs differ only in the flags that are their own: results:analyze
+	// adds the table family switches, judge:ds-misuse adds nothing but --recompute.
+	// Anything selection-shaped has to come out the same, or one of them covers a
+	// set of runs the other does not — and the judge's set costs a model call each.
+	function parseAs(own: 'analyze' | 'judge', argv: string[]) {
+		const flags = selectionFlags({});
+		const parsed = flags
+			.parser(
+				argv,
+				{ scriptName: own, usage: '' },
+				{
+					...runSelectionOptions(flags),
+					recompute: flags.switch('recompute', ''),
+					...(own === 'analyze'
+						? { general: flags.switch('general', ''), coverage: flags.switch('coverage', '') }
+						: {}),
+				},
+			)
+			.parseSync();
+		return toRunSelection(parsed);
+	}
+
+	it('resolves the same selection for both CLIs from one argv', () => {
+		const argv = ['--experiments=a,b', '--evals=706', '--since=2026-08-01', '--latest'];
+		const expected = {
+			experiments: ['a', 'b'],
+			evals: ['706'],
+			since: '2026-08-01',
+			latest: true,
+		};
+		expect(parseAs('analyze', argv)).toEqual(expected);
+		expect(parseAs('judge', argv)).toEqual(expected);
+	});
+
+	it('accepts the aliases and the space-separated form on both', () => {
+		const argv = ['--case', 'a', '--flows', '703', '704'];
+		const expected = { experiments: ['a'], evals: ['703', '704'], since: null, latest: false };
+		expect(parseAs('analyze', argv)).toEqual(expected);
+		expect(parseAs('judge', argv)).toEqual(expected);
+	});
+
+	it('selects everything when no selection flag is passed', () => {
+		expect(parseAs('judge', [])).toEqual({
+			experiments: [],
+			evals: [],
+			since: null,
+			latest: false,
+		});
 	});
 });

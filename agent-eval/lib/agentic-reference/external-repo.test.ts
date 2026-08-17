@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { pinSlug, typecheckExternalRepo } from './external-repo.ts';
+import { pinOfResult, pinSlug, typecheckExternalRepo } from './external-repo.ts';
 
 const MALFORMED: Array<[string, unknown]> = [
 	['a space in the repo', { repo: 'a b', ref: 'x' }],
@@ -33,5 +33,23 @@ describe('pinSlug', () => {
 
 	it('leaves a sha pin untouched, so existing cache directories keep their names', () => {
 		expect(pinSlug({ repo: 'yannbf/mealdrop', ref: 'ce507b34' })).toBe('yannbf__mealdrop@ce507b34');
+	});
+});
+
+describe('pinOfResult', () => {
+	it('reads the pin a run recorded under analysis.externalRepo', () => {
+		const result = { analysis: { externalRepo: { repo: 'a/b', ref: 'deadbeef' } } };
+		expect(pinOfResult(result)).toEqual({ repo: 'a/b', ref: 'deadbeef' });
+	});
+
+	// Both CLIs walk historical runs, and one that predates the marker — or whose
+	// result.json never parsed — must be skipped rather than abort the pass.
+	it.each([
+		['a result with no analysis', { status: 'passed' }],
+		['an analysis with no marker', { analysis: {} }],
+		['a malformed marker', { analysis: { externalRepo: { repo: 'a b', ref: 'x' } } }],
+		['an unreadable result', null],
+	])('returns null for %s', (_label, result) => {
+		expect(pinOfResult(result)).toBeNull();
 	});
 });

@@ -18,12 +18,31 @@
 // plain --env-file is fatal when the file is absent, which would break every
 // invocation by anyone who exports the key instead.
 //
-// Usage: pnpm judge:ds-misuse [--experiment=<name>] [--since=<ISO date>] [--latest] [--recompute]
+// Usage: pnpm judge:ds-misuse [--experiments <list>] [--evals <list>] [--since <ISO date>]
+//                             [--latest] [--recompute]
+//
+//   --experiments <list>  only runs under results/<name>/, by name or glob
+//   --evals <list>        only runs of these evals, by name, number (706) or glob
+//   --since <ISO date>    only runs whose result directory is stamped on or after
+//   --latest              only the newest result directory per experiment
+//   --recompute           re-judge runs that already carry a usable judgement
+//                         (alias: --force) — this is the flag that spends money
+//
+// Selection follows the shared grammar in lib/agentic-reference/selection.ts, and
+// the flag shapes themselves come from lib/post-analysis/discovery.ts, so this
+// CLI and results:analyze cannot drift on what a selection means: --cases and
+// --flows are aliases, singular and plural spellings are the same flag, lists
+// take commas or repetition, and --flag=value works as well as --flag value.
+//
+// Every flag also falls back to AGENTIC_REF_<FLAG>, which for --recompute means
+// an exported AGENTIC_REF_RECOMPUTE re-judges — and therefore re-spends — on
+// every invocation. Its --force spelling stays command-line only, matching
+// results:analyze.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { prepareRef, typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
+import { pinOfResult, prepareRef } from '#lib/agentic-reference/external-repo';
 import { dsPackagesForPin } from '#lib/agentic-reference/metrics/coverage';
 import { dsDocsRefLabel } from '#lib/agentic-reference/metrics/ds-misuse/ds-docs';
 import {
@@ -33,60 +52,69 @@ import {
 	writeMisuseReport,
 } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { assertApiKey } from '#lib/agentic-reference/metrics/ds-misuse/judge';
-import { postAnalysis } from '#lib/agentic-reference/post-analysis';
-import { readNodeSidecar } from '#lib/post-analysis/baseline';
-import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
+import { selectionFlags } from '#lib/agentic-reference/selection';
+import { readDsCoverageNodeList } from '#lib/post-analysis/baseline';
+import {
+	findRuns,
+	runSelectionOptions,
+	selectRuns,
+	toRunSelection,
+	type Run,
+	type RunSelection,
+} from '#lib/post-analysis/discovery';
+import { createPostAnalysisLoader } from '#lib/post-analysis/hooks';
 import { readJson } from '#lib/utils/files';
-import { isRecord } from '#lib/utils/type';
+import { messageOf } from '#lib/utils/error';
+
+import type { PostAnalysis } from '#lib/post-analysis/types';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(ROOT, 'results');
 const BASELINES_DIR = join(ROOT, 'baselines');
 const REF_CACHE_DIR = join(ROOT, '.eval-cache/refs');
 
-interface Options {
-	experiment: string | null;
-	since: string | null;
-	latest: boolean;
+// Which module measured a run is the experiment's call, exactly as it is in
+// results:analyze — and it decides both what this costs and whether it is right.
+// A run whose experiment names no module is not ours to judge, and the node-list
+// and staleness checks below are keyed on *that* module's metricsVersion rather
+// than on whichever one happened to be imported at the top of this file.
+const loadPostAnalysis = createPostAnalysisLoader([
+	join(ROOT, 'experiments'),
+	join(ROOT, '.agentic-ref', 'experiments'),
+]);
+
+interface Options extends RunSelection {
 	recompute: boolean;
 }
 
-function parseArgs(argv: string[]): Options {
-	const options: Options = { experiment: null, since: null, latest: false, recompute: false };
-	for (const arg of argv) {
-		const [flag, value] = arg.split('=');
-		if (flag === '--latest') options.latest = true;
-		else if (flag === '--recompute') options.recompute = true;
-		else if (flag === '--experiment' && value) options.experiment = value;
-		else if (flag === '--since' && value) options.since = value;
-		else
-			throw new Error(
-				`Unknown argument "${arg}". See the usage comment in scripts/judge-ds-misuse.ts.`,
-			);
-	}
-	return options;
-}
+function parseOptions(argv: string[]): Options {
+	const flags = selectionFlags(process.env);
+	const parsed = flags
+		.parser(
+			argv,
+			{ scriptName: 'judge:ds-misuse', usage: 'Usage: pnpm judge:ds-misuse [flags]' },
+			{
+				...runSelectionOptions(flags),
+				recompute: {
+					...flags.switch('recompute', 'Re-judge runs that already carry a usable judgement'),
+					alias: ['force'],
+				},
+			},
+		)
+		.parseSync();
 
-/** The pin the run itself recorded — never today's fixture pin. */
-function pinOf(runDir: string) {
-	const result = readJson(join(runDir, 'result.json'));
-	const analysis = isRecord(result) && isRecord(result.analysis) ? result.analysis : {};
-	try {
-		return typecheckExternalRepo(analysis.externalRepo);
-	} catch {
-		return null;
-	}
-}
-
-function messageOf(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
+	return { ...toRunSelection(parsed), recompute: parsed.recompute === true };
 }
 
 /** Judge one run, or explain why it cannot be judged. */
-async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused' | 'skipped'> {
+async function judgeOne(
+	run: Run,
+	postAnalysis: PostAnalysis,
+	options: Options,
+): Promise<'judged' | 'reused' | 'skipped'> {
 	const label = `${run.experiment}/${run.evalName}/run-${run.run}`;
 
-	const pin = pinOf(run.runDir);
+	const pin = pinOfResult(readJson(join(run.runDir, 'result.json')));
 	if (pin === null) {
 		console.error(`${label}: recorded no usable evals.externalRepo pin, so it has no baseline.`);
 		return 'skipped';
@@ -113,7 +141,7 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 		return 'reused';
 	}
 
-	const baselineNodes = readNodeSidecar(BASELINES_DIR, pin, postAnalysis.metricsVersion);
+	const baselineNodes = readDsCoverageNodeList(BASELINES_DIR, pin, postAnalysis.metricsVersion);
 	if (baselineNodes === null) {
 		console.error(
 			`${label}: no node census for ${fixtureRef} at metricsVersion ` +
@@ -137,6 +165,13 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 		metricsVersion: postAnalysis.metricsVersion,
 		refCacheDir: REF_CACHE_DIR,
 	});
+	if (report === null) {
+		console.error(
+			`${label}: its diff touches no judgeable source file, so there are no new ` +
+				'nodes to score. Nothing was spent.',
+		);
+		return 'skipped';
+	}
 	writeMisuseReport(run.runDir, report);
 
 	const { correctDsDecision, correctDsUsage, correctLocalDecision, evaluated } = report.summary;
@@ -149,7 +184,7 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 }
 
 async function main() {
-	const options = parseArgs(process.argv.slice(2));
+	const options = parseOptions(process.argv.slice(2));
 
 	if (!existsSync(RESULTS_DIR)) {
 		console.log('No results/ directory; nothing to judge.');
@@ -163,9 +198,21 @@ async function main() {
 	}
 
 	const counts = { judged: 0, reused: 0, skipped: 0, failed: 0 };
+	const loadFailures: string[] = [];
+	let withoutHook = 0;
+
 	for (const run of runs) {
+		// The experiment names the module that measured this run; if it names none,
+		// results:analyze never measured it and this must not pay to judge it.
+		// Resolved before anything else so that skip costs nothing at all.
+		const postAnalysis = await loadPostAnalysis(run.experiment, loadFailures);
+		if (postAnalysis === null) {
+			withoutHook += 1;
+			continue;
+		}
+
 		try {
-			counts[await judgeOne(run, options)] += 1;
+			counts[await judgeOne(run, postAnalysis, options)] += 1;
 		} catch (error) {
 			// One broken run must not cost us the others — but an absent API key
 			// will fail every remaining run identically, so stop on it.
@@ -174,6 +221,13 @@ async function main() {
 			console.error(`${run.experiment}/${run.evalName}/run-${run.run}: ${message}`);
 			if (message.includes('ANTHROPIC_API_KEY')) throw error;
 		}
+	}
+
+	for (const message of loadFailures) console.error(`Could not load ${message}`);
+	if (withoutHook > 0) {
+		console.log(
+			`Skipped ${withoutHook} ${withoutHook === 1 ? 'run' : 'runs'} whose experiment carries no postAnalysis.`,
+		);
 	}
 
 	console.log(

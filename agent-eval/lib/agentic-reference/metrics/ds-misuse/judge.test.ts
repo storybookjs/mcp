@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const finalMessage = vi.fn();
-const stream = vi.fn(() => ({ finalMessage }));
+const FINAL_MESSAGE = vi.fn();
+const STREAM = vi.fn(() => ({ finalMessage: FINAL_MESSAGE }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
 	default: class {
-		messages = { stream };
+		messages = { stream: STREAM };
 	},
 }));
 
@@ -26,31 +26,35 @@ afterEach(() => {
 describe('runJudge', () => {
 	it('returns the parsed nodes from the structured response', async () => {
 		process.env.ANTHROPIC_API_KEY = 'sk-test';
-		finalMessage.mockResolvedValue({
+		// A complete DS node: output_config.format requires both DS answers on one,
+		// so a fixture without them is a shape the API would never return.
+		const node = {
+			path: 'App/A[0]',
+			file: 'a.tsx',
+			line: 1,
+			tag: 'A',
+			kind: 'ds',
+			correctDsDecision: { score: 1, reason: 'right component' },
+			correctDsUsage: { score: 0.5, reason: 'debatable variant' },
+		};
+		FINAL_MESSAGE.mockResolvedValue({
 			stop_reason: 'end_turn',
-			content: [
-				{
-					type: 'text',
-					text: '{"nodes":[{"path":"App/A[0]","file":"a.tsx","line":1,"tag":"A","kind":"ds"}]}',
-				},
-			],
+			content: [{ type: 'text', text: JSON.stringify({ nodes: [node] }) }],
 		});
-		await expect(runJudge(REQUEST)).resolves.toEqual({
-			nodes: [{ path: 'App/A[0]', file: 'a.tsx', line: 1, tag: 'A', kind: 'ds' }],
-		});
+		await expect(runJudge(REQUEST)).resolves.toEqual({ nodes: [node] });
 	});
 
 	// A refusal returns HTTP 200 with no usable content. Reading content[0] blindly
 	// would surface as a confusing parse error three frames away from the cause.
 	it('names a refusal rather than failing to parse it', async () => {
 		process.env.ANTHROPIC_API_KEY = 'sk-test';
-		finalMessage.mockResolvedValue({ stop_reason: 'refusal', stop_details: null, content: [] });
+		FINAL_MESSAGE.mockResolvedValue({ stop_reason: 'refusal', stop_details: null, content: [] });
 		await expect(runJudge(REQUEST)).rejects.toThrow(/refused/i);
 	});
 
 	it('names a truncated response rather than parsing half of it', async () => {
 		process.env.ANTHROPIC_API_KEY = 'sk-test';
-		finalMessage.mockResolvedValue({
+		FINAL_MESSAGE.mockResolvedValue({
 			stop_reason: 'max_tokens',
 			content: [{ type: 'text', text: '{"nodes":[' }],
 		});

@@ -59,20 +59,78 @@ export function writeMisuseReport(runDir: string, report: DsMisuseReport): void 
  * Whether a stored judgement can still be trusted.
  *
  * A moved guidelines pin means the run was scored against a different standard;
- * a moved metricsVersion means its node paths were built by different rules.
- * Either way the number is not comparable with a fresh one, so it is re-spent.
+ * a moved metricsVersion means its node paths were built by different rules; a
+ * moved JUDGE_MODEL means a different grader.
  */
 export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
 	return (
 		report.schemaVersion !== DS_MISUSE_SCHEMA_VERSION ||
 		report.dsGuidelinesRef !== current.dsGuidelinesRef ||
-		report.metricsVersion !== current.metricsVersion
+		report.metricsVersion !== current.metricsVersion ||
+		report.model !== JUDGE_MODEL
 	);
 }
 
-/** Judge one run and return its report. Makes exactly one model call. */
-export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
+/** A run to look for an artifact beside, and the rules to judge it against. */
+export interface MisuseReportRequest {
+	runDir: string;
+	/** The metricsVersion of the module that measured *this* run. */
+	metricsVersion: number | undefined;
+}
+
+export interface UsableMisuseReports {
+	/** One entry per requested run; null where there is nothing usable. */
+	byRunDir: Map<string, DsMisuseReport | null>;
+	/** Judged, but against a standard that has since moved. */
+	stale: number;
+	/** Never judged at all. */
+	absent: number;
+}
+
+/**
+ * Every run's usable artifact, read once.
+ * Detects missing and stale reports and counts them.
+ */
+export function readUsableMisuseReports(runs: readonly MisuseReportRequest[]): UsableMisuseReports {
+	const dsGuidelinesRef = dsDocsRefLabel();
+	const byRunDir = new Map<string, DsMisuseReport | null>();
+	let stale = 0;
+	let absent = 0;
+
+	for (const run of runs) {
+		const report = readMisuseReport(run.runDir);
+		if (report === null) {
+			absent += 1;
+			byRunDir.set(run.runDir, null);
+			continue;
+		}
+		if (isStale(report, { dsGuidelinesRef, metricsVersion: run.metricsVersion })) {
+			stale += 1;
+			byRunDir.set(run.runDir, null);
+			continue;
+		}
+		byRunDir.set(run.runDir, report);
+	}
+
+	return { byRunDir, stale, absent };
+}
+
+/**
+ * Judge one run and return its report, or null when there is nothing to judge.
+ *
+ * Makes exactly one model call, and only when it returns a report.
+ */
+export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport | null> {
 	const patch = treePatch(input.baselineDir, input.projectDir);
+
+	// An empty file list means "no filter" to analyzeDsCoverage, so handing it one
+	// would census the entire project and send every node in the tree as
+	// "treatment" — a whole-tree request, at full token cost, describing a run
+	// that touched no judgeable source file. There is nothing here to score, so
+	// the run is left unjudged rather than judged against the wrong thing.
+	if (patch.files.length === 0) {
+		return null;
+	}
 
 	// Targeted: the graph is still whole so imports resolve, but only the files
 	// the run touched are counted — a new JSX node can appear nowhere else.

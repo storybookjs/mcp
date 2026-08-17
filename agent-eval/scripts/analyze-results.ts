@@ -42,7 +42,7 @@
 //   --general             print the per-run vitals and grouped summary tables
 //   --complexity          print the complexity tables
 //   --coverage            print the design-system coverage tables
-//   --misuse             print the design-system misuse tables (see judge:ds-misuse)
+//   --misuse              print the design-system misuse tables (see judge:ds-misuse)
 //
 // Selection follows the shared grammar in lib/agentic-reference/selection.ts:
 // --cases and --flows are aliases, singular and plural spellings are the same
@@ -58,20 +58,28 @@
 // The table flags select what is *printed*; everything is measured and
 // written either way. Passing any of them prints exactly that set; passing none
 // falls back to DEFAULT_TABLES below.
-import { existsSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
-import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
-import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
+import { pinOfResult } from '#lib/agentic-reference/external-repo';
+import { readUsableMisuseReports } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
-import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
-import { postAnalysisFrom } from '#lib/post-analysis/hooks';
+import {
+	findRuns,
+	runSelectionOptions,
+	selectRuns,
+	toRunSelection,
+	type Run,
+	type RunSelection,
+} from '#lib/post-analysis/discovery';
+import { createPostAnalysisLoader } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
-import { isRecord } from '#lib/utils/type';
+import { messageOf } from '#lib/utils/error';
 import { readJson } from '#lib/utils/files';
 import { selectionFlags } from '#lib/agentic-reference/selection';
 
+import type { DsMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/types';
 import type {
 	Analysis,
 	PostAnalysis,
@@ -92,11 +100,7 @@ type TableSection = (typeof TABLE_SECTIONS)[number];
 // families push it off the bottom of a terminal.
 const DEFAULT_TABLES: TableSection[] = ['coverage'];
 
-interface PostAnalysisOptions {
-	experiments: string[];
-	evals: string[];
-	since: string | null;
-	latest: boolean;
+interface PostAnalysisOptions extends RunSelection {
 	recompute: boolean;
 	tables: SummarizeOptions;
 }
@@ -104,7 +108,8 @@ interface PostAnalysisOptions {
 // Same grammar as the runner (lib/agentic-reference/selection.ts): canonical
 // experiment/eval wording, case/flow accepted as aliases, singular and plural
 // interchangeable, lists by comma or repetition, and each flag falling back to
-// AGENTIC_REF_<FLAG>.
+// AGENTIC_REF_<FLAG>. The selection flags themselves come from discovery.ts, so
+// this CLI and judge:ds-misuse cannot drift on what a selection means.
 function parseOptions(argv: string[]): PostAnalysisOptions {
 	const flags = selectionFlags(process.env);
 	const parsed = flags
@@ -112,10 +117,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 			argv,
 			{ scriptName: 'results:analyze', usage: 'Usage: pnpm results:analyze [flags]' },
 			{
-				experiments: flags.experiments,
-				evals: flags.evals,
-				since: flags.text('since', 'Only runs stamped on or after this ISO date'),
-				latest: flags.switch('latest', 'Only the newest result directory per experiment'),
+				...runSelectionOptions(flags),
 				recompute: {
 					...flags.switch(
 						'recompute',
@@ -138,10 +140,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 	const chosen = sections.length === 0 ? DEFAULT_TABLES : sections;
 
 	return {
-		experiments: parsed.experiments,
-		evals: parsed.evals,
-		since: parsed.since ?? null,
-		latest: parsed.latest === true,
+		...toRunSelection(parsed),
 		recompute: parsed.recompute === true,
 		tables: {
 			general: chosen.includes('general'),
@@ -152,46 +151,35 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 	};
 }
 
-function messageOf(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
+/**
+ * The judge invocation covering exactly the runs this pass looked at.
+ *
+ * Every selection flag is carried, not just the ones that are easy to spell: the
+ * judge costs a model call per run, so a command that drops --since or --evals
+ * sends the operator off to judge runs they had deliberately excluded.
+ */
+function rejudgeCommand(selection: RunSelection): string {
+	const list = (flag: string, values: string[]) =>
+		values.length === 0 ? '' : ` --${flag}=${values.join(',')}`;
+	return (
+		'pnpm judge:ds-misuse' +
+		list('experiments', selection.experiments) +
+		list('evals', selection.evals) +
+		(selection.since === null ? '' : ` --since=${selection.since}`) +
+		(selection.latest ? ' --latest' : '')
+	);
 }
 
 // --- post-analysis loading ---
-// Which module analyses a run is the experiment's call, not the eval's. The
-// module comes across as a live object, so arms that share one share it by
-// reference — which is exactly what groups their runs into a single summary.
-const byExperiment = new Map<string, PostAnalysis | null>();
-
-async function loadPostAnalysis(
-	experiment: string,
-	failures: string[],
-): Promise<PostAnalysis | null> {
-	const cached = byExperiment.get(experiment);
-	if (cached !== undefined) return cached;
-
-	// Agentic-reference arms are run from .agentic-ref/, so their generated
-	// definitions live under .agentic-ref/experiments/ rather than experiments/.
-	const definition = [
-		join(ROOT, 'experiments', `${experiment}.ts`),
-		join(ROOT, '.agentic-ref', 'experiments', `${experiment}.ts`),
-	].find(existsSync);
-	// Results outlive experiment definitions: a renamed or deleted arm leaves its
-	// runs on disk, and those are skipped rather than fatal.
-	let postAnalysis: PostAnalysis | null = null;
-	if (definition) {
-		try {
-			postAnalysis = postAnalysisFrom(await import(pathToFileURL(definition).href), experiment);
-		} catch (error) {
-			// A definition that will not import, or names a malformed module, must
-			// not cost every other arm its analysis. Reported once: the outcome is
-			// cached below, so the remaining runs of this arm skip quietly.
-			failures.push(`experiments/${experiment}.ts: ${messageOf(error)}`);
-		}
-	}
-
-	byExperiment.set(experiment, postAnalysis);
-	return postAnalysis;
-}
+// Which module analyses a run is the experiment's call, not the eval's. Shared
+// with judge-ds-misuse.ts, so the paid CLI skips exactly the runs this one does.
+//
+// Agentic-reference arms are run from .agentic-ref/, so their generated
+// definitions live under .agentic-ref/experiments/ rather than experiments/.
+const loadPostAnalysis = createPostAnalysisLoader([
+	join(ROOT, 'experiments'),
+	join(ROOT, '.agentic-ref', 'experiments'),
+]);
 
 // --- post-analysis cache ---
 // One entry per run, stored next to other artifacts; --recompute ignores it.
@@ -212,18 +200,6 @@ function writeCacheEntry(runDir: string, output: Record<string, unknown> | null)
 }
 
 // --- per-run analysis ---
-// The pin the run itself recorded, not the fixture's pin as it stands today:
-// reading today's would retroactively change every historical delta the moment
-// the fixture moves.
-function pinOf(result: unknown) {
-	const analysis = isRecord(result) && isRecord(result.analysis) ? result.analysis : {};
-	try {
-		return typecheckExternalRepo(analysis.externalRepo);
-	} catch {
-		return null;
-	}
-}
-
 async function analyzeOneRun(
 	run: Run,
 	postAnalysis: PostAnalysis,
@@ -247,7 +223,7 @@ async function analyzeOneRun(
 		run: run.run,
 		result,
 		transcript,
-		pin: pinOf(result),
+		pin: pinOfResult(result),
 	};
 
 	const runAnalysis = await postAnalysis.analyzeRun(context);
@@ -285,19 +261,26 @@ interface SuccessfulAnalysis extends Record<string, unknown> {
 	__run: Run;
 	__postAnalysis: PostAnalysis;
 }
-// Internal routing state, stripped before anything sees a record.
-//
-// Read fresh on every invocation and merged here rather than into the cached
-// analysis: the judge runs after this script, so a cached row would never gain
-// the scores without --recompute.
+/** Internal routing state, removed before anything sees a record. */
 function strip(row: SuccessfulAnalysis): Record<string, unknown> {
-	const report = readMisuseReport(row.__run.runDir);
-	return {
-		...Object.fromEntries(
-			Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
-		),
-		...(report === null ? {} : { dsMisuse: report }),
-	};
+	return Object.fromEntries(
+		Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
+	);
+}
+
+/**
+ * A row as the tables and analysis-summary.json see it.
+ *
+ * The artifact is merged here rather than into the cached analysis because the
+ * judge runs *after* this script: folded in before the cache lookup it would
+ * store a scoreless row that no later pass refreshes without --recompute.
+ */
+function withMisuse(
+	row: SuccessfulAnalysis,
+	reports: ReadonlyMap<string, DsMisuseReport | null>,
+): Record<string, unknown> {
+	const report = reports.get(row.__run.runDir) ?? null;
+	return { ...strip(row), ...(report === null ? {} : { dsMisuse: report }) };
 }
 
 async function main() {
@@ -374,18 +357,29 @@ async function main() {
 	);
 
 	// A silently absent metric is the failure mode worth shouting about, so this
-	// fires whichever table families were selected.
-	const unjudged = successfulAnalyses.filter(
-		(row) => readMisuseReport(row.__run.runDir) === null,
-	).length;
+	// fires whichever table families were selected. A stale artifact counts as
+	// unjudged: it is left out of the tables below, so saying otherwise here
+	// would point at a column that is not there. Re-judging needs no --recompute,
+	// since the judge does not reuse a stale artifact either.
+	const misuseReports = readUsableMisuseReports(
+		successfulAnalyses.map((row) => ({
+			runDir: row.__run.runDir,
+			metricsVersion: row.__postAnalysis.metricsVersion,
+		})),
+	);
+	const unjudged = misuseReports.absent + misuseReports.stale;
 	if (unjudged > 0) {
 		const bold = '\x1b[1;31m';
 		const reset = '\x1b[0m';
+		const breakdown =
+			misuseReports.stale === 0
+				? ''
+				: ` (${misuseReports.stale} judged against a superseded standard, ` +
+					`${misuseReports.absent} never judged)`;
 		console.error(
-			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
-				'  Run: pnpm judge:ds-misuse' +
-				(options.experiments.length ? ` --experiments=${options.experiments.join(',')}` : '') +
-				(options.latest ? ' --latest' : ''),
+			`\n${bold}No usable ds-misuse judgement for ${unjudged} of ` +
+				`${successfulAnalyses.length} run(s)${breakdown}.${reset}\n` +
+				`  Run: ${rejudgeCommand(options)}`,
 		);
 	}
 
@@ -403,7 +397,10 @@ async function main() {
 	const summary: Analysis[] = [];
 	for (const [evalDir, analyses] of byEvalDir) {
 		console.log(`\n===  ${relative(RESULTS_DIR, evalDir)}  ===\n`);
-		const rows = analyses[0]!.__postAnalysis.summarize(analyses.map(strip), options.tables);
+		const rows = analyses[0]!.__postAnalysis.summarize(
+			analyses.map((row) => withMisuse(row, misuseReports.byRunDir)),
+			options.tables,
+		);
 		mergeIntoEvalSummary(evalDir, rows);
 		summary.push(...rows);
 	}
@@ -412,7 +409,14 @@ async function main() {
 	// matched run in one file, so comparing arms is a single read.
 	writeFileSync(
 		join(RESULTS_DIR, 'analysis-summary.json'),
-		JSON.stringify({ runs: successfulAnalyses.map(strip), summary }, null, 2) + '\n',
+		JSON.stringify(
+			{
+				runs: successfulAnalyses.map((row) => withMisuse(row, misuseReports.byRunDir)),
+				summary,
+			},
+			null,
+			2,
+		) + '\n',
 	);
 }
 

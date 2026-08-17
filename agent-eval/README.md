@@ -173,13 +173,30 @@ run — so it lives behind its own command rather than running as part of
 
 ```bash
 pnpm results:analyze --recompute   # builds the baselines and node census first
+pnpm format                        # the generated JSON needs it before committing
 pnpm judge:ds-misuse --latest      # then judges; roughly $0.10-0.15 per run
 pnpm results:analyze --misuse      # reads the artifacts and prints the tables
 ```
 
+The order is a prerequisite, not a suggestion. The judge compares a run against
+the pinned tree's node census, which lives in `baselines/ds-nodes/<pin>.json`
+beside that pin's baseline. Both are **committed artifacts**, written only by a
+baseline rebuild, so a checkout missing them — or carrying a pair measured under
+an older `metricsVersion` — makes `judge:ds-misuse` skip every affected run with
+_"no node census … Run: pnpm results:analyze --recompute"_ rather than judging
+it. It never builds them itself: doing so would put a whole-tree measurement
+behind a paid command, where a plain `results:analyze` already does the job for
+free. If you bump `metricsVersion`, regenerate and commit both halves in the
+same change.
+
 It needs `ANTHROPIC_API_KEY` and aborts naming it if absent. Each run's
 judgement is cached in its run directory as `ds-misuse.json` and reused until
-the guidelines pin or `metricsVersion` moves; `--recompute` re-judges.
+the guidelines pin, the judge model, or `metricsVersion` moves — any of which
+means the stored score is not comparable with a fresh one. `--recompute`
+re-judges regardless, and is the flag that spends money.
+
+A run whose diff touches no judgeable source file is skipped rather than judged:
+there are no new nodes to score, and nothing is spent on it.
 
 Every arm is judged against **one pinned, complete** copy of the design system's
 documentation (`DS_DOCS_PIN` in
@@ -188,7 +205,11 @@ docs variant that arm was served. Content variation between arms is the round's
 independent variable, so judging each arm against what it saw would score a
 degraded arm against a lowered bar.
 
-Design notes: `docs/superpowers/specs/2026-08-14-ds-misuse-metric-design.md`.
+The design reasoning lives with the code it constrains:
+`lib/agentic-reference/metrics/ds-misuse/` for the judge and its artifact,
+`ds-coverage/react/node-path.ts` for what a node path can and cannot be used to
+decide, and `lib/post-analysis/baseline.ts` for how the committed pair is kept
+honest.
 
 ## Shared Templates
 

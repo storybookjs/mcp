@@ -14,9 +14,9 @@ import { prepareRef } from '../agentic-reference/external-repo.ts';
 import {
 	baselinePath,
 	loadOrBuildBaselineAnalysis,
-	nodeSidecarPath,
-	readNodeSidecar,
-	writeNodeSidecar,
+	dsCoverageNodeListPath,
+	readDsCoverageNodeList,
+	writeDsCoverageNodeList,
 } from './baseline.ts';
 
 import type { NodeRecord } from '../agentic-reference/metrics/ds-coverage/types.ts';
@@ -72,8 +72,8 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		expect(written).toEqual({
 			repo: 'owner/name',
 			ref: 'deadbeef',
-			// This module measures no nodes, so there is no sidecar to demand back.
-			nodeSidecar: false,
+			// This module measures no nodes, so there is no node list to demand back.
+			hasDsCoverageNodeList: false,
 			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
@@ -115,6 +115,9 @@ describe('loadOrBuildBaselineAnalysis', () => {
 			JSON.stringify({
 				...PIN,
 				metricsVersion: 2,
+				// A file declaring a version has to declare its node-list state too;
+				// silence there means "version-bumped without being regenerated".
+				hasDsCoverageNodeList: false,
 				analysis: { files: { 'a.ts': 99 } },
 			}),
 		);
@@ -148,7 +151,7 @@ describe('loadOrBuildBaselineAnalysis', () => {
 			repo: 'owner/name',
 			ref: 'deadbeef',
 			metricsVersion: 2,
-			nodeSidecar: false,
+			hasDsCoverageNodeList: false,
 			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
@@ -268,15 +271,15 @@ function withNodes() {
 	} as unknown as PostAnalysis;
 }
 
-describe('node sidecar', () => {
+describe('ds-coverage node list', () => {
 	it('writes the census beside the baseline, keyed on the pin', async () => {
 		const opts = options({ postAnalysis: withNodes() });
 		await loadOrBuildBaselineAnalysis(opts);
 
-		const sidecar = JSON.parse(
-			readFileSync(nodeSidecarPath(join(root, 'baselines'), PIN), 'utf8'),
+		const nodeList = JSON.parse(
+			readFileSync(dsCoverageNodeListPath(join(root, 'baselines'), PIN), 'utf8'),
 		) as Record<string, unknown>;
-		expect(sidecar).toMatchObject({
+		expect(nodeList).toMatchObject({
 			repo: PIN.repo,
 			ref: PIN.ref,
 			metricsVersion: 7,
@@ -284,7 +287,7 @@ describe('node sidecar', () => {
 		});
 	});
 
-	// The sidecar is the judge's baseline half; keeping it out of the committed
+	// The node list is the judge's baseline half; keeping it out of the committed
 	// baseline is what keeps that file reviewable.
 	it('keeps the node list out of the committed baseline', async () => {
 		const opts = options({ postAnalysis: withNodes() });
@@ -301,39 +304,69 @@ describe('node sidecar', () => {
 
 	it('reads back what it wrote', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, 7, PARTIAL_NODES);
-		expect(readNodeSidecar(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
+		writeDsCoverageNodeList(dir, PIN, 7, PARTIAL_NODES);
+		expect(readDsCoverageNodeList(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
 	});
 
-	// A sidecar measured under other rules is worse than none: its numbers look
+	// A node list measured under other rules is worse than none: its numbers look
 	// healthy and mean something else.
 	it('treats a version mismatch as absent', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, 6, PARTIAL_NODES);
-		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+		writeDsCoverageNodeList(dir, PIN, 6, PARTIAL_NODES);
+		expect(readDsCoverageNodeList(dir, PIN, 7)).toBeNull();
 	});
 
-	it('treats an absent sidecar as null rather than throwing', () => {
-		expect(readNodeSidecar(join(root, 'baselines'), PIN, 7)).toBeNull();
+	it('treats an absent node list as null rather than throwing', () => {
+		expect(readDsCoverageNodeList(join(root, 'baselines'), PIN, 7)).toBeNull();
 	});
 
 	// Absent on both sides is a match, which is what keeps a module that never
 	// declares a version on the same terms as the committed baseline beside it.
-	it('matches a versionless sidecar against a versionless module', () => {
+	it('matches a versionless node list against a versionless module', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, undefined, PARTIAL_NODES);
-		expect(readNodeSidecar(dir, PIN, undefined)).toEqual([{ path: 'App/A[0]' }]);
+		writeDsCoverageNodeList(dir, PIN, undefined, PARTIAL_NODES);
+		expect(readDsCoverageNodeList(dir, PIN, undefined)).toEqual([{ path: 'App/A[0]' }]);
 		// And a versioned module still refuses it.
-		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+		expect(readDsCoverageNodeList(dir, PIN, 7)).toBeNull();
 	});
 
-	it('treats a sidecar whose nodes are not a list as absent', () => {
+	// The filename is a slug and therefore lossy, so the pin inside the file is
+	// checked rather than trusted: a hand-moved or cross-branch copy would
+	// otherwise score a run against another tree's census.
+	it('refuses a node list recorded against another pin', () => {
 		const dir = join(root, 'baselines');
-		const path = nodeSidecarPath(dir, PIN);
+		const path = dsCoverageNodeListPath(dir, PIN);
+		mkdirSync(dirname(path), { recursive: true });
+		writeFileSync(
+			path,
+			JSON.stringify({
+				repo: 'someone/else',
+				ref: PIN.ref,
+				metricsVersion: 7,
+				nodes: PARTIAL_NODES,
+			}),
+		);
+		expect(readDsCoverageNodeList(dir, PIN, 7)).toBeNull();
+	});
+
+	it('refuses a node list recorded against another ref of the same repo', () => {
+		const dir = join(root, 'baselines');
+		const path = dsCoverageNodeListPath(dir, PIN);
+		mkdirSync(dirname(path), { recursive: true });
+		writeFileSync(
+			path,
+			JSON.stringify({ repo: PIN.repo, ref: 'cafebabe', metricsVersion: 7, nodes: PARTIAL_NODES }),
+		);
+		expect(readDsCoverageNodeList(dir, PIN, 7)).toBeNull();
+	});
+
+	it('treats a node list whose nodes are not a list as absent', () => {
+		const dir = join(root, 'baselines');
+		const path = dsCoverageNodeListPath(dir, PIN);
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, JSON.stringify({ ...PIN, metricsVersion: 7, nodes: 'lots' }));
 
-		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+		expect(readDsCoverageNodeList(dir, PIN, 7)).toBeNull();
 	});
 
 	/** Commit a baseline by hand, as a checkout would arrive with one. */
@@ -346,21 +379,21 @@ describe('node sidecar', () => {
 	}
 
 	// Half a pair on disk is permanent without this: only a rebuild writes a
-	// sidecar, and a current-looking baseline is what suppresses the rebuild.
-	it('rebuilds a current baseline whose sidecar was never committed', async () => {
+	// node list, and a current-looking baseline is what suppresses the rebuild.
+	it('rebuilds a current baseline whose node list was never committed', async () => {
 		const opts = options({ postAnalysis: withNodes() });
-		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
+		commitBaseline(opts.baselinesDir, { hasDsCoverageNodeList: true });
 
 		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
 
 		expect(rebuilt.analysis).toEqual({ files: {} });
-		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(true);
+		expect(existsSync(dsCoverageNodeListPath(opts.baselinesDir, PIN))).toBe(true);
 	});
 
 	it('leaves an intact pair alone', async () => {
 		const opts = options({ postAnalysis: withNodes() });
-		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
-		writeNodeSidecar(opts.baselinesDir, PIN, 7, PARTIAL_NODES);
+		commitBaseline(opts.baselinesDir, { hasDsCoverageNodeList: true });
+		writeDsCoverageNodeList(opts.baselinesDir, PIN, 7, PARTIAL_NODES);
 
 		const loaded = await loadOrBuildBaselineAnalysis(opts);
 
@@ -368,13 +401,49 @@ describe('node sidecar', () => {
 		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
 	});
 
-	// The mirror case: a module measuring no nodes never wrote a sidecar, so
+	// Exactly the state this repo shipped: three baselines written before the
+	// node-list field existed, then version-bumped in place rather than
+	// regenerated. Read permissively they are a permanent cache hit, so the
+	// node list never gets written, the judge skips every run for want of a census,
+	// and the plain results:analyze it tells you to run does nothing at all.
+	it('rebuilds a current-version baseline that records no node-list state', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		commitBaseline(opts.baselinesDir, {});
+
+		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(rebuilt.analysis).toEqual({ files: {} });
+		expect(existsSync(dsCoverageNodeListPath(opts.baselinesDir, PIN))).toBe(true);
+		// And it now says so explicitly, so the next pass hits the cache.
+		expect(
+			JSON.parse(readFileSync(baselinePath(opts.baselinesDir, PIN), 'utf8')).hasDsCoverageNodeList,
+		).toBe(true);
+	});
+
+	// A file declaring neither a version nor a node list predates both fields, and
+	// "absent" there really does mean "never had one". Rebuilding every legacy
+	// baseline to learn that is not worth what it costs.
+	it('still hits the cache for a legacy baseline declaring neither field', async () => {
+		const opts = options();
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(
+			baselinePath(opts.baselinesDir, PIN),
+			JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }),
+		);
+
+		const loaded = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(loaded.analysis).toEqual({ files: { 'a.ts': 99 } });
+		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
+	});
+
+	// The mirror case: a module measuring no nodes never wrote a node list, so
 	// demanding one back would re-measure the tree on every process and defeat
 	// the point of committing baselines at all.
-	it('still hits the cache for a baseline that never had a sidecar', async () => {
+	it('still hits the cache for a baseline that never had a node list', async () => {
 		const opts = options();
 		await loadOrBuildBaselineAnalysis(opts);
-		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(false);
+		expect(existsSync(dsCoverageNodeListPath(opts.baselinesDir, PIN))).toBe(false);
 
 		const second = options({ baselinesDir: opts.baselinesDir });
 		await loadOrBuildBaselineAnalysis(second);

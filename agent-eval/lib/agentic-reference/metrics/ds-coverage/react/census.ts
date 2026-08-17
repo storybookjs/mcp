@@ -7,7 +7,13 @@
 // - Conditional renders cause element counts on each branch to be weighted
 import ts from 'typescript';
 
-import { createNodePathBuilder, elementTag, propNames } from './node-path.ts';
+import {
+	createNodePathBuilder,
+	elementTag,
+	propNames,
+	tagNameOf,
+	type JsxNode,
+} from './node-path.ts';
 import { resolveJsxTag } from './resolve.ts';
 
 import type { ModuleGraph } from '../module-graph.ts';
@@ -108,16 +114,12 @@ export function censusReactTree(
 
 		// Tag resolutions are memoized in the resolver, so asking again inside the
 		// halving predicate costs a map lookup.
-		const containsCountableJsx = makeContainsCountableJsx((element) => {
-			const tag = ts.isJsxElement(element) ? element.openingElement.tagName : element.tagName;
-			return !isNonRenderingIdentity(resolveJsxTag(file, tag, resolver));
-		});
+		const containsCountableJsx = makeContainsCountableJsx(
+			(element) => !isNonRenderingIdentity(resolveJsxTag(file, tagNameOf(element), resolver)),
+		);
 
-		const count = (
-			tag: ts.JsxTagNameExpression,
-			element: ts.JsxElement | ts.JsxSelfClosingElement,
-			weight: number,
-		): void => {
+		const count = (element: JsxNode, weight: number): void => {
+			const tag = tagNameOf(element);
 			const resolution = resolveJsxTag(file, tag, resolver);
 			if (isNonRenderingIdentity(resolution)) return;
 
@@ -182,7 +184,7 @@ export function censusReactTree(
 
 		const walk = (node: ts.Node, weight: number): void => {
 			if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
-				count(ts.isJsxElement(node) ? node.openingElement.tagName : node.tagName, node, weight);
+				count(node, weight);
 			} else if (ts.isConditionalExpression(node)) {
 				// Both branches JSX -> each side at half weight; otherwise the JSX
 				// side renders whenever anything does and keeps full weight.

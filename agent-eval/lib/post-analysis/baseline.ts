@@ -28,14 +28,16 @@ interface CommittedBaseline {
 	/** The eval's metricsVersion at measuring time; absent for legacy files. */
 	metricsVersion?: number;
 	/**
-	 * Whether a node sidecar was written beside this file. Recorded rather than
-	 * inferred because the two legitimate reasons for a missing sidecar have to
-	 * be told apart: a module that measures no nodes (or a pin declaring no
-	 * design system) never writes one and must still hit the cache, while a
-	 * baseline that had one and lost it has to be rebuilt. Absent for legacy
-	 * files, which counts as "never had one".
+	 * Whether a ds-coverage node list was written beside this file — the census
+	 * `--nodes` produces, which the ds-misuse judge reads as its baseline half.
+	 *
+	 * Recorded rather than inferred because the two legitimate reasons for a
+	 * missing list have to be told apart: a module that measures no nodes (or a
+	 * pin declaring no design system) never writes one and must still hit the
+	 * cache, while a baseline that had one and lost it has to be rebuilt. See
+	 * isDsCoverageNodeListIntact for how an absent flag is read.
 	 */
-	nodeSidecar?: boolean;
+	hasDsCoverageNodeList?: boolean;
 	analysis: Analysis;
 }
 
@@ -66,10 +68,13 @@ export function baselinePath(baselinesDir: string, pin: ExternalRepoPin): string
 	return join(baselinesDir, `${pinSlug(pin)}.json`);
 }
 
-/** Where the whole-tree node census for a pin lives. */
-const NODE_SIDECAR_DIR = 'ds-nodes';
+// Where the whole-tree ds-coverage node census for a pin lives. Named for the
+// metric rather than for being a sidecar: it is one specific artifact, not
+// generic post-analysis state, and the next reader should not have to open the
+// file to learn which measurement put it there.
+const DS_COVERAGE_NODE_LIST_DIR = 'ds-nodes';
 
-interface CommittedNodeSidecar {
+interface CommittedDsCoverageNodeList {
 	repo: string;
 	ref: string;
 	metricsVersion?: number;
@@ -77,43 +82,58 @@ interface CommittedNodeSidecar {
 }
 
 /**
- * The sidecar for a pin, under its own directory so `ls baselines/` still shows
- * one file per pin. Same slug as the baseline, so the pair is obvious on disk.
+ * The node list for a pin, under its own directory so `ls baselines/` still
+ * shows one file per pin. Same slug as the baseline, so the pair is obvious on
+ * disk.
  */
-export function nodeSidecarPath(baselinesDir: string, pin: ExternalRepoPin): string {
-	return join(baselinesDir, NODE_SIDECAR_DIR, `${pinSlug(pin)}.json`);
+export function dsCoverageNodeListPath(baselinesDir: string, pin: ExternalRepoPin): string {
+	return join(baselinesDir, DS_COVERAGE_NODE_LIST_DIR, `${pinSlug(pin)}.json`);
 }
 
-/** Commit a pin's node census, overwriting any sidecar already there. */
-export function writeNodeSidecar(
+/** Commit a pin's node census, overwriting any list already there. */
+export function writeDsCoverageNodeList(
 	baselinesDir: string,
 	pin: ExternalRepoPin,
 	metricsVersion: number | undefined,
 	nodes: NodeRecord[],
 ): void {
-	const path = nodeSidecarPath(baselinesDir, pin);
+	const path = dsCoverageNodeListPath(baselinesDir, pin);
 	mkdirSync(dirname(path), { recursive: true });
-	const payload: CommittedNodeSidecar = { repo: pin.repo, ref: pin.ref, metricsVersion, nodes };
+	const payload: CommittedDsCoverageNodeList = {
+		repo: pin.repo,
+		ref: pin.ref,
+		metricsVersion,
+		nodes,
+	};
 	// Tab-indented for the same reason the baseline is, and needing `pnpm format`
 	// afterwards for the same reason too — more urgently here: JSON.stringify puts
 	// every array element on its own line, oxfmt collapses short ones, and every
-	// NodeRecord carries a `props` array. Committing a generated sidecar without
+	// NodeRecord carries a `props` array. Committing a generated node list without
 	// formatting it first fails `format:check` on essentially every record.
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 }
 
 /**
  * The pin's node census, or null when absent or measured under other rules.
- * A sidecar from another metricsVersion is worse than none: its records look
+ * A list from another metricsVersion is worse than none: its records look
  * healthy and were built by a different path format.
  */
-export function readNodeSidecar(
+export function readDsCoverageNodeList(
 	baselinesDir: string,
 	pin: ExternalRepoPin,
 	metricsVersion: number | undefined,
 ): NodeRecord[] | null {
-	const stored = readJson<CommittedNodeSidecar>(nodeSidecarPath(baselinesDir, pin));
+	const stored = readJson<CommittedDsCoverageNodeList>(dsCoverageNodeListPath(baselinesDir, pin));
 	if (!stored || !Array.isArray(stored.nodes) || stored.metricsVersion !== metricsVersion) {
+		return null;
+	}
+	// The file says which pin it was measured from, and it is checked rather than
+	// trusted. The filename is a slug, so it is lossy by construction, and a file
+	// that was hand-moved, copied between branches, or landed on by two pins
+	// slugging alike would otherwise hand the judge another tree's census under
+	// this pin's name — scoring a run against markup it never saw. Failing closed
+	// costs a re-measure; failing open costs a wrong number nobody can see is wrong.
+	if (stored.repo !== pin.repo || stored.ref !== pin.ref) {
 		return null;
 	}
 	return stored.nodes;
@@ -135,6 +155,37 @@ const recomputedKeys = new Set<string>();
 /** The memo identity of a baseline: which file, measured under which rules. */
 function memoKeyFor(path: string, metricsVersion: number | undefined): string {
 	return `${path}#${metricsVersion ?? 'none'}`;
+}
+
+/**
+ * Whether a committed baseline's node-list state is one this module can stand
+ * behind — that is, whether the file and the disk beside it still agree.
+ *
+ * The interesting case is silence. An absent flag means two different things,
+ * and reading them the same way is what let this repo ship three baselines at
+ * the current metricsVersion with no node list and no way to ever grow one:
+ *
+ * - On a file declaring no metricsVersion either, it means "predates the
+ *   field", which is the same thing as "never had one". Rebuilding every legacy
+ *   baseline to learn that is not worth what it costs.
+ * - On a file that *does* declare a version, it means the file was written
+ *   before the field existed and then version-bumped in place rather than
+ *   regenerated. Read permissively that is a permanent cache hit, so the node
+ *   list it should have written never gets written, `judge:ds-misuse` skips
+ *   every run for want of a census, and the fix it prints — a plain
+ *   `results:analyze` — silently does nothing. Read as a miss it costs one
+ *   rebuild, after which the file records its state explicitly and says so.
+ */
+function isDsCoverageNodeListIntact(
+	committed: CommittedBaseline | null,
+	baselinesDir: string,
+	pin: ExternalRepoPin,
+	metricsVersion: number | undefined,
+): boolean {
+	if (committed?.hasDsCoverageNodeList === undefined)
+		return committed?.metricsVersion === undefined;
+	if (!committed.hasDsCoverageNodeList) return true;
+	return readDsCoverageNodeList(baselinesDir, pin, metricsVersion) !== null;
 }
 
 export async function loadOrBuildBaselineAnalysis(
@@ -163,15 +214,18 @@ export async function loadOrBuildBaselineAnalysis(
 	const committed = recompute ? null : readJson<CommittedBaseline>(path);
 	const versionMatches =
 		committed?.analysis !== undefined && committed.metricsVersion === postAnalysis.metricsVersion;
-	// A baseline that recorded a sidecar and no longer has one beside it is a
+	// A baseline that recorded a node list and no longer has one beside it is a
 	// cache miss too. Nothing else would ever write the missing half: the pair is
 	// only produced by a rebuild, and a current-looking baseline suppresses one
 	// forever. Rebuilding is what makes "written together and only together" true
 	// of the files on disk rather than just of this function.
-	const sidecarIntact =
-		committed?.nodeSidecar !== true ||
-		readNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion) !== null;
-	if (versionMatches && sidecarIntact) {
+	const nodeListIntact = isDsCoverageNodeListIntact(
+		committed,
+		baselinesDir,
+		pin,
+		postAnalysis.metricsVersion,
+	);
+	if (versionMatches && nodeListIntact) {
 		const loaded = { dir, analysis: committed.analysis };
 		memo.set(memoKey, loaded);
 		return loaded;
@@ -185,7 +239,9 @@ export async function loadOrBuildBaselineAnalysis(
 		: !committed?.analysis
 			? 'no committed baseline'
 			: versionMatches
-				? 'node sidecar missing'
+				? committed.hasDsCoverageNodeList === undefined
+					? 'baseline records no ds-coverage node list state'
+					: 'ds-coverage node list missing'
 				: `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`;
 	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
 
@@ -201,13 +257,18 @@ export async function loadOrBuildBaselineAnalysis(
 	// stay readable in a diff, and thousands of records would end that. Guarded
 	// with Array.isArray rather than a presence check, because this is the one
 	// place the module looks inside an analysis it otherwise treats as opaque —
-	// the same guard readNodeSidecar applies at the other end.
+	// the same guard readDsCoverageNodeList applies at the other end.
 	const { nodeList, ...analysisWithoutNodes } = analysis as Analysis & {
 		nodeList?: unknown;
 	};
-	const hasNodeSidecar = Array.isArray(nodeList);
-	if (hasNodeSidecar) {
-		writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList as NodeRecord[]);
+	const hasDsCoverageNodeList = Array.isArray(nodeList);
+	if (hasDsCoverageNodeList) {
+		writeDsCoverageNodeList(
+			baselinesDir,
+			pin,
+			postAnalysis.metricsVersion,
+			nodeList as NodeRecord[],
+		);
 	}
 
 	mkdirSync(dirname(path), { recursive: true });
@@ -217,7 +278,7 @@ export async function loadOrBuildBaselineAnalysis(
 		repo: pin.repo,
 		ref: pin.ref,
 		metricsVersion: postAnalysis.metricsVersion,
-		nodeSidecar: hasNodeSidecar,
+		hasDsCoverageNodeList,
 		analysis: analysisWithoutNodes,
 	};
 	// Tab-indented because the file is committed, and `pnpm format:check` would

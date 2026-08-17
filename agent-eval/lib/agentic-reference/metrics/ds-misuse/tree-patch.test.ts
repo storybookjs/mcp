@@ -88,6 +88,34 @@ describe('treePatch', () => {
 		expect(patch.text.split('diff --git').length - 1).toBe(patch.files.length);
 	});
 
+	// An empty file list means "no filter" to the census, so the caller has to be
+	// able to tell "nothing survived the cap" from "nothing changed". Both report
+	// no files; only this one reports having dropped some.
+	it('reports an empty file list when the cap drops every block', () => {
+		const big = 'x'.repeat(4000) + '\n';
+		const patch = treePatch(
+			tree('before', { 'src/A.tsx': 'const a = 1\n', 'src/B.tsx': 'const b = 1\n' }),
+			tree('after', { 'src/A.tsx': big, 'src/B.tsx': big }),
+			{ maxBytes: 10 },
+		);
+		expect(patch.files).toEqual([]);
+		expect(patch.text).toBe('');
+		expect(patch.droppedFiles).toBe(2);
+		expect(patch.truncated).toBe(true);
+	});
+
+	// The other way to reach an empty list: a run that touched only files this
+	// metric does not judge.
+	it('reports an empty file list when nothing judgeable changed', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n' }),
+			tree('after', { 'src/App.tsx': 'const a = 1\n', 'pnpm-lock.yaml': 'lockfileVersion: 9\n' }),
+		);
+		expect(patch.files).toEqual([]);
+		expect(patch.droppedFiles).toBe(0);
+		expect(patch.truncated).toBe(false);
+	});
+
 	// git exits 1 for a path it cannot access exactly as it does for a difference,
 	// so an unguarded missing tree reads as "the run changed nothing" — a run that
 	// never got copied out would be judged as having written nothing at all.
