@@ -53,7 +53,7 @@ import {
 } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { assertApiKey } from '#lib/agentic-reference/metrics/ds-misuse/judge';
 import { selectionFlags } from '#lib/agentic-reference/selection';
-import { readNodeSidecar } from '#lib/post-analysis/baseline';
+import { readDsCoverageNodeList } from '#lib/post-analysis/baseline';
 import {
 	findRuns,
 	runSelectionOptions,
@@ -153,7 +153,7 @@ async function judgeOne(
 		return 'reused';
 	}
 
-	const baselineNodes = readNodeSidecar(BASELINES_DIR, pin, postAnalysis.metricsVersion);
+	const baselineNodes = readDsCoverageNodeList(BASELINES_DIR, pin, postAnalysis.metricsVersion);
 	if (baselineNodes === null) {
 		console.error(
 			`${label}: no node census for ${fixtureRef} at metricsVersion ` +
