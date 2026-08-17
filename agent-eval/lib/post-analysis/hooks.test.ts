@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { postAnalysisFrom } from './hooks.ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createPostAnalysisLoader, postAnalysisFrom } from './hooks.ts';
 
 const COMPLETE = { analyzeRun: vi.fn(), summarize: vi.fn(), deltaToBaseline: vi.fn() };
 
@@ -78,5 +82,92 @@ describe('postAnalysisFrom', () => {
 				'arm-a',
 			),
 		).toThrow(/metricsVersion that is not a number/);
+	});
+});
+
+describe('createPostAnalysisLoader', () => {
+	let root: string;
+
+	/** An experiment definition under one of the loader's roots. */
+	function define(dir: string, name: string, source: string): void {
+		mkdirSync(join(root, dir), { recursive: true });
+		writeFileSync(join(root, dir, `${name}.ts`), source);
+	}
+
+	function loader() {
+		return createPostAnalysisLoader([join(root, 'experiments'), join(root, 'generated')]);
+	}
+
+	beforeEach(() => {
+		root = mkdtempSync(join(tmpdir(), 'hooks-'));
+	});
+
+	afterEach(() => {
+		rmSync(root, { recursive: true, force: true });
+	});
+
+	it('loads the module an experiment definition carries', async () => {
+		define(
+			'experiments',
+			'arm-a',
+			'export default { postAnalysis: { analyzeRun: () => null, summarize: () => [], metricsVersion: 9 } };',
+		);
+		const loaded = await loader()('arm-a', []);
+		expect(loaded?.metricsVersion).toBe(9);
+	});
+
+	it('searches the roots in order', async () => {
+		define(
+			'generated',
+			'arm-b',
+			'export default { postAnalysis: { analyzeRun: () => null, summarize: () => [], metricsVersion: 3 } };',
+		);
+		const loaded = await loader()('arm-b', []);
+		expect(loaded?.metricsVersion).toBe(3);
+	});
+
+	// Results outlive their definitions, and the judge pays a model call per run:
+	// a run whose experiment names no module has to come back null before anything
+	// reaches for an API key.
+	it('returns null for an experiment with no definition on disk', async () => {
+		const failures: string[] = [];
+		expect(await loader()('deleted-arm', failures)).toBeNull();
+		expect(failures).toEqual([]);
+	});
+
+	it('returns null for a definition carrying no postAnalysis', async () => {
+		define('experiments', 'arm-c', 'export default { evals: ["801"] };');
+		expect(await loader()('arm-c', [])).toBeNull();
+	});
+
+	// One malformed arm must not cost every other arm its analysis.
+	it('records a malformed module as a failure rather than throwing', async () => {
+		define('experiments', 'arm-d', 'export default { postAnalysis: { summarize: () => [] } };');
+		const failures: string[] = [];
+		expect(await loader()('arm-d', failures)).toBeNull();
+		expect(failures).toEqual([
+			expect.stringMatching(/experiments\/arm-d\.ts:.*must provide an analyzeRun function/),
+		]);
+	});
+
+	// Reported once, not once per run of the arm.
+	it('caches the outcome, including a failure', async () => {
+		define('experiments', 'arm-e', 'export default { postAnalysis: { summarize: () => [] } };');
+		const load = loader();
+		const failures: string[] = [];
+		await load('arm-e', failures);
+		await load('arm-e', failures);
+		expect(failures).toHaveLength(1);
+	});
+
+	// Identity is what groups arms into one summary table.
+	it('returns the same object for two calls on one experiment', async () => {
+		define(
+			'experiments',
+			'arm-f',
+			'export default { postAnalysis: { analyzeRun: () => null, summarize: () => [] } };',
+		);
+		const load = loader();
+		expect(await load('arm-f', [])).toBe(await load('arm-f', []));
 	});
 });

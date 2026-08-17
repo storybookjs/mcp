@@ -52,7 +52,6 @@ import {
 	writeMisuseReport,
 } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { assertApiKey } from '#lib/agentic-reference/metrics/ds-misuse/judge';
-import { postAnalysis } from '#lib/agentic-reference/post-analysis';
 import { selectionFlags } from '#lib/agentic-reference/selection';
 import { readNodeSidecar } from '#lib/post-analysis/baseline';
 import {
@@ -63,13 +62,27 @@ import {
 	type Run,
 	type RunSelection,
 } from '#lib/post-analysis/discovery';
+import { createPostAnalysisLoader } from '#lib/post-analysis/hooks';
 import { readJson } from '#lib/utils/files';
+import { messageOf } from '#lib/utils/error';
 import { isRecord } from '#lib/utils/type';
+
+import type { PostAnalysis } from '#lib/post-analysis/types';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(ROOT, 'results');
 const BASELINES_DIR = join(ROOT, 'baselines');
 const REF_CACHE_DIR = join(ROOT, '.eval-cache/refs');
+
+// Which module measured a run is the experiment's call, exactly as it is in
+// results:analyze — and it decides both what this costs and whether it is right.
+// A run whose experiment names no module is not ours to judge, and the sidecar
+// and staleness checks below are keyed on *that* module's metricsVersion rather
+// than on whichever one happened to be imported at the top of this file.
+const loadPostAnalysis = createPostAnalysisLoader([
+	join(ROOT, 'experiments'),
+	join(ROOT, '.agentic-ref', 'experiments'),
+]);
 
 interface Options extends RunSelection {
 	recompute: boolean;
@@ -105,12 +118,12 @@ function pinOf(runDir: string) {
 	}
 }
 
-function messageOf(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
-}
-
 /** Judge one run, or explain why it cannot be judged. */
-async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused' | 'skipped'> {
+async function judgeOne(
+	run: Run,
+	postAnalysis: PostAnalysis,
+	options: Options,
+): Promise<'judged' | 'reused' | 'skipped'> {
 	const label = `${run.experiment}/${run.evalName}/run-${run.run}`;
 
 	const pin = pinOf(run.runDir);
@@ -190,9 +203,21 @@ async function main() {
 	}
 
 	const counts = { judged: 0, reused: 0, skipped: 0, failed: 0 };
+	const loadFailures: string[] = [];
+	let withoutHook = 0;
+
 	for (const run of runs) {
+		// The experiment names the module that measured this run; if it names none,
+		// results:analyze never measured it and this must not pay to judge it.
+		// Resolved before anything else so that skip costs nothing at all.
+		const postAnalysis = await loadPostAnalysis(run.experiment, loadFailures);
+		if (postAnalysis === null) {
+			withoutHook += 1;
+			continue;
+		}
+
 		try {
-			counts[await judgeOne(run, options)] += 1;
+			counts[await judgeOne(run, postAnalysis, options)] += 1;
 		} catch (error) {
 			// One broken run must not cost us the others — but an absent API key
 			// will fail every remaining run identically, so stop on it.
@@ -201,6 +226,13 @@ async function main() {
 			console.error(`${run.experiment}/${run.evalName}/run-${run.run}: ${message}`);
 			if (message.includes('ANTHROPIC_API_KEY')) throw error;
 		}
+	}
+
+	for (const message of loadFailures) console.error(`Could not load ${message}`);
+	if (withoutHook > 0) {
+		console.log(
+			`Skipped ${withoutHook} ${withoutHook === 1 ? 'run' : 'runs'} whose experiment carries no postAnalysis.`,
+		);
 	}
 
 	console.log(

@@ -58,9 +58,9 @@
 // The table flags select what is *printed*; everything is measured and
 // written either way. Passing any of them prints exactly that set; passing none
 // falls back to DEFAULT_TABLES below.
-import { existsSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
@@ -73,8 +73,9 @@ import {
 	type Run,
 	type RunSelection,
 } from '#lib/post-analysis/discovery';
-import { postAnalysisFrom } from '#lib/post-analysis/hooks';
+import { createPostAnalysisLoader } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
+import { messageOf } from '#lib/utils/error';
 import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
 import { selectionFlags } from '#lib/agentic-reference/selection';
@@ -150,10 +151,6 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 	};
 }
 
-function messageOf(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
-}
-
 /**
  * The judge invocation covering exactly the runs this pass looked at.
  *
@@ -174,41 +171,15 @@ function rejudgeCommand(selection: RunSelection): string {
 }
 
 // --- post-analysis loading ---
-// Which module analyses a run is the experiment's call, not the eval's. The
-// module comes across as a live object, so arms that share one share it by
-// reference — which is exactly what groups their runs into a single summary.
-const byExperiment = new Map<string, PostAnalysis | null>();
-
-async function loadPostAnalysis(
-	experiment: string,
-	failures: string[],
-): Promise<PostAnalysis | null> {
-	const cached = byExperiment.get(experiment);
-	if (cached !== undefined) return cached;
-
-	// Agentic-reference arms are run from .agentic-ref/, so their generated
-	// definitions live under .agentic-ref/experiments/ rather than experiments/.
-	const definition = [
-		join(ROOT, 'experiments', `${experiment}.ts`),
-		join(ROOT, '.agentic-ref', 'experiments', `${experiment}.ts`),
-	].find(existsSync);
-	// Results outlive experiment definitions: a renamed or deleted arm leaves its
-	// runs on disk, and those are skipped rather than fatal.
-	let postAnalysis: PostAnalysis | null = null;
-	if (definition) {
-		try {
-			postAnalysis = postAnalysisFrom(await import(pathToFileURL(definition).href), experiment);
-		} catch (error) {
-			// A definition that will not import, or names a malformed module, must
-			// not cost every other arm its analysis. Reported once: the outcome is
-			// cached below, so the remaining runs of this arm skip quietly.
-			failures.push(`experiments/${experiment}.ts: ${messageOf(error)}`);
-		}
-	}
-
-	byExperiment.set(experiment, postAnalysis);
-	return postAnalysis;
-}
+// Which module analyses a run is the experiment's call, not the eval's. Shared
+// with judge-ds-misuse.ts, so the paid CLI skips exactly the runs this one does.
+//
+// Agentic-reference arms are run from .agentic-ref/, so their generated
+// definitions live under .agentic-ref/experiments/ rather than experiments/.
+const loadPostAnalysis = createPostAnalysisLoader([
+	join(ROOT, 'experiments'),
+	join(ROOT, '.agentic-ref', 'experiments'),
+]);
 
 // --- post-analysis cache ---
 // One entry per run, stored next to other artifacts; --recompute ignores it.
