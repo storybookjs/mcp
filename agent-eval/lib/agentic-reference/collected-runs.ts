@@ -9,8 +9,7 @@ import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 
 import { readJson } from '../utils/files.ts';
-
-const RUN_DIR = /^run-(\d+)$/;
+import { RUN_DIR } from './constants.ts';
 
 /** What a stored run directory turned out to be. */
 export interface RunOutcome {
@@ -52,8 +51,12 @@ export function readRunOutcomes(evalDir: string): RunOutcome[] {
 }
 
 /** How many runs of an eval directory produced something to measure. */
-export function countCollectedRuns(evalDir: string): number {
-	return readRunOutcomes(evalDir).filter((outcome) => outcome.collected).length;
+export function countCollectedRuns(evalDir: string, successfulOnly = true): number {
+	const allOutcomes = readRunOutcomes(evalDir).filter((outcome) => outcome.collected);
+
+	return successfulOnly
+	  ?	allOutcomes.filter((outcome) => outcome.error === null).length
+		: allOutcomes.length
 }
 
 /** Removes a directory if nothing is left in it, and says whether it did. */
