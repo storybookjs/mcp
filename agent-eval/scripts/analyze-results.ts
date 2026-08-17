@@ -40,6 +40,7 @@
 //   --general             print the per-run vitals and grouped summary tables
 //   --complexity          print the complexity tables
 //   --coverage            print the design-system coverage tables
+//   --misuse             print the design-system misuse tables (see judge:ds-misuse)
 //
 // Selection follows the shared grammar in lib/agentic-reference/selection.ts,
 // with each flag falling back to AGENTIC_REF_<FLAG>. --recompute reads
@@ -62,6 +63,7 @@ import {
 	readRunMeasurement,
 } from '#lib/agentic-reference/identity';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
+import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
 import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
@@ -80,7 +82,7 @@ import type {
 import { EVALS_DIR, experimentDefinition, RESULTS_DIR } from '#lib/agentic-reference/constants';
 
 // --- options ---
-const TABLE_SECTIONS = ['general', 'complexity', 'coverage'] as const;
+const TABLE_SECTIONS = ['general', 'complexity', 'coverage', 'misuse'] as const;
 type TableSection = (typeof TABLE_SECTIONS)[number];
 
 // What prints when no table flag is passed: coverage alone, since the other
@@ -125,6 +127,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 				general: flags.switch('general', 'Print the per-run vitals and grouped summary tables'),
 				complexity: flags.switch('complexity', 'Print the complexity tables'),
 				coverage: flags.switch('coverage', 'Print the design-system coverage tables'),
+				misuse: flags.switch('misuse', 'Print the design-system misuse tables'),
 			},
 		)
 		.parseSync();
@@ -144,6 +147,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 			general: chosen.includes('general'),
 			complexity: chosen.includes('complexity'),
 			coverage: chosen.includes('coverage'),
+			misuse: chosen.includes('misuse'),
 		},
 	};
 }
@@ -274,10 +278,18 @@ interface SuccessfulAnalysis extends Record<string, unknown> {
 	__postAnalysis: PostAnalysis;
 }
 // Internal routing state, stripped before anything sees a record.
+//
+// Read fresh on every invocation and merged here rather than into the cached
+// analysis: the judge runs after this script, so a cached row would never gain
+// the scores without --recompute.
 function strip(row: SuccessfulAnalysis): Record<string, unknown> {
-	return Object.fromEntries(
-		Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
-	);
+	const report = readMisuseReport(row.__run.runDir);
+	return {
+		...Object.fromEntries(
+			Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
+		),
+		...(report === null ? {} : { dsMisuse: report }),
+	};
 }
 
 /** A comparable set's heading: which experiment, which eval, which generation. */
@@ -384,8 +396,25 @@ async function main() {
 			a.__run.run - b.__run.run,
 	);
 
-	// summary.json belongs to the directory it sits in, so it is folded from
-	// that directory's runs alone.
+	// A silently absent metric is the failure mode worth shouting about, so this
+	// fires whichever table families were selected.
+	const unjudged = successfulAnalyses.filter(
+		(row) => readMisuseReport(row.__run.runDir) === null,
+	).length;
+	if (unjudged > 0) {
+		const bold = '\x1b[1;31m';
+		const reset = '\x1b[0m';
+		console.error(
+			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+				'  Run: pnpm judge:ds-misuse' +
+				(options.experiments.length ? ` --experiments=${options.experiments.join(',')}` : '') +
+				(options.latest ? ' --latest' : ''),
+		);
+	}
+
+	// Grouped by the directory holding the run-* dirs, i.e. one group per eval of
+	// one experiment at one timestamp. That is the unit summary.json describes,
+	// so summarize is scoped to it and every run in a group shares one module.
 	const byEvalDir = new Map<string, SuccessfulAnalysis[]>();
 	for (const row of successfulAnalyses) {
 		const evalDir = dirname(row.__run.runDir);
