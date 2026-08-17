@@ -6,7 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import type { buildJudgeRequest } from './context.ts';
-import type { JudgeResponse } from './types.ts';
+import type { JudgeResponse, JudgeUsage } from './types.ts';
 
 /** Exactly what buildJudgeRequest produces, so no cast is needed at the call site. */
 export type JudgeRequest = ReturnType<typeof buildJudgeRequest>;
@@ -25,12 +25,35 @@ export function assertApiKey(): void {
 }
 
 /**
- * Call the judge and return its structured answer.
+ * Whether a failure belongs to the account rather than to the run being judged.
+ *
+ * An exhausted balance arrives as an ordinary per-run error — the API reports it
+ * as a 400 on whichever request happened to hit it, not as a distinct status —
+ * so a caller that treats it as one bad run walks the rest of the selection into
+ * the same wall, one paid attempt at a time. Matched on the message because that
+ * is all the SDK's error carries by the time a caller sees it.
+ */
+export function isAccountFailure(message: string): boolean {
+	return (
+		message.includes('ANTHROPIC_API_KEY') ||
+		message.includes('credit balance') ||
+		message.includes('authentication_error') ||
+		message.includes('permission_error')
+	);
+}
+
+export interface JudgeResult {
+	response: JudgeResponse;
+	usage: JudgeUsage;
+}
+
+/**
+ * Call the judge and return its structured answer, with what the call cost.
  *
  * The response is schema-constrained by output_config.format, so the only
  * failures worth naming are the ones that produce no usable content at all.
  */
-export async function runJudge(request: JudgeRequest): Promise<JudgeResponse> {
+export async function runJudge(request: JudgeRequest): Promise<JudgeResult> {
 	assertApiKey();
 	const client = new Anthropic();
 
@@ -60,5 +83,13 @@ export async function runJudge(request: JudgeRequest): Promise<JudgeResponse> {
 		);
 	}
 
-	return JSON.parse(text.text) as JudgeResponse;
+	return {
+		response: JSON.parse(text.text) as JudgeResponse,
+		usage: {
+			input: message.usage.input_tokens,
+			cacheWrite: message.usage.cache_creation_input_tokens ?? 0,
+			cacheRead: message.usage.cache_read_input_tokens ?? 0,
+			output: message.usage.output_tokens,
+		},
+	};
 }

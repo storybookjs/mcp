@@ -51,7 +51,7 @@ import {
 	readMisuseReport,
 	writeMisuseReport,
 } from '#lib/agentic-reference/metrics/ds-misuse/index';
-import { assertApiKey } from '#lib/agentic-reference/metrics/ds-misuse/judge';
+import { assertApiKey, isAccountFailure } from '#lib/agentic-reference/metrics/ds-misuse/judge';
 import { selectionFlags } from '#lib/agentic-reference/selection';
 import { readDsCoverageNodeList } from '#lib/post-analysis/baseline';
 import {
@@ -112,7 +112,10 @@ async function judgeOne(
 	postAnalysis: PostAnalysis,
 	options: Options,
 ): Promise<'judged' | 'reused' | 'skipped'> {
-	const label = `${run.experiment}/${run.evalName}/run-${run.run}`;
+	// The timestamp is part of the address, not decoration: one experiment can hold
+	// several result directories, each with its own run-1, and a label without it
+	// names two different runs identically.
+	const label = `${run.experiment}/${run.timestamp}/${run.evalName}/run-${run.run}`;
 
 	const pin = pinOfResult(readJson(join(run.runDir, 'result.json')));
 	if (pin === null) {
@@ -214,12 +217,16 @@ async function main() {
 		try {
 			counts[await judgeOne(run, postAnalysis, options)] += 1;
 		} catch (error) {
-			// One broken run must not cost us the others — but an absent API key
-			// will fail every remaining run identically, so stop on it.
+			// One broken run must not cost us the others — but a failure of the
+			// account rather than of the run will repeat identically on every run
+			// left, so stop on it rather than walking the whole selection into the
+			// same wall.
 			counts.failed += 1;
 			const message = messageOf(error);
-			console.error(`${run.experiment}/${run.evalName}/run-${run.run}: ${message}`);
-			if (message.includes('ANTHROPIC_API_KEY')) throw error;
+			console.error(
+				`${run.experiment}/${run.timestamp}/${run.evalName}/run-${run.run}: ${message}`,
+			);
+			if (isAccountFailure(message)) throw error;
 		}
 	}
 

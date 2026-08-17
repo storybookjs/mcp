@@ -213,4 +213,40 @@ describe('judgeRun', () => {
 		expect(report).toBeNull();
 		expect(RUN_JUDGE).not.toHaveBeenCalled();
 	});
+
+	it('carries the judge’s nodes and what the call cost into the report', async () => {
+		const before = mkdtempSync(join(runDir, 'before-'));
+		const after = mkdtempSync(join(runDir, 'after-'));
+		writeFileSync(join(before, 'App.tsx'), 'export const App = () => <div />\n');
+		writeFileSync(join(after, 'App.tsx'), 'export const App = () => <section />\n');
+
+		const node = {
+			path: 'App/section[0]',
+			file: 'App.tsx',
+			line: 1,
+			tag: 'section',
+			kind: 'ds',
+			correctDsDecision: { score: 1, reason: 'right component' },
+			correctDsUsage: { score: 1, reason: 'no violation' },
+		};
+		const usage = { input: 12, cacheWrite: 0, cacheRead: 105_919, output: 4_096 };
+		RUN_JUDGE.mockResolvedValue({ response: { nodes: [node] }, usage });
+
+		const written = await judgeRun({
+			runDir,
+			projectDir: after,
+			baselineDir: before,
+			baselineNodes: [],
+			dsPackages: ['@droppy/*'],
+			fixtureRef: 'owner/name@ref',
+			metricsVersion: 7,
+			refCacheDir: join(runDir, 'refs'),
+		});
+
+		expect(written?.nodes).toEqual([node]);
+		// Without this the artifact cannot tell a cached corpus from a rewritten
+		// one, which is the only reason the counts are kept at all.
+		expect(written?.usage).toEqual(usage);
+		expect(written?.summary.evaluated).toEqual({ ds: 1, local: 0 });
+	});
 });

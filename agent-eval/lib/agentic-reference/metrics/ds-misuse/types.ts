@@ -51,6 +51,23 @@ export interface JudgeResponse {
 	nodes: JudgedNode[];
 }
 
+/**
+ * What one judge call cost, in the four token classes that are priced
+ * differently.
+ *
+ * Recorded because the guideline corpus is the whole cost story and there is no
+ * other way to see it: a request that reads the corpus from cache and one that
+ * rewrites it differ by about twentyfold, and are indistinguishable from the
+ * scores alone. `cacheRead` near zero on a second run against an unchanged pin
+ * means the prefix is being rewritten every time.
+ */
+export interface JudgeUsage {
+	input: number;
+	cacheWrite: number;
+	cacheRead: number;
+	output: number;
+}
+
 export interface DsMisuseSummary {
 	/** Mean over DS nodes, or null when none were evaluated. */
 	correctDsDecision: number | null;
@@ -71,6 +88,13 @@ export interface DsMisuseReport {
 	/** `repo@ref` of the tree the run worked on. */
 	fixtureRef: string;
 	diffTruncated: boolean;
+	/**
+	 * What the call cost. Absent on artifacts written before this was recorded,
+	 * which is why it is optional rather than a schema-version bump: the scores in
+	 * those artifacts are still valid, and re-judging to acquire a token count
+	 * would cost more than the count is worth.
+	 */
+	usage?: JudgeUsage;
 	summary: DsMisuseSummary;
 	nodes: JudgedNode[];
 }

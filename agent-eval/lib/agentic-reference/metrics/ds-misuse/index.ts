@@ -159,9 +159,10 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport | n
 		dsGuidelinesRef: dsDocsRefLabel(),
 		fixtureRef: input.fixtureRef,
 		diffTruncated: patch.truncated,
-		summary: summariseJudgement(judged.nodes),
+		usage: judged.usage,
+		summary: summariseJudgement(judged.response.nodes),
 		// The buckets travel with the scores: the judge chose them, so a surprising
 		// number has to be traceable to what it actually counted.
-		nodes: judged.nodes,
+		nodes: judged.response.nodes,
 	};
 }
