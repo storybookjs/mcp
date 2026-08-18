@@ -18,12 +18,19 @@
 // plain --env-file is fatal when the file is absent, which would break every
 // invocation by anyone who exports the key instead.
 //
+// --dry settles everything that can be settled locally (pin, DS packages, cache
+// freshness, node census) and prints which runs it would judge, reuse or skip.
+//
 // Usage: pnpm judge:ds-misuse [flags]. Run with --help for the flag list.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { prepareRef, typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
+import {
+	type ExternalRepoPin,
+	prepareRef,
+	typecheckExternalRepo,
+} from '#lib/agentic-reference/external-repo';
 import { dsPackagesForPin } from '#lib/agentic-reference/metrics/coverage';
 import { dsDocsRefLabel } from '#lib/agentic-reference/metrics/ds-misuse/ds-docs';
 import {
@@ -40,6 +47,8 @@ import { selectionFlags } from '#lib/agentic-reference/selection';
 import { readJson } from '#lib/utils/files';
 import { isRecord } from '#lib/utils/type';
 
+import type { NodeRecord } from '#lib/agentic-reference/metrics/ds-coverage/types';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(ROOT, 'results');
 const BASELINES_DIR = join(ROOT, 'baselines');
@@ -52,6 +61,7 @@ const REF_CACHE_DIR = join(ROOT, '.eval-cache/refs');
 // analysis pass over the same directories.
 interface Options extends RunSelection {
 	recompute: boolean;
+	dry: boolean;
 }
 
 function parseOptions(argv: string[]): Options {
@@ -68,6 +78,7 @@ function parseOptions(argv: string[]): Options {
 				evals: flags.evals,
 				since: flags.text('since', 'Only runs stamped on or after this ISO date'),
 				latest: flags.switch('latest', 'Only the newest result directory per experiment'),
+				dry: flags.switch('dry', 'Print the plan and spend nothing'),
 				recompute: {
 					...flags.switch('recompute', 'Re-judge runs that already carry a ds-misuse.json'),
 					alias: ['force'],
@@ -81,6 +92,7 @@ function parseOptions(argv: string[]): Options {
 		evals: parsed.evals,
 		since: parsed.since ?? null,
 		latest: parsed.latest,
+		dry: parsed.dry,
 		recompute: parsed.recompute,
 	};
 }
@@ -100,14 +112,34 @@ function messageOf(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }
 
-/** Judge one run, or explain why it cannot be judged. */
-async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused' | 'skipped'> {
-	const label = `${run.experiment}/${run.evalName}/run-${run.run}`;
+function labelOf(run: Run): string {
+	return `${run.experiment}/${run.evalName}/run-${run.run}`;
+}
+
+type Plan =
+	| { action: 'reused' | 'skipped' }
+	| {
+			action: 'judge';
+			pin: ExternalRepoPin;
+			fixtureRef: string;
+			dsPackages: string[];
+			baselineNodes: NodeRecord[];
+	  };
+
+/**
+ * Everything a run needs before anything is spent on it, and whether it has it.
+ *
+ * Kept separate from the call it precedes so --dry can reach the same verdicts
+ * for free: the checks below are the ones that decide whether a run is worth
+ * paying for, so a plan that skipped any of them would not be the plan.
+ */
+function planRun(run: Run, options: Options): Plan {
+	const label = labelOf(run);
 
 	const pin = pinOf(run.runDir);
 	if (pin === null) {
 		console.error(`${label}: recorded no usable evals.externalRepo pin, so it has no baseline.`);
-		return 'skipped';
+		return { action: 'skipped' };
 	}
 	const fixtureRef = `${pin.repo}@${pin.ref}`;
 
@@ -117,7 +149,7 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 			`${label}: ${fixtureRef} declares no DS packages. ` +
 				'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
 		);
-		return 'skipped';
+		return { action: 'skipped' };
 	}
 
 	const existing = options.recompute ? null : readMisuseReport(run.runDir);
@@ -128,7 +160,7 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 			metricsVersion: postAnalysis.metricsVersion,
 		})
 	) {
-		return 'reused';
+		return { action: 'reused' };
 	}
 
 	const baselineNodes = readNodeSidecar(BASELINES_DIR, pin, postAnalysis.metricsVersion);
@@ -137,21 +169,32 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 			`${label}: no node census for ${fixtureRef} at metricsVersion ` +
 				`${postAnalysis.metricsVersion ?? 'none'}. Run: pnpm results:analyze --recompute`,
 		);
-		return 'skipped';
+		return { action: 'skipped' };
+	}
+
+	return { action: 'judge', pin, fixtureRef, dsPackages, baselineNodes };
+}
+
+/** Judge one run, or explain why it cannot be judged. */
+async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused' | 'skipped'> {
+	const plan = planRun(run, options);
+	if (plan.action !== 'judge') {
+		return plan.action;
 	}
 
 	// Checked once the cheap local work has had its chance to fail, so a
 	// misconfigured environment surfaces every other problem in the same pass.
 	assertApiKey();
 
+	const label = labelOf(run);
 	console.log(`Judging ${label} against ${dsDocsRefLabel()}`);
 	const report = await judgeRun({
 		runDir: run.runDir,
 		projectDir: run.projectDir,
-		baselineDir: prepareRef(REF_CACHE_DIR, pin.repo, pin.ref),
-		baselineNodes,
-		dsPackages,
-		fixtureRef,
+		baselineDir: prepareRef(REF_CACHE_DIR, plan.pin.repo, plan.pin.ref),
+		baselineNodes: plan.baselineNodes,
+		dsPackages: plan.dsPackages,
+		fixtureRef: plan.fixtureRef,
 		metricsVersion: postAnalysis.metricsVersion,
 		refCacheDir: REF_CACHE_DIR,
 	});
@@ -164,6 +207,24 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 			`local ${correctLocalDecision ?? '-'}`,
 	);
 	return 'judged';
+}
+
+/** Print what a real pass would do, and spend nothing doing it. */
+function dryRun(runs: Run[], options: Options): void {
+	const counts = { judge: 0, reused: 0, skipped: 0 };
+	for (const run of runs) {
+		const plan = planRun(run, options);
+		if (plan.action === 'judge') {
+			console.log(`Would judge ${labelOf(run)} against ${dsDocsRefLabel()}`);
+		}
+		counts[plan.action] += 1;
+	}
+
+	console.log(
+		`\nWould judge ${counts.judge} (one model call each), ` +
+			`reuse ${counts.reused}, skip ${counts.skipped}. Nothing spent.`,
+	);
+	if (counts.reused > 0) console.log('Pass --recompute to re-judge cached runs.');
 }
 
 async function main() {
@@ -191,6 +252,11 @@ async function main() {
 		return;
 	}
 
+	if (options.dry) {
+		dryRun(runs, options);
+		return;
+	}
+
 	const counts = { judged: 0, reused: 0, skipped: 0, failed: 0 };
 	for (const run of runs) {
 		try {
@@ -200,7 +266,7 @@ async function main() {
 			// will fail every remaining run identically, so stop on it.
 			counts.failed += 1;
 			const message = messageOf(error);
-			console.error(`${run.experiment}/${run.evalName}/run-${run.run}: ${message}`);
+			console.error(`${labelOf(run)}: ${message}`);
 			if (message.includes('ANTHROPIC_API_KEY')) throw error;
 		}
 	}

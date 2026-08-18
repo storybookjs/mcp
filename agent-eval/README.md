@@ -181,6 +181,10 @@ It needs `ANTHROPIC_API_KEY` and aborts naming it if absent. Each run's
 judgement is cached in its run directory as `ds-misuse.json` and reused until
 the guidelines pin or `metricsVersion` moves; `--recompute` re-judges.
 
+`--dry` (or `pnpm judge:ds-misuse:dry`) resolves the same selection, runs every
+local check the real pass runs, and prints which runs it would judge, reuse from
+cache, or skip.
+
 Every arm is judged against **one pinned, complete** copy of the design system's
 documentation (`DS_DOCS_PIN` in
 `lib/agentic-reference/metrics/ds-misuse/ds-docs.ts`) — deliberately not the
