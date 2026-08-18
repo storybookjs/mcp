@@ -55,9 +55,34 @@ export function isGenerated(path: string): boolean {
 	return GENERATED_FILE.test(path);
 }
 
-/** Whether a workspace-relative path should be left out of every metric. */
+/**
+ * Whether a path lies inside a directory no walker descends into.
+ *
+ * Directory segments only, so a source file named after one — `src/build.ts` —
+ * still counts. Every walker here applies SKIP_DIRS at each level as it
+ * recurses, so this is the same rule read off a path instead of a dirent.
+ */
+function isUnderSkippedDir(path: string): boolean {
+	return path
+		.split('/')
+		.slice(0, -1)
+		.some((segment) => SKIP_DIRS.has(segment));
+}
+
+/**
+ * Whether a workspace-relative path should be left out of every metric.
+ *
+ * The SKIP_DIRS check is redundant for callers that walked the tree themselves —
+ * they never descended into those directories — and load-bearing for the one
+ * that did not: the judge's diff comes from `git diff --no-index`, which walks
+ * the trees itself, and an eval that builds the app leaves a `build/` the pinned
+ * tree never had. Its bundles are .js and .css, so extension filtering alone
+ * admits them, and a single minified chunk is larger than the judge's whole byte
+ * budget.
+ */
 export function isExcludedPath(path: string): boolean {
 	if (EXCLUDED_PATHS.has(path)) return true;
 	if (EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))) return true;
+	if (isUnderSkippedDir(path)) return true;
 	return isGenerated(path);
 }

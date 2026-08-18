@@ -75,6 +75,26 @@ describe('treePatch', () => {
 		expect(patch.files).toEqual(['src/App.tsx']);
 	});
 
+	// The eval builds the app, so a collected tree carries a `build/` the pinned
+	// tree never had. Those bundles are .js and .css, which the extension filter
+	// alone lets through — and one minified chunk is larger than the entire byte
+	// budget, so the cap then drops the handful of source lines the judge was
+	// called to read and reports the diff as truncated.
+	it('drops output from directories no walker descends into', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n' }),
+			tree('after', {
+				'src/App.tsx': 'const a = 2\n',
+				'build/assets/index-kRzogI1m.js': 'var a=1;\n',
+				'build/assets/index-CLHgnaiz.css': '.a{color:red}\n',
+				'dist/bundle.js': 'var b=2\n',
+				'coverage/lcov-report/block-navigation.js': 'var c=3\n',
+				'node_modules/left-pad/index.js': 'var d=4\n',
+			}),
+		);
+		expect(patch.files).toEqual(['src/App.tsx']);
+	});
+
 	it('cuts at a file boundary when over the cap and says how many it dropped', () => {
 		const big = 'x'.repeat(4000) + '\n';
 		const patch = treePatch(

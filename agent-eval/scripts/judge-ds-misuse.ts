@@ -18,7 +18,7 @@
 // plain --env-file is fatal when the file is absent, which would break every
 // invocation by anyone who exports the key instead.
 //
-// Usage: pnpm judge:ds-misuse [--experiment=<name>] [--since=<ISO date>] [--latest] [--recompute]
+// Usage: pnpm judge:ds-misuse [flags]. Run with --help for the flag list.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,7 +35,8 @@ import {
 import { assertApiKey } from '#lib/agentic-reference/metrics/ds-misuse/judge';
 import { postAnalysis } from '#lib/agentic-reference/post-analysis';
 import { readNodeSidecar } from '#lib/post-analysis/baseline';
-import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
+import { findRuns, selectRuns, type Run, type RunSelection } from '#lib/post-analysis/discovery';
+import { selectionFlags } from '#lib/agentic-reference/selection';
 import { readJson } from '#lib/utils/files';
 import { isRecord } from '#lib/utils/type';
 
@@ -44,27 +45,44 @@ const RESULTS_DIR = join(ROOT, 'results');
 const BASELINES_DIR = join(ROOT, 'baselines');
 const REF_CACHE_DIR = join(ROOT, '.eval-cache/refs');
 
-interface Options {
-	experiment: string | null;
-	since: string | null;
-	latest: boolean;
+// Selection is the shared agentic-reference grammar, not a private one: this
+// command spends money per run, and `--experiments`/`--evals` is how a sweep is
+// narrowed to the arm under review. A second dialect here would mean the flags
+// that scope a paid run read differently from the ones that scope the free
+// analysis pass over the same directories.
+interface Options extends RunSelection {
 	recompute: boolean;
 }
 
-function parseArgs(argv: string[]): Options {
-	const options: Options = { experiment: null, since: null, latest: false, recompute: false };
-	for (const arg of argv) {
-		const [flag, value] = arg.split('=');
-		if (flag === '--latest') options.latest = true;
-		else if (flag === '--recompute') options.recompute = true;
-		else if (flag === '--experiment' && value) options.experiment = value;
-		else if (flag === '--since' && value) options.since = value;
-		else
-			throw new Error(
-				`Unknown argument "${arg}". See the usage comment in scripts/judge-ds-misuse.ts.`,
-			);
-	}
-	return options;
+function parseOptions(argv: string[]): Options {
+	const flags = selectionFlags(process.env);
+	const parsed = flags
+		.parser(
+			argv,
+			{
+				scriptName: 'judge:ds-misuse',
+				usage: 'Usage: pnpm judge:ds-misuse [flags]',
+			},
+			{
+				experiments: flags.experiments,
+				evals: flags.evals,
+				since: flags.text('since', 'Only runs stamped on or after this ISO date'),
+				latest: flags.switch('latest', 'Only the newest result directory per experiment'),
+				recompute: {
+					...flags.switch('recompute', 'Re-judge runs that already carry a ds-misuse.json'),
+					alias: ['force'],
+				},
+			},
+		)
+		.parseSync();
+
+	return {
+		experiments: parsed.experiments,
+		evals: parsed.evals,
+		since: parsed.since ?? null,
+		latest: parsed.latest,
+		recompute: parsed.recompute,
+	};
 }
 
 /** The pin the run itself recorded — never today's fixture pin. */
@@ -149,14 +167,25 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 }
 
 async function main() {
-	const options = parseArgs(process.argv.slice(2));
+	const options = parseOptions(process.argv.slice(2));
 
 	if (!existsSync(RESULTS_DIR)) {
 		console.log('No results/ directory; nothing to judge.');
 		return;
 	}
 
-	const runs = selectRuns(findRuns(RESULTS_DIR), options);
+	const selected = selectRuns(findRuns(RESULTS_DIR), options);
+	// A run whose project tree was never collected has nothing to diff against
+	// its baseline, and the judge scores a diff. Dropped here rather than left to
+	// fail one by one downstream: --latest points at the newest result directory
+	// per experiment, which is exactly where an interrupted sweep leaves its
+	// uncollected runs, and a paid command should say "nothing to judge" before
+	// it says it per run.
+	const runs = selected.filter((run) => run.collected);
+	const uncollected = selected.length - runs.length;
+	if (uncollected > 0) {
+		console.log(`Skipping ${uncollected} run(s) that left no project tree behind.`);
+	}
 	if (runs.length === 0) {
 		console.log('No runs matched.');
 		return;

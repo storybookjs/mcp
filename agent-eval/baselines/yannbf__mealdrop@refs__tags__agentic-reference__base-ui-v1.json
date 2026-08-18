@@ -2,6 +2,7 @@
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/base-ui-v1",
 	"metricsVersion": 7,
+	"nodeSidecar": true,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
@@ -1297,7 +1298,10 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": ["@base-ui/react", "@droppy/*"],
+			"dsPackages": [
+				"@base-ui/react",
+				"@droppy/*"
+			],
 			"files": 127,
 			"nodes": {
 				"all": 365.5,

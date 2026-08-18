@@ -2,6 +2,7 @@
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/droppy-v2",
 	"metricsVersion": 7,
+	"nodeSidecar": true,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
@@ -1027,7 +1028,9 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": ["@droppy/*"],
+			"dsPackages": [
+				"@droppy/*"
+			],
 			"files": 100,
 			"nodes": {
 				"all": 312,
