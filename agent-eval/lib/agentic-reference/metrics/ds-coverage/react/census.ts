@@ -8,6 +8,7 @@
 import ts from 'typescript';
 
 import { createNodePathBuilder, elementTag, propNames } from './node-path.ts';
+import { ownerKey, ownerName } from './owner.ts';
 import { resolveJsxTag } from './resolve.ts';
 
 import type { ModuleGraph } from '../module-graph.ts';
@@ -17,8 +18,10 @@ import type {
 	IsCountedFile,
 	NodeRecord,
 	NodeTotals,
+	OwnerBucket,
 	Resolution,
 	UnresolvedElement,
+	UsageEdge,
 } from '../types.ts';
 
 function emptyTotals(): NodeTotals {
@@ -86,14 +89,16 @@ export function censusReactTree(
 		string,
 		{ category: 'host' | 'ds' | 'external' | 'local'; count: number }
 	>();
-	const unresolved: UnresolvedElement[] = [];
-	const nodeList: NodeRecord[] = [];
+	const unresolved: Array<Omit<UnresolvedElement, 'instances'> & { owner: string }> = [];
+	const nodeList: Array<Omit<NodeRecord, 'instances'> & { owner: string }> = [];
+	const owners = new Map<string, OwnerBucket>();
+	const edges: UsageEdge[] = [];
 
 	for (const file of graph.files.values()) {
-		// Skipping the walk for filtered out files.
-		if (!isCounted(file.path)) {
-			continue;
-		}
+		// Filtered-out files still walk: their usage sites feed the multiplier
+		// graph — a component's instantiation count is a whole-app fact — while
+		// only counted files' elements enter any totals.
+		const counted = isCounted(file.path);
 
 		const fileTotals = emptyTotals();
 
@@ -121,20 +126,38 @@ export function censusReactTree(
 			const resolution = resolveJsxTag(file, tag, resolver);
 			if (isNonRenderingIdentity(resolution)) return;
 
+			const owner = ownerKey(file.path, ownerName(element));
+			if (resolution.category === 'local') {
+				edges.push({ from: owner, to: `${resolution.module}#${resolution.name}`, weight });
+			}
+			if (!counted) return;
+
+			const bucket = owners.get(owner) ?? { totals: emptyTotals(), components: new Map() };
+			owners.set(owner, bucket);
+
 			totals.all += weight;
 			fileTotals.all += weight;
+			bucket.totals.all += weight;
 
 			if (resolution.category === 'host') {
 				totals.host += weight;
 				fileTotals.host += weight;
+				bucket.totals.host += weight;
 				const entry = components.get(resolution.tag) ?? { category: 'host' as const, count: 0 };
 				entry.count += weight;
 				components.set(resolution.tag, entry);
+				const bucketEntry = bucket.components.get(resolution.tag) ?? {
+					category: 'host' as const,
+					count: 0,
+				};
+				bucketEntry.count += weight;
+				bucket.components.set(resolution.tag, bucketEntry);
 				return;
 			}
 
 			totals.component += weight;
 			fileTotals.component += weight;
+			bucket.totals.component += weight;
 
 			if (
 				resolution.category === 'ds' ||
@@ -143,10 +166,17 @@ export function censusReactTree(
 			) {
 				totals[resolution.category] += weight;
 				fileTotals[resolution.category] += weight;
+				bucket.totals[resolution.category] += weight;
 				const key = `${resolution.module}#${resolution.name}`;
 				const entry = components.get(key) ?? { category: resolution.category, count: 0 };
 				entry.count += weight;
 				components.set(key, entry);
+				const bucketEntry = bucket.components.get(key) ?? {
+					category: resolution.category,
+					count: 0,
+				};
+				bucketEntry.count += weight;
+				bucket.components.set(key, bucketEntry);
 				if (includeNodes) {
 					nodeList.push({
 						path: nextPath(element),
@@ -158,6 +188,7 @@ export function censusReactTree(
 						name: resolution.name,
 						weight,
 						props: propNames(element),
+						owner,
 					});
 				}
 				return;
@@ -171,13 +202,14 @@ export function censusReactTree(
 					: `tag resolves to a ${resolution.category}`;
 			totals.unresolved += weight;
 			fileTotals.unresolved += weight;
+			bucket.totals.unresolved += weight;
 			const line = file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1;
 			// Raw source text here, where a record's `tag` above is rebuilt from the
 			// identifiers. The divergence is deliberate: a record's tag has to agree
 			// with its own `path`, which is normalised so reformatting cannot move a
 			// node, while this field is long-standing stored output whose spelling is
 			// not worth churning for a shape no path is derived from.
-			unresolved.push({ file: file.path, line, tag: tag.getText(), weight, reason });
+			unresolved.push({ file: file.path, line, tag: tag.getText(), weight, reason, owner });
 		};
 
 		const walk = (node: ts.Node, weight: number): void => {
@@ -206,5 +238,13 @@ export function censusReactTree(
 		if (fileTotals.all > 0) perFile.set(file.path, fileTotals);
 	}
 
-	return { totals, perFile, components, unresolved, nodeList: includeNodes ? nodeList : undefined };
+	return {
+		totals,
+		perFile,
+		components,
+		unresolved,
+		owners,
+		edges,
+		nodeList: includeNodes ? nodeList : undefined,
+	};
 }

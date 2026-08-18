@@ -1,6 +1,11 @@
 import type ts from 'typescript';
 
 import type { ModuleFile, ModuleGraph } from './module-graph.ts';
+import type { UsageEdge } from './multipliers.ts';
+
+// `export ... from` alone would re-export the name without binding it locally,
+// and CensusResult below needs it in scope too.
+export type { UsageEdge };
 
 /**
  * Where a resolved binding was declared. Carried on identities that came out
@@ -90,11 +95,19 @@ export interface NodeTotals {
 	unresolved: number;
 }
 
+/** Per-owner slice of the census: what one top-level declaration's JSX contributes. */
+export interface OwnerBucket {
+	totals: NodeTotals;
+	components: Map<string, { category: 'host' | 'ds' | 'external' | 'local'; count: number }>;
+}
+
 export interface UnresolvedElement {
 	file: string;
 	line: number;
 	tag: string;
 	weight: number;
+	/** weight × the owner's instantiation multiplier: estimated rendered copies. */
+	instances: number;
 	reason: string;
 }
 
@@ -120,6 +133,8 @@ export interface NodeRecord {
 	module: string;
 	name: string;
 	weight: number;
+	/** weight × the owner's instantiation multiplier: estimated rendered copies. */
+	instances: number;
 	/** Prop names only, never values: enough to check a guideline, small enough to ship. */
 	props: string[];
 }
@@ -129,9 +144,13 @@ export interface CensusResult {
 	perFile: Map<string, NodeTotals>;
 	/** Weighted per-identity counts, keyed `<module>#<name>` (hosts by tag). */
 	components: Map<string, { category: 'host' | 'ds' | 'external' | 'local'; count: number }>;
-	unresolved: UnresolvedElement[];
+	unresolved: Array<Omit<UnresolvedElement, 'instances'> & { owner: string }>;
+	/** Buckets for counted files' owners, keyed by ownerKey(). */
+	owners: Map<string, OwnerBucket>;
+	/** Whole-graph usage edges — counted files or not. */
+	edges: UsageEdge[];
 	/** Populated only when the census was asked for nodes. */
-	nodeList?: NodeRecord[];
+	nodeList?: Array<Omit<NodeRecord, 'instances'> & { owner: string }>;
 }
 
 /** Whether a file's own JSX counts toward the census. */
@@ -188,8 +207,22 @@ export interface DsCoverageReport {
 	dsShareOfAllNodes: number | null;
 	/** ds / component-typed, or null when no component-typed elements exist. */
 	dsShareOfComponentNodes: number | null;
+	/**
+	 * The same census, weighted by estimated instantiations: JSX inside a local
+	 * component counts once per (statically estimated) render of it.
+	 */
+	instances: {
+		nodes: NodeTotals;
+		dsShareOfAllNodes: number | null;
+		dsShareOfComponentNodes: number | null;
+		/** Owners whose multiplier ≠ 1, keyed `<file>#<name>`, largest first. */
+		multipliers: Record<string, number>;
+	};
 	/** Per-component attribution, largest count first. */
-	components: Record<string, { category: 'host' | 'ds' | 'external' | 'local'; count: number }>;
+	components: Record<
+		string,
+		{ category: 'host' | 'ds' | 'external' | 'local'; count: number; instances: number }
+	>;
 	/** Every element the analyzer could not classify, so 0 is checkable. */
 	unresolvedElements: UnresolvedElement[];
 	/** Per-file totals for files containing JSX, for spot validation. */
