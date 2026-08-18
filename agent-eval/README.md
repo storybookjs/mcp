@@ -147,6 +147,53 @@ the observed behavior, the evidence (CI run id and date), and the condition
 for re-enabling. See the gates in `evals/807-docs-request/EVAL.ts` and
 `evals/808-shared-infra-fallback/EVAL.ts` for the expected shape.
 
+## Design-system misuse judging
+
+`ds-coverage` measures how _much_ of a run's UI comes from the design system.
+`ds-misuse` measures whether the agent used it _well_, scoring the JSX nodes a
+run introduced against the Droppy design system's own documentation:
+
+- `correct-ds-decision` — was this the right DS component, or did a better DS
+  alternative exist?
+- `correct-ds-usage` — does this usage violate a documented guideline?
+- `correct-local-decision` — should this have been local, or did a DS component
+  with a relevant API exist?
+
+Each is scored 1 / 0.5 / 0 per node and summarised as a mean in `[0, 1]`.
+
+`pnpm exec node scripts/ds-coverage.ts <dir> --ds <pattern> --nodes` lists the
+census records a tree produces. Note its `Nodes (N)` count is much smaller than
+the `JSX nodes: N weighted` line above it — the former counts only judgeable
+component elements, since hosts and unresolved tags are deliberately excluded.
+The two are not meant to reconcile.
+
+Unlike every other metric here, this one **costs money** — one Claude call per
+run — so it lives behind its own command rather than running as part of
+`results:analyze`:
+
+```bash
+pnpm results:analyze --recompute   # builds the baselines and node census first
+pnpm judge:ds-misuse --latest      # then judges; roughly $0.10-0.15 per run
+pnpm results:analyze --misuse      # reads the artifacts and prints the tables
+```
+
+It needs `ANTHROPIC_API_KEY` and aborts naming it if absent. Each run's
+judgement is cached in its run directory as `ds-misuse.json` and reused until
+the guidelines pin or `metricsVersion` moves; `--recompute` re-judges.
+
+`--dry` (or `pnpm judge:ds-misuse:dry`) resolves the same selection, runs every
+local check the real pass runs, and prints which runs it would judge, reuse from
+cache, or skip.
+
+Every arm is judged against **one pinned, complete** copy of the design system's
+documentation (`DS_DOCS_PIN` in
+`lib/agentic-reference/metrics/ds-misuse/ds-docs.ts`) — deliberately not the
+docs variant that arm was served. Content variation between arms is the round's
+independent variable, so judging each arm against what it saw would score a
+degraded arm against a lowered bar.
+
+Design notes: `docs/superpowers/specs/2026-08-14-ds-misuse-metric-design.md`.
+
 ## Shared Templates
 
 Fixtures can opt into a shared starter project with package metadata:

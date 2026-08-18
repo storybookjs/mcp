@@ -968,9 +968,7 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": [
-				"@droppy/*"
-			],
+			"dsPackages": ["@droppy/*"],
 			"files": 94,
 			"nodes": {
 				"all": 278,

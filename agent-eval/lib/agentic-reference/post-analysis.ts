@@ -21,6 +21,7 @@ import {
 	sumComplexities,
 } from './metrics/complexity.ts';
 import { computeChurn } from './metrics/churn.ts';
+import { analyzeDsCoverage } from './metrics/ds-coverage/index.ts';
 import {
 	coverageDelta,
 	dsPackagesForPin,
@@ -35,6 +36,7 @@ import { diffTrees } from './tree/tree-diff.ts';
 
 import type { FileComplexity } from './metrics/complexity.ts';
 import type { CoverageDelta, DsCoverage } from './metrics/coverage.ts';
+import type { DsMisuseSummary } from './metrics/ds-misuse/types.ts';
 import type {
 	Analysis,
 	DeltaToBaselineContext,
@@ -70,9 +72,19 @@ export function analyzeRun(context: PostAnalysisContext): Analysis {
 	// The pinned tree is measured whole: which of its files matter is not known
 	// until a run has been diffed against it, and by then it may be long gone.
 	if (context.mode === 'baseline') {
+		const dsPackages = dsPackagesForPin(context.pin);
 		return {
 			...complexityForTree(context.projectDir),
-			dsCoverage: dsCoverageOf(context),
+			dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
+			// Whole tree, once per pin: baseline.ts moves this into the sidecar.
+			nodeList:
+				dsPackages === null
+					? undefined
+					: analyzeDsCoverage({
+							projectDir: context.projectDir,
+							dsPackages,
+							includeNodes: true,
+						}).nodeList,
 		};
 	}
 
@@ -259,6 +271,14 @@ function coverageOf(row: Record<string, unknown>): DsCoverage | null {
 	return isDsCoverage(row.dsCoverage) ? row.dsCoverage : null;
 }
 
+/** A run's judged misuse scores, or null when the judge has not run on it. */
+function misuseOf(row: Record<string, unknown>): DsMisuseSummary | null {
+	const report = row.dsMisuse;
+	return isRecord(report) && isRecord(report.summary)
+		? (report.summary as unknown as DsMisuseSummary)
+		: null;
+}
+
 /** Experiment names share a long prefix; the tables read better without it. */
 function shortExperiment(value: unknown): string {
 	return String(value)
@@ -371,6 +391,13 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			(row) => deltaOf(row).coverageDelta?.dsShareOfComponentNodes.delta,
 		);
 
+		const misuseDecision = numbersAt(group, (row) => misuseOf(row)?.correctDsDecision);
+		const misuseUsage = numbersAt(group, (row) => misuseOf(row)?.correctDsUsage);
+		const misuseLocal = numbersAt(group, (row) => misuseOf(row)?.correctLocalDecision);
+		const misuseJudged = group.filter((row) => misuseOf(row) !== null).length;
+		const misuseDsNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.ds);
+		const misuseLocalNodes = numbersAt(group, (row) => misuseOf(row)?.evaluated.local);
+
 		// An aggregate silently spanning two pins is not one measurement.
 		const fixtureRefs = [...new Set(group.map((row) => String(row.fixtureRef)))];
 
@@ -422,6 +449,19 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			dsShareOfComponentNodesDelta: {
 				mean: round(mean(dsShareOfComponentsDelta), 4),
 			},
+
+			// Scores keep four decimals like the coverage shares: a mean rounded to
+			// two would flatten a one-point move to nothing. numbersAt drops
+			// non-finite values, so an unjudged run contributes nothing rather than
+			// dragging a mean toward zero — misuseJudged says how many did count.
+			misuseJudged,
+			misuseDecision: { mean: round(mean(misuseDecision), 4) },
+			misuseUsage: { mean: round(mean(misuseUsage), 4) },
+			misuseLocalDecision: { mean: round(mean(misuseLocal), 4) },
+			misuseEvaluated: {
+				ds: sum(misuseDsNodes) ?? 0,
+				local: sum(misuseLocalNodes) ?? 0,
+			},
 		};
 	});
 }
@@ -432,7 +472,7 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
  */
 export function summarize(
 	analyses: Array<Record<string, unknown>>,
-	options: SummarizeOptions = { general: true, complexity: true, coverage: true },
+	options: SummarizeOptions = { general: true, complexity: true, coverage: true, misuse: true },
 ): Array<Record<string, unknown>> {
 	// Computed whichever tables print: these are the rows the runner persists.
 	const summary = makeGeneralSummary(analyses);
@@ -561,11 +601,49 @@ export function summarize(
 		);
 	}
 
-	// A selected family with no data would otherwise print a bare header. For
-	// coverage, point at the fix: an unmapped pin is the only thing that stops
-	// a run being measured.
-	if (!options.general && !printedComplexity && !printedCoverage) {
-		if (options.coverage && withCoverage.length === 0) {
+	// Absolute scores only — unlike coverage there is no before side to move
+	// against, because a decision the run did not make has no baseline value.
+	// judged is the escape hatch: a mean over one judged run of ten is not the
+	// arm's number, and the column says so.
+	const withMisuse = analyses.filter((row) => misuseOf(row) !== null);
+	const printedMisuse = options.misuse && withMisuse.length > 0;
+	if (printedMisuse) {
+		console.table(
+			withMisuse.map((row) => {
+				const misuse = misuseOf(row);
+				return {
+					experiment: shortExperiment(row.experiment),
+					run: row.run,
+					dsNodes: misuse?.evaluated.ds ?? null,
+					localNodes: misuse?.evaluated.local ?? null,
+					decision: misuse?.correctDsDecision ?? null,
+					usage: misuse?.correctDsUsage ?? null,
+					localDecision: misuse?.correctLocalDecision ?? null,
+				};
+			}),
+		);
+
+		console.table(
+			summary.map((group) => ({
+				experiment: shortExperiment(group.experiment),
+				judged: `${group.misuseJudged as number}/${group.runs as number}`,
+				dsNodes: (group.misuseEvaluated as { ds: number }).ds,
+				localNodes: (group.misuseEvaluated as { local: number }).local,
+				decisionMean: (group.misuseDecision as { mean: number | null }).mean,
+				usageMean: (group.misuseUsage as { mean: number | null }).mean,
+				localMean: (group.misuseLocalDecision as { mean: number | null }).mean,
+			})),
+		);
+	}
+
+	// A selected family this eval has no data for prints nothing at all, leaving
+	// a bare header that reads as a broken analysis. Coverage gets a pointer
+	// rather than a shrug: the one thing that stops a run being measured is a
+	// pin nobody has mapped, and the fix is a one-line edit.
+	if (!options.general && !printedComplexity && !printedCoverage && !printedMisuse) {
+		if (options.misuse && withMisuse.length === 0) {
+			console.log('No DS misuse judgement for these runs. Run: pnpm judge:ds-misuse');
+		} else if (options.coverage && withCoverage.length === 0) {
 			console.log(
 				'No DS coverage for these runs: their external-repo pin declares no DS packages. ' +
 					'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
@@ -594,10 +672,11 @@ export function summarize(
  * - 5 moved the DS package patterns from the eval fixture to the external-repo pin,
  *     so a baseline whose fixture was missing no longer stores a null coverage
  * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
+ * - 7 re-keyed baselines on the pin alone and added the ds-misuse node sidecar
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,
 	deltaToBaseline,
 	summarize,
-	metricsVersion: 6,
+	metricsVersion: 7,
 };

@@ -40,6 +40,7 @@
 //   --general             print the per-run vitals and grouped summary tables
 //   --complexity          print the complexity tables
 //   --coverage            print the design-system coverage tables
+//   --misuse             print the design-system misuse tables (see judge:ds-misuse)
 //
 // Selection follows the shared grammar in lib/agentic-reference/selection.ts,
 // with each flag falling back to AGENTIC_REF_<FLAG>. --recompute reads
@@ -53,9 +54,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { readRunOutcomes } from '#lib/agentic-reference/collected-runs';
-import { findStoredEvalDirs } from '#lib/agentic-reference/results-tree';
-import { groupComparableRuns, parseResultTimestamp } from '#lib/agentic-reference/comparability';
+import { groupComparableRuns } from '#lib/agentic-reference/comparability';
 import {
 	currentMeasurement,
 	describeDifferences,
@@ -64,12 +63,14 @@ import {
 	readRunMeasurement,
 } from '#lib/agentic-reference/identity';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
+import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
+import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
-import { matchesAnySelector, selectionFlags } from '#lib/agentic-reference/selection';
+import { selectionFlags } from '#lib/agentic-reference/selection';
 
 import type { ComparableGroup } from '#lib/agentic-reference/comparability';
 import type {
@@ -81,7 +82,7 @@ import type {
 import { EVALS_DIR, experimentDefinition, RESULTS_DIR } from '#lib/agentic-reference/constants';
 
 // --- options ---
-const TABLE_SECTIONS = ['general', 'complexity', 'coverage'] as const;
+const TABLE_SECTIONS = ['general', 'complexity', 'coverage', 'misuse'] as const;
 type TableSection = (typeof TABLE_SECTIONS)[number];
 
 // What prints when no table flag is passed: coverage alone, since the other
@@ -126,6 +127,7 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 				general: flags.switch('general', 'Print the per-run vitals and grouped summary tables'),
 				complexity: flags.switch('complexity', 'Print the complexity tables'),
 				coverage: flags.switch('coverage', 'Print the design-system coverage tables'),
+				misuse: flags.switch('misuse', 'Print the design-system misuse tables'),
 			},
 		)
 		.parseSync();
@@ -145,74 +147,9 @@ function parseOptions(argv: string[]): PostAnalysisOptions {
 			general: chosen.includes('general'),
 			complexity: chosen.includes('complexity'),
 			coverage: chosen.includes('coverage'),
+			misuse: chosen.includes('misuse'),
 		},
 	};
-}
-
-// --- discovery ---
-// Layout: results/<experiment>/<model>/<timestamp>/<eval>/run-N/project
-interface Run {
-	runDir: string;
-	projectDir: string;
-	experiment: string;
-	model: string;
-	timestamp: string;
-	evalName: string;
-	run: number;
-	/**
-	 * Whether the run left a project tree behind (see
-	 * lib/agentic-reference/collected-runs.ts). Runs without one are still
-	 * carried through selection and reported, not silently dropped.
-	 * `pnpm results:prune` clears them.
-	 */
-	collected: boolean;
-}
-
-/** Every run directory under `dir`, collected or not. */
-function findRuns(dir: string): Run[] {
-	return findStoredEvalDirs(dir).flatMap((evalDir) =>
-		readRunOutcomes(evalDir.dir).map((outcome) => ({
-			runDir: outcome.dir,
-			projectDir: join(outcome.dir, 'project'),
-			experiment: evalDir.experiment,
-			model: evalDir.model,
-			timestamp: evalDir.timestamp,
-			evalName: evalDir.evalName,
-			run: outcome.run,
-			collected: outcome.collected,
-		})),
-	);
-}
-
-function selectRuns(runs: Run[], options: PostAnalysisOptions): Run[] {
-	let selected = runs;
-	selected = selected.filter(
-		(run) =>
-			matchesAnySelector(run.experiment, options.experiments) &&
-			matchesAnySelector(run.evalName, options.evals),
-	);
-	if (options.since) {
-		const since = new Date(options.since);
-		if (Number.isNaN(since.getTime())) {
-			throw new Error(`--since must be a parseable date; received "${options.since}"`);
-		}
-		// A directory whose name is not a timestamp cannot be vouched for, and the
-		// point of a cutoff is to trust what stays in — so it stays out.
-		selected = selected.filter((run) => {
-			const at = parseResultTimestamp(run.timestamp);
-			return at !== null && at >= since;
-		});
-	}
-	if (options.latest) {
-		const newest = new Map<string, string>();
-		for (const run of selected) {
-			const current = newest.get(run.experiment);
-			if (current === undefined || run.timestamp > current)
-				newest.set(run.experiment, run.timestamp);
-		}
-		selected = selected.filter((run) => run.timestamp === newest.get(run.experiment));
-	}
-	return selected;
 }
 
 function messageOf(error: unknown): string {
@@ -318,8 +255,6 @@ async function analyzeOneRun(
 	}
 
 	const baseline = await loadOrBuildBaselineAnalysis({
-		evalName: run.evalName,
-		fixtureDir: context.fixtureDir,
 		pin,
 		postAnalysis,
 		recompute: options.recompute,
@@ -343,10 +278,18 @@ interface SuccessfulAnalysis extends Record<string, unknown> {
 	__postAnalysis: PostAnalysis;
 }
 // Internal routing state, stripped before anything sees a record.
+//
+// Read fresh on every invocation and merged here rather than into the cached
+// analysis: the judge runs after this script, so a cached row would never gain
+// the scores without --recompute.
 function strip(row: SuccessfulAnalysis): Record<string, unknown> {
-	return Object.fromEntries(
-		Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
-	);
+	const report = readMisuseReport(row.__run.runDir);
+	return {
+		...Object.fromEntries(
+			Object.entries(row).filter(([key]) => key !== '__run' && key !== '__postAnalysis'),
+		),
+		...(report === null ? {} : { dsMisuse: report }),
+	};
 }
 
 /** A comparable set's heading: which experiment, which eval, which generation. */
@@ -453,8 +396,25 @@ async function main() {
 			a.__run.run - b.__run.run,
 	);
 
-	// summary.json belongs to the directory it sits in, so it is folded from
-	// that directory's runs alone.
+	// A silently absent metric is the failure mode worth shouting about, so this
+	// fires whichever table families were selected.
+	const unjudged = successfulAnalyses.filter(
+		(row) => readMisuseReport(row.__run.runDir) === null,
+	).length;
+	if (unjudged > 0) {
+		const bold = '\x1b[1;31m';
+		const reset = '\x1b[0m';
+		console.error(
+			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+				'  Run: pnpm judge:ds-misuse' +
+				(options.experiments.length ? ` --experiments=${options.experiments.join(',')}` : '') +
+				(options.latest ? ' --latest' : ''),
+		);
+	}
+
+	// Grouped by the directory holding the run-* dirs, i.e. one group per eval of
+	// one experiment at one timestamp. That is the unit summary.json describes,
+	// so summarize is scoped to it and every run in a group shares one module.
 	const byEvalDir = new Map<string, SuccessfulAnalysis[]>();
 	for (const row of successfulAnalyses) {
 		const evalDir = dirname(row.__run.runDir);

@@ -98,12 +98,40 @@ export interface UnresolvedElement {
 	reason: string;
 }
 
+/**
+ * One counted component element, addressed by a path that survives relocation.
+ *
+ * `path` is the enclosing declaration's name followed by the JSX ancestor chain,
+ * each segment `Tag[i]` where `i` indexes element siblings only. It carries no
+ * offsets, so a node that moved down a file keeps its path — which is what lets
+ * a reader separate "new" from "moved". See react/node-path.ts for the format.
+ *
+ * Host elements are absent: the metric is about component choices. Unresolved
+ * elements are absent too — they are already reported in `unresolvedElements`,
+ * and a node whose identity is unknown cannot be judged.
+ */
+export interface NodeRecord {
+	path: string;
+	file: string;
+	line: number;
+	/** The tag as written, including dots: `Card.Header`. Whitespace normalised. */
+	tag: string;
+	category: 'ds' | 'external' | 'local';
+	module: string;
+	name: string;
+	weight: number;
+	/** Prop names only, never values: enough to check a guideline, small enough to ship. */
+	props: string[];
+}
+
 export interface CensusResult {
 	totals: NodeTotals;
 	perFile: Map<string, NodeTotals>;
 	/** Weighted per-identity counts, keyed `<module>#<name>` (hosts by tag). */
 	components: Map<string, { category: 'host' | 'ds' | 'external' | 'local'; count: number }>;
 	unresolved: UnresolvedElement[];
+	/** Populated only when the census was asked for nodes. */
+	nodeList?: NodeRecord[];
 }
 
 /** Whether a file's own JSX counts toward the census. */
@@ -116,6 +144,7 @@ export interface FrameworkImplementation {
 		graph: ModuleGraph,
 		resolver: IdentityResolver,
 		isCounted: IsCountedFile,
+		includeNodes: boolean,
 	) => CensusResult;
 }
 
@@ -138,6 +167,12 @@ export interface DsCoverageOptions {
 	censusInclude?: string[];
 	/** Exclude globs; a matching file's JSX is never counted. */
 	censusExclude?: string[];
+	/**
+	 * Emit a per-node list alongside the aggregates. Opt-in because the list is
+	 * one record per counted element and dwarfs the rest of the report, while
+	 * only the judge that reads individual nodes has any use for it.
+	 */
+	includeNodes?: boolean;
 }
 
 export interface DsCoverageReport {
@@ -159,4 +194,6 @@ export interface DsCoverageReport {
 	unresolvedElements: UnresolvedElement[];
 	/** Per-file totals for files containing JSX, for spot validation. */
 	perFile: Record<string, NodeTotals>;
+	/** Present only when `includeNodes` was set. */
+	nodeList?: NodeRecord[];
 }

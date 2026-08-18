@@ -1238,3 +1238,175 @@ describe('census weights and coverage', () => {
 		expect(Object.keys(report.components)).toEqual(['@ds/core#Button', 'div', 'span']);
 	});
 });
+
+describe('includeNodes', () => {
+	const FILES = {
+		'src/App.tsx': [
+			"import { Button } from '@ds/react'",
+			'export const App = () => <div><Button /></div>',
+		].join('\n'),
+	};
+
+	// Absent, not `undefined`: the report is a contract callers read fields off,
+	// and a key that exists holding nothing invites a truthiness check where the
+	// question is presence.
+	it('omits the nodeList key entirely when not asked', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({ projectDir: ROOT, dsPackages: ['@ds/*'] });
+		expect('nodeList' in report).toBe(false);
+	});
+
+	// The other spelling of "no", and the one that actually ships: a CLI flag
+	// defaulting to false passes it explicitly rather than omitting the option.
+	it('omits the nodeList key when includeNodes is explicitly false', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: false,
+		});
+		expect('nodeList' in report).toBe(false);
+	});
+
+	// The wrapping `div` is not itself a record — hosts are not a DS decision —
+	// but it still names a segment of the path: the path describes where the node
+	// sits in the source, not which of its ancestors were worth judging.
+	it('emits one record per counted component element when asked', () => {
+		vol.fromJSON(FILES, ROOT);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		expect(report.nodeList).toEqual([
+			{
+				path: 'App/div[0]/Button[0]',
+				file: 'src/App.tsx',
+				line: 2,
+				tag: 'Button',
+				category: 'ds',
+				module: '@ds/react',
+				name: 'Button',
+				weight: 1,
+				props: [],
+			},
+		]);
+	});
+
+	it('omits host and unresolved elements', () => {
+		vol.fromJSON(
+			{
+				'src/App.tsx': [
+					"import { Button } from '@ds/react'",
+					"import Mystery from './missing'",
+					'export const App = () => <div><Button /><Mystery /></div>',
+				].join('\n'),
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		expect(report.nodeList?.map((node) => node.tag)).toEqual(['Button']);
+		expect(report.unresolvedElements.map((element) => element.tag)).toEqual(['Mystery']);
+	});
+
+	// The `#n` suffix counts calls to the path builder, so it is only meaningful
+	// against the traversal that actually feeds it. node-path's own tests drive it
+	// from a walk over every JSX element; the census feeds it a strict subset, so
+	// the collision behaviour is pinned here too, against the real caller.
+	//
+	// Two further things are deliberate. The weights are fractional: both branches
+	// of the ternary render JSX, so each side halves, and this is the only place a
+	// fraction is asserted to survive into a record the judge reads. And the paths
+	// are `App/Button[0]`, not `App/div[0]/Button[0]` — the ternary sits in a JSX
+	// expression container, which is the first limitation documented in the header
+	// of react/node-path.ts: a chain does not pass through a non-JSX node.
+	it('numbers colliding paths by the order the census records them', () => {
+		vol.fromJSON(
+			{
+				'src/App.tsx': [
+					"import { Button } from '@ds/react'",
+					'export const App = ({ ok }) => <div>{ok ? <Button /> : <Button />}</div>',
+				].join('\n'),
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		expect(report.nodeList?.map((node) => [node.path, node.weight])).toEqual([
+			['App/Button[0]', 0.5],
+			['App/Button[0]#2', 0.5],
+		]);
+	});
+
+	// censusInclude is how the judge keeps its treatment-side census small: the
+	// graph is still whole, so imports resolve, but only touched files are listed.
+	it('lists only files the census counts', () => {
+		vol.fromJSON(
+			{
+				'src/Kept.tsx': "import { Button } from '@ds/react'\nexport const Kept = () => <Button />",
+				'src/Skipped.tsx':
+					"import { Button } from '@ds/react'\nexport const Skipped = () => <Button />",
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+			censusInclude: ['src/Kept.tsx'],
+		});
+		expect(report.nodeList?.map((node) => node.file)).toEqual(['src/Kept.tsx']);
+	});
+
+	// Restricting the census must subset the node list, never rewrite it: the
+	// judge pairs a narrowed treatment census against a whole-tree baseline, and
+	// any path that shifts between the two reads as a node that moved when
+	// nothing did.
+	//
+	// All three files declare the same component name on purpose, which is what
+	// gives this test teeth. Paths are only file-scoped because the builder is
+	// built per file; hoisting it to census scope is the tempting simplification,
+	// and with per-file declaration names it would be undetectable. Here it is
+	// caught: a shared builder numbers Kept's pair `#2`/`#3` behind the skipped
+	// file's `App/Button[0]`, so dropping that file from the census would shift
+	// Kept's paths — the phantom move this whole scheme exists to avoid.
+	it('gives a restricted census the same paths as the whole-tree one', () => {
+		const files = {
+			'src/Before.tsx': "import { Button } from '@ds/react'\nexport const App = () => <Button />",
+			'src/Kept.tsx': [
+				"import { Button } from '@ds/react'",
+				'export const App = ({ ok }) => <div><Button />{ok ? <Button /> : <Button />}</div>',
+			].join('\n'),
+			'src/Zed.tsx': "import { Button } from '@ds/react'\nexport const App = () => <Button />",
+		};
+		vol.fromJSON(files, ROOT);
+		const whole = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		const restricted = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+			censusInclude: ['src/Kept.tsx'],
+		});
+
+		const keptFromWhole = whole.nodeList?.filter((node) => node.file === 'src/Kept.tsx');
+		expect(restricted.nodeList).toEqual(keptFromWhole);
+		// Pinned literally so that two identical regressions cannot pass as agreement.
+		// No `#n` above `#2` here: the numbering restarts per file.
+		expect(keptFromWhole?.map((node) => node.path)).toEqual([
+			'App/div[0]/Button[0]',
+			'App/Button[0]',
+			'App/Button[0]#2',
+		]);
+	});
+});

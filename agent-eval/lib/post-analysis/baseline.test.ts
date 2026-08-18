@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,8 +11,15 @@ vi.mock('../agentic-reference/external-repo.ts', async (importOriginal) => ({
 }));
 
 import { prepareRef } from '../agentic-reference/external-repo.ts';
-import { baselinePath, loadOrBuildBaselineAnalysis } from './baseline.ts';
+import {
+	baselinePath,
+	loadOrBuildBaselineAnalysis,
+	nodeSidecarPath,
+	readNodeSidecar,
+	writeNodeSidecar,
+} from './baseline.ts';
 
+import type { NodeRecord } from '../agentic-reference/metrics/ds-coverage/types.ts';
 import type { PostAnalysis } from './types.ts';
 
 const PIN = { repo: 'owner/name', ref: 'deadbeef' };
@@ -21,8 +28,6 @@ let root: string;
 
 function options(overrides: Partial<Parameters<typeof loadOrBuildBaselineAnalysis>[0]> = {}) {
 	return {
-		evalName: 'eval-a',
-		fixtureDir: join(root, 'fixture'),
 		pin: PIN,
 		baselinesDir: join(root, 'baselines'),
 		refCacheDir: join(root, 'refs'),
@@ -48,9 +53,9 @@ afterEach(() => {
 });
 
 describe('baselinePath', () => {
-	it('escapes pin separators so each half stays a single path segment', () => {
-		expect(baselinePath('/b', 'eval-a', { repo: 'owner/name', ref: 'heads/main' })).toBe(
-			'/b/eval-a/owner__name@heads__main.json',
+	it('keys on the pin alone, escaping separators in both halves', () => {
+		expect(baselinePath('/b', { repo: 'owner/name', ref: 'heads/main' })).toBe(
+			'/b/owner__name@heads__main.json',
 		);
 	});
 });
@@ -62,33 +67,32 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 		expect(built.analysis).toEqual({ files: { 'a.ts': 1 } });
 		expect(built.dir).toBe(join(root, 'ref-tree'));
+
+		const written = JSON.parse(readFileSync(baselinePath(opts.baselinesDir, PIN), 'utf8'));
+		expect(written).toEqual({
+			repo: 'owner/name',
+			ref: 'deadbeef',
+			// This module measures no nodes, so there is no sidecar to demand back.
+			nodeSidecar: false,
+			analysis: { files: { 'a.ts': 1 } },
+		});
+	});
+
+	it('hands analyzeRun a baseline context of pin and tree only', async () => {
+		const opts = options();
+		await loadOrBuildBaselineAnalysis(opts);
 		expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledWith({
 			mode: 'baseline',
 			projectDir: join(root, 'ref-tree'),
-			fixtureDir: opts.fixtureDir,
-			evalName: 'eval-a',
 			pin: PIN,
-		});
-
-		const written = JSON.parse(
-			readFileSync(baselinePath(opts.baselinesDir, 'eval-a', PIN), 'utf8'),
-		);
-		expect(written).toEqual({
-			eval: 'eval-a',
-			repo: 'owner/name',
-			ref: 'deadbeef',
-			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
 
 	it('reads the committed baseline instead of re-measuring the tree', async () => {
 		const opts = options();
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
-		writeFileSync(
-			path,
-			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
-		);
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(path, JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }));
 
 		const loaded = await loadOrBuildBaselineAnalysis(opts);
 
@@ -104,12 +108,11 @@ describe('loadOrBuildBaselineAnalysis', () => {
 				metricsVersion: 2,
 			} as unknown as PostAnalysis,
 		});
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
 		writeFileSync(
 			path,
 			JSON.stringify({
-				eval: 'eval-a',
 				...PIN,
 				metricsVersion: 2,
 				analysis: { files: { 'a.ts': 99 } },
@@ -132,35 +135,29 @@ describe('loadOrBuildBaselineAnalysis', () => {
 				metricsVersion: 2,
 			} as unknown as PostAnalysis,
 		});
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
 		// A legacy file, from before the module declared a version.
-		writeFileSync(
-			path,
-			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
-		);
+		writeFileSync(path, JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }));
 
 		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
 
 		expect(rebuilt.analysis).toEqual({ files: { 'a.ts': 1 } });
 		// The overwritten file now carries the version it was measured under.
 		expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({
-			eval: 'eval-a',
 			repo: 'owner/name',
 			ref: 'deadbeef',
 			metricsVersion: 2,
+			nodeSidecar: false,
 			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
 
 	it('re-measures and overwrites the committed baseline when recompute is set', async () => {
 		const opts = options({ recompute: true });
-		const path = baselinePath(opts.baselinesDir, 'eval-a', PIN);
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
-		writeFileSync(
-			path,
-			JSON.stringify({ eval: 'eval-a', ...PIN, analysis: { files: { 'a.ts': 99 } } }),
-		);
+		const path = baselinePath(opts.baselinesDir, PIN);
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(path, JSON.stringify({ ...PIN, analysis: { files: { 'a.ts': 99 } } }));
 
 		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
 
@@ -188,10 +185,13 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		expect(opts.postAnalysis.analyzeRun).toHaveBeenCalledTimes(1);
 	});
 
-	it('keys by eval as well as pin, since each eval measures its own metrics', async () => {
+	// The pin is now the whole key, so it has to be a discriminating one: two
+	// pins sharing a baselinesDir must not read each other's numbers.
+	it('keys by pin, so a second pin gets its own file', async () => {
+		const other = { repo: 'owner/name', ref: 'cafebabe' };
 		const a = options();
 		const b = options({
-			evalName: 'eval-b',
+			pin: other,
 			baselinesDir: a.baselinesDir,
 			postAnalysis: {
 				analyzeRun: vi.fn(() => ({ files: { 'b.ts': 2 } })),
@@ -201,14 +201,43 @@ describe('loadOrBuildBaselineAnalysis', () => {
 
 		await loadOrBuildBaselineAnalysis(a);
 		expect((await loadOrBuildBaselineAnalysis(b)).analysis).toEqual({ files: { 'b.ts': 2 } });
-		expect(existsSync(baselinePath(a.baselinesDir, 'eval-a', PIN))).toBe(true);
-		expect(existsSync(baselinePath(a.baselinesDir, 'eval-b', PIN))).toBe(true);
+		expect(existsSync(baselinePath(a.baselinesDir, PIN))).toBe(true);
+		expect(existsSync(baselinePath(a.baselinesDir, other))).toBe(true);
+	});
+
+	// postAnalysis is resolved per experiment but the baseline path is not, so
+	// two experiments on one pin can disagree about the version. The memo must
+	// not hand the second one the first one's numbers behind the version check's
+	// back — the whole point of that check is to stop measurements crossing
+	// definitions.
+	it('does not serve a memoized baseline to a module on another metricsVersion', async () => {
+		const dir = join(root, 'baselines');
+		const v7 = options({
+			baselinesDir: dir,
+			postAnalysis: {
+				analyzeRun: vi.fn(() => ({ files: { 'a.ts': 7 } })),
+				summarize: vi.fn(),
+				metricsVersion: 7,
+			} as unknown as PostAnalysis,
+		});
+		const v3 = options({
+			baselinesDir: dir,
+			postAnalysis: {
+				analyzeRun: vi.fn(() => ({ files: { 'a.ts': 3 } })),
+				summarize: vi.fn(),
+				metricsVersion: 3,
+			} as unknown as PostAnalysis,
+		});
+
+		await loadOrBuildBaselineAnalysis(v7);
+		expect((await loadOrBuildBaselineAnalysis(v3)).analysis).toEqual({ files: { 'a.ts': 3 } });
+		expect(v3.postAnalysis.analyzeRun).toHaveBeenCalledTimes(1);
 	});
 
 	it('rebuilds rather than trusting a truncated baseline', async () => {
 		const opts = options();
-		mkdirSync(join(opts.baselinesDir, 'eval-a'), { recursive: true });
-		writeFileSync(baselinePath(opts.baselinesDir, 'eval-a', PIN), '{"analysis": {"fi');
+		mkdirSync(opts.baselinesDir, { recursive: true });
+		writeFileSync(baselinePath(opts.baselinesDir, PIN), '{"analysis": {"fi');
 
 		expect((await loadOrBuildBaselineAnalysis(opts)).analysis).toEqual({ files: { 'a.ts': 1 } });
 	});
@@ -222,6 +251,134 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		});
 
 		await expect(loadOrBuildBaselineAnalysis(opts)).rejects.toThrow(/owner\/name@deadbeef/);
-		expect(existsSync(baselinePath(opts.baselinesDir, 'eval-a', PIN))).toBe(false);
+		expect(existsSync(baselinePath(opts.baselinesDir, PIN))).toBe(false);
+	});
+});
+
+// Only `path` matters to a round-trip test; the census's own tests cover the
+// full record shape.
+const PARTIAL_NODES = [{ path: 'App/A[0]' }] as unknown as NodeRecord[];
+
+/** A module that censuses nodes alongside its analysis, as v7 baselines do. */
+function withNodes() {
+	return {
+		analyzeRun: vi.fn(() => ({ files: {}, nodeList: [{ path: 'App/A[0]' }] })),
+		summarize: vi.fn(),
+		metricsVersion: 7,
+	} as unknown as PostAnalysis;
+}
+
+describe('node sidecar', () => {
+	it('writes the census beside the baseline, keyed on the pin', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		await loadOrBuildBaselineAnalysis(opts);
+
+		const sidecar = JSON.parse(
+			readFileSync(nodeSidecarPath(join(root, 'baselines'), PIN), 'utf8'),
+		) as Record<string, unknown>;
+		expect(sidecar).toMatchObject({
+			repo: PIN.repo,
+			ref: PIN.ref,
+			metricsVersion: 7,
+			nodes: [{ path: 'App/A[0]' }],
+		});
+	});
+
+	// The sidecar is the judge's baseline half; keeping it out of the committed
+	// baseline is what keeps that file reviewable.
+	it('keeps the node list out of the committed baseline', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		const built = await loadOrBuildBaselineAnalysis(opts);
+
+		const committed = JSON.parse(
+			readFileSync(baselinePath(join(root, 'baselines'), PIN), 'utf8'),
+		) as { analysis: Record<string, unknown> };
+		expect('nodeList' in committed.analysis).toBe(false);
+		// And the in-memory value callers get is the same one, not the fuller
+		// object it was split from.
+		expect('nodeList' in built.analysis).toBe(false);
+	});
+
+	it('reads back what it wrote', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, 7, PARTIAL_NODES);
+		expect(readNodeSidecar(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
+	});
+
+	// A sidecar measured under other rules is worse than none: its numbers look
+	// healthy and mean something else.
+	it('treats a version mismatch as absent', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, 6, PARTIAL_NODES);
+		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+	});
+
+	it('treats an absent sidecar as null rather than throwing', () => {
+		expect(readNodeSidecar(join(root, 'baselines'), PIN, 7)).toBeNull();
+	});
+
+	// Absent on both sides is a match, which is what keeps a module that never
+	// declares a version on the same terms as the committed baseline beside it.
+	it('matches a versionless sidecar against a versionless module', () => {
+		const dir = join(root, 'baselines');
+		writeNodeSidecar(dir, PIN, undefined, PARTIAL_NODES);
+		expect(readNodeSidecar(dir, PIN, undefined)).toEqual([{ path: 'App/A[0]' }]);
+		// And a versioned module still refuses it.
+		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+	});
+
+	it('treats a sidecar whose nodes are not a list as absent', () => {
+		const dir = join(root, 'baselines');
+		const path = nodeSidecarPath(dir, PIN);
+		mkdirSync(dirname(path), { recursive: true });
+		writeFileSync(path, JSON.stringify({ ...PIN, metricsVersion: 7, nodes: 'lots' }));
+
+		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+	});
+
+	/** Commit a baseline by hand, as a checkout would arrive with one. */
+	function commitBaseline(dir: string, extra: Record<string, unknown>) {
+		mkdirSync(dir, { recursive: true });
+		writeFileSync(
+			baselinePath(dir, PIN),
+			JSON.stringify({ ...PIN, metricsVersion: 7, analysis: { files: { 'a.ts': 99 } }, ...extra }),
+		);
+	}
+
+	// Half a pair on disk is permanent without this: only a rebuild writes a
+	// sidecar, and a current-looking baseline is what suppresses the rebuild.
+	it('rebuilds a current baseline whose sidecar was never committed', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
+
+		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(rebuilt.analysis).toEqual({ files: {} });
+		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(true);
+	});
+
+	it('leaves an intact pair alone', async () => {
+		const opts = options({ postAnalysis: withNodes() });
+		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
+		writeNodeSidecar(opts.baselinesDir, PIN, 7, PARTIAL_NODES);
+
+		const loaded = await loadOrBuildBaselineAnalysis(opts);
+
+		expect(loaded.analysis).toEqual({ files: { 'a.ts': 99 } });
+		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
+	});
+
+	// The mirror case: a module measuring no nodes never wrote a sidecar, so
+	// demanding one back would re-measure the tree on every process and defeat
+	// the point of committing baselines at all.
+	it('still hits the cache for a baseline that never had a sidecar', async () => {
+		const opts = options();
+		await loadOrBuildBaselineAnalysis(opts);
+		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(false);
+
+		const second = options({ baselinesDir: opts.baselinesDir });
+		await loadOrBuildBaselineAnalysis(second);
+
+		expect(second.postAnalysis.analyzeRun).not.toHaveBeenCalled();
 	});
 });

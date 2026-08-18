@@ -7,6 +7,7 @@
 // - Conditional renders cause element counts on each branch to be weighted
 import ts from 'typescript';
 
+import { createNodePathBuilder, elementTag, propNames } from './node-path.ts';
 import { resolveJsxTag } from './resolve.ts';
 
 import type { ModuleGraph } from '../module-graph.ts';
@@ -14,6 +15,7 @@ import type {
 	CensusResult,
 	IdentityResolver,
 	IsCountedFile,
+	NodeRecord,
 	NodeTotals,
 	Resolution,
 	UnresolvedElement,
@@ -76,6 +78,7 @@ export function censusReactTree(
 	graph: ModuleGraph,
 	resolver: IdentityResolver,
 	isCounted: IsCountedFile,
+	includeNodes: boolean,
 ): CensusResult {
 	const totals = emptyTotals();
 	const perFile = new Map<string, NodeTotals>();
@@ -84,6 +87,7 @@ export function censusReactTree(
 		{ category: 'host' | 'ds' | 'external' | 'local'; count: number }
 	>();
 	const unresolved: UnresolvedElement[] = [];
+	const nodeList: NodeRecord[] = [];
 
 	for (const file of graph.files.values()) {
 		// Skipping the walk for filtered out files.
@@ -93,6 +97,15 @@ export function censusReactTree(
 
 		const fileTotals = emptyTotals();
 
+		// One builder per file: paths are disambiguated within a file, not across
+		// the tree. The builder must see every element that becomes a record
+		// exactly once — a strict subset of what `count` counts, since hosts and
+		// unresolved tags return without recording, and deliberately so. Its `#n`
+		// suffix counts calls, not elements, so feeding it the wider set (or any
+		// other traversal) renumbers every colliding path and two censuses stop
+		// agreeing on which node is which.
+		const nextPath = createNodePathBuilder();
+
 		// Tag resolutions are memoized in the resolver, so asking again inside the
 		// halving predicate costs a map lookup.
 		const containsCountableJsx = makeContainsCountableJsx((element) => {
@@ -100,7 +113,11 @@ export function censusReactTree(
 			return !isNonRenderingIdentity(resolveJsxTag(file, tag, resolver));
 		});
 
-		const count = (tag: ts.JsxTagNameExpression, element: ts.Node, weight: number): void => {
+		const count = (
+			tag: ts.JsxTagNameExpression,
+			element: ts.JsxElement | ts.JsxSelfClosingElement,
+			weight: number,
+		): void => {
 			const resolution = resolveJsxTag(file, tag, resolver);
 			if (isNonRenderingIdentity(resolution)) return;
 
@@ -130,6 +147,19 @@ export function censusReactTree(
 				const entry = components.get(key) ?? { category: resolution.category, count: 0 };
 				entry.count += weight;
 				components.set(key, entry);
+				if (includeNodes) {
+					nodeList.push({
+						path: nextPath(element),
+						file: file.path,
+						line: file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1,
+						tag: elementTag(element),
+						category: resolution.category,
+						module: resolution.module,
+						name: resolution.name,
+						weight,
+						props: propNames(element),
+					});
+				}
 				return;
 			}
 
@@ -142,14 +172,17 @@ export function censusReactTree(
 			totals.unresolved += weight;
 			fileTotals.unresolved += weight;
 			const line = file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1;
+			// Raw source text here, where a record's `tag` above is rebuilt from the
+			// identifiers. The divergence is deliberate: a record's tag has to agree
+			// with its own `path`, which is normalised so reformatting cannot move a
+			// node, while this field is long-standing stored output whose spelling is
+			// not worth churning for a shape no path is derived from.
 			unresolved.push({ file: file.path, line, tag: tag.getText(), weight, reason });
 		};
 
 		const walk = (node: ts.Node, weight: number): void => {
-			if (ts.isJsxElement(node)) {
-				count(node.openingElement.tagName, node, weight);
-			} else if (ts.isJsxSelfClosingElement(node)) {
-				count(node.tagName, node, weight);
+			if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+				count(ts.isJsxElement(node) ? node.openingElement.tagName : node.tagName, node, weight);
 			} else if (ts.isConditionalExpression(node)) {
 				// Both branches JSX -> each side at half weight; otherwise the JSX
 				// side renders whenever anything does and keeps full weight.
@@ -173,5 +206,5 @@ export function censusReactTree(
 		if (fileTotals.all > 0) perFile.set(file.path, fileTotals);
 	}
 
-	return { totals, perFile, components, unresolved };
+	return { totals, perFile, components, unresolved, nodeList: includeNodes ? nodeList : undefined };
 }

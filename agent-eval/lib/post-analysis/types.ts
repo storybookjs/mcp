@@ -55,9 +55,17 @@ export interface RunContext extends TreeContext {
 	pin: ExternalRepoPin | null;
 }
 
-/** `analyzeRun` against a pinned external repo's pristine tree. */
-export interface BaselineContext extends TreeContext {
+/**
+ * `analyzeRun` against a pinned external repo's pristine tree.
+ *
+ * Deliberately carries no eval: what a pinned tree is made of does not depend on
+ * which eval is about to run against it, and a baseline that varied by eval
+ * would be measured — and committed — once per eval for identical numbers.
+ */
+export interface BaselineContext {
 	mode: 'baseline';
+	/** Absolute path to the tree being measured. */
+	projectDir: string;
 	/** The pin whose materialized tree `projectDir` points at. */
 	pin: ExternalRepoPin;
 }
@@ -88,12 +96,10 @@ export interface DeltaToBaselineContext extends Omit<RunContext, 'pin'> {
  * persisted, and are the same whatever prints.
  */
 export interface SummarizeOptions {
-	/** Per-run vitals and the grouped summary. */
 	general: boolean;
-	/** The complexity family, where a module measures one. */
 	complexity: boolean;
-	/** The design-system coverage family, where a module measures one. */
 	coverage: boolean;
+	misuse: boolean;
 	/**
 	 * Compute the rows without printing. The runner folds each eval directory
 	 * on its own (so its summary.json stays scoped to that directory) but
