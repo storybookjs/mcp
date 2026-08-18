@@ -748,6 +748,19 @@ describe('summarize', () => {
 			},
 			dsShareOfAllNodes: ds / all,
 			dsShareOfComponentNodes: ds / component,
+			instances: {
+				nodes: {
+					all,
+					host: all - component - 2,
+					component: component + 2,
+					ds: ds + 2,
+					external: 0,
+					local: component - ds,
+					unresolved: 0,
+				},
+				dsShareOfAllNodes: (ds + 2) / all,
+				dsShareOfComponentNodes: (ds + 2) / (component + 2),
+			},
 			parseFailures: [],
 			readFailures: [],
 		});
@@ -775,6 +788,19 @@ describe('summarize', () => {
 						after: ds / component,
 						delta: (ds - dsBefore) / component,
 					},
+					instances: {
+						nodes: { ds: { before: dsBefore + 1, after: ds + 2, delta: ds + 1 - dsBefore } },
+						dsShareOfAllNodes: {
+							before: (dsBefore + 1) / all,
+							after: (ds + 2) / all,
+							delta: (ds + 1 - dsBefore) / all,
+						},
+						dsShareOfComponentNodes: {
+							before: (dsBefore + 1) / (component + 2),
+							after: (ds + 2) / (component + 2),
+							delta: (ds + 1 - dsBefore) / (component + 2),
+						},
+					},
 				},
 			},
 		});
@@ -793,10 +819,14 @@ describe('summarize', () => {
 			compNodes: '8',
 			shareAll: '30%',
 			shareComp: '75%',
+			iShareAll: '40%',
+			iShareComp: '80%',
 			unres: '0',
 			dsNodesΔ: '2',
 			shareAllΔ: '+10%',
 			shareCompΔ: '+25%',
+			iShareAllΔ: '+15%',
+			iShareCompΔ: '+30%',
 		});
 	});
 
@@ -807,12 +837,12 @@ describe('summarize', () => {
 			case: 'e',
 			'μ dsNodes': '8',
 			'μ compNodes': '10',
-			'μ shareAll': '40%',
-			'μ shareComp': '79.17%',
+			'μ shareAll': '50%',
+			'μ shareComp': '82.86%',
 			'μ unres': '0',
 			'μ dsNodesΔ': '4',
-			'μ shareAllΔ': '+20%',
-			'μ shareCompΔ': '+37.5%',
+			'μ shareAllΔ': '+25%',
+			'μ shareCompΔ': '+40%',
 		});
 	});
 
@@ -829,10 +859,31 @@ describe('summarize', () => {
 				dsNodesDelta: { mean: 4 },
 				dsShareOfAllNodesDelta: { mean: 0.2 },
 				dsShareOfComponentNodesDelta: { mean: 0.375 },
+				dsShareOfAllInstances: { mean: 0.5 },
+				dsShareOfComponentInstances: { mean: 0.8286 },
+				dsShareOfAllInstancesDelta: { mean: 0.25 },
+				dsShareOfComponentInstancesDelta: { mean: 0.4 },
 			});
 		} finally {
 			spy.mockRestore();
 		}
+	});
+
+	// A run measured before metricsVersion 8 has no instance block anywhere;
+	// the columns say null rather than crashing or dragging a mean.
+	it('tolerates runs measured before instance weighting', () => {
+		const legacy = coverageRows().map((row) => {
+			const coverage = { ...(row.dsCoverage as Record<string, unknown>) };
+			delete coverage.instances;
+			const delta = {
+				...(row.deltaToBaseline as { coverageDelta: Record<string, unknown> }).coverageDelta,
+			};
+			delete delta.instances;
+			return { ...row, dsCoverage: coverage, deltaToBaseline: { coverageDelta: delta } };
+		});
+		const [, , perRun, grouped] = tables(legacy);
+		expect(perRun?.[0]).toMatchObject({ iShareAll: 'null', iShareAllΔ: 'null' });
+		expect(grouped?.[0]).toMatchObject({ 'μ shareAll': 'null' });
 	});
 
 	it('signs a coverage share that fell', () => {

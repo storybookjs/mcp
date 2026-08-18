@@ -390,6 +390,22 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			group,
 			(row) => deltaOf(row).coverageDelta?.dsShareOfComponentNodes.delta,
 		);
+		const dsShareOfAllInstances = numbersAt(
+			group,
+			(row) => coverageOf(row)?.instances?.dsShareOfAllNodes,
+		);
+		const dsShareOfComponentInstances = numbersAt(
+			group,
+			(row) => coverageOf(row)?.instances?.dsShareOfComponentNodes,
+		);
+		const dsShareOfAllInstancesDelta = numbersAt(
+			group,
+			(row) => deltaOf(row).coverageDelta?.instances?.dsShareOfAllNodes.delta,
+		);
+		const dsShareOfComponentInstancesDelta = numbersAt(
+			group,
+			(row) => deltaOf(row).coverageDelta?.instances?.dsShareOfComponentNodes.delta,
+		);
 
 		const misuseDecision = numbersAt(group, (row) => misuseOf(row)?.correctDsDecision);
 		const misuseUsage = numbersAt(group, (row) => misuseOf(row)?.correctDsUsage);
@@ -448,6 +464,12 @@ function makeGeneralSummary(rows: Array<Record<string, unknown>>): Array<Record<
 			dsShareOfAllNodesDelta: { mean: round(mean(dsShareOfAllDelta), 4) },
 			dsShareOfComponentNodesDelta: {
 				mean: round(mean(dsShareOfComponentsDelta), 4),
+			},
+			dsShareOfAllInstances: { mean: round(mean(dsShareOfAllInstances), 4) },
+			dsShareOfComponentInstances: { mean: round(mean(dsShareOfComponentInstances), 4) },
+			dsShareOfAllInstancesDelta: { mean: round(mean(dsShareOfAllInstancesDelta), 4) },
+			dsShareOfComponentInstancesDelta: {
+				mean: round(mean(dsShareOfComponentInstancesDelta), 4),
 			},
 
 			// Scores keep four decimals like the coverage shares: a mean rounded to
@@ -575,10 +597,14 @@ export function summarize(
 					compNodes: coverage?.nodes.component ?? null,
 					shareAll: percent(coverage?.dsShareOfAllNodes),
 					shareComp: percent(coverage?.dsShareOfComponentNodes),
+					iShareAll: percent(coverage?.instances?.dsShareOfAllNodes),
+					iShareComp: percent(coverage?.instances?.dsShareOfComponentNodes),
 					unres: coverage?.nodes.unresolved ?? null,
 					dsNodesΔ: delta?.nodes.ds.delta ?? null,
 					shareAllΔ: percentDelta(delta?.dsShareOfAllNodes.delta),
 					shareCompΔ: percentDelta(delta?.dsShareOfComponentNodes.delta),
+					iShareAllΔ: percentDelta(delta?.instances?.dsShareOfAllNodes.delta),
+					iShareCompΔ: percentDelta(delta?.instances?.dsShareOfComponentNodes.delta),
 				};
 			}),
 		);
@@ -589,13 +615,17 @@ export function summarize(
 				case: shortCase(group.eval),
 				'μ dsNodes': (group.dsNodes as { mean: number | null }).mean,
 				'μ compNodes': (group.componentNodes as { mean: number | null }).mean,
-				'μ shareAll': percent((group.dsShareOfAllNodes as { mean: number | null }).mean),
-				'μ shareComp': percent((group.dsShareOfComponentNodes as { mean: number | null }).mean),
+				// Headline shares are instance-weighted from metricsVersion 8 on;
+				// the per-run table above keeps the static shares beside them.
+				'μ shareAll': percent((group.dsShareOfAllInstances as { mean: number | null }).mean),
+				'μ shareComp': percent((group.dsShareOfComponentInstances as { mean: number | null }).mean),
 				'μ unres': (group.unresolvedNodes as { mean: number | null }).mean,
 				'μ dsNodesΔ': (group.dsNodesDelta as { mean: number | null }).mean,
-				'μ shareAllΔ': percentDelta((group.dsShareOfAllNodesDelta as { mean: number | null }).mean),
+				'μ shareAllΔ': percentDelta(
+					(group.dsShareOfAllInstancesDelta as { mean: number | null }).mean,
+				),
 				'μ shareCompΔ': percentDelta(
-					(group.dsShareOfComponentNodesDelta as { mean: number | null }).mean,
+					(group.dsShareOfComponentInstancesDelta as { mean: number | null }).mean,
 				),
 			})),
 		);
@@ -673,10 +703,11 @@ export function summarize(
  *     so a baseline whose fixture was missing no longer stores a null coverage
  * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
  * - 7 re-keyed baselines on the pin alone and added the ds-misuse node sidecar
+ * - 8 weighted the census by estimated instantiations (instances), headline shares included
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,
 	deltaToBaseline,
 	summarize,
-	metricsVersion: 7,
+	metricsVersion: 8,
 };
