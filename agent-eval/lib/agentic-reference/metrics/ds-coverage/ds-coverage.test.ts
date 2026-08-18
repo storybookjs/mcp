@@ -1686,4 +1686,196 @@ describe('instance weighting', () => {
 		expect(report.instances.nodes).toEqual(report.nodes);
 		expect(report.instances.multipliers).toEqual({});
 	});
+
+	it('composes multipliers through a chain', () => {
+		const report = analyze({
+			'src/B.tsx': "import { DSButton } from '@ds/button'\nexport const B = () => <DSButton />",
+			'src/A.tsx': "import { B } from './B'\nexport const A = () => <section><B /><B /></section>",
+			'src/Page.tsx': "import { A } from './A'\nexport const Page = () => <><A /><A /></>",
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/B.tsx#B': 4, 'src/A.tsx#A': 2 });
+		expect(report.instances.nodes.ds).toBe(4);
+	});
+
+	it('sums usage from several owners', () => {
+		const report = analyze({
+			'src/Shared.tsx':
+				"import { DSButton } from '@ds/button'\nexport const Shared = () => <DSButton />",
+			'src/Widget.tsx':
+				"import { Shared } from './Shared'\nexport const Widget = () => <div><Shared /></div>",
+			'src/Page.tsx': [
+				"import { Shared } from './Shared'",
+				"import { Widget } from './Widget'",
+				'export const Page = () => <main><Shared /><Widget /></main>',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Shared.tsx#Shared': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+	});
+
+	it('keeps a self-recursive component finite, counted at its external usage', () => {
+		const report = analyze({
+			'src/Tree.tsx': 'export const Tree = () => <li><Tree /></li>',
+			'src/Page.tsx': [
+				"import { Tree } from './Tree'",
+				'export const Page = () => <ul><Tree /><Tree /><Tree /></ul>',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Tree.tsx#Tree': 3 });
+		// Three page sites ×1 plus the recursive site ×3.
+		expect(report.instances.nodes.local).toBe(6);
+		expect(report.instances.nodes.host).toBe(1 + 3);
+	});
+
+	it('shares the entering usage across mutual recursion', () => {
+		const report = analyze({
+			'src/AB.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const A = () => <div><B /></div>',
+				'export const B = () => <span><A /><DSButton /></span>',
+			].join('\n'),
+			'src/Page.tsx': "import { A } from './AB'\nexport const Page = () => <><A /><A /></>",
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/AB.tsx#A': 2, 'src/AB.tsx#B': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+	});
+
+	it('propagates conditional halving into multipliers', () => {
+		const report = analyze({
+			'src/Button.tsx':
+				"import { DSButton } from '@ds/button'\nexport const LocalButton = () => <DSButton />",
+			'src/App.tsx': [
+				"import { LocalButton } from './Button'",
+				'export const App = ({ x }) => x ? <LocalButton /> : <section />',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Button.tsx#LocalButton': 0.5 });
+		expect(report.instances.nodes.ds).toBe(0.5);
+	});
+
+	it('multiplies a compound component by its member usage', () => {
+		const report = analyze({
+			'src/Card.tsx': [
+				"import { DSBox } from '@ds/box'",
+				'export const Card = () => <div />',
+				'Card.Header = () => <DSBox />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Card } from './Card'",
+				'export const App = () => <main><Card.Header /><Card.Header /></main>',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Card.tsx#Header': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+		// Card itself is never rendered: its body keeps the floor of 1.
+		expect(report.components['div']).toEqual({ category: 'host', count: 1, instances: 1 });
+	});
+
+	it('does not double-count children passed through a local component', () => {
+		const report = analyze({
+			'src/Card.tsx': 'export const Card = ({ children }) => <div>{children}</div>',
+			'src/App.tsx': [
+				"import { DSButton } from '@ds/button'",
+				"import { Card } from './Card'",
+				'export const App = () => <Card><DSButton /></Card>',
+			].join('\n'),
+		});
+		// The child is App's markup, counted once; only Card's own div multiplies.
+		expect(report.instances.nodes.ds).toBe(1);
+	});
+
+	it('leaves a subsetting wrapper exactly as the static census had it', () => {
+		const report = analyze({
+			'src/Branded.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Branded = (props) => <DSButton {...props} />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Branded } from './Branded'",
+				'export const App = () => <main><Branded /><Branded /></main>',
+			].join('\n'),
+		});
+		// Usages resolve straight to DS, so no edges target Branded: the
+		// degradation invariant — weighting never reports less than static.
+		expect(report.instances.nodes).toEqual(report.nodes);
+		expect(report.instances.multipliers).toEqual({});
+	});
+
+	it('roots an entry-point render call at multiplier 1', () => {
+		const report = analyze({
+			'src/App.tsx': "import { DSButton } from '@ds/button'\nexport const App = () => <DSButton />",
+			'src/main.tsx': "import { App } from './App'\nrender(<App />)",
+		});
+		// The loose <App /> sits in main.tsx's module bucket, itself a root.
+		expect(report.instances.multipliers).toEqual({});
+		expect(report.instances.nodes.ds).toBe(1);
+	});
+
+	it('multiplies through a default-exported component', () => {
+		const report = analyze({
+			'src/page.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export default function Page() { return <DSButton /> }',
+			].join('\n'),
+			'src/App.tsx': "import Page from './page'\nexport const App = () => <><Page /><Page /></>",
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/page.tsx#Page': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+	});
+
+	it('attributes a function-scoped component to its enclosing declaration', () => {
+		const report = analyze({
+			'src/Page.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Page = () => { const Inner = () => <DSButton />; return <div><Inner /><Inner /></div> }',
+			].join('\n'),
+		});
+		// Inner is not a *top-level* declaration, so ownerName() cannot give it a
+		// bucket of its own: DSButton is attributed to Page and counts once, at
+		// Page's multiplier (the point of this scenario). The <Inner/> tags
+		// themselves still resolve normally to `local` — resolveScopedName
+		// analyzes function-scope declarations like any other, exactly as
+		// 'resolves components declared inside a function scope' above already
+		// pins — so they are not unresolved.
+		expect(report.instances.nodes.ds).toBe(1);
+		expect(report.instances.nodes.local).toBe(2);
+		expect(report.instances.nodes.unresolved).toBe(0);
+	});
+
+	it('weights node records and the component share by the owner multiplier', () => {
+		vol.fromJSON(
+			{
+				'src/Button.tsx': [
+					"import { DSButton } from '@ds/button'",
+					'export const LocalButton = () => <div><DSButton /></div>',
+				].join('\n'),
+				'src/App.tsx': [
+					"import { LocalButton } from './Button'",
+					'export const App = () => <main><LocalButton /><LocalButton /><LocalButton /></main>',
+				].join('\n'),
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		// ds instances = 3 of 6 component instances.
+		expect(report.instances.dsShareOfComponentNodes).toBe(0.5);
+		const dsRecord = report.nodeList?.find((record) => record.name === 'DSButton');
+		expect(dsRecord).toMatchObject({ weight: 1, instances: 3 });
+	});
+
+	it('weights unresolved elements by the owner multiplier', () => {
+		const report = analyze({
+			'src/Box.tsx': 'export const Box = ({ as: As }) => <As />',
+			'src/App.tsx': [
+				"import { Box } from './Box'",
+				'export const App = () => <main><Box /><Box /></main>',
+			].join('\n'),
+		});
+		const unresolved = report.unresolvedElements.find((element) => element.tag === 'As');
+		expect(unresolved).toMatchObject({ weight: 1, instances: 2 });
+	});
 });
