@@ -82,12 +82,7 @@ export interface DsMisuseReport {
 	/** `repo@ref` of the tree the run worked on. */
 	fixtureRef: string;
 	diffTruncated: boolean;
-	/**
-	 * What the call cost. Absent on artifacts written before this was recorded,
-	 * which is why it is optional rather than a schema-version bump: the scores in
-	 * those artifacts are still valid, and re-judging to acquire a token count
-	 * would cost more than the count is worth.
-	 */
+  /** Helps understand the cost structure of the LLM judge. */
 	usage?: JudgeUsage;
 	summary: DsMisuseSummary;
 	nodes: JudgedNode[];
