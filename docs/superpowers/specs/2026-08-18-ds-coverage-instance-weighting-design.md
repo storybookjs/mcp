@@ -125,8 +125,8 @@ weighted variant).
 
 - `post-analysis.ts`: coverage aggregation and deltas gain instance-share
   variants; the headline columns (μ shareAll / shareComp and their Δs) switch
-  to instance-based numbers; static shares remain in the report JSON and stay
-  available as secondary columns where table width allows.
+  to instance-based numbers. Per-row detail tables keep both static and
+  instance shares; grouped μ tables show instance-based only.
 - Delta code must tolerate baselines/runs recorded before this change
   (missing `instances` → null, not crash).
 - `scripts/ds-coverage.ts` prints both static and instance shares.
