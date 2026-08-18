@@ -25,13 +25,10 @@ export function assertApiKey(): void {
 }
 
 /**
- * Whether a failure belongs to the account rather than to the run being judged.
- *
- * An exhausted balance arrives as an ordinary per-run error — the API reports it
- * as a 400 on whichever request happened to hit it, not as a distinct status —
- * so a caller that treats it as one bad run walks the rest of the selection into
- * the same wall, one paid attempt at a time. Matched on the message because that
- * is all the SDK's error carries by the time a caller sees it.
+ * Whether a failure belongs to the account rather than to the run being
+ * judged. If the judge runs out of credit, there's no point in continuing
+ * to try to judge. We must abort the run. So account-related failures
+ * must be isolated.
  */
 export function isAccountFailure(message: string): boolean {
 	return (
