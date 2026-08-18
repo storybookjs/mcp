@@ -1,6 +1,8 @@
 # DS coverage: instantiation-weighted counting
 
-Status: revised after reviewing PR #398/#399 (see final section).
+Status: adopted. This plan builds on `agentic-reference-ds-misuse-metric`
+(#398 with #399's feedback merged in) as the next PR in that stack, at
+`metricsVersion` 7, bumping to 8.
 
 ## Problem
 
@@ -205,20 +207,13 @@ the walk restructure bound by the path builder's call-once/stable-order
 contract; `NodeRecord.instances`; `metricsVersion` as the invalidation
 mechanism.
 
-Recommended for #398 itself (open, so cheap to change there):
+Resolved: this branch (`ds-coverage-weighted`) stacks on the misuse branch,
+so the plan builds directly on #398's census shape. The bump to 8
+regenerates baselines and invalidates cached judgements; mass judging is
+best deferred until this lands.
 
-1. Store the node's `weight` (and, once it exists, `instances`) on judgement
-   records when zipping the model response back to input nodes. Today a
-   judgement stores only `{path, file, line, tag}` + scores, so any future
-   instance-weighted summary needs a re-join against the run's node list;
-   carrying the number makes re-summarising self-contained. The judge means
-   in `score.ts` stay unweighted for now — that is a scoring decision to
-   revisit once instances exist, not a schema blocker.
-
-2. Sequencing to avoid paying twice: each `metricsVersion` bump regenerates
-   committed baselines *and* invalidates all cached judgements. #398 bumps
-   6→7; instance weighting bumps again. Either land weighting into the #398
-   stack so one bump and one regenerate/re-judge cycle covers both, or accept
-   the second bump and hold off mass judging until weighting lands. Merging
-   #398 first and implementing on top avoids the census.ts conflict either
-   way — this plan builds on #398's census shape.
+Deferred follow-up (misuse metric, not this task): judgement records store
+only `{path, file, line, tag}` + scores. Storing the node's `weight`/
+`instances` when zipping the model response back to input nodes would make
+future instance-weighted misuse summaries self-contained instead of
+requiring a re-join against the run's node-list sidecar.
