@@ -1,7 +1,7 @@
 {
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/droppy-v3",
-	"metricsVersion": 7,
+	"metricsVersion": 8,
 	"nodeSidecar": true,
 	"analysis": {
 		"files": {
@@ -1028,9 +1028,7 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": [
-				"@droppy/*"
-			],
+			"dsPackages": ["@droppy/*"],
 			"files": 100,
 			"nodes": {
 				"all": 312,
@@ -1043,6 +1041,19 @@
 			},
 			"dsShareOfAllNodes": 0.2965,
 			"dsShareOfComponentNodes": 0.496,
+			"instances": {
+				"nodes": {
+					"all": 2188,
+					"host": 1070.5,
+					"component": 1117.5,
+					"ds": 658.5,
+					"external": 127,
+					"local": 332,
+					"unresolved": 0
+				},
+				"dsShareOfAllNodes": 0.301,
+				"dsShareOfComponentNodes": 0.5893
+			},
 			"parseFailures": [],
 			"readFailures": []
 		}

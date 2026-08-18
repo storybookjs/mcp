@@ -1,7 +1,7 @@
 {
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/base-ui-v1",
-	"metricsVersion": 7,
+	"metricsVersion": 8,
 	"nodeSidecar": true,
 	"analysis": {
 		"files": {
@@ -1298,10 +1298,7 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": [
-				"@base-ui/react",
-				"@droppy/*"
-			],
+			"dsPackages": ["@base-ui/react", "@droppy/*"],
 			"files": 127,
 			"nodes": {
 				"all": 365.5,
@@ -1314,6 +1311,19 @@
 			},
 			"dsShareOfAllNodes": 0.0492,
 			"dsShareOfComponentNodes": 0.0845,
+			"instances": {
+				"nodes": {
+					"all": 4184,
+					"host": 2302.5,
+					"component": 1881.5,
+					"ds": 491,
+					"external": 144.5,
+					"local": 1246,
+					"unresolved": 0
+				},
+				"dsShareOfAllNodes": 0.1174,
+				"dsShareOfComponentNodes": 0.261
+			},
 			"parseFailures": [],
 			"readFailures": []
 		}

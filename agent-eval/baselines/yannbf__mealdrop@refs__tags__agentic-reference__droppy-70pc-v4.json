@@ -1,7 +1,7 @@
 {
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/droppy-70pc-v4",
-	"metricsVersion": 7,
+	"metricsVersion": 8,
 	"nodeSidecar": true,
 	"analysis": {
 		"files": {
@@ -958,9 +958,7 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": [
-				"@droppy/*"
-			],
+			"dsPackages": ["@droppy/*"],
 			"files": 93,
 			"nodes": {
 				"all": 279,
@@ -973,6 +971,19 @@
 			},
 			"dsShareOfAllNodes": 0.4677,
 			"dsShareOfComponentNodes": 0.6905,
+			"instances": {
+				"nodes": {
+					"all": 428,
+					"host": 148.5,
+					"component": 279.5,
+					"ds": 207,
+					"external": 15,
+					"local": 57.5,
+					"unresolved": 0
+				},
+				"dsShareOfAllNodes": 0.4836,
+				"dsShareOfComponentNodes": 0.7406
+			},
 			"parseFailures": [],
 			"readFailures": []
 		}
