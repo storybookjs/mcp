@@ -113,7 +113,7 @@ function messageOf(error: unknown): string {
 }
 
 function labelOf(run: Run): string {
-	return `${run.experiment}/${run.evalName}/run-${run.run}`;
+	return `${run.experiment}/${run.timestamp}/${run.evalName}/run-${run.run}`;
 }
 
 type Plan =
