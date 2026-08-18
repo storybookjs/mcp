@@ -159,7 +159,9 @@ Multipliers come from a whole-graph usage census (recursion counted at depth
 instance-weighted shares, the per-run tables show both. Static counts are
 unchanged and stay in every report. Known blind spots, by design: list
 multiplicity (`.map()`) and JSX-valued constants referenced as `{icon}` are
-counted at their syntactic site.
+counted at their syntactic site. DS usage reached only behind a conditional
+carries a fractional weight, so its instance share can legitimately read
+lower than the static share.
 
 `ds-misuse` measures whether the agent used it _well_, scoring the JSX nodes a
 run introduced against the Droppy design system's own documentation:

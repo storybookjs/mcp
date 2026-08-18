@@ -18,17 +18,19 @@
 - Multipliers are whole-graph: usage edges are collected from every parsed file; `isCounted` gates only which owners' counts enter totals (spec, "Semantics").
 - A component with no usage sites anywhere gets multiplier 1; module buckets get 1; SCC members share the sum of edges entering the SCC (1 when none); fractional conditional weights propagate multiplicatively.
 - Weights are dyadic fractions (halvings), so instance arithmetic is exact — do not round node totals; shares go through `share()` (rounds to 4).
-- House style: tab indentation, comments explain *why*, commit subjects are sentence-case imperative without prefixes (match `git log`), and every commit ends with the `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` trailer.
+- House style: tab indentation, comments explain _why_, commit subjects are sentence-case imperative without prefixes (match `git log`), and every commit ends with the `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` trailer.
 
 ---
 
 ### Task 1: Owner attribution (`react/owner.ts`)
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-coverage/react/owner.ts`
 - Test: `lib/agentic-reference/metrics/ds-coverage/react/owner.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing project-side (only `typescript`).
 - Produces: `ownerName(node: ts.Node): string | null` — identity name of the enclosing top-level statement, `null` for loose module-level JSX; `ownerKey(filePath: string, name: string | null): string` — `` `${filePath}#${name ?? '<module>'}` ``. Task 3's census keys buckets and edges with `ownerKey`.
 
@@ -205,10 +207,12 @@ git commit -m "Attribute JSX elements to their owning top-level declaration"
 ### Task 2: Multiplier solver (`multipliers.ts`)
 
 **Files:**
+
 - Create: `lib/agentic-reference/metrics/ds-coverage/multipliers.ts`
 - Test: `lib/agentic-reference/metrics/ds-coverage/multipliers.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing project-side.
 - Produces: `interface UsageEdge { from: string; to: string; weight: number }` and `solveMultipliers(edges: UsageEdge[]): Map<string, number>`. The map covers every key appearing in an edge; callers treat absent keys as 1. Task 3 re-exports `UsageEdge` from `types.ts`.
 
@@ -420,12 +424,14 @@ git commit -m "Solve instantiation multipliers over the usage graph"
 ### Task 3: Census owners and the report's `instances` block
 
 **Files:**
+
 - Modify: `lib/agentic-reference/metrics/ds-coverage/types.ts`
 - Modify: `lib/agentic-reference/metrics/ds-coverage/react/census.ts`
 - Modify: `lib/agentic-reference/metrics/ds-coverage/index.ts`
 - Test: `lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts` (new describe + updates to existing strict assertions)
 
 **Interfaces:**
+
 - Consumes: `ownerKey`/`ownerName` (Task 1), `solveMultipliers`/`UsageEdge` (Task 2).
 - Produces: on `DsCoverageReport`: `instances: { nodes: NodeTotals; dsShareOfAllNodes: number | null; dsShareOfComponentNodes: number | null; multipliers: Record<string, number> }`; `components` entries gain `instances: number`; `NodeRecord` and `UnresolvedElement` gain `instances: number`. Tasks 5–7 consume exactly these names.
 
@@ -526,8 +532,8 @@ export interface OwnerBucket {
 `NodeRecord` gains, after `weight`:
 
 ```ts
-	/** weight × the owner's instantiation multiplier: estimated rendered copies. */
-	instances: number;
+/** weight × the owner's instantiation multiplier: estimated rendered copies. */
+instances: number;
 ```
 
 `UnresolvedElement` gains the same `instances: number` line. `CensusResult` becomes:
@@ -551,17 +557,17 @@ export interface CensusResult {
 `DsCoverageReport` gains after `dsShareOfComponentNodes`:
 
 ```ts
-	/**
-	 * The same census, weighted by estimated instantiations: JSX inside a local
-	 * component counts once per (statically estimated) render of it.
-	 */
-	instances: {
-		nodes: NodeTotals;
-		dsShareOfAllNodes: number | null;
-		dsShareOfComponentNodes: number | null;
-		/** Owners whose multiplier ≠ 1, keyed `<file>#<name>`, largest first. */
-		multipliers: Record<string, number>;
-	};
+/**
+ * The same census, weighted by estimated instantiations: JSX inside a local
+ * component counts once per (statically estimated) render of it.
+ */
+instances: {
+	nodes: NodeTotals;
+	dsShareOfAllNodes: number | null;
+	dsShareOfComponentNodes: number | null;
+	/** Owners whose multiplier ≠ 1, keyed `<file>#<name>`, largest first. */
+	multipliers: Record<string, number>;
+}
 ```
 
 and its `components` record type gains `instances: number`.
@@ -571,30 +577,30 @@ and its `components` record type gains `instances: number`.
 Imports: add `import { ownerKey, ownerName } from './owner.ts';` and the `OwnerBucket`/`UsageEdge` types. In `censusReactTree`, beside `unresolved`, add:
 
 ```ts
-	const owners = new Map<string, OwnerBucket>();
-	const edges: UsageEdge[] = [];
+const owners = new Map<string, OwnerBucket>();
+const edges: UsageEdge[] = [];
 ```
 
 Replace the filter early-continue (`if (!isCounted(file.path)) { continue; }`) with:
 
 ```ts
-		// Filtered-out files still walk: their usage sites feed the multiplier
-		// graph — a component's instantiation count is a whole-app fact — while
-		// only counted files' elements enter any totals.
-		const counted = isCounted(file.path);
+// Filtered-out files still walk: their usage sites feed the multiplier
+// graph — a component's instantiation count is a whole-app fact — while
+// only counted files' elements enter any totals.
+const counted = isCounted(file.path);
 ```
 
 In `count`, after the non-rendering early return, compute the owner, record the edge for `local` resolutions, then gate everything else on `counted`:
 
 ```ts
-			const owner = ownerKey(file.path, ownerName(element));
-			if (resolution.category === 'local') {
-				edges.push({ from: owner, to: `${resolution.module}#${resolution.name}`, weight });
-			}
-			if (!counted) return;
+const owner = ownerKey(file.path, ownerName(element));
+if (resolution.category === 'local') {
+	edges.push({ from: owner, to: `${resolution.module}#${resolution.name}`, weight });
+}
+if (!counted) return;
 
-			const bucket = owners.get(owner) ?? { totals: emptyTotals(), components: new Map() };
-			owners.set(owner, bucket);
+const bucket = owners.get(owner) ?? { totals: emptyTotals(), components: new Map() };
+owners.set(owner, bucket);
 ```
 
 Every place the existing code increments `totals.X` and `fileTotals.X`, also increment `bucket.totals.X`; every place it updates the file-level `components` map, update `bucket.components` the same way. The `nodeList.push` object gains `owner`, and the `unresolved.push` object gains `owner`. Return `{ totals, perFile, components, unresolved, owners, edges, nodeList: includeNodes ? nodeList : undefined }`.
@@ -620,29 +626,29 @@ const NODE_KEYS: Array<keyof NodeTotals> = [
 After the census call:
 
 ```ts
-	const multipliers = solveMultipliers(census.edges);
-	const multiplierOf = (owner: string): number => multipliers.get(owner) ?? 1;
+const multipliers = solveMultipliers(census.edges);
+const multiplierOf = (owner: string): number => multipliers.get(owner) ?? 1;
 
-	const instanceNodes: NodeTotals = {
-		all: 0,
-		host: 0,
-		component: 0,
-		ds: 0,
-		external: 0,
-		local: 0,
-		unresolved: 0,
-	};
-	const componentInstances = new Map<string, number>();
-	for (const [owner, bucket] of census.owners) {
-		const factor = multiplierOf(owner);
-		for (const key of NODE_KEYS) instanceNodes[key] += bucket.totals[key] * factor;
-		for (const [component, entry] of bucket.components) {
-			componentInstances.set(
-				component,
-				(componentInstances.get(component) ?? 0) + entry.count * factor,
-			);
-		}
+const instanceNodes: NodeTotals = {
+	all: 0,
+	host: 0,
+	component: 0,
+	ds: 0,
+	external: 0,
+	local: 0,
+	unresolved: 0,
+};
+const componentInstances = new Map<string, number>();
+for (const [owner, bucket] of census.owners) {
+	const factor = multiplierOf(owner);
+	for (const key of NODE_KEYS) instanceNodes[key] += bucket.totals[key] * factor;
+	for (const [component, entry] of bucket.components) {
+		componentInstances.set(
+			component,
+			(componentInstances.get(component) ?? 0) + entry.count * factor,
+		);
 	}
+}
 ```
 
 `sortedComponents` takes the census and `componentInstances` and emits `{ category, count, instances }` entries (same ordering as today: by `count` descending, then key). The report gains:
@@ -699,9 +705,11 @@ git commit -m "Report instantiation-weighted coverage beside the static census"
 ### Task 4: Spec-conformance battery
 
 **Files:**
+
 - Test: `lib/agentic-reference/metrics/ds-coverage/ds-coverage.test.ts` (extend the `instance weighting` describe)
 
 **Interfaces:**
+
 - Consumes: the public `analyzeDsCoverage` report shape from Task 3.
 - Produces: nothing new — this task pins the remaining spec scenarios and fixes whatever they expose.
 
@@ -710,155 +718,154 @@ git commit -m "Report instantiation-weighted coverage beside the static census"
 Each is one `it` inside `describe('instance weighting')`. Add them one at a time; when one fails, find the root cause and fix the underlying code before moving to the next — no bulk fixes, no weakened assertions without a spec-grounded reason stated in a comment.
 
 ```ts
-	it('composes multipliers through a chain', () => {
-		const report = analyze({
-			'src/B.tsx': "import { DSButton } from '@ds/button'\nexport const B = () => <DSButton />",
-			'src/A.tsx': "import { B } from './B'\nexport const A = () => <section><B /><B /></section>",
-			'src/Page.tsx': "import { A } from './A'\nexport const Page = () => <><A /><A /></>",
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/B.tsx#B': 4, 'src/A.tsx#A': 2 });
-		expect(report.instances.nodes.ds).toBe(4);
+it('composes multipliers through a chain', () => {
+	const report = analyze({
+		'src/B.tsx': "import { DSButton } from '@ds/button'\nexport const B = () => <DSButton />",
+		'src/A.tsx': "import { B } from './B'\nexport const A = () => <section><B /><B /></section>",
+		'src/Page.tsx': "import { A } from './A'\nexport const Page = () => <><A /><A /></>",
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/B.tsx#B': 4, 'src/A.tsx#A': 2 });
+	expect(report.instances.nodes.ds).toBe(4);
+});
 
-	it('sums usage from several owners', () => {
-		const report = analyze({
-			'src/Shared.tsx':
-				"import { DSButton } from '@ds/button'\nexport const Shared = () => <DSButton />",
-			'src/Widget.tsx':
-				"import { Shared } from './Shared'\nexport const Widget = () => <div><Shared /></div>",
-			'src/Page.tsx': [
-				"import { Shared } from './Shared'",
-				"import { Widget } from './Widget'",
-				'export const Page = () => <main><Shared /><Widget /></main>',
-			].join('\n'),
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/Shared.tsx#Shared': 2 });
-		expect(report.instances.nodes.ds).toBe(2);
+it('sums usage from several owners', () => {
+	const report = analyze({
+		'src/Shared.tsx':
+			"import { DSButton } from '@ds/button'\nexport const Shared = () => <DSButton />",
+		'src/Widget.tsx':
+			"import { Shared } from './Shared'\nexport const Widget = () => <div><Shared /></div>",
+		'src/Page.tsx': [
+			"import { Shared } from './Shared'",
+			"import { Widget } from './Widget'",
+			'export const Page = () => <main><Shared /><Widget /></main>',
+		].join('\n'),
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/Shared.tsx#Shared': 2 });
+	expect(report.instances.nodes.ds).toBe(2);
+});
 
-	it('keeps a self-recursive component finite, counted at its external usage', () => {
-		const report = analyze({
-			'src/Tree.tsx': 'export const Tree = () => <li><Tree /></li>',
-			'src/Page.tsx': [
-				"import { Tree } from './Tree'",
-				'export const Page = () => <ul><Tree /><Tree /><Tree /></ul>',
-			].join('\n'),
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/Tree.tsx#Tree': 3 });
-		// Three page sites ×1 plus the recursive site ×3.
-		expect(report.instances.nodes.local).toBe(6);
-		expect(report.instances.nodes.host).toBe(1 + 3);
+it('keeps a self-recursive component finite, counted at its external usage', () => {
+	const report = analyze({
+		'src/Tree.tsx': 'export const Tree = () => <li><Tree /></li>',
+		'src/Page.tsx': [
+			"import { Tree } from './Tree'",
+			'export const Page = () => <ul><Tree /><Tree /><Tree /></ul>',
+		].join('\n'),
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/Tree.tsx#Tree': 3 });
+	// Three page sites ×1 plus the recursive site ×3.
+	expect(report.instances.nodes.local).toBe(6);
+	expect(report.instances.nodes.host).toBe(1 + 3);
+});
 
-	it('shares the entering usage across mutual recursion', () => {
-		const report = analyze({
-			'src/AB.tsx': [
-				"import { DSButton } from '@ds/button'",
-				'export const A = () => <div><B /></div>',
-				'export const B = () => <span><A /><DSButton /></span>',
-			].join('\n'),
-			'src/Page.tsx': "import { A } from './AB'\nexport const Page = () => <><A /><A /></>",
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/AB.tsx#A': 2, 'src/AB.tsx#B': 2 });
-		expect(report.instances.nodes.ds).toBe(2);
+it('shares the entering usage across mutual recursion', () => {
+	const report = analyze({
+		'src/AB.tsx': [
+			"import { DSButton } from '@ds/button'",
+			'export const A = () => <div><B /></div>',
+			'export const B = () => <span><A /><DSButton /></span>',
+		].join('\n'),
+		'src/Page.tsx': "import { A } from './AB'\nexport const Page = () => <><A /><A /></>",
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/AB.tsx#A': 2, 'src/AB.tsx#B': 2 });
+	expect(report.instances.nodes.ds).toBe(2);
+});
 
-	it('propagates conditional halving into multipliers', () => {
-		const report = analyze({
-			'src/Button.tsx':
-				"import { DSButton } from '@ds/button'\nexport const LocalButton = () => <DSButton />",
-			'src/App.tsx': [
-				"import { LocalButton } from './Button'",
-				'export const App = ({ x }) => x ? <LocalButton /> : <section />',
-			].join('\n'),
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/Button.tsx#LocalButton': 0.5 });
-		expect(report.instances.nodes.ds).toBe(0.5);
+it('propagates conditional halving into multipliers', () => {
+	const report = analyze({
+		'src/Button.tsx':
+			"import { DSButton } from '@ds/button'\nexport const LocalButton = () => <DSButton />",
+		'src/App.tsx': [
+			"import { LocalButton } from './Button'",
+			'export const App = ({ x }) => x ? <LocalButton /> : <section />',
+		].join('\n'),
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/Button.tsx#LocalButton': 0.5 });
+	expect(report.instances.nodes.ds).toBe(0.5);
+});
 
-	it('multiplies a compound component by its member usage', () => {
-		const report = analyze({
-			'src/Card.tsx': [
-				"import { DSBox } from '@ds/box'",
-				'export const Card = () => <div />',
-				'Card.Header = () => <DSBox />',
-			].join('\n'),
-			'src/App.tsx': [
-				"import { Card } from './Card'",
-				'export const App = () => <main><Card.Header /><Card.Header /></main>',
-			].join('\n'),
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/Card.tsx#Header': 2 });
-		expect(report.instances.nodes.ds).toBe(2);
-		// Card itself is never rendered: its body keeps the floor of 1.
-		expect(report.components['div']).toEqual({ category: 'host', count: 1, instances: 1 });
+it('multiplies a compound component by its member usage', () => {
+	const report = analyze({
+		'src/Card.tsx': [
+			"import { DSBox } from '@ds/box'",
+			'export const Card = () => <div />',
+			'Card.Header = () => <DSBox />',
+		].join('\n'),
+		'src/App.tsx': [
+			"import { Card } from './Card'",
+			'export const App = () => <main><Card.Header /><Card.Header /></main>',
+		].join('\n'),
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/Card.tsx#Header': 2 });
+	expect(report.instances.nodes.ds).toBe(2);
+	// Card itself is never rendered: its body keeps the floor of 1.
+	expect(report.components['div']).toEqual({ category: 'host', count: 1, instances: 1 });
+});
 
-	it('does not double-count children passed through a local component', () => {
-		const report = analyze({
-			'src/Card.tsx': 'export const Card = ({ children }) => <div>{children}</div>',
-			'src/App.tsx': [
-				"import { DSButton } from '@ds/button'",
-				"import { Card } from './Card'",
-				'export const App = () => <Card><DSButton /></Card>',
-			].join('\n'),
-		});
-		// The child is App's markup, counted once; only Card's own div multiplies.
-		expect(report.instances.nodes.ds).toBe(1);
+it('does not double-count children passed through a local component', () => {
+	const report = analyze({
+		'src/Card.tsx': 'export const Card = ({ children }) => <div>{children}</div>',
+		'src/App.tsx': [
+			"import { DSButton } from '@ds/button'",
+			"import { Card } from './Card'",
+			'export const App = () => <Card><DSButton /></Card>',
+		].join('\n'),
 	});
+	// The child is App's markup, counted once; only Card's own div multiplies.
+	expect(report.instances.nodes.ds).toBe(1);
+});
 
-	it('leaves a subsetting wrapper exactly as the static census had it', () => {
-		const report = analyze({
-			'src/Branded.tsx': [
-				"import { DSButton } from '@ds/button'",
-				'export const Branded = (props) => <DSButton {...props} />',
-			].join('\n'),
-			'src/App.tsx': [
-				"import { Branded } from './Branded'",
-				'export const App = () => <main><Branded /><Branded /></main>',
-			].join('\n'),
-		});
-		// Usages resolve straight to DS, so no edges target Branded: the
-		// degradation invariant — weighting never reports less than static.
-		expect(report.instances.nodes).toEqual(report.nodes);
-		expect(report.instances.multipliers).toEqual({});
+it('leaves a subsetting wrapper exactly as the static census had it', () => {
+	const report = analyze({
+		'src/Branded.tsx': [
+			"import { DSButton } from '@ds/button'",
+			'export const Branded = (props) => <DSButton {...props} />',
+		].join('\n'),
+		'src/App.tsx': [
+			"import { Branded } from './Branded'",
+			'export const App = () => <main><Branded /><Branded /></main>',
+		].join('\n'),
 	});
+	// Usages resolve straight to DS, so no edges target Branded: the
+	// degradation invariant — weighting never reports less than static.
+	expect(report.instances.nodes).toEqual(report.nodes);
+	expect(report.instances.multipliers).toEqual({});
+});
 
-	it('roots an entry-point render call at multiplier 1', () => {
-		const report = analyze({
-			'src/App.tsx':
-				"import { DSButton } from '@ds/button'\nexport const App = () => <DSButton />",
-			'src/main.tsx': "import { App } from './App'\nrender(<App />)",
-		});
-		// The loose <App /> sits in main.tsx's module bucket, itself a root.
-		expect(report.instances.multipliers).toEqual({});
-		expect(report.instances.nodes.ds).toBe(1);
+it('roots an entry-point render call at multiplier 1', () => {
+	const report = analyze({
+		'src/App.tsx': "import { DSButton } from '@ds/button'\nexport const App = () => <DSButton />",
+		'src/main.tsx': "import { App } from './App'\nrender(<App />)",
 	});
+	// The loose <App /> sits in main.tsx's module bucket, itself a root.
+	expect(report.instances.multipliers).toEqual({});
+	expect(report.instances.nodes.ds).toBe(1);
+});
 
-	it('multiplies through a default-exported component', () => {
-		const report = analyze({
-			'src/page.tsx': [
-				"import { DSButton } from '@ds/button'",
-				'export default function Page() { return <DSButton /> }',
-			].join('\n'),
-			'src/App.tsx': "import Page from './page'\nexport const App = () => <><Page /><Page /></>",
-		});
-		expect(report.instances.multipliers).toEqual({ 'src/page.tsx#Page': 2 });
-		expect(report.instances.nodes.ds).toBe(2);
+it('multiplies through a default-exported component', () => {
+	const report = analyze({
+		'src/page.tsx': [
+			"import { DSButton } from '@ds/button'",
+			'export default function Page() { return <DSButton /> }',
+		].join('\n'),
+		'src/App.tsx': "import Page from './page'\nexport const App = () => <><Page /><Page /></>",
 	});
+	expect(report.instances.multipliers).toEqual({ 'src/page.tsx#Page': 2 });
+	expect(report.instances.nodes.ds).toBe(2);
+});
 
-	it('attributes a function-scoped component to its enclosing declaration', () => {
-		const report = analyze({
-			'src/Page.tsx': [
-				"import { DSButton } from '@ds/button'",
-				'export const Page = () => { const Inner = () => <DSButton />; return <div><Inner /><Inner /></div> }',
-			].join('\n'),
-		});
-		// Inner is not a module-scope binding: its usages stay unresolved (the
-		// pre-existing behavior) and its body counts as Page's markup, once.
-		expect(report.instances.nodes.ds).toBe(1);
-		expect(report.instances.nodes.unresolved).toBe(2);
+it('attributes a function-scoped component to its enclosing declaration', () => {
+	const report = analyze({
+		'src/Page.tsx': [
+			"import { DSButton } from '@ds/button'",
+			'export const Page = () => { const Inner = () => <DSButton />; return <div><Inner /><Inner /></div> }',
+		].join('\n'),
 	});
+	// Inner is not a module-scope binding: its usages stay unresolved (the
+	// pre-existing behavior) and its body counts as Page's markup, once.
+	expect(report.instances.nodes.ds).toBe(1);
+	expect(report.instances.nodes.unresolved).toBe(2);
+});
 ```
 
 - [ ] **Step 2: Run the battery; fix what fails**
@@ -883,10 +890,12 @@ git commit -m "Pin the instance-weighting semantics with spec scenarios"
 ### Task 5: Eval slice and delta (`metrics/coverage.ts`)
 
 **Files:**
+
 - Modify: `lib/agentic-reference/metrics/coverage.ts`
 - Test: create `lib/agentic-reference/metrics/coverage.test.ts`
 
 **Interfaces:**
+
 - Consumes: `report.instances` from Task 3.
 - Produces: `DsCoverage.instances?: { nodes: NodeTotals; dsShareOfAllNodes: number | null; dsShareOfComponentNodes: number | null }` (optional: old stored slices lack it); `CoverageDelta.instances: { nodes: Record<keyof NodeTotals, CoverageSpan>; dsShareOfAllNodes: CoverageShareSpan; dsShareOfComponentNodes: CoverageShareSpan } | null` (null when either side predates instances). Task 6 reads exactly these paths.
 
@@ -984,22 +993,22 @@ In `coverage.ts`: add to `DsCoverage` (after `dsShareOfComponentNodes`):
 In `coverageDelta`, add beside the existing helpers (which stay untouched for the static fields):
 
 ```ts
-	const instanceSpan = (key: keyof NodeTotals): CoverageSpan => ({
-		before: before.instances!.nodes[key],
-		after: after.instances!.nodes[key],
-		delta: after.instances!.nodes[key] - before.instances!.nodes[key],
-	});
-	const instanceShareSpan = (
-		read: (instances: NonNullable<DsCoverage['instances']>) => number | null,
-	): CoverageShareSpan => {
-		const left = read(before.instances!);
-		const right = read(after.instances!);
-		return {
-			before: left,
-			after: right,
-			delta: left === null || right === null ? null : round(right - left, SHARE_DIGITS),
-		};
+const instanceSpan = (key: keyof NodeTotals): CoverageSpan => ({
+	before: before.instances!.nodes[key],
+	after: after.instances!.nodes[key],
+	delta: after.instances!.nodes[key] - before.instances!.nodes[key],
+});
+const instanceShareSpan = (
+	read: (instances: NonNullable<DsCoverage['instances']>) => number | null,
+): CoverageShareSpan => {
+	const left = read(before.instances!);
+	const right = read(after.instances!);
+	return {
+		before: left,
+		after: right,
+		delta: left === null || right === null ? null : round(right - left, SHARE_DIGITS),
 	};
+};
 ```
 
 and to the returned object:
@@ -1039,10 +1048,12 @@ git commit -m "Carry instance coverage through the stored slice and its delta"
 ### Task 6: Post-analysis wiring and metricsVersion 8
 
 **Files:**
+
 - Modify: `lib/agentic-reference/post-analysis.ts`
 - Test: `lib/agentic-reference/post-analysis.test.ts`
 
 **Interfaces:**
+
 - Consumes: `coverageOf(row)?.instances`, `deltaOf(row).coverageDelta?.instances` (Task 5 shapes).
 - Produces: grouped-summary fields `dsShareOfAllInstances`, `dsShareOfComponentInstances`, `dsShareOfAllInstancesDelta`, `dsShareOfComponentInstancesDelta` (each `{ mean: number | null }`), per-run coverage columns `iShareAll`/`iShareComp`/`iShareAllΔ`/`iShareCompΔ`, and grouped `'μ shareAll'`/`'μ shareComp'`/`'μ shareAllΔ'`/`'μ shareCompΔ'` now sourced from instance means. `metricsVersion: 8`.
 
@@ -1092,22 +1103,22 @@ Update/extend the coverage tests (row 1 has ds 6, component 8, all 20, dsBefore 
 4. New test — old runs stay readable:
 
 ```ts
-	// A run measured before metricsVersion 8 has no instance block anywhere;
-	// the columns say null rather than crashing or dragging a mean.
-	it('tolerates runs measured before instance weighting', () => {
-		const legacy = coverageRows().map((row) => {
-			const coverage = { ...(row.dsCoverage as Record<string, unknown>) };
-			delete coverage.instances;
-			const delta = {
-				...(row.deltaToBaseline as { coverageDelta: Record<string, unknown> }).coverageDelta,
-			};
-			delete delta.instances;
-			return { ...row, dsCoverage: coverage, deltaToBaseline: { coverageDelta: delta } };
-		});
-		const [, , perRun, grouped] = tables(legacy);
-		expect(perRun?.[0]).toMatchObject({ iShareAll: 'null', iShareAllΔ: 'null' });
-		expect(grouped?.[0]).toMatchObject({ 'μ shareAll': 'null' });
+// A run measured before metricsVersion 8 has no instance block anywhere;
+// the columns say null rather than crashing or dragging a mean.
+it('tolerates runs measured before instance weighting', () => {
+	const legacy = coverageRows().map((row) => {
+		const coverage = { ...(row.dsCoverage as Record<string, unknown>) };
+		delete coverage.instances;
+		const delta = {
+			...(row.deltaToBaseline as { coverageDelta: Record<string, unknown> }).coverageDelta,
+		};
+		delete delta.instances;
+		return { ...row, dsCoverage: coverage, deltaToBaseline: { coverageDelta: delta } };
 	});
+	const [, , perRun, grouped] = tables(legacy);
+	expect(perRun?.[0]).toMatchObject({ iShareAll: 'null', iShareAllΔ: 'null' });
+	expect(grouped?.[0]).toMatchObject({ 'μ shareAll': 'null' });
+});
 ```
 
 - [ ] **Step 2: Run to verify the changed tests fail**
@@ -1120,22 +1131,22 @@ Expected: the touched/added coverage tests FAIL (missing columns/fields).
 In `makeGeneralSummary`, beside the existing `dsShareOfAll…` reads:
 
 ```ts
-		const dsShareOfAllInstances = numbersAt(
-			group,
-			(row) => coverageOf(row)?.instances?.dsShareOfAllNodes,
-		);
-		const dsShareOfComponentInstances = numbersAt(
-			group,
-			(row) => coverageOf(row)?.instances?.dsShareOfComponentNodes,
-		);
-		const dsShareOfAllInstancesDelta = numbersAt(
-			group,
-			(row) => deltaOf(row).coverageDelta?.instances?.dsShareOfAllNodes.delta,
-		);
-		const dsShareOfComponentInstancesDelta = numbersAt(
-			group,
-			(row) => deltaOf(row).coverageDelta?.instances?.dsShareOfComponentNodes.delta,
-		);
+const dsShareOfAllInstances = numbersAt(
+	group,
+	(row) => coverageOf(row)?.instances?.dsShareOfAllNodes,
+);
+const dsShareOfComponentInstances = numbersAt(
+	group,
+	(row) => coverageOf(row)?.instances?.dsShareOfComponentNodes,
+);
+const dsShareOfAllInstancesDelta = numbersAt(
+	group,
+	(row) => deltaOf(row).coverageDelta?.instances?.dsShareOfAllNodes.delta,
+);
+const dsShareOfComponentInstancesDelta = numbersAt(
+	group,
+	(row) => deltaOf(row).coverageDelta?.instances?.dsShareOfComponentNodes.delta,
+);
 ```
 
 and in the returned group object, after the static share fields:
@@ -1168,8 +1179,8 @@ and after `shareCompΔ`:
 In the grouped coverage table, switch the four headline columns to the instance means (`'μ shareAll'` ← `group.dsShareOfAllInstances`, `'μ shareComp'` ← `group.dsShareOfComponentInstances`, `'μ shareAllΔ'` ← `group.dsShareOfAllInstancesDelta`, `'μ shareCompΔ'` ← `group.dsShareOfComponentInstancesDelta`), with a comment:
 
 ```ts
-				// Headline shares are instance-weighted from metricsVersion 8 on;
-				// the per-run table above keeps the static shares beside them.
+// Headline shares are instance-weighted from metricsVersion 8 on;
+// the per-run table above keeps the static shares beside them.
 ```
 
 Bump the version block: add the changelog line
@@ -1197,9 +1208,11 @@ git commit -m "Make instance shares the headline coverage numbers and bump metri
 ### Task 7: The human-facing script
 
 **Files:**
+
 - Modify: `scripts/ds-coverage.ts`
 
 **Interfaces:**
+
 - Consumes: `report.instances` (Task 3).
 - Produces: nothing programmatic — console output only.
 
@@ -1213,7 +1226,9 @@ console.log(`  … of components, instance-weighted: ${report.instances.dsShareO
 
 const multiplied = Object.entries(report.instances.multipliers);
 if (multiplied.length > 0) {
-	console.log(`\nInstantiation multipliers ≠ 1 (top ${Math.min(top, multiplied.length)} of ${multiplied.length}):`);
+	console.log(
+		`\nInstantiation multipliers ≠ 1 (top ${Math.min(top, multiplied.length)} of ${multiplied.length}):`,
+	);
 	console.table(Object.fromEntries(multiplied.slice(0, top)));
 }
 ```
@@ -1245,10 +1260,12 @@ git commit -m "Print instance shares and multipliers in the coverage script"
 ### Task 8: README note and baseline regeneration
 
 **Files:**
+
 - Modify: `README.md` (the `ds-coverage` metric paragraph around line 152)
 - Modify (regenerated): `baselines/**` including `baselines/ds-nodes/**`
 
 **Interfaces:**
+
 - Consumes: everything landed above.
 - Produces: committed baselines at `metricsVersion` 8.
 
@@ -1289,4 +1306,4 @@ git commit -m "Regenerate baselines under instance-weighted coverage"
 - `pnpm vitest run` — full agent-eval suite green (was 793 passing before Task 1; ends higher).
 - `pnpm typecheck` — clean.
 - Static-freeze audit: `git diff` over the branch must show no change to any existing static expectation value in tests.
-- The spec's degradation invariant, checked once more by eye: every code path that multiplies goes through `multiplierOf`, whose default is 1.
+- The spec's degradation invariant, checked once more by eye: every code path that multiplies goes through `multiplierOf`, whose default is 1, so results fall below static only where a fractional conditional weight legitimately propagates a multiplier below 1 — never otherwise.

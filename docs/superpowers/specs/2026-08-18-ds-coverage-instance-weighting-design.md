@@ -28,7 +28,7 @@ Each owner (see Architecture) gets an **instantiation multiplier**:
   owners' counts enter totals. A component's instantiation count is a
   whole-app fact — the misuse judge's touched-files census
   (`censusInclude: patch.files`, #398) must still see whole-app instances.
-  The walk therefore visits every graph file and skips only the *counting*
+  The walk therefore visits every graph file and skips only the _counting_
   in filtered-out ones. (Stories/tests stay excluded at the module-graph
   level, as today.)
 - A local component with **no usage sites anywhere in the graph** gets
@@ -39,7 +39,7 @@ Each owner (see Architecture) gets an **instantiation multiplier**:
   declaration) has `mult = 1`.
 - **Cycles**: condense strongly connected components. A node in an SCC takes
   its multiplier from edges entering the SCC only; intra-SCC edges do not
-  feed back (recursion counted at depth 1). Intra-SCC usage *sites* still
+  feed back (recursion counted at depth 1). Intra-SCC usage _sites_ still
   count as nodes at their owner's multiplier. Deterministic and
   order-independent.
 - **Fractional weights** from conditional branches propagate multiplicatively
@@ -53,8 +53,12 @@ the same fold with all multipliers at 1 — the two metrics share one census.
 Multiplication only happens where a usage resolves to a `local` identity whose
 key matches an owner bucket. Everything else — subsetting wrappers already
 collapsed to `ds` by identify, externals, unresolved tags — behaves exactly as
-today. The weighted metric can never report *less* than the static one for a
-component's body counted at its declaration site.
+today. The weighted metric never reports _less_ than the static one for a
+component's body counted at its declaration site — except where fractional
+conditional weights propagate: a usage reached only behind a conditional
+carries a multiplier below 1, so a component used at weight 0.5 legitimately
+halves its body's instances below the static count (pinned by a scenario
+test).
 
 ### Documented limitations (not solved)
 
@@ -63,6 +67,12 @@ component's body counted at its declaration site.
   declaration site ×1 (module bucket), not per reference.
 - Render-prop JSX (`<Route element={<Page/>}/>`) counts at its syntactic
   site × the enclosing owner's multiplier, which is dynamically correct.
+- Function-scoped and object-literal member components under-attribute: a
+  function-scoped component, or an object-literal member — e.g. `Plain` in
+  `const AppUI = { Plain: () => <div/> }` — used N times still counts its
+  body once, at the enclosing owner's multiplier, not N times. Usages
+  resolve to `file#Plain` while the body buckets under `AppUI` (see
+  Architecture, section 1).
 
 ## Architecture
 
@@ -83,17 +93,21 @@ usages to (`<declaring file path>#<name>`):
   (pinned by a test)
 - anything else (top-level JSX expressions, IIFEs) → the module bucket
 
-Components declared *inside* a function attribute to the enclosing top-level
+Components declared _inside_ a function attribute to the enclosing top-level
 owner: their body counts once at that owner's multiplier. Usages of such a
 component still resolve to `local` (the resolver analyzes function-scope
 declarations), so a function-scoped component used N times renders its body
 N times dynamically but counts it once here — a documented under-attribution
-alongside the `.map()` limitation.
+alongside the `.map()` limitation. Object-literal member components
+(`const AppUI = { Plain: () => <div/> }`) under-attribute the same way:
+`AppUI.Plain` usages resolve to the identity `file#Plain`, but `ownerName`
+roots the property's body at the enclosing top-level declaration (`AppUI`),
+so `Plain`'s own multiplier never reaches where its body was counted.
 
 Owner detection lives beside `node-path.ts`'s `declarationName()` and the two
-stay deliberately distinct: paths use the *nearest* named declaration as a
+stay deliberately distinct: paths use the _nearest_ named declaration as a
 display name (a class component's path roots at `render`), owners use the
-*top-level* declaration as an identity key (the class itself, matching what
+_top-level_ declaration as an identity key (the class itself, matching what
 usages resolve to). A test pins the correspondence for the common case
 (top-level function component: path root == owner name) so drift is visible.
 
@@ -102,9 +116,12 @@ The restructured walk must preserve the node-path builder's contract from
 traversal order a later run reproduces. Owner bucketing changes where counts
 accumulate, never the traversal.
 
-The census emits raw per-owner data instead of global totals:
+The census maintains the static aggregates (global and per-file `NodeTotals`,
+per-identity `components`) and the per-owner buckets in the same pass: each
+counted element updates its owner's bucket alongside the totals, kept in
+lockstep by construction and pinned by the fixtures that assert both at once.
+Beside those, the census emits:
 
-- per-owner `NodeTotals` and per-owner per-identity counts
 - usage edges `owner → local key` with summed weights (a byproduct of tag
   resolutions the walk already performs)
 - unresolved elements, each carrying its owner
@@ -122,13 +139,21 @@ unit-testable standalone.
 
 ### 3. `index.ts`: assembly
 
-Folds the owner data twice — once with multipliers ≡ 1 (static, must
-reproduce today's numbers exactly) and once with solved multipliers
-(instances) — and assembles the report. `CensusResult` changes shape to the
-per-owner form; the fold lives in shared code next to the solver. The walk
-becomes a single per-element pass with several consumers — totals/owner
-buckets, usage edges, and #398's opt-in `nodeList` — rather than growing a
-fourth parallel accumulation.
+Solves multipliers over `census.edges`, then folds `census.owners` once, at
+the solved multipliers, into the `instances` block. The static numbers need
+no fold of their own — they come straight off the census's own totals and
+per-identity counts, computed in the same pass as the buckets (section 1) —
+so only the instance side is assembled here, next to the solver. `CensusResult`
+keeps its per-owner buckets (`owners`) alongside the totals. The walk stays a
+single per-element pass with several consumers — totals, owner buckets, usage
+edges, and #398's opt-in `nodeList` — rather than growing a fourth parallel
+accumulation.
+
+A possible future simplification: drop the census's direct total writes and
+instead fold `owners` twice in `index.ts` — once at multiplier ≡ 1 for
+static, once at solved multipliers for instances — the way `instances` is
+already built. Not done here, to keep the walk's existing direct-total
+writes (and the fixtures pinning them) untouched.
 
 ## Report schema
 

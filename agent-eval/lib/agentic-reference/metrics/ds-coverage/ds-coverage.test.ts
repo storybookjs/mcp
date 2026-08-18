@@ -1795,8 +1795,12 @@ describe('instance weighting', () => {
 				'export const App = () => <main><Branded /><Branded /></main>',
 			].join('\n'),
 		});
-		// Usages resolve straight to DS, so no edges target Branded: the
-		// degradation invariant — weighting never reports less than static.
+		// Usages resolve straight to `ds` (a subsetting wrapper), never to a
+		// `local` identity, so no edge targets Branded: its multiplier stays
+		// the default of 1 and instances equal static here — not a general
+		// "never less than static" guarantee (fractional weights can still
+		// drop instances below static elsewhere; see "propagates conditional
+		// halving into multipliers" above).
 		expect(report.instances.nodes).toEqual(report.nodes);
 		expect(report.instances.multipliers).toEqual({});
 	});
