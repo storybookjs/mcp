@@ -135,48 +135,46 @@ export function censusReactTree(
 			const bucket = owners.get(owner) ?? { totals: emptyTotals(), components: new Map() };
 			owners.set(owner, bucket);
 
-			totals.all += weight;
-			fileTotals.all += weight;
-			bucket.totals.all += weight;
+			// Every counted element touches the same three tallies — global,
+			// per-file, per-owner — together; a helper keeps them from drifting
+			// apart, since each is otherwise a separate line easy to forget.
+			const add = (key: keyof NodeTotals): void => {
+				totals[key] += weight;
+				fileTotals[key] += weight;
+				bucket.totals[key] += weight;
+			};
+			// Likewise, a component occurrence is tallied both globally and
+			// per-owner, in identical maps of identical shape.
+			const addComponent = (
+				map: Map<string, { category: 'host' | 'ds' | 'external' | 'local'; count: number }>,
+				key: string,
+				category: 'host' | 'ds' | 'external' | 'local',
+			): void => {
+				const entry = map.get(key) ?? { category, count: 0 };
+				entry.count += weight;
+				map.set(key, entry);
+			};
+
+			add('all');
 
 			if (resolution.category === 'host') {
-				totals.host += weight;
-				fileTotals.host += weight;
-				bucket.totals.host += weight;
-				const entry = components.get(resolution.tag) ?? { category: 'host' as const, count: 0 };
-				entry.count += weight;
-				components.set(resolution.tag, entry);
-				const bucketEntry = bucket.components.get(resolution.tag) ?? {
-					category: 'host' as const,
-					count: 0,
-				};
-				bucketEntry.count += weight;
-				bucket.components.set(resolution.tag, bucketEntry);
+				add('host');
+				addComponent(components, resolution.tag, 'host');
+				addComponent(bucket.components, resolution.tag, 'host');
 				return;
 			}
 
-			totals.component += weight;
-			fileTotals.component += weight;
-			bucket.totals.component += weight;
+			add('component');
 
 			if (
 				resolution.category === 'ds' ||
 				resolution.category === 'external' ||
 				resolution.category === 'local'
 			) {
-				totals[resolution.category] += weight;
-				fileTotals[resolution.category] += weight;
-				bucket.totals[resolution.category] += weight;
+				add(resolution.category);
 				const key = `${resolution.module}#${resolution.name}`;
-				const entry = components.get(key) ?? { category: resolution.category, count: 0 };
-				entry.count += weight;
-				components.set(key, entry);
-				const bucketEntry = bucket.components.get(key) ?? {
-					category: resolution.category,
-					count: 0,
-				};
-				bucketEntry.count += weight;
-				bucket.components.set(key, bucketEntry);
+				addComponent(components, key, resolution.category);
+				addComponent(bucket.components, key, resolution.category);
 				if (includeNodes) {
 					nodeList.push({
 						path: nextPath(element),
@@ -200,9 +198,7 @@ export function censusReactTree(
 				resolution.category === 'unresolved'
 					? resolution.reason
 					: `tag resolves to a ${resolution.category}`;
-			totals.unresolved += weight;
-			fileTotals.unresolved += weight;
-			bucket.totals.unresolved += weight;
+			add('unresolved');
 			const line = file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1;
 			// Raw source text here, where a record's `tag` above is rebuilt from the
 			// identifiers. The divergence is deliberate: a record's tag has to agree

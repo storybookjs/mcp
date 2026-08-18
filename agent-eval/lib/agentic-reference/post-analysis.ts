@@ -615,16 +615,19 @@ export function summarize(
 				case: shortCase(group.eval),
 				'μ dsNodes': (group.dsNodes as { mean: number | null }).mean,
 				'μ compNodes': (group.componentNodes as { mean: number | null }).mean,
-				// Headline shares are instance-weighted from metricsVersion 8 on;
-				// the per-run table above keeps the static shares beside them.
-				'μ shareAll': percent((group.dsShareOfAllInstances as { mean: number | null }).mean),
-				'μ shareComp': percent((group.dsShareOfComponentInstances as { mean: number | null }).mean),
+				// Headline shares are instance-weighted from metricsVersion 8 on,
+				// labeled iShare* like the per-run table's instance columns above,
+				// which also keeps the static shares beside them.
+				'μ iShareAll': percent((group.dsShareOfAllInstances as { mean: number | null }).mean),
+				'μ iShareComp': percent(
+					(group.dsShareOfComponentInstances as { mean: number | null }).mean,
+				),
 				'μ unres': (group.unresolvedNodes as { mean: number | null }).mean,
 				'μ dsNodesΔ': (group.dsNodesDelta as { mean: number | null }).mean,
-				'μ shareAllΔ': percentDelta(
+				'μ iShareAllΔ': percentDelta(
 					(group.dsShareOfAllInstancesDelta as { mean: number | null }).mean,
 				),
-				'μ shareCompΔ': percentDelta(
+				'μ iShareCompΔ': percentDelta(
 					(group.dsShareOfComponentInstancesDelta as { mean: number | null }).mean,
 				),
 			})),

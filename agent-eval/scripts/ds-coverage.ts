@@ -111,7 +111,9 @@ console.log(`  … of components, instance-weighted: ${report.instances.dsShareO
 
 const multiplied = Object.entries(report.instances.multipliers);
 if (multiplied.length > 0) {
-	console.log(`\nInstantiation multipliers ≠ 1 (top ${Math.min(top, multiplied.length)} of ${multiplied.length}):`);
+	console.log(
+		`\nInstantiation multipliers ≠ 1 (top ${Math.min(top, multiplied.length)} of ${multiplied.length}):`,
+	);
 	console.table(Object.fromEntries(multiplied.slice(0, top)));
 }
 

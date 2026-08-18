@@ -43,13 +43,20 @@ const NODE_KEYS: Array<keyof NodeTotals> = [
 
 function sortedComponents(
 	census: CensusResult,
-	instances: Map<string, number>,
+	componentInstances: Map<string, number>,
 ): DsCoverageReport['components'] {
 	const entries = [...census.components.entries()].sort(
 		(a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]),
 	);
 	return Object.fromEntries(
-		entries.map(([key, entry]) => [key, { ...entry, instances: instances.get(key) ?? 0 }]),
+		entries.map(([key, entry]) => [
+			key,
+			// Every key in `components` is threaded through some owner's bucket
+			// (see react/census.ts), so the fold below always has an entry for
+			// it; the fallback only degrades a broken invariant to the static
+			// count instead of silently under-reporting 0 instances.
+			{ ...entry, instances: componentInstances.get(key) ?? entry.count },
+		]),
 	);
 }
 

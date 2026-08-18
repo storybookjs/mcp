@@ -837,12 +837,12 @@ describe('summarize', () => {
 			case: 'e',
 			'μ dsNodes': '8',
 			'μ compNodes': '10',
-			'μ shareAll': '50%',
-			'μ shareComp': '82.86%',
+			'μ iShareAll': '50%',
+			'μ iShareComp': '82.86%',
 			'μ unres': '0',
 			'μ dsNodesΔ': '4',
-			'μ shareAllΔ': '+25%',
-			'μ shareCompΔ': '+40%',
+			'μ iShareAllΔ': '+25%',
+			'μ iShareCompΔ': '+40%',
 		});
 	});
 
@@ -883,7 +883,7 @@ describe('summarize', () => {
 		});
 		const [, , perRun, grouped] = tables(legacy);
 		expect(perRun?.[0]).toMatchObject({ iShareAll: 'null', iShareAllΔ: 'null' });
-		expect(grouped?.[0]).toMatchObject({ 'μ shareAll': 'null' });
+		expect(grouped?.[0]).toMatchObject({ 'μ iShareAll': 'null' });
 	});
 
 	it('signs a coverage share that fell', () => {
