@@ -84,7 +84,11 @@ usages to (`<declaring file path>#<name>`):
 - anything else (top-level JSX expressions, IIFEs) → the module bucket
 
 Components declared *inside* a function attribute to the enclosing top-level
-owner — dynamically correct, since they render as part of it.
+owner: their body counts once at that owner's multiplier. Usages of such a
+component still resolve to `local` (the resolver analyzes function-scope
+declarations), so a function-scoped component used N times renders its body
+N times dynamically but counts it once here — a documented under-attribution
+alongside the `.map()` limitation.
 
 Owner detection lives beside `node-path.ts`'s `declarationName()` and the two
 stay deliberately distinct: paths use the *nearest* named declaration as a
