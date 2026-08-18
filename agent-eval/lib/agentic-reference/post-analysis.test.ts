@@ -539,14 +539,14 @@ describe('summarize', () => {
 		expect(tables(armRows())[0]?.[0]?.run).toBe('2026-08-15 15:20 #1');
 	});
 
-	// The heading above a table names the arm, so a single-arm table spends no
-	// column repeating it — but a set spanning arms has to say which is which.
-	it('names the arm in every row only where the rows span more than one', () => {
+	// Naming the arm is the grouped table's job: a per-run row never spends a
+	// column on it, and a set spanning arms stays tellable-apart one table down.
+	it('leaves arm naming to the grouped table', () => {
 		expect(tables(armRows())[0]?.[0]).not.toHaveProperty('experiment');
 
-		const mixed = tables([...armRows(), { ...armRows()[0], experiment: 'y' }])[0];
-		expect(mixed?.[0]).toMatchObject({ experiment: 'x' });
-		expect(mixed?.[2]).toMatchObject({ experiment: 'y' });
+		const mixed = tables([...armRows(), { ...armRows()[0], experiment: 'y' }]);
+		expect(mixed[0]?.[0]).not.toHaveProperty('experiment');
+		expect(mixed[1]?.map((row) => row.experiment)).toEqual(['x', 'y']);
 	});
 
 	// Returning these is what puts them in results/analysis-summary.json; a
@@ -643,16 +643,17 @@ describe('summarize', () => {
 		const [group] = groupedRows(armRows());
 		expect(group).toMatchObject({
 			experiment: 'x',
+			case: 'e',
 			fixtureRef: 'r@1',
 			runs: '2',
 			passed: '1',
 			costUsd: '4',
-			secondsMean: '15',
-			docsMean: '1',
-			slocMean: '15',
+			'μ seconds': '15',
+			'μ docs': '1',
+			'μ sloc': '15',
 		});
 		// Complexity moved to its own tables; the vitals stay lean.
-		expect(group).not.toHaveProperty('cognitiveMean');
+		expect(group).not.toHaveProperty('μ cog');
 	});
 
 	it('prints a per-run complexity table with the whole family', () => {
@@ -678,14 +679,15 @@ describe('summarize', () => {
 		const [, , , grouped] = tables(armRows());
 		expect(grouped?.[0]).toEqual({
 			experiment: 'x',
-			cycloMean: '3',
-			cogMean: '4',
-			jsxCycloMean: '5',
-			jsxCogMean: '9',
-			jsxLenMean: '6',
-			jsxBindMean: '3',
-			jsxDepthMean: '2',
-			densityMean: '0.344',
+			case: 'e',
+			'μ cyclo': '3',
+			'μ cog': '4',
+			'μ jsxCyclo': '5',
+			'μ jsxCog': '9',
+			'μ jsxLen': '6',
+			'μ jsxBind': '3',
+			'μ jsxDepth': '2',
+			'μ density': '0.344',
 			parseFailRuns: '1',
 		});
 	});
@@ -802,14 +804,15 @@ describe('summarize', () => {
 		const [, , , grouped] = tables(coverageRows());
 		expect(grouped?.[0]).toEqual({
 			experiment: 'x',
-			dsNodesMean: '8',
-			compNodesMean: '10',
-			shareAllMean: '40%',
-			shareCompMean: '79.17%',
-			unresMean: '0',
-			dsNodesΔMean: '4',
-			shareAllΔMean: '+20%',
-			shareCompΔMean: '+37.5%',
+			case: 'e',
+			'μ dsNodes': '8',
+			'μ compNodes': '10',
+			'μ shareAll': '40%',
+			'μ shareComp': '79.17%',
+			'μ unres': '0',
+			'μ dsNodesΔ': '4',
+			'μ shareAllΔ': '+20%',
+			'μ shareCompΔ': '+37.5%',
 		});
 	});
 
@@ -981,7 +984,7 @@ describe('summarize', () => {
 		const printed = tables(rows);
 		// No baseline delta anywhere: the complexity tables are not printed.
 		expect(printed).toHaveLength(2);
-		expect(printed[1]?.[0]).toMatchObject({ runs: '1', slocMean: 'null' });
+		expect(printed[1]?.[0]).toMatchObject({ runs: '1', 'μ sloc': 'null' });
 	});
 
 	it('flags a group spanning more than one fixture pin', () => {
