@@ -1,6 +1,6 @@
 # DS coverage: instantiation-weighted counting
 
-Status: initial plan, pre-review against PR #399.
+Status: revised after reviewing PR #398/#399 (see final section).
 
 ## Problem
 
@@ -75,6 +75,18 @@ usages to (`<declaring file path>#<name>`):
 Components declared *inside* a function attribute to the enclosing top-level
 owner — dynamically correct, since they render as part of it.
 
+Owner detection lives beside `node-path.ts`'s `declarationName()` and the two
+stay deliberately distinct: paths use the *nearest* named declaration as a
+display name (a class component's path roots at `render`), owners use the
+*top-level* declaration as an identity key (the class itself, matching what
+usages resolve to). A test pins the correspondence for the common case
+(top-level function component: path root == owner name) so drift is visible.
+
+The restructured walk must preserve the node-path builder's contract from
+#398: `nextPath()` called exactly once per counted component element, in a
+traversal order a later run reproduces. Owner bucketing changes where counts
+accumulate, never the traversal.
+
 The census emits raw per-owner data instead of global totals:
 
 - per-owner `NodeTotals` and per-owner per-identity counts
@@ -98,7 +110,10 @@ unit-testable standalone.
 Folds the owner data twice — once with multipliers ≡ 1 (static, must
 reproduce today's numbers exactly) and once with solved multipliers
 (instances) — and assembles the report. `CensusResult` changes shape to the
-per-owner form; the fold lives in shared code next to the solver.
+per-owner form; the fold lives in shared code next to the solver. The walk
+becomes a single per-element pass with several consumers — totals/owner
+buckets, usage edges, and #398's opt-in `nodeList` — rather than growing a
+fourth parallel accumulation.
 
 ## Report schema
 
@@ -121,17 +136,27 @@ unresolvedElements: Array<{ …; instances: number }>;
 `perFile` stays static-only (it describes syntactic content; YAGNI on a
 weighted variant).
 
+`NodeRecord` (from #398) gains `instances: number` next to `weight`. `weight`
+keeps its exact stored meaning (static, conditional-branch fraction);
+`instances` is `weight × mult(owner)`. No owner key on records: the path's
+first segment covers human reading, and `instances.multipliers` in the report
+gives the identity-keyed view.
+
 ## Post-analysis and consumers
 
 - `post-analysis.ts`: coverage aggregation and deltas gain instance-share
   variants; the headline columns (μ shareAll / shareComp and their Δs) switch
   to instance-based numbers. Per-row detail tables keep both static and
   instance shares; grouped μ tables show instance-based only.
-- Delta code must tolerate baselines/runs recorded before this change
-  (missing `instances` → null, not crash).
+- Committed baselines invalidate through the existing `metricsVersion`
+  mechanism (`agentic-reference/post-analysis.ts`): one bump, and baselines —
+  including the `ds-nodes` sidecars from #398 — regenerate. Frozen run
+  artifacts cannot regenerate, so post-analysis still null-tolerates missing
+  `instances` fields on old runs.
+- A `metricsVersion` bump also invalidates every cached ds-misuse judgement
+  (staleness is version equality), i.e. bumps cost LLM re-judging. See the
+  sequencing note in the final section.
 - `scripts/ds-coverage.ts` prints both static and instance shares.
-- Baselines under `agent-eval/baselines` regenerate when convenient; not a
-  blocker given null-tolerance.
 
 ## Testing
 
@@ -154,3 +179,37 @@ Existing fixtures must pass unchanged (static behavior is frozen).
 11. Loose module-level JSX: ×1.
 12. Inner (function-scoped) component: body attributes to enclosing owner.
 13. `export default function Page` naming: usages and owner key line up.
+
+## Review against PR #398/#399
+
+[#399](https://github.com/storybookjs/mcp/pull/399) is review feedback merged
+into [#398](https://github.com/storybookjs/mcp/pull/398) (DS misuse metric,
+open, based on `agentic-reference-eval`). #398 already reshapes the same
+census walk: `count()` takes the element node, an opt-in `nodeList` of
+`NodeRecord`s is emitted for the LLM judge, node paths root at a
+nearest-declaration name, and node lists are stored as `ds-nodes` sidecar
+baselines under `metricsVersion` 7.
+
+Changes folded into this plan as a result: owner detection co-located with
+`node-path.ts` under an explicit display-name vs identity-key distinction;
+the walk restructure bound by the path builder's call-once/stable-order
+contract; `NodeRecord.instances`; `metricsVersion` as the invalidation
+mechanism.
+
+Recommended for #398 itself (open, so cheap to change there):
+
+1. Store the node's `weight` (and, once it exists, `instances`) on judgement
+   records when zipping the model response back to input nodes. Today a
+   judgement stores only `{path, file, line, tag}` + scores, so any future
+   instance-weighted summary needs a re-join against the run's node list;
+   carrying the number makes re-summarising self-contained. The judge means
+   in `score.ts` stay unweighted for now — that is a scoring decision to
+   revisit once instances exist, not a schema blocker.
+
+2. Sequencing to avoid paying twice: each `metricsVersion` bump regenerates
+   committed baselines *and* invalidates all cached judgements. #398 bumps
+   6→7; instance weighting bumps again. Either land weighting into the #398
+   stack so one bump and one regenerate/re-judge cycle covers both, or accept
+   the second bump and hold off mass judging until weighting lands. Merging
+   #398 first and implementing on top avoids the census.ts conflict either
+   way — this plan builds on #398's census shape.
