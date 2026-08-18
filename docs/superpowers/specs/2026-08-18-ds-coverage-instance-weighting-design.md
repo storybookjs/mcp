@@ -20,8 +20,17 @@ instance counts, including local component nodes themselves. (The alternative
 
 Each owner (see Architecture) gets an **instantiation multiplier**:
 
-- `mult(C) = Σ over counted usage sites u of C: weight(u) × mult(owner(u))`
-- A local component with **no counted usage sites** gets `mult = 1`. This is
+- `mult(C) = Σ over usage sites u of C: weight(u) × mult(owner(u))`
+- Usage edges and multipliers are computed over the **whole graph** (every
+  parsed file), regardless of census filters; `isCounted` gates only which
+  owners' counts enter totals. A component's instantiation count is a
+  whole-app fact — the misuse judge's touched-files census
+  (`censusInclude: patch.files`, #398) must still see whole-app instances.
+  The walk therefore visits every graph file and skips only the *counting*
+  in filtered-out ones. (Stories/tests stay excluded at the module-graph
+  level, as today.)
+- A local component with **no usage sites anywhere in the graph** gets
+  `mult = 1`. This is
   the floor at today's behavior: pages/layouts (rendered by routers, never
   used in JSX), story-only components, and dead code all keep counting once.
 - The **module bucket** (loose JSX not enclosed by any top-level component
