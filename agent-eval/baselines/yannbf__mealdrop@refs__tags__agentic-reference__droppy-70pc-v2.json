@@ -968,7 +968,9 @@
 		},
 		"parseFailures": [],
 		"dsCoverage": {
-			"dsPackages": ["@droppy/*"],
+			"dsPackages": [
+				"@droppy/*"
+			],
 			"files": 94,
 			"nodes": {
 				"all": 278,
@@ -983,16 +985,16 @@
 			"dsShareOfComponentNodes": 0.6921,
 			"instances": {
 				"nodes": {
-					"all": 427,
-					"host": 146,
-					"component": 281,
-					"ds": 208.5,
-					"external": 15,
-					"local": 57.5,
+					"all": 683,
+					"host": 258,
+					"component": 425,
+					"ds": 244.5,
+					"external": 54,
+					"local": 126.5,
 					"unresolved": 0
 				},
-				"dsShareOfAllNodes": 0.4883,
-				"dsShareOfComponentNodes": 0.742
+				"dsShareOfAllNodes": 0.358,
+				"dsShareOfComponentNodes": 0.5753
 			},
 			"parseFailures": [],
 			"readFailures": []

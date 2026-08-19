@@ -24,7 +24,9 @@
 			"module": "react-redux",
 			"name": "Provider",
 			"weight": 1,
-			"props": ["store"],
+			"props": [
+				"store"
+			],
 			"instances": 1
 		},
 		{
@@ -36,7 +38,9 @@
 			"module": "styled-components",
 			"name": "ThemeProvider",
 			"weight": 1,
-			"props": ["theme"],
+			"props": [
+				"theme"
+			],
 			"instances": 1
 		},
 		{
@@ -84,7 +88,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -108,7 +115,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -132,7 +142,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -156,7 +169,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -180,7 +196,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -204,7 +223,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -228,7 +250,12 @@
 			"module": "react-lottie-player",
 			"name": "default",
 			"weight": 1,
-			"props": ["style", "play", "loop", "animationData"],
+			"props": [
+				"style",
+				"play",
+				"loop",
+				"animationData"
+			],
 			"instances": 2
 		},
 		{
@@ -240,7 +267,10 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type", "size"],
+			"props": [
+				"type",
+				"size"
+			],
 			"instances": 3.5
 		},
 		{
@@ -252,7 +282,9 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 0.5,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 0.5
 		},
 		{
@@ -264,7 +296,15 @@
 			"module": "@base-ui/react/button",
 			"name": "Button",
 			"weight": 1,
-			"props": ["type", "$large", "$clear", "$round", "$withIcon", "className", "..."],
+			"props": [
+				"type",
+				"$large",
+				"$clear",
+				"$round",
+				"$withIcon",
+				"className",
+				"..."
+			],
 			"instances": 177
 		},
 		{
@@ -276,7 +316,11 @@
 			"module": "src/components/Icon/Icon.tsx",
 			"name": "Icon",
 			"weight": 1,
-			"props": ["color", "size", "name"],
+			"props": [
+				"color",
+				"size",
+				"name"
+			],
 			"instances": 177
 		},
 		{
@@ -288,7 +332,11 @@
 			"module": "src/components/IconButton/IconButton.tsx",
 			"name": "IconButton",
 			"weight": 1,
-			"props": ["name", "aria-label", "onClick"],
+			"props": [
+				"name",
+				"aria-label",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -300,7 +348,11 @@
 			"module": "src/components/IconButton/IconButton.tsx",
 			"name": "IconButton",
 			"weight": 1,
-			"props": ["name", "aria-label", "onClick"],
+			"props": [
+				"name",
+				"aria-label",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -312,7 +364,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -324,7 +378,10 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type", "fontWeight"],
+			"props": [
+				"type",
+				"fontWeight"
+			],
 			"instances": 1
 		},
 		{
@@ -336,7 +393,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Rounded",
 			"weight": 0.5,
-			"props": ["photoUrl", "title"],
+			"props": [
+				"photoUrl",
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -348,7 +408,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Squared",
 			"weight": 0.5,
-			"props": ["photoUrl", "title"],
+			"props": [
+				"photoUrl",
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -360,7 +423,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -384,7 +449,9 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["onClick"],
+			"props": [
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -396,7 +463,10 @@
 			"module": "src/components/Logo/Logo.tsx",
 			"name": "Logo",
 			"weight": 1,
-			"props": ["large", "logoOnly"],
+			"props": [
+				"large",
+				"logoOnly"
+			],
 			"instances": 18
 		},
 		{
@@ -408,7 +478,10 @@
 			"module": "src/components/FooterCard/FooterCard.tsx",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title", "links"],
+			"props": [
+				"title",
+				"links"
+			],
 			"instances": 18
 		},
 		{
@@ -420,7 +493,10 @@
 			"module": "src/components/FooterCard/FooterCard.tsx",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title", "links"],
+			"props": [
+				"title",
+				"links"
+			],
 			"instances": 18
 		},
 		{
@@ -432,7 +508,9 @@
 			"module": "src/components/FooterCard/FooterCard.tsx",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 18
 		},
 		{
@@ -444,7 +522,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 54
 		},
 		{
@@ -468,7 +548,9 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 0.5,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 27
 		},
 		{
@@ -492,7 +574,9 @@
 			"module": "@base-ui/react/tooltip",
 			"name": "Tooltip.Trigger",
 			"weight": 1,
-			"props": ["render"],
+			"props": [
+				"render"
+			],
 			"instances": 27
 		},
 		{
@@ -504,7 +588,13 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["round", "clear", "aria-label", "icon", "onClick"],
+			"props": [
+				"round",
+				"clear",
+				"aria-label",
+				"icon",
+				"onClick"
+			],
 			"instances": 27
 		},
 		{
@@ -528,7 +618,9 @@
 			"module": "@base-ui/react/tooltip",
 			"name": "Tooltip.Positioner",
 			"weight": 1,
-			"props": ["sideOffset"],
+			"props": [
+				"sideOffset"
+			],
 			"instances": 27
 		},
 		{
@@ -552,7 +644,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to", "aria-label"],
+			"props": [
+				"to",
+				"aria-label"
+			],
 			"instances": 27
 		},
 		{
@@ -588,7 +683,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to", "tabIndex"],
+			"props": [
+				"to",
+				"tabIndex"
+			],
 			"instances": 27
 		},
 		{
@@ -600,7 +698,9 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear"],
+			"props": [
+				"clear"
+			],
 			"instances": 27
 		},
 		{
@@ -612,7 +712,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to", "tabIndex"],
+			"props": [
+				"to",
+				"tabIndex"
+			],
 			"instances": 27
 		},
 		{
@@ -624,7 +727,9 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear"],
+			"props": [
+				"clear"
+			],
 			"instances": 27
 		},
 		{
@@ -636,7 +741,11 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "icon", "onClick"],
+			"props": [
+				"aria-label",
+				"icon",
+				"onClick"
+			],
 			"instances": 27
 		},
 		{
@@ -648,7 +757,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 27
 		},
 		{
@@ -660,7 +771,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 27
 		},
 		{
@@ -711,7 +824,11 @@
 			"module": "@base-ui/react/button",
 			"name": "Button",
 			"weight": 1,
-			"props": ["type", "$small", "..."],
+			"props": [
+				"type",
+				"$small",
+				"..."
+			],
 			"instances": 6
 		},
 		{
@@ -723,7 +840,11 @@
 			"module": "src/components/Icon/Icon.tsx",
 			"name": "Icon",
 			"weight": 1,
-			"props": ["name", "size", "color"],
+			"props": [
+				"name",
+				"size",
+				"color"
+			],
 			"instances": 6
 		},
 		{
@@ -735,7 +856,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 45
 		},
 		{
@@ -747,7 +870,10 @@
 			"module": "@base-ui/react/dialog",
 			"name": "Dialog.Root",
 			"weight": 1,
-			"props": ["open", "onOpenChange"],
+			"props": [
+				"open",
+				"onOpenChange"
+			],
 			"instances": 1
 		},
 		{
@@ -759,7 +885,9 @@
 			"module": "@base-ui/react/dialog",
 			"name": "Dialog.Portal",
 			"weight": 1,
-			"props": ["container"],
+			"props": [
+				"container"
+			],
 			"instances": 1
 		},
 		{
@@ -771,7 +899,9 @@
 			"module": "@base-ui/react/dialog",
 			"name": "Dialog.Backdrop",
 			"weight": 1,
-			"props": ["data-testid"],
+			"props": [
+				"data-testid"
+			],
 			"instances": 1
 		},
 		{
@@ -783,7 +913,12 @@
 			"module": "@base-ui/react/dialog",
 			"name": "Dialog.Popup",
 			"weight": 1,
-			"props": ["ref", "initialFocus", "data-testid", "aria-label"],
+			"props": [
+				"ref",
+				"initialFocus",
+				"data-testid",
+				"aria-label"
+			],
 			"instances": 1
 		},
 		{
@@ -795,7 +930,15 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["data-testid", "onClick", "clear", "round", "icon", "aria-label", "iconSize"],
+			"props": [
+				"data-testid",
+				"onClick",
+				"clear",
+				"round",
+				"icon",
+				"aria-label",
+				"iconSize"
+			],
 			"instances": 1
 		},
 		{
@@ -807,7 +950,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -819,7 +964,10 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear", "onClick"],
+			"props": [
+				"clear",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -831,7 +979,10 @@
 			"module": "react-loading-skeleton",
 			"name": "SkeletonTheme",
 			"weight": 1,
-			"props": ["color", "highlightColor"],
+			"props": [
+				"color",
+				"highlightColor"
+			],
 			"instances": 3
 		},
 		{
@@ -843,7 +994,11 @@
 			"module": "react-loading-skeleton",
 			"name": "default",
 			"weight": 1,
-			"props": ["height", "width", "style"],
+			"props": [
+				"height",
+				"width",
+				"style"
+			],
 			"instances": 3
 		},
 		{
@@ -855,7 +1010,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -867,7 +1024,9 @@
 			"module": "react-loading-skeleton",
 			"name": "default",
 			"weight": 1,
-			"props": ["width"],
+			"props": [
+				"width"
+			],
 			"instances": 3
 		},
 		{
@@ -879,7 +1038,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -891,7 +1052,9 @@
 			"module": "react-loading-skeleton",
 			"name": "default",
 			"weight": 1,
-			"props": ["width"],
+			"props": [
+				"width"
+			],
 			"instances": 3
 		},
 		{
@@ -927,7 +1090,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -939,7 +1104,11 @@
 			"module": "react-loading-skeleton",
 			"name": "default",
 			"weight": 1,
-			"props": ["width", "height", "style"],
+			"props": [
+				"width",
+				"height",
+				"style"
+			],
 			"instances": 3
 		},
 		{
@@ -963,7 +1132,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1.5
 		},
 		{
@@ -975,7 +1146,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1.5
 		},
 		{
@@ -987,7 +1160,9 @@
 			"module": "src/components/Review/Review.tsx",
 			"name": "Review",
 			"weight": 1,
-			"props": ["rating"],
+			"props": [
+				"rating"
+			],
 			"instances": 1.5
 		},
 		{
@@ -999,7 +1174,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["fontWeight"],
+			"props": [
+				"fontWeight"
+			],
 			"instances": 1.5
 		},
 		{
@@ -1011,7 +1188,10 @@
 			"module": "src/components/Badge/Badge.tsx",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["key", "text"],
+			"props": [
+				"key",
+				"text"
+			],
 			"instances": 1.5
 		},
 		{
@@ -1023,7 +1203,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1035,7 +1217,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -1047,7 +1231,9 @@
 			"module": "src/components/Review/Review.tsx",
 			"name": "Review",
 			"weight": 1,
-			"props": ["rating"],
+			"props": [
+				"rating"
+			],
 			"instances": 1
 		},
 		{
@@ -1059,7 +1245,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["fontWeight"],
+			"props": [
+				"fontWeight"
+			],
 			"instances": 1
 		},
 		{
@@ -1071,7 +1259,10 @@
 			"module": "src/components/Badge/Badge.tsx",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["key", "text"],
+			"props": [
+				"key",
+				"text"
+			],
 			"instances": 1
 		},
 		{
@@ -1083,7 +1274,11 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["size", "type", "className"],
+			"props": [
+				"size",
+				"type",
+				"className"
+			],
 			"instances": 3.5
 		},
 		{
@@ -1095,7 +1290,10 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "$withMargin"],
+			"props": [
+				"level",
+				"$withMargin"
+			],
 			"instances": 2
 		},
 		{
@@ -1107,7 +1305,10 @@
 			"module": "src/components/ShoppingCart/ShoppingCartItem/ShoppingCartItem.tsx",
 			"name": "ShoppingCartItem",
 			"weight": 0.5,
-			"props": ["key", "item"],
+			"props": [
+				"key",
+				"item"
+			],
 			"instances": 1
 		},
 		{
@@ -1143,7 +1344,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 2
 		},
 		{
@@ -1155,7 +1358,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1167,7 +1372,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1179,7 +1386,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1191,7 +1400,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 27
 		},
 		{
@@ -1203,7 +1414,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 27
 		},
 		{
@@ -1215,7 +1428,11 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["disabled", "large", "onClick"],
+			"props": [
+				"disabled",
+				"large",
+				"onClick"
+			],
 			"instances": 27
 		},
 		{
@@ -1227,7 +1444,10 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type", "fontWeight"],
+			"props": [
+				"type",
+				"fontWeight"
+			],
 			"instances": 27
 		},
 		{
@@ -1263,7 +1483,12 @@
 			"module": "src/components/forms/Select.tsx",
 			"name": "Select",
 			"weight": 1,
-			"props": ["value", "onChange", "aria-label", "options"],
+			"props": [
+				"value",
+				"onChange",
+				"aria-label",
+				"options"
+			],
 			"instances": 27
 		},
 		{
@@ -1275,7 +1500,12 @@
 			"module": "src/components/Sidebar/Sidebar.tsx",
 			"name": "Sidebar",
 			"weight": 1,
-			"props": ["title", "onClose", "isOpen", "footer"],
+			"props": [
+				"title",
+				"onClose",
+				"isOpen",
+				"footer"
+			],
 			"instances": 27
 		},
 		{
@@ -1287,7 +1517,10 @@
 			"module": "src/components/ShoppingCartMenu/ShoppingCartMenu.tsx",
 			"name": "Footer",
 			"weight": 1,
-			"props": ["onClick", "totalPrice"],
+			"props": [
+				"onClick",
+				"totalPrice"
+			],
 			"instances": 27
 		},
 		{
@@ -1299,7 +1532,11 @@
 			"module": "src/components/ShoppingCartMenu/ShoppingCartMenu.tsx",
 			"name": "ShoppingCartMenuItem",
 			"weight": 1,
-			"props": ["key", "item", "onChange"],
+			"props": [
+				"key",
+				"item",
+				"onChange"
+			],
 			"instances": 27
 		},
 		{
@@ -1311,7 +1548,11 @@
 			"module": "@base-ui/react/drawer",
 			"name": "Drawer.Root",
 			"weight": 1,
-			"props": ["open", "swipeDirection", "onOpenChange"],
+			"props": [
+				"open",
+				"swipeDirection",
+				"onOpenChange"
+			],
 			"instances": 27
 		},
 		{
@@ -1323,7 +1564,9 @@
 			"module": "@base-ui/react/drawer",
 			"name": "Drawer.Portal",
 			"weight": 1,
-			"props": ["container"],
+			"props": [
+				"container"
+			],
 			"instances": 27
 		},
 		{
@@ -1335,7 +1578,9 @@
 			"module": "@base-ui/react/drawer",
 			"name": "Drawer.Backdrop",
 			"weight": 1,
-			"props": ["data-testid"],
+			"props": [
+				"data-testid"
+			],
 			"instances": 27
 		},
 		{
@@ -1359,7 +1604,9 @@
 			"module": "@base-ui/react/drawer",
 			"name": "Drawer.Popup",
 			"weight": 1,
-			"props": ["data-testid"],
+			"props": [
+				"data-testid"
+			],
 			"instances": 27
 		},
 		{
@@ -1371,7 +1618,10 @@
 			"module": "@base-ui/react/drawer",
 			"name": "Drawer.Title",
 			"weight": 1,
-			"props": ["className", "render"],
+			"props": [
+				"className",
+				"render"
+			],
 			"instances": 27
 		},
 		{
@@ -1383,7 +1633,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 27
 		},
 		{
@@ -1395,7 +1647,15 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "data-testid", "onClick", "clear", "round", "icon", "iconSize"],
+			"props": [
+				"aria-label",
+				"data-testid",
+				"onClick",
+				"clear",
+				"round",
+				"icon",
+				"iconSize"
+			],
 			"instances": 27
 		},
 		{
@@ -1407,7 +1667,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["$inverted"],
+			"props": [
+				"$inverted"
+			],
 			"instances": 4
 		},
 		{
@@ -1419,7 +1681,13 @@
 			"module": "@base-ui/react/input",
 			"name": "Input",
 			"weight": 1,
-			"props": ["id", "type", "className", "...", "autoComplete"],
+			"props": [
+				"id",
+				"type",
+				"className",
+				"...",
+				"autoComplete"
+			],
 			"instances": 7
 		},
 		{
@@ -1431,7 +1699,10 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type", "htmlFor"],
+			"props": [
+				"type",
+				"htmlFor"
+			],
 			"instances": 27
 		},
 		{
@@ -1479,7 +1750,11 @@
 			"module": "src/components/TopBanner/TopBanner.tsx",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["title", "photoUrl", "onBackClick"],
+			"props": [
+				"title",
+				"photoUrl",
+				"onBackClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1491,7 +1766,9 @@
 			"module": "src/components/Breadcrumb/Breadcrumb.tsx",
 			"name": "Breadcrumb",
 			"weight": 1,
-			"props": ["items"],
+			"props": [
+				"items"
+			],
 			"instances": 1
 		},
 		{
@@ -1503,7 +1780,13 @@
 			"module": "src/components/ErrorBlock/ErrorBlock.tsx",
 			"name": "ErrorBlock",
 			"weight": 1,
-			"props": ["body", "title", "image", "buttonText", "onButtonClick"],
+			"props": [
+				"body",
+				"title",
+				"image",
+				"buttonText",
+				"onButtonClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1515,7 +1798,9 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCardSkeleton",
 			"weight": 0.5,
-			"props": ["key"],
+			"props": [
+				"key"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1527,7 +1812,11 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCard",
 			"weight": 0.5,
-			"props": ["key", "...", "onClick"],
+			"props": [
+				"key",
+				"...",
+				"onClick"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1551,7 +1840,10 @@
 			"module": "src/components/TopBanner/TopBanner.tsx",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["title", "onBackClick"],
+			"props": [
+				"title",
+				"onBackClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1563,7 +1855,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -1587,7 +1881,9 @@
 			"module": "src/pages/CategoryListPage/components/CategoryList/CategoryList.tsx",
 			"name": "CategoryList",
 			"weight": 1,
-			"props": ["categories"],
+			"props": [
+				"categories"
+			],
 			"instances": 1
 		},
 		{
@@ -1599,7 +1895,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["key", "to"],
+			"props": [
+				"key",
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1611,7 +1910,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Category",
 			"weight": 1,
-			"props": ["...", "title"],
+			"props": [
+				"...",
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -1623,7 +1925,9 @@
 			"module": "src/templates/PageTemplate.tsx",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1635,7 +1939,10 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "className"],
+			"props": [
+				"level",
+				"className"
+			],
 			"instances": 1
 		},
 		{
@@ -1659,7 +1966,9 @@
 			"module": "src/components/ShoppingCart/OrderSummary/OrderSummary.tsx",
 			"name": "OrderSummary",
 			"weight": 1,
-			"props": ["cartItems"],
+			"props": [
+				"cartItems"
+			],
 			"instances": 1
 		},
 		{
@@ -1671,7 +1980,14 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1683,7 +1999,14 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1695,7 +2018,15 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "type", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"type",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1707,7 +2038,15 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "type", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"type",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1719,7 +2058,10 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["size", "type"],
+			"props": [
+				"size",
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1731,7 +2073,9 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["onClick"],
+			"props": [
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1743,7 +2087,14 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1755,7 +2106,14 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1767,7 +2125,14 @@
 			"module": "src/components/forms/Input.tsx",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1779,7 +2144,10 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear", "onClick"],
+			"props": [
+				"clear",
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1791,7 +2159,9 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["onClick"],
+			"props": [
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1803,7 +2173,11 @@
 			"module": "src/pages/CheckoutPage/components/registration-form/ContactDetails.tsx",
 			"name": "ContactDetails",
 			"weight": 1,
-			"props": ["formData", "setFormData", "onNext"],
+			"props": [
+				"formData",
+				"setFormData",
+				"onNext"
+			],
 			"instances": 1
 		},
 		{
@@ -1815,7 +2189,11 @@
 			"module": "src/pages/CheckoutPage/components/registration-form/DeliveryDetails.tsx",
 			"name": "DeliveryDetails",
 			"weight": 1,
-			"props": ["formData", "setFormData", "onPrevious"],
+			"props": [
+				"formData",
+				"setFormData",
+				"onPrevious"
+			],
 			"instances": 1
 		},
 		{
@@ -1827,7 +2205,11 @@
 			"module": "src/pages/CheckoutPage/components/registration-form/StepIndicator.tsx",
 			"name": "StepIndicator",
 			"weight": 1,
-			"props": ["title", "currentStep", "amountOfSteps"],
+			"props": [
+				"title",
+				"currentStep",
+				"amountOfSteps"
+			],
 			"instances": 1
 		},
 		{
@@ -1839,7 +2221,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -1851,7 +2235,10 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["size", "type"],
+			"props": [
+				"size",
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1887,7 +2274,9 @@
 			"module": "src/pages/HomePage/components/RestaurantsSection/RestaurantsSection.tsx",
 			"name": "RestaurantsSection",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -1911,7 +2300,9 @@
 			"module": "src/pages/HomePage/components/CategoriesSection/CategoriesSection.tsx",
 			"name": "CategoriesSection",
 			"weight": 1,
-			"props": ["categories"],
+			"props": [
+				"categories"
+			],
 			"instances": 1
 		},
 		{
@@ -1923,7 +2314,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["className"],
+			"props": [
+				"className"
+			],
 			"instances": 1
 		},
 		{
@@ -1947,7 +2340,9 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1971,7 +2366,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -1983,7 +2380,9 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -2007,7 +2406,11 @@
 			"module": "src/components/PageSection/PageSection.tsx",
 			"name": "PageSection",
 			"weight": 1,
-			"props": ["title", "topButtonLabel", "onTopButtonClick"],
+			"props": [
+				"title",
+				"topButtonLabel",
+				"onTopButtonClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2019,7 +2422,10 @@
 			"module": "src/components/Carousel/Carousel.tsx",
 			"name": "Carousel",
 			"weight": 1,
-			"props": ["itemsPerView", "slidesToScroll"],
+			"props": [
+				"itemsPerView",
+				"slidesToScroll"
+			],
 			"instances": 1
 		},
 		{
@@ -2031,7 +2437,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["key", "to"],
+			"props": [
+				"key",
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -2043,7 +2452,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Category",
 			"weight": 1,
-			"props": ["round", "..."],
+			"props": [
+				"round",
+				"..."
+			],
 			"instances": 1
 		},
 		{
@@ -2055,7 +2467,9 @@
 			"module": "src/components/PageSection/PageSection.tsx",
 			"name": "PageSection",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -2067,7 +2481,10 @@
 			"module": "src/components/Carousel/Carousel.tsx",
 			"name": "Carousel",
 			"weight": 1,
-			"props": ["itemsPerView", "slidesToScroll"],
+			"props": [
+				"itemsPerView",
+				"slidesToScroll"
+			],
 			"instances": 1
 		},
 		{
@@ -2079,7 +2496,9 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCardSkeleton",
 			"weight": 0.5,
-			"props": ["key"],
+			"props": [
+				"key"
+			],
 			"instances": 0.5
 		},
 		{
@@ -2091,7 +2510,11 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCard",
 			"weight": 0.5,
-			"props": ["key", "...", "onClick"],
+			"props": [
+				"key",
+				"...",
+				"onClick"
+			],
 			"instances": 0.5
 		},
 		{
@@ -2103,7 +2526,12 @@
 			"module": "src/pages/HomePage/components/RestaurantsSection/RestaurantsSection.container.tsx",
 			"name": "RestaurantsSectionComponent",
 			"weight": 1,
-			"props": ["title", "restaurants", "isLoading", "onRestaurantClick"],
+			"props": [
+				"title",
+				"restaurants",
+				"isLoading",
+				"onRestaurantClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2115,7 +2543,9 @@
 			"module": "src/components/PageSection/PageSection.tsx",
 			"name": "PageSection",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -2127,7 +2557,10 @@
 			"module": "src/components/Carousel/Carousel.tsx",
 			"name": "Carousel",
 			"weight": 1,
-			"props": ["itemsPerView", "slidesToScroll"],
+			"props": [
+				"itemsPerView",
+				"slidesToScroll"
+			],
 			"instances": 1
 		},
 		{
@@ -2139,7 +2572,9 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCardSkeleton",
 			"weight": 0.5,
-			"props": ["key"],
+			"props": [
+				"key"
+			],
 			"instances": 0.5
 		},
 		{
@@ -2151,7 +2586,11 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCard",
 			"weight": 0.5,
-			"props": ["key", "...", "onClick"],
+			"props": [
+				"key",
+				"...",
+				"onClick"
+			],
 			"instances": 0.5
 		},
 		{
@@ -2163,7 +2602,9 @@
 			"module": "src/templates/PageTemplate.tsx",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2175,7 +2616,13 @@
 			"module": "src/components/ErrorBlock/ErrorBlock.tsx",
 			"name": "ErrorBlock",
 			"weight": 1,
-			"props": ["title", "body", "image", "onButtonClick", "buttonText"],
+			"props": [
+				"title",
+				"body",
+				"image",
+				"onButtonClick",
+				"buttonText"
+			],
 			"instances": 1
 		},
 		{
@@ -2187,7 +2634,9 @@
 			"module": "src/components/AnimatedIllustration/AnimatedIllustration.tsx",
 			"name": "AnimatedIllustration",
 			"weight": 1,
-			"props": ["animation"],
+			"props": [
+				"animation"
+			],
 			"instances": 1
 		},
 		{
@@ -2199,7 +2648,9 @@
 			"module": "src/templates/PageTemplate.tsx",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2211,7 +2662,13 @@
 			"module": "src/components/ErrorBlock/ErrorBlock.tsx",
 			"name": "ErrorBlock",
 			"weight": 1,
-			"props": ["title", "body", "image", "onButtonClick", "buttonText"],
+			"props": [
+				"title",
+				"body",
+				"image",
+				"onButtonClick",
+				"buttonText"
+			],
 			"instances": 1
 		},
 		{
@@ -2223,7 +2680,9 @@
 			"module": "src/components/AnimatedIllustration/AnimatedIllustration.tsx",
 			"name": "AnimatedIllustration",
 			"weight": 1,
-			"props": ["animation"],
+			"props": [
+				"animation"
+			],
 			"instances": 1
 		},
 		{
@@ -2235,7 +2694,9 @@
 			"module": "src/templates/PageTemplate.tsx",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2259,7 +2720,9 @@
 			"module": "src/templates/PageTemplate.tsx",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2271,7 +2734,13 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodItemModal/FoodItemModal.tsx",
 			"name": "FoodItemModal",
 			"weight": 1,
-			"props": ["item", "cartItems", "onClose", "onItemSave", "onItemRemove"],
+			"props": [
+				"item",
+				"cartItems",
+				"onClose",
+				"onItemSave",
+				"onItemRemove"
+			],
 			"instances": 1
 		},
 		{
@@ -2283,7 +2752,10 @@
 			"module": "src/components/TopBanner/TopBanner.tsx",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["photoUrl", "onBackClick"],
+			"props": [
+				"photoUrl",
+				"onBackClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2295,7 +2767,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -2319,7 +2793,9 @@
 			"module": "src/components/Review/Review.tsx",
 			"name": "Review",
 			"weight": 1,
-			"props": ["rating"],
+			"props": [
+				"rating"
+			],
 			"instances": 1
 		},
 		{
@@ -2331,7 +2807,10 @@
 			"module": "src/components/Badge/Badge.tsx",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["key", "text"],
+			"props": [
+				"key",
+				"text"
+			],
 			"instances": 1
 		},
 		{
@@ -2343,7 +2822,12 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodSection/FoodSection.tsx",
 			"name": "FoodSection",
 			"weight": 1,
-			"props": ["title", "items", "cartItems", "onItemClick"],
+			"props": [
+				"title",
+				"items",
+				"cartItems",
+				"onItemClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2355,7 +2839,12 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodSection/FoodSection.tsx",
 			"name": "FoodSection",
 			"weight": 1,
-			"props": ["title", "items", "cartItems", "onItemClick"],
+			"props": [
+				"title",
+				"items",
+				"cartItems",
+				"onItemClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2367,7 +2856,12 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodSection/FoodSection.tsx",
 			"name": "FoodSection",
 			"weight": 1,
-			"props": ["title", "items", "cartItems", "onItemClick"],
+			"props": [
+				"title",
+				"items",
+				"cartItems",
+				"onItemClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2379,7 +2873,11 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["aria-label", "type", "fontWeight"],
+			"props": [
+				"aria-label",
+				"type",
+				"fontWeight"
+			],
 			"instances": 3
 		},
 		{
@@ -2391,7 +2889,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -2427,7 +2927,10 @@
 			"module": "src/components/Modal/Modal.tsx",
 			"name": "Modal",
 			"weight": 1,
-			"props": ["isOpen", "onClose"],
+			"props": [
+				"isOpen",
+				"onClose"
+			],
 			"instances": 1
 		},
 		{
@@ -2463,7 +2966,14 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "round", "clear", "icon", "onClick", "disabled"],
+			"props": [
+				"aria-label",
+				"round",
+				"clear",
+				"icon",
+				"onClick",
+				"disabled"
+			],
 			"instances": 1
 		},
 		{
@@ -2475,7 +2985,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2487,7 +2999,14 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "round", "clear", "icon", "onClick", "disabled"],
+			"props": [
+				"aria-label",
+				"round",
+				"clear",
+				"icon",
+				"onClick",
+				"disabled"
+			],
 			"instances": 1
 		},
 		{
@@ -2499,7 +3018,10 @@
 			"module": "src/components/Button/Button.tsx",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "onClick"],
+			"props": [
+				"aria-label",
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2511,7 +3033,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -2523,7 +3047,14 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodItem/FoodItem.tsx",
 			"name": "FoodItem",
 			"weight": 1,
-			"props": ["key", "name", "price", "description", "quantity", "onClick"],
+			"props": [
+				"key",
+				"name",
+				"price",
+				"description",
+				"quantity",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -2535,7 +3066,9 @@
 			"module": "src/templates/PageTemplate.tsx",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2547,7 +3080,9 @@
 			"module": "src/components/TopBanner/TopBanner.tsx",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -2559,7 +3094,9 @@
 			"module": "src/components/typography/Body.tsx",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2571,7 +3108,9 @@
 			"module": "src/components/typography/Heading.tsx",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -2583,7 +3122,9 @@
 			"module": "src/components/ShoppingCart/OrderSummary/OrderSummary.tsx",
 			"name": "OrderSummary",
 			"weight": 1,
-			"props": ["cartItems"],
+			"props": [
+				"cartItems"
+			],
 			"instances": 1
 		},
 		{
@@ -2595,7 +3136,9 @@
 			"module": "src/components/Header/Header.tsx",
 			"name": "Header",
 			"weight": 1,
-			"props": ["sticky"],
+			"props": [
+				"sticky"
+			],
 			"instances": 9
 		},
 		{
@@ -2619,7 +3162,9 @@
 			"module": "src/components/Header/Header.tsx",
 			"name": "HeaderComponent",
 			"weight": 1,
-			"props": ["logoOnly"],
+			"props": [
+				"logoOnly"
+			],
 			"instances": 9
 		},
 		{

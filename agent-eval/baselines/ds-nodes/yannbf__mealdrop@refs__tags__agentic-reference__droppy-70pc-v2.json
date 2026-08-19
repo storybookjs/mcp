@@ -24,7 +24,9 @@
 			"module": "react-redux",
 			"name": "Provider",
 			"weight": 1,
-			"props": ["store"],
+			"props": [
+				"store"
+			],
 			"instances": 1
 		},
 		{
@@ -72,7 +74,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -96,7 +101,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -120,7 +128,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -144,7 +155,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -168,7 +182,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -192,7 +209,10 @@
 			"module": "react-router-dom",
 			"name": "Route",
 			"weight": 1,
-			"props": ["path", "element"],
+			"props": [
+				"path",
+				"element"
+			],
 			"instances": 1
 		},
 		{
@@ -216,7 +236,12 @@
 			"module": "react-lottie-player",
 			"name": "default",
 			"weight": 1,
-			"props": ["style", "play", "loop", "animationData"],
+			"props": [
+				"style",
+				"play",
+				"loop",
+				"animationData"
+			],
 			"instances": 2
 		},
 		{
@@ -228,7 +253,9 @@
 			"module": "@droppy/design-system",
 			"name": "Card",
 			"weight": 1,
-			"props": ["data-testid"],
+			"props": [
+				"data-testid"
+			],
 			"instances": 1
 		},
 		{
@@ -240,7 +267,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -252,7 +281,10 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type", "fontWeight"],
+			"props": [
+				"type",
+				"fontWeight"
+			],
 			"instances": 1
 		},
 		{
@@ -264,7 +296,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Rounded",
 			"weight": 0.5,
-			"props": ["photoUrl", "title"],
+			"props": [
+				"photoUrl",
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -276,7 +311,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Squared",
 			"weight": 0.5,
-			"props": ["photoUrl", "title"],
+			"props": [
+				"photoUrl",
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -289,7 +327,7 @@
 			"name": "Container",
 			"weight": 1,
 			"props": [],
-			"instances": 1
+			"instances": 9
 		},
 		{
 			"path": "Footer/FooterContainer[0]/Container[0]/FooterTop[0]/Logo[0]",
@@ -300,8 +338,11 @@
 			"module": "src/components/Logo/Logo.tsx",
 			"name": "Logo",
 			"weight": 1,
-			"props": ["large", "logoOnly"],
-			"instances": 1
+			"props": [
+				"large",
+				"logoOnly"
+			],
+			"instances": 9
 		},
 		{
 			"path": "Footer/FooterContainer[0]/Container[0]/FooterTop[0]/FooterCard[1]",
@@ -312,8 +353,11 @@
 			"module": "@droppy/design-system",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title", "links"],
-			"instances": 1
+			"props": [
+				"title",
+				"links"
+			],
+			"instances": 9
 		},
 		{
 			"path": "Footer/FooterContainer[0]/Container[0]/FooterTop[0]/FooterCard[2]",
@@ -324,8 +368,11 @@
 			"module": "@droppy/design-system",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title", "links"],
-			"instances": 1
+			"props": [
+				"title",
+				"links"
+			],
+			"instances": 9
 		},
 		{
 			"path": "Footer/FooterContainer[0]/Container[0]/FooterTop[0]/FooterCard[3]",
@@ -336,8 +383,10 @@
 			"module": "@droppy/design-system",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title"],
-			"instances": 1
+			"props": [
+				"title"
+			],
+			"instances": 9
 		},
 		{
 			"path": "FooterCard/StyledFooterCard[0]",
@@ -348,8 +397,12 @@
 			"module": "@droppy/design-system",
 			"name": "FooterCard",
 			"weight": 1,
-			"props": ["title", "links", "..."],
-			"instances": 1
+			"props": [
+				"title",
+				"links",
+				"..."
+			],
+			"instances": 27
 		},
 		{
 			"path": "render/RouterLink[0]",
@@ -360,8 +413,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
-			"instances": 1
+			"props": [
+				"to"
+			],
+			"instances": 27
 		},
 		{
 			"path": "ThemeToggle/Button[0]",
@@ -372,8 +427,15 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["round", "clear", "aria-label", "icon", "onClick", "..."],
-			"instances": 1
+			"props": [
+				"round",
+				"clear",
+				"aria-label",
+				"icon",
+				"onClick",
+				"..."
+			],
+			"instances": 3
 		},
 		{
 			"path": "HeaderComponent/HeaderContainer[0]/LogoContainer[0]",
@@ -384,7 +446,10 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to", "aria-label"],
+			"props": [
+				"to",
+				"aria-label"
+			],
 			"instances": 3
 		},
 		{
@@ -420,7 +485,10 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to", "tabIndex"],
+			"props": [
+				"to",
+				"tabIndex"
+			],
 			"instances": 3
 		},
 		{
@@ -432,7 +500,9 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear"],
+			"props": [
+				"clear"
+			],
 			"instances": 3
 		},
 		{
@@ -444,7 +514,10 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to", "tabIndex"],
+			"props": [
+				"to",
+				"tabIndex"
+			],
 			"instances": 3
 		},
 		{
@@ -456,7 +529,9 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear"],
+			"props": [
+				"clear"
+			],
 			"instances": 3
 		},
 		{
@@ -468,7 +543,11 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "icon", "onClick"],
+			"props": [
+				"aria-label",
+				"icon",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -480,7 +559,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -492,7 +573,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -543,8 +626,11 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["render", "..."],
-			"instances": 1
+			"props": [
+				"render",
+				"..."
+			],
+			"instances": 14
 		},
 		{
 			"path": "Link/RouterLink[0]",
@@ -555,8 +641,10 @@
 			"module": "react-router-dom",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
-			"instances": 1
+			"props": [
+				"to"
+			],
+			"instances": 14
 		},
 		{
 			"path": "Logo/Heading[0]",
@@ -567,8 +655,11 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "size"],
-			"instances": 4
+			"props": [
+				"level",
+				"size"
+			],
+			"instances": 12
 		},
 		{
 			"path": "RestaurantCardSkeleton/ConstrainedCard[0]",
@@ -579,7 +670,11 @@
 			"module": "@droppy/design-system",
 			"name": "Card",
 			"weight": 1,
-			"props": ["data-testid", "role", "aria-label"],
+			"props": [
+				"data-testid",
+				"role",
+				"aria-label"
+			],
 			"instances": 3
 		},
 		{
@@ -591,7 +686,10 @@
 			"module": "@droppy/design-system",
 			"name": "Skeleton",
 			"weight": 1,
-			"props": ["height", "width"],
+			"props": [
+				"height",
+				"width"
+			],
 			"instances": 3
 		},
 		{
@@ -603,7 +701,11 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["aria-hidden", "level", "size"],
+			"props": [
+				"aria-hidden",
+				"level",
+				"size"
+			],
 			"instances": 3
 		},
 		{
@@ -615,7 +717,9 @@
 			"module": "@droppy/design-system",
 			"name": "Skeleton",
 			"weight": 1,
-			"props": ["width"],
+			"props": [
+				"width"
+			],
 			"instances": 3
 		},
 		{
@@ -627,7 +731,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -639,7 +745,9 @@
 			"module": "@droppy/design-system",
 			"name": "Skeleton",
 			"weight": 1,
-			"props": ["width"],
+			"props": [
+				"width"
+			],
 			"instances": 3
 		},
 		{
@@ -675,7 +783,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -687,7 +797,11 @@
 			"module": "@droppy/design-system",
 			"name": "Skeleton",
 			"weight": 1,
-			"props": ["width", "height", "style"],
+			"props": [
+				"width",
+				"height",
+				"style"
+			],
 			"instances": 3
 		},
 		{
@@ -711,7 +825,12 @@
 			"module": "@droppy/design-system",
 			"name": "Card",
 			"weight": 1,
-			"props": ["interactive", "className", "data-testid", "onClick"],
+			"props": [
+				"interactive",
+				"className",
+				"data-testid",
+				"onClick"
+			],
 			"instances": 1.5
 		},
 		{
@@ -723,7 +842,10 @@
 			"module": "@droppy/design-system",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["text", "variant"],
+			"props": [
+				"text",
+				"variant"
+			],
 			"instances": 1.5
 		},
 		{
@@ -735,7 +857,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1.5
 		},
 		{
@@ -747,7 +871,10 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "size"],
+			"props": [
+				"level",
+				"size"
+			],
 			"instances": 1.5
 		},
 		{
@@ -759,7 +886,9 @@
 			"module": "@droppy/design-system",
 			"name": "Review",
 			"weight": 1,
-			"props": ["rating"],
+			"props": [
+				"rating"
+			],
 			"instances": 1.5
 		},
 		{
@@ -771,7 +900,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["fontWeight"],
+			"props": [
+				"fontWeight"
+			],
 			"instances": 1.5
 		},
 		{
@@ -783,7 +914,10 @@
 			"module": "@droppy/design-system",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["key", "text"],
+			"props": [
+				"key",
+				"text"
+			],
 			"instances": 1.5
 		},
 		{
@@ -795,7 +929,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -807,7 +943,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -819,7 +957,9 @@
 			"module": "@droppy/design-system",
 			"name": "Review",
 			"weight": 1,
-			"props": ["rating"],
+			"props": [
+				"rating"
+			],
 			"instances": 1
 		},
 		{
@@ -831,7 +971,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["fontWeight"],
+			"props": [
+				"fontWeight"
+			],
 			"instances": 1
 		},
 		{
@@ -843,7 +985,10 @@
 			"module": "@droppy/design-system",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["key", "text"],
+			"props": [
+				"key",
+				"text"
+			],
 			"instances": 1
 		},
 		{
@@ -867,7 +1012,11 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "size", "$withMargin"],
+			"props": [
+				"level",
+				"size",
+				"$withMargin"
+			],
 			"instances": 2
 		},
 		{
@@ -879,7 +1028,10 @@
 			"module": "src/components/ShoppingCart/ShoppingCartItem/ShoppingCartItem.tsx",
 			"name": "ShoppingCartItem",
 			"weight": 0.5,
-			"props": ["key", "item"],
+			"props": [
+				"key",
+				"item"
+			],
 			"instances": 1
 		},
 		{
@@ -915,7 +1067,10 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "size"],
+			"props": [
+				"level",
+				"size"
+			],
 			"instances": 2
 		},
 		{
@@ -927,7 +1082,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -939,7 +1096,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -951,7 +1110,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -963,7 +1124,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -975,7 +1138,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 3
 		},
 		{
@@ -987,7 +1152,11 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["disabled", "large", "onClick"],
+			"props": [
+				"disabled",
+				"large",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -999,7 +1168,10 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type", "fontWeight"],
+			"props": [
+				"type",
+				"fontWeight"
+			],
 			"instances": 3
 		},
 		{
@@ -1035,7 +1207,12 @@
 			"module": "@droppy/design-system",
 			"name": "Select",
 			"weight": 1,
-			"props": ["value", "onChange", "aria-label", "options"],
+			"props": [
+				"value",
+				"onChange",
+				"aria-label",
+				"options"
+			],
 			"instances": 3
 		},
 		{
@@ -1047,7 +1224,13 @@
 			"module": "@droppy/design-system",
 			"name": "Sidebar",
 			"weight": 1,
-			"props": ["title", "onClose", "isOpen", "container", "footer"],
+			"props": [
+				"title",
+				"onClose",
+				"isOpen",
+				"container",
+				"footer"
+			],
 			"instances": 3
 		},
 		{
@@ -1059,7 +1242,10 @@
 			"module": "src/components/ShoppingCartMenu/ShoppingCartMenu.tsx",
 			"name": "Footer",
 			"weight": 1,
-			"props": ["onClick", "totalPrice"],
+			"props": [
+				"onClick",
+				"totalPrice"
+			],
 			"instances": 3
 		},
 		{
@@ -1071,7 +1257,11 @@
 			"module": "src/components/ShoppingCartMenu/ShoppingCartMenu.tsx",
 			"name": "ShoppingCartMenuItem",
 			"weight": 1,
-			"props": ["key", "item", "onChange"],
+			"props": [
+				"key",
+				"item",
+				"onChange"
+			],
 			"instances": 3
 		},
 		{
@@ -1119,7 +1309,11 @@
 			"module": "@droppy/design-system",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["title", "photoUrl", "onBackClick"],
+			"props": [
+				"title",
+				"photoUrl",
+				"onBackClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1143,7 +1337,9 @@
 			"module": "@droppy/design-system",
 			"name": "Breadcrumb",
 			"weight": 1,
-			"props": ["items"],
+			"props": [
+				"items"
+			],
 			"instances": 1
 		},
 		{
@@ -1155,7 +1351,9 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1167,7 +1365,13 @@
 			"module": "@droppy/design-system",
 			"name": "ErrorBlock",
 			"weight": 1,
-			"props": ["body", "title", "illustration", "buttonText", "onButtonClick"],
+			"props": [
+				"body",
+				"title",
+				"illustration",
+				"buttonText",
+				"onButtonClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1179,7 +1383,9 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCardSkeleton",
 			"weight": 0.5,
-			"props": ["key"],
+			"props": [
+				"key"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1191,7 +1397,11 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCard",
 			"weight": 0.5,
-			"props": ["key", "...", "onClick"],
+			"props": [
+				"key",
+				"...",
+				"onClick"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1215,7 +1425,10 @@
 			"module": "@droppy/design-system",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["title", "onBackClick"],
+			"props": [
+				"title",
+				"onBackClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1239,7 +1452,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -1263,7 +1478,9 @@
 			"module": "src/pages/CategoryListPage/components/CategoryList/CategoryList.tsx",
 			"name": "CategoryList",
 			"weight": 1,
-			"props": ["categories"],
+			"props": [
+				"categories"
+			],
 			"instances": 1
 		},
 		{
@@ -1275,7 +1492,10 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["key", "to"],
+			"props": [
+				"key",
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1287,7 +1507,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Category",
 			"weight": 1,
-			"props": ["...", "title"],
+			"props": [
+				"...",
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -1299,7 +1522,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1311,7 +1536,10 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "className"],
+			"props": [
+				"level",
+				"className"
+			],
 			"instances": 1
 		},
 		{
@@ -1347,7 +1575,9 @@
 			"module": "src/components/ShoppingCart/OrderSummary/OrderSummary.tsx",
 			"name": "OrderSummary",
 			"weight": 1,
-			"props": ["cartItems"],
+			"props": [
+				"cartItems"
+			],
 			"instances": 1
 		},
 		{
@@ -1359,7 +1589,14 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1371,7 +1608,14 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1383,7 +1627,15 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "type", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"type",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1395,7 +1647,15 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "type", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"type",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1407,7 +1667,10 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["size", "type"],
+			"props": [
+				"size",
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1419,7 +1682,9 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["onClick"],
+			"props": [
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1431,7 +1696,14 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1443,7 +1715,14 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1455,7 +1734,14 @@
 			"module": "@droppy/design-system",
 			"name": "Input",
 			"weight": 1,
-			"props": ["label", "placeholder", "name", "value", "onChange", "error"],
+			"props": [
+				"label",
+				"placeholder",
+				"name",
+				"value",
+				"onChange",
+				"error"
+			],
 			"instances": 1
 		},
 		{
@@ -1467,7 +1753,10 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["clear", "onClick"],
+			"props": [
+				"clear",
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1479,7 +1768,9 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["onClick"],
+			"props": [
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1491,7 +1782,11 @@
 			"module": "src/pages/CheckoutPage/components/registration-form/ContactDetails.tsx",
 			"name": "ContactDetails",
 			"weight": 1,
-			"props": ["formData", "setFormData", "onNext"],
+			"props": [
+				"formData",
+				"setFormData",
+				"onNext"
+			],
 			"instances": 1
 		},
 		{
@@ -1503,7 +1798,11 @@
 			"module": "src/pages/CheckoutPage/components/registration-form/DeliveryDetails.tsx",
 			"name": "DeliveryDetails",
 			"weight": 1,
-			"props": ["formData", "setFormData", "onPrevious"],
+			"props": [
+				"formData",
+				"setFormData",
+				"onPrevious"
+			],
 			"instances": 1
 		},
 		{
@@ -1515,7 +1814,11 @@
 			"module": "src/pages/CheckoutPage/components/registration-form/StepIndicator.tsx",
 			"name": "StepIndicator",
 			"weight": 1,
-			"props": ["title", "currentStep", "amountOfSteps"],
+			"props": [
+				"title",
+				"currentStep",
+				"amountOfSteps"
+			],
 			"instances": 1
 		},
 		{
@@ -1527,7 +1830,10 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level", "size"],
+			"props": [
+				"level",
+				"size"
+			],
 			"instances": 1
 		},
 		{
@@ -1539,7 +1845,10 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["size", "type"],
+			"props": [
+				"size",
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1575,7 +1884,9 @@
 			"module": "src/pages/HomePage/components/RestaurantsSection/RestaurantsSection.tsx",
 			"name": "RestaurantsSection",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -1599,7 +1910,9 @@
 			"module": "src/pages/HomePage/components/CategoriesSection/CategoriesSection.tsx",
 			"name": "CategoriesSection",
 			"weight": 1,
-			"props": ["categories"],
+			"props": [
+				"categories"
+			],
 			"instances": 1
 		},
 		{
@@ -1623,7 +1936,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["className"],
+			"props": [
+				"className"
+			],
 			"instances": 1
 		},
 		{
@@ -1647,7 +1962,9 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1671,7 +1988,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -1683,7 +2002,9 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["to"],
+			"props": [
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1707,7 +2028,11 @@
 			"module": "@droppy/design-system",
 			"name": "PageSection",
 			"weight": 1,
-			"props": ["title", "topButtonLabel", "onTopButtonClick"],
+			"props": [
+				"title",
+				"topButtonLabel",
+				"onTopButtonClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1719,7 +2044,10 @@
 			"module": "@droppy/design-system",
 			"name": "Carousel",
 			"weight": 1,
-			"props": ["itemsPerView", "slidesToScroll"],
+			"props": [
+				"itemsPerView",
+				"slidesToScroll"
+			],
 			"instances": 1
 		},
 		{
@@ -1731,7 +2059,10 @@
 			"module": "@droppy/design-system",
 			"name": "Link",
 			"weight": 1,
-			"props": ["key", "to"],
+			"props": [
+				"key",
+				"to"
+			],
 			"instances": 1
 		},
 		{
@@ -1743,7 +2074,10 @@
 			"module": "src/components/Category/Category.tsx",
 			"name": "Category",
 			"weight": 1,
-			"props": ["round", "..."],
+			"props": [
+				"round",
+				"..."
+			],
 			"instances": 1
 		},
 		{
@@ -1755,7 +2089,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageSection",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -1767,7 +2103,10 @@
 			"module": "@droppy/design-system",
 			"name": "Carousel",
 			"weight": 1,
-			"props": ["itemsPerView", "slidesToScroll"],
+			"props": [
+				"itemsPerView",
+				"slidesToScroll"
+			],
 			"instances": 1
 		},
 		{
@@ -1779,7 +2118,9 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCardSkeleton",
 			"weight": 0.5,
-			"props": ["key"],
+			"props": [
+				"key"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1791,7 +2132,11 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCard",
 			"weight": 0.5,
-			"props": ["key", "...", "onClick"],
+			"props": [
+				"key",
+				"...",
+				"onClick"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1803,7 +2148,12 @@
 			"module": "src/pages/HomePage/components/RestaurantsSection/RestaurantsSection.container.tsx",
 			"name": "RestaurantsSectionComponent",
 			"weight": 1,
-			"props": ["title", "restaurants", "isLoading", "onRestaurantClick"],
+			"props": [
+				"title",
+				"restaurants",
+				"isLoading",
+				"onRestaurantClick"
+			],
 			"instances": 1
 		},
 		{
@@ -1815,7 +2165,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageSection",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -1827,7 +2179,10 @@
 			"module": "@droppy/design-system",
 			"name": "Carousel",
 			"weight": 1,
-			"props": ["itemsPerView", "slidesToScroll"],
+			"props": [
+				"itemsPerView",
+				"slidesToScroll"
+			],
 			"instances": 1
 		},
 		{
@@ -1839,7 +2194,9 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCardSkeleton",
 			"weight": 0.5,
-			"props": ["key"],
+			"props": [
+				"key"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1851,7 +2208,11 @@
 			"module": "src/components/RestaurantCard/RestaurantCard.tsx",
 			"name": "RestaurantCard",
 			"weight": 0.5,
-			"props": ["key", "...", "onClick"],
+			"props": [
+				"key",
+				"...",
+				"onClick"
+			],
 			"instances": 0.5
 		},
 		{
@@ -1863,7 +2224,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1875,7 +2238,13 @@
 			"module": "@droppy/design-system",
 			"name": "ErrorBlock",
 			"weight": 1,
-			"props": ["title", "body", "illustration", "onButtonClick", "buttonText"],
+			"props": [
+				"title",
+				"body",
+				"illustration",
+				"onButtonClick",
+				"buttonText"
+			],
 			"instances": 1
 		},
 		{
@@ -1887,7 +2256,9 @@
 			"module": "src/components/AnimatedIllustration/AnimatedIllustration.tsx",
 			"name": "AnimatedIllustration",
 			"weight": 1,
-			"props": ["animation"],
+			"props": [
+				"animation"
+			],
 			"instances": 1
 		},
 		{
@@ -1899,7 +2270,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1911,7 +2284,13 @@
 			"module": "@droppy/design-system",
 			"name": "ErrorBlock",
 			"weight": 1,
-			"props": ["title", "body", "illustration", "onButtonClick", "buttonText"],
+			"props": [
+				"title",
+				"body",
+				"illustration",
+				"onButtonClick",
+				"buttonText"
+			],
 			"instances": 1
 		},
 		{
@@ -1923,7 +2302,9 @@
 			"module": "src/components/AnimatedIllustration/AnimatedIllustration.tsx",
 			"name": "AnimatedIllustration",
 			"weight": 1,
-			"props": ["animation"],
+			"props": [
+				"animation"
+			],
 			"instances": 1
 		},
 		{
@@ -1935,7 +2316,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1959,7 +2342,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -1971,7 +2356,13 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodItemModal/FoodItemModal.tsx",
 			"name": "FoodItemModal",
 			"weight": 1,
-			"props": ["item", "cartItems", "onClose", "onItemSave", "onItemRemove"],
+			"props": [
+				"item",
+				"cartItems",
+				"onClose",
+				"onItemSave",
+				"onItemRemove"
+			],
 			"instances": 1
 		},
 		{
@@ -1983,7 +2374,10 @@
 			"module": "@droppy/design-system",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["photoUrl", "onBackClick"],
+			"props": [
+				"photoUrl",
+				"onBackClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2007,7 +2401,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -2031,7 +2427,9 @@
 			"module": "@droppy/design-system",
 			"name": "Review",
 			"weight": 1,
-			"props": ["rating"],
+			"props": [
+				"rating"
+			],
 			"instances": 1
 		},
 		{
@@ -2043,7 +2441,10 @@
 			"module": "@droppy/design-system",
 			"name": "Badge",
 			"weight": 1,
-			"props": ["key", "text"],
+			"props": [
+				"key",
+				"text"
+			],
 			"instances": 1
 		},
 		{
@@ -2067,7 +2468,12 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodSection/FoodSection.tsx",
 			"name": "FoodSection",
 			"weight": 1,
-			"props": ["title", "items", "cartItems", "onItemClick"],
+			"props": [
+				"title",
+				"items",
+				"cartItems",
+				"onItemClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2079,7 +2485,12 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodSection/FoodSection.tsx",
 			"name": "FoodSection",
 			"weight": 1,
-			"props": ["title", "items", "cartItems", "onItemClick"],
+			"props": [
+				"title",
+				"items",
+				"cartItems",
+				"onItemClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2091,7 +2502,12 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodSection/FoodSection.tsx",
 			"name": "FoodSection",
 			"weight": 1,
-			"props": ["title", "items", "cartItems", "onItemClick"],
+			"props": [
+				"title",
+				"items",
+				"cartItems",
+				"onItemClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2103,7 +2519,9 @@
 			"module": "@droppy/design-system",
 			"name": "Card",
 			"weight": 1,
-			"props": ["onClick"],
+			"props": [
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -2115,7 +2533,11 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["aria-label", "type", "fontWeight"],
+			"props": [
+				"aria-label",
+				"type",
+				"fontWeight"
+			],
 			"instances": 3
 		},
 		{
@@ -2127,7 +2549,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -2163,7 +2587,11 @@
 			"module": "@droppy/design-system",
 			"name": "Modal",
 			"weight": 1,
-			"props": ["isOpen", "onClose", "container"],
+			"props": [
+				"isOpen",
+				"onClose",
+				"container"
+			],
 			"instances": 1
 		},
 		{
@@ -2199,7 +2627,12 @@
 			"module": "@droppy/design-system",
 			"name": "QuantityStepper",
 			"weight": 1,
-			"props": ["value", "onChange", "min", "max"],
+			"props": [
+				"value",
+				"onChange",
+				"min",
+				"max"
+			],
 			"instances": 1
 		},
 		{
@@ -2211,7 +2644,10 @@
 			"module": "@droppy/design-system",
 			"name": "Button",
 			"weight": 1,
-			"props": ["aria-label", "onClick"],
+			"props": [
+				"aria-label",
+				"onClick"
+			],
 			"instances": 1
 		},
 		{
@@ -2223,7 +2659,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 3
 		},
 		{
@@ -2235,7 +2673,14 @@
 			"module": "src/pages/RestaurantDetailPage/components/FoodItem/FoodItem.tsx",
 			"name": "FoodItem",
 			"weight": 1,
-			"props": ["key", "name", "price", "description", "quantity", "onClick"],
+			"props": [
+				"key",
+				"name",
+				"price",
+				"description",
+				"quantity",
+				"onClick"
+			],
 			"instances": 3
 		},
 		{
@@ -2247,7 +2692,9 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2259,7 +2706,9 @@
 			"module": "@droppy/design-system",
 			"name": "TopBanner",
 			"weight": 1,
-			"props": ["title"],
+			"props": [
+				"title"
+			],
 			"instances": 1
 		},
 		{
@@ -2271,7 +2720,9 @@
 			"module": "@droppy/design-system",
 			"name": "Body",
 			"weight": 1,
-			"props": ["type"],
+			"props": [
+				"type"
+			],
 			"instances": 1
 		},
 		{
@@ -2283,7 +2734,9 @@
 			"module": "@droppy/design-system",
 			"name": "Heading",
 			"weight": 1,
-			"props": ["level"],
+			"props": [
+				"level"
+			],
 			"instances": 1
 		},
 		{
@@ -2295,7 +2748,9 @@
 			"module": "src/components/ShoppingCart/OrderSummary/OrderSummary.tsx",
 			"name": "OrderSummary",
 			"weight": 1,
-			"props": ["cartItems"],
+			"props": [
+				"cartItems"
+			],
 			"instances": 1
 		},
 		{
@@ -2319,7 +2774,9 @@
 			"module": "src/components/Header/Header.tsx",
 			"name": "Header",
 			"weight": 1,
-			"props": ["sticky"],
+			"props": [
+				"sticky"
+			],
 			"instances": 1
 		},
 		{
@@ -2331,7 +2788,9 @@
 			"module": "src/components/Header/Header.tsx",
 			"name": "HeaderComponent",
 			"weight": 1,
-			"props": ["logoOnly"],
+			"props": [
+				"logoOnly"
+			],
 			"instances": 1
 		},
 		{
@@ -2343,8 +2802,12 @@
 			"module": "@droppy/design-system",
 			"name": "PageTemplate",
 			"weight": 1,
-			"props": ["header", "footer", "..."],
-			"instances": 1
+			"props": [
+				"header",
+				"footer",
+				"..."
+			],
+			"instances": 9
 		},
 		{
 			"path": "PageTemplate/Footer[0]",
@@ -2356,7 +2819,7 @@
 			"name": "Footer",
 			"weight": 1,
 			"props": [],
-			"instances": 1
+			"instances": 9
 		}
 	]
 }
