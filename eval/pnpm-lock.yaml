@@ -22,9 +22,12 @@ catalogs:
       specifier: 1.2.0
       version: 1.2.0
 
+overrides:
+  '@ai-sdk/anthropic': ^2.0.0
+
 patchedDependencies:
   '@vercel/agent-eval@1.2.0':
-    hash: 26466f3670f210363a5257ad9b1e0f0874f6a2881ae162ef9deb301be67c6dc5
+    hash: cd132dbd8cc29c9c5eb682ec5f751be0333d15578e58c22c390d034ac967f33d
     path: ../agent-eval/patches/@vercel__agent-eval@1.2.0.patch
 
 importers:

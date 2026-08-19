@@ -66,4 +66,4 @@ onlyBuiltDependencies:
   - ssh2
 
 patchedDependencies:
-  '@vercel/agent-eval@1.2.0': agent-eval/patches/@vercel__agent-eval@1.2.0.patch
+  '@vercel/agent-eval@1.2.0': patches/@vercel__agent-eval@1.2.0.patch
