@@ -23,6 +23,7 @@ function measurement(overrides: Partial<Measurement> = {}): Measurement {
 		pin: 'yannbf/mealdrop@droppy-70pc',
 		mcp: 'yannbf/droppy-ds#experiment/full',
 		editedPrompt: true,
+		provider: 'ai-gateway',
 		task: 'abc123',
 		...overrides,
 	};
@@ -72,6 +73,7 @@ describe('measurementKey', () => {
 		expect(measurementKey(measurement({ model: 'sonnet' }))).not.toBe(base);
 		expect(measurementKey(measurement({ task: 'def456' }))).not.toBe(base);
 		expect(measurementKey(measurement({ editedPrompt: false }))).not.toBe(base);
+		expect(measurementKey(measurement({ provider: 'anthropic' }))).not.toBe(base);
 	});
 });
 
@@ -92,12 +94,21 @@ describe('measurementDifferences', () => {
 		]);
 	});
 
+
 	it('reads as a sentence', () => {
 		expect(
 			describeDifferences(
 				measurementDifferences(measurement({ mcp: 'none', editedPrompt: false }), measurement()),
 			),
 		).toBe('mcp: none → yannbf/droppy-ds#experiment/full; editedPrompt: false → true');
+	});
+
+	// A provider flip is a real supersession: gateway-served cost figures are
+	// not comparable with direct-API ones.
+	it('treats a provider change as a moved component', () => {
+		expect(measurementDifferences(measurement({ provider: 'unknown' }), measurement())).toEqual([
+			{ field: 'provider', was: 'unknown', now: 'ai-gateway' },
+		]);
 	});
 });
 
@@ -124,6 +135,7 @@ describe('readRunMeasurement', () => {
 	const RESULT = {
 		model: 'opus',
 		analysis: {
+			provider: 'ai-gateway',
 			externalRepo: { repo: 'yannbf/mealdrop', ref: 'refs/tags/agentic-reference/droppy-70pc-v4' },
 			case: {
 				name: 'cc-full-opus-high',
@@ -151,7 +163,20 @@ describe('readRunMeasurement', () => {
 			pin: 'yannbf/mealdrop@droppy-70pc',
 			mcp: 'yannbf/droppy-ds#experiment/full',
 			editedPrompt: true,
+			provider: 'ai-gateway',
 		});
+	});
+
+	// Runs from before provider recording say nothing about how they reached
+	// the model; `unknown` never matches a real provider, so they read as
+	// superseded until backfilled.
+	it('reads a run that recorded no provider as unknown', () => {
+		const { analysis } = RESULT;
+		const dir = writeRun({
+			model: 'opus',
+			analysis: { externalRepo: analysis.externalRepo, case: analysis.case },
+		});
+		expect(readRunMeasurement(dir, { experiment: 'x', evalName: '701' })?.provider).toBe('unknown');
 	});
 
 	it('digests the task from the prompt and the assertions the run was given', () => {
@@ -191,6 +216,7 @@ describe('currentMeasurement', () => {
 			model: 'opus',
 			mcp: 'yannbf/droppy-ds#experiment/full',
 			editedPrompt: true,
+			provider: 'anthropic',
 		});
 	});
 

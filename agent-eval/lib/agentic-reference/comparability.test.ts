@@ -54,6 +54,7 @@ describe('reading a stored sample', () => {
 				JSON.stringify({
 					model: 'opus',
 					analysis: {
+						provider: currentProvider(),
 						externalRepo: { repo: 'yannbf/mealdrop', ref },
 						case: {
 							integration: 'mcp',
@@ -77,6 +78,11 @@ describe('reading a stored sample', () => {
 	function currentRef(): string {
 		const label = currentMeasurement(CELL.experiment, CELL.evalName)!.pin.split('@')[1]!;
 		return `refs/tags/agentic-reference/${label}-v4`;
+	}
+
+	/** The provider the cell records today, as it appears in a result.json. */
+	function currentProvider(): string {
+		return currentMeasurement(CELL.experiment, CELL.evalName)!.provider;
 	}
 
 	it('reads the measurement its runs recorded', () => {
@@ -143,6 +149,7 @@ describe('groupComparableRuns', () => {
 			pin: 'repo@v4',
 			mcp: 'ds#full',
 			editedPrompt: true,
+			provider: 'anthropic',
 			task: 'abc',
 			...overrides,
 		};

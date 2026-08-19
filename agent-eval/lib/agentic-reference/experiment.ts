@@ -92,6 +92,22 @@ export const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	},
 };
 
+/** How a run's LLM traffic was served: through the AI Gateway, or a direct API. */
+export type LlmProvider = 'ai-gateway' | 'anthropic' | 'openai';
+
+/**
+ * The provider a harness agent id resolves to. Gateway-served and direct-served
+ * runs are not cost-comparable — the gateway's BYOK failover silently re-bills
+ * retried calls and breaks prompt-cache reuse — so every run records which one
+ * served it.
+ */
+export function providerOf(agentId: string): LlmProvider {
+	if (agentId.startsWith('vercel-ai-gateway/')) {
+		return 'ai-gateway';
+	}
+	return agentId === 'codex' ? 'openai' : 'anthropic';
+}
+
 /** Research sample size, from --runs (AGENTIC_REF_RUNS). */
 function resolveRuns(): number {
 	return (
@@ -131,7 +147,7 @@ interface AgenticRefCaseRecord {
 // Compose the shared usage hook with the case record so neither clobbers the
 // other (a bare override would drop token usage). Heavy metrics, including MCP
 // tool usage, are computed offline — see scripts/analyze-results.ts.
-function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
+function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord, provider: LlmProvider) {
 	return function attachAgenticRefMetrics(context: RunCompleteContext) {
 		const withUsage = DEFAULT_EXPERIMENT_CONFIG.onRunComplete?.(context) ?? context.runData;
 		return {
@@ -140,6 +156,7 @@ function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
 				...withUsage.result,
 				analysis: {
 					...withUsage.result.analysis,
+					provider,
 					externalRepo: readExternalRepoPin(context.fixture.path),
 					case: agenticRefCase,
 				},
@@ -209,7 +226,10 @@ export function agenticRefExperiment(
 		...(editPrompt !== undefined && { editPrompt: true }),
 	};
 
-	const metricsHook = makeAgenticRefMetricsHook(caseRecord);
+	// From the agent id that actually runs, so an override changing the agent
+	// keeps the recorded provider truthful.
+	const agentId = overrides?.agent ?? AGENT_CONFIG[agent].agent;
+	const metricsHook = makeAgenticRefMetricsHook(caseRecord, providerOf(agentId));
 	// An override may add its own hook, but the case record must always land in
 	// the result — compose instead of letting the override replace the hook.
 	const onRunComplete: RunCompleteHook =

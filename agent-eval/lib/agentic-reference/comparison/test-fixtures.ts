@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 import { AGENTIC_REF_CASES } from '../cases.ts';
 import { EVALS_DIR, EXPERIMENT_NAME_PREFIX } from '../constants.ts';
-import { AGENT_CONFIG } from '../experiment.ts';
+import { AGENT_CONFIG, providerOf } from '../experiment.ts';
 import { parseExternalRepoFromManifest } from '../external-repo.ts';
 
 /** A pin no fixture uses, for planting runs of a measurement since replaced. */
@@ -25,7 +25,8 @@ export function measuredResultJson(
 	if (caseDef === undefined) {
 		throw new Error(`measuredResultJson: unknown case "${caseName}"`);
 	}
-	const model = AGENT_CONFIG[caseDef.agent ?? 'claude-code'].model;
+	const agentConfig = AGENT_CONFIG[caseDef.agent ?? 'claude-code'];
+	const model = agentConfig.model;
 	const pin = options.superseded
 		? SUPERSEDED_PIN
 		: parseExternalRepoFromManifest(
@@ -35,6 +36,7 @@ export function measuredResultJson(
 		status: options.status ?? 'passed',
 		model: Array.isArray(model) ? model.join(',') : model,
 		analysis: {
+			provider: providerOf(caseDef.overrides?.agent ?? agentConfig.agent),
 			externalRepo: pin,
 			case: {
 				integration: caseDef.integration,
