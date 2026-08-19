@@ -357,6 +357,21 @@ function writeReport(report: PlanReport): string {
 	return path;
 }
 
+// A batch that starts the moment its account balance crosses the reload
+// floor can fail on calls the reload would have covered seconds later, so
+// consecutive batches are spaced apart.
+const INTER_BATCH_WAIT_MS = 90_000;
+
+// Sliced so Ctrl-C during the pause is honored within a few seconds.
+async function interruptibleSleep(totalMs: number): Promise<void> {
+	const SLICE_MS = 5_000;
+	for (let waited = 0; waited < totalMs && !interrupted; waited += SLICE_MS) {
+		await new Promise((resolvePromise) =>
+			setTimeout(resolvePromise, Math.min(SLICE_MS, totalMs - waited)),
+		);
+	}
+}
+
 // Ctrl-C stops the plan between batches so collected batches still get
 // their report. A second Ctrl-C exits immediately.
 let interrupted = false;
@@ -462,6 +477,18 @@ async function main(): Promise<void> {
 			stoppedAt = batch.index;
 			stoppedBy = 'interrupt';
 			break;
+		}
+
+		if (batch.index < batches.length) {
+			console.log(
+				outStyle.dim(`  pausing ${INTER_BATCH_WAIT_MS / 1000}s before the next batch`),
+			);
+			await interruptibleSleep(INTER_BATCH_WAIT_MS);
+			if (interrupted) {
+				stoppedAt = batch.index;
+				stoppedBy = 'interrupt';
+				break;
+			}
 		}
 	}
 
