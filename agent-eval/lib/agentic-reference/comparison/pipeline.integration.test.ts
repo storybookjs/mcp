@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { postAnalysis } from '../post-analysis.ts';
+import { CASE_COLORS } from './colors.ts';
 import { copyTaskFixture, measuredResultJson } from './test-fixtures.ts';
 import { findUv } from './uv.ts';
 
@@ -80,6 +81,14 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		const cache = estimates.find((row: { metric: string }) => row.metric === 'cacheHitRate');
 		expect(cache.verdict).toBe('not-significant');
 		expect(readFileSync(join(outDir, 'report.md'), 'utf8')).toContain('durationSeconds');
+		// The ECDF curves use the same stable case colors the HTML report gets
+		// from the manifest.
+		const curveSvg = readFileSync(
+			join(outDir, 'curves', `durationSeconds@${WF}.svg`),
+			'utf8',
+		).toLowerCase();
+		expect(curveSvg).toContain(CASE_COLORS['do-dont']!.light.slice(1).toLowerCase());
+		expect(curveSvg).toContain(CASE_COLORS['control-none']!.light.slice(1).toLowerCase());
 	}, 300_000);
 
 	it('is byte-for-byte deterministic apart from manifest provenance', () => {

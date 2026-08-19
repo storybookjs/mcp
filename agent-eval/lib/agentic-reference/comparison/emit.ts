@@ -2,6 +2,7 @@ import { relative, sep } from 'node:path';
 
 import { metricValueAt, type ComparisonMetric } from '../comparison-metrics.ts';
 import type { Cell } from './cells.ts';
+import { caseColors } from './colors.ts';
 import type { ResolvedCase } from './resolve.ts';
 
 export interface ComparisonSpec {
@@ -84,6 +85,8 @@ export function manifestJson(args: {
 		family: metrics.flatMap((metric) =>
 			spec.treatments.map((treatment) => ({ metric: metric.key, treatment: treatment.shortName })),
 		),
+		// Stable per-case colors, shared by report.html and the ECDF curves.
+		colors: caseColors([spec.control, ...spec.treatments].map((c) => c.shortName)),
 		// Per-run batches live in the dataset; a cell here is the pooled sample.
 		cells: ordered.map((cell) => ({
 			case: cell.case.shortName,

@@ -184,26 +184,26 @@ describe('formatMetricValue', () => {
 });
 
 describe('formatBeta / formatPQ', () => {
-	it('renders four decimals and never exponent form', () => {
-		expect(formatBeta(-0.24656040212469432)).toBe('−0.2466');
-		expect(formatBeta(1.9000000000000006)).toBe('1.9000');
-		expect(formatPQ(0.0005718250301111768)).toBe('0.0006');
+	it('renders three decimals and never exponent form', () => {
+		expect(formatBeta(-0.24656040212469432)).toBe('−0.247');
+		expect(formatBeta(1.9000000000000006)).toBe('1.900');
+		expect(formatPQ(0.0005718250301111768)).toBe('0.001');
 	});
 
 	it('floors tiny p/q values instead of using exponents', () => {
-		expect(formatPQ(0.00003)).toBe('< 0.0001');
-		expect(formatPQ(8.577375451667651e-9)).toBe('< 0.0001');
+		expect(formatPQ(0.0003)).toBe('< 0.001');
+		expect(formatPQ(8.577375451667651e-9)).toBe('< 0.001');
 	});
 });
 
 describe('renderHtmlReport structure', () => {
-	it('renders four tabs: Summary, Effects, Full report, Curves', () => {
+	it('renders four tabs: Summary, Effects, Full report, ECDF curves', () => {
 		const html = render({});
 		const tabs = html.match(/role="tab"/g) ?? [];
 		expect(tabs).toHaveLength(4);
 		expect(html).toContain('Effects at a glance');
 		expect(html).toContain('Full report');
-		expect(html).toContain('Curves');
+		expect(html).toContain('ECDF curves');
 	});
 
 	it('places Summary before Sample in the summary tab', () => {
@@ -230,6 +230,33 @@ describe('renderHtmlReport structure', () => {
 		expect(html).toMatch(/false/i);
 		expect(html).toContain('2 tests');
 		expect(html).toContain('q &le; 0.05');
+	});
+
+	it('renders the statistics explainer as a collapsible section below Sample', () => {
+		const html = render({});
+		expect(html).toContain('<details class="statsbox"');
+		expect(html).toContain('<summary>How the statistics work</summary>');
+		expect(html.indexOf('>Sample</h2>')).toBeLessThan(html.indexOf('<details class="statsbox"'));
+	});
+
+	it('uses manifest case colors when present', () => {
+		const html = render({
+			manifest: manifest({
+				colors: {
+					'control-none': { light: '#000001', dark: '#000002' },
+					full: { light: '#123456', dark: '#654321' },
+					empty: { light: '#0000AA', dark: '#0000BB' },
+				},
+			}),
+		});
+		expect(html).toContain('--c-full:#123456');
+		expect(html).toContain('--c-full:#654321');
+	});
+
+	it('solos a chip on ctrl-click and never filters the summary list', () => {
+		const html = render({});
+		expect(html).toContain('ctrlKey');
+		expect(html).not.toContain('.summary li');
 	});
 
 	it('mentions equal workflow weighting only in aggregate mode', () => {
@@ -343,14 +370,65 @@ describe('renderHtmlReport structure', () => {
 });
 
 describe('renderHtmlReport full report table', () => {
-	it('uses a sticky-header table with n, effect, CI, beta, p, q columns', () => {
+	it('drops the n and Verdict columns', () => {
 		const html = render({});
 		expect(html).toContain('<thead>');
-		expect(html).toContain('<th>n</th>');
-		expect(html).toContain('<th class="num nocase">β</th>');
-		expect(html).toContain('<th class="num nocase">p</th>');
-		expect(html).toContain('<th class="num nocase">q</th>');
-		expect(html).toContain('10 / 10');
+		expect(html).not.toContain('<th>n</th>');
+		expect(html).not.toContain('<th>Verdict</th>');
+		expect(html).not.toContain('10 / 10');
+	});
+
+	it('explains β, p, and q in their column headers', () => {
+		const html = render({});
+		expect(html).toMatch(/<th[^>]*data-tip-title="β[^"]*"/);
+		expect(html).toMatch(/<th[^>]*data-tip-title="p[^"]*"/);
+		expect(html).toMatch(/<th[^>]*data-tip-title="q[^"]*"[^>]*data-tip-effect="[^"]*Benjamini/);
+	});
+
+	it('suffixes the effect with a verdict icon carrying a tooltip', () => {
+		const html = render({
+			estimates: [
+				row({ verdict: 'significant', q: 0.001 }),
+				row({ treatment: 'empty', verdict: 'not-significant', q: 0.2, beta: 0.05, pctChange: 0.05 }),
+			],
+		});
+		// Significant improvement on a lower-better metric: down arrow, good color.
+		expect(html).toMatch(/class="vicon good tipsrc"[^>]*data-tip-title="[^"]*better[^"]*"[^>]*>↓</);
+		// Not significant: gray question mark.
+		expect(html).toMatch(/class="vicon na tipsrc"[^>]*data-tip-title="[^"]*not significant[^"]*"[^>]*>\?</);
+	});
+
+	it('uses ± for significant changes of descriptive metrics', () => {
+		const html = render({
+			estimates: [
+				row({
+					metric: 'docsCalls',
+					direction: 'neutral',
+					transform: 'none',
+					pctChange: null,
+					beta: 3.2,
+					verdict: 'significant',
+					q: 0.01,
+				}),
+			],
+		});
+		expect(html).toMatch(/class="vicon shift tipsrc"[^>]*data-tip-title="[^"]*changed[^"]*"[^>]*>±</);
+	});
+
+	it('marks rows whose n differs from the rest of their arm', () => {
+		const html = render({
+			estimates: [
+				row({}),
+				row({
+					metric: 'slocAdded',
+					direction: 'neutral',
+					transform: 'log0',
+					nControl: 9,
+					pctChange: -0.1,
+				}),
+			],
+		});
+		expect(html).toContain('n=9/10');
 	});
 
 	it('marks non-significant rows for dimming via data-sig', () => {
@@ -370,7 +448,7 @@ describe('renderHtmlReport full report table', () => {
 		expect(html).toContain('data-sig="0"');
 	});
 
-	it('formats beta, p, and q to four decimals without exponents', () => {
+	it('formats beta, p, and q to three decimals without exponents', () => {
 		const html = render({
 			estimates: [
 				row({
@@ -380,9 +458,9 @@ describe('renderHtmlReport full report table', () => {
 				}),
 			],
 		});
-		expect(html).toContain('−0.2466');
-		expect(html).toContain('0.0001');
-		expect(html).toContain('0.0006');
+		expect(html).toContain('−0.247');
+		expect(html).toContain('&lt; 0.001');
+		expect(html).toContain('0.001');
 		expect(html).not.toMatch(/e-\d/);
 	});
 

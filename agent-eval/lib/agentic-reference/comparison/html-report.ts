@@ -64,6 +64,8 @@ export interface ManifestJson {
 		plan: string | null;
 	};
 	metrics: ManifestMetric[];
+	/** Stable per-case colors; absent in manifests from before they existed. */
+	colors?: Record<string, { light: string; dark: string }>;
 	cells: ManifestCell[];
 	excludedRuns: { path?: string; reason?: string }[];
 	provenance: {
@@ -288,14 +290,14 @@ export function formatMetricValue(key: string, value: number): string {
 	return formatPlain(value);
 }
 
-/** OLS coefficients: four decimals, never exponent form. */
+/** OLS coefficients: three decimals, never exponent form. */
 export function formatBeta(value: number): string {
-	return value < 0 ? MINUS + Math.abs(value).toFixed(4) : value.toFixed(4);
+	return value < 0 ? MINUS + Math.abs(value).toFixed(3) : value.toFixed(3);
 }
 
-/** p and q values: four decimals, floored instead of exponent form. */
+/** p and q values: three decimals, floored instead of exponent form. */
 export function formatPQ(value: number): string {
-	return value < 0.00005 ? '< 0.0001' : value.toFixed(4);
+	return value < 0.0005 ? '< 0.001' : value.toFixed(3);
 }
 
 function signed(negative: boolean, body: string): string {
@@ -369,13 +371,21 @@ interface TreatmentStyle {
 	darkColor: string;
 }
 
-function treatmentStyles(treatments: ManifestCase[]): TreatmentStyle[] {
-	return treatments.map((t, i) => ({
-		shortName: t.shortName,
-		slug: slug(t.shortName),
-		lightColor: i < 3 ? LIGHT_TREATMENT_COLORS[i]! : NEUTRAL_GRAY_LIGHT,
-		darkColor: i < 3 ? DARK_TREATMENT_COLORS[i]! : NEUTRAL_GRAY_DARK,
-	}));
+// Stable colors come from the manifest (written by compare-results from
+// CASE_COLORS); the index palette only serves manifests from before that.
+function treatmentStyles(
+	treatments: ManifestCase[],
+	colors: ManifestJson['colors'],
+): TreatmentStyle[] {
+	return treatments.map((t, i) => {
+		const assigned = colors?.[t.shortName];
+		return {
+			shortName: t.shortName,
+			slug: slug(t.shortName),
+			lightColor: assigned?.light ?? (i < 3 ? LIGHT_TREATMENT_COLORS[i]! : NEUTRAL_GRAY_LIGHT),
+			darkColor: assigned?.dark ?? (i < 3 ? DARK_TREATMENT_COLORS[i]! : NEUTRAL_GRAY_DARK),
+		};
+	});
 }
 
 function metricName(key: string): string {
@@ -879,11 +889,11 @@ function buildFullReport(
 		})
 		.join('\n');
 
-	const tested = new Set(headline.map((row) => `${row.metric} ${row.treatment}`));
+	const tested = new Set(headline.map((row) => `${row.metric} ${row.treatment}`));
 	const untested: string[] = [];
 	for (const metric of manifest.metrics) {
 		for (const t of manifest.spec.treatments) {
-			if (!tested.has(`${metric.key} ${t.shortName}`)) {
+			if (!tested.has(`${metric.key} ${t.shortName}`)) {
 				untested.push(
 					`<li><span class="mono">${escapeHtml(metric.key)}</span> × ${escapeHtml(
 						t.shortName

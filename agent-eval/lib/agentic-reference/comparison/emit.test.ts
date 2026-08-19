@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { COMPARISON_METRICS } from '../comparison-metrics.ts';
 import type { Cell } from './cells.ts';
+import { CASE_COLORS } from './colors.ts';
 import type { ResolvedCase } from './resolve.ts';
 import { datasetCsv, manifestJson, type ComparisonSpec } from './emit.ts';
 
@@ -106,6 +107,7 @@ describe('manifestJson', () => {
 			'spec',
 			'metrics',
 			'family',
+			'colors',
 			'cells',
 			'excludedRuns',
 			'provenance',
@@ -120,6 +122,19 @@ describe('manifestJson', () => {
 		expect(parsed.excludedRuns[0].path.startsWith('results/')).toBe(true);
 		expect(json.endsWith('\n')).toBe(true);
 		expect(JSON.stringify(parsed, null, 2) + '\n').toBe(json);
+	});
+
+	it('embeds the stable color of the control and every treatment', () => {
+		const json = manifestJson({
+			spec: SPEC,
+			metrics: COMPARISON_METRICS,
+			cells: [cell(CONTROL, [7]), cell(TREATMENT, [5])],
+			agentEvalRoot: '/root',
+			provenance: {},
+		});
+		const colors = JSON.parse(json).colors;
+		expect(Object.keys(colors)).toEqual(['control-none', 'do-dont']);
+		expect(colors['do-dont']).toEqual(CASE_COLORS['do-dont']);
 	});
 
 	it('records the plan a scoped comparison came from', () => {

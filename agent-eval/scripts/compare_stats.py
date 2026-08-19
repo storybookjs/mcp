@@ -246,6 +246,9 @@ def draw_curves(out_dir, manifest, data, rows):
     curves_dir.mkdir(exist_ok=True)
     control = manifest["spec"]["control"]["shortName"]
     treatments = [t["shortName"] for t in manifest["spec"]["treatments"]]
+    # Stable per-case colors from the manifest (curves render on white, so the
+    # light variant applies); absent entries fall back to matplotlib's cycle.
+    colors = manifest.get("colors") or {}
     for metric in manifest["metrics"]:
         for workflow in manifest["spec"]["workflows"]:
             fig, ax = plt.subplots(figsize=(7, 4.5))
@@ -263,6 +266,7 @@ def draw_curves(out_dir, manifest, data, rows):
                 ys = np.arange(1, len(xs) + 1) / len(xs)
                 ax.step(
                     xs, ys, where="post",
+                    color=(colors.get(case) or {}).get("light"),
                     label=f"{case} (n={len(xs)}, med={fmt(float(np.median(xs)))})",
                 )
             if not plotted:
