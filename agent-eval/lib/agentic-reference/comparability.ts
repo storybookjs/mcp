@@ -5,7 +5,7 @@
 // dropped, since it's still a measurement.
 import { existsSync } from 'node:fs';
 
-import { countCollectedRuns, readRunOutcomes } from './collected-runs.ts';
+import { readRunOutcomes } from './collected-runs.ts';
 import {
 	type Measurement,
 	currentMeasurement,
@@ -45,22 +45,42 @@ export function readSampleMeasurement(
 	return null;
 }
 
+/** Whether a stored measurement is what `cell` measures today. */
+function matchesCurrent(
+	measurement: Measurement | null,
+	cell: { experiment: string; evalName: string },
+): boolean {
+	const current = currentMeasurement(cell.experiment, cell.evalName);
+	return (
+		measurement !== null &&
+		current !== null &&
+		measurementKey(measurement) === measurementKey(current)
+	);
+}
+
 /** Whether an eval directory holds what its (experiment, eval) pair measures today. */
 export function isCurrentSample(
 	evalDir: string,
 	cell: { experiment: string; evalName: string },
 ): boolean {
-	const stored = readSampleMeasurement(evalDir, cell);
-	const current = currentMeasurement(cell.experiment, cell.evalName);
-	return stored !== null && current !== null && measurementKey(stored) === measurementKey(current);
+	return matchesCurrent(readSampleMeasurement(evalDir, cell), cell);
 }
 
-/** Runs of one pair's current measurement, across every result directory. */
-export function countCurrentRuns(
-	evalDir: string,
+/** One stored run's measurement, against what its (experiment, eval) pair measures today. */
+export function describeStoredRun(
+	runDir: string,
 	cell: { experiment: string; evalName: string },
-): number {
-	return isCurrentSample(evalDir, cell) ? countCollectedRuns(evalDir, true) : 0;
+): { measurement: Measurement | null; current: boolean } {
+	const measurement = readRunMeasurement(runDir, cell);
+	return { measurement, current: matchesCurrent(measurement, cell) };
+}
+
+/** Whether one stored run measures what its (experiment, eval) pair measures today. */
+export function isCurrentRun(
+	runDir: string,
+	cell: { experiment: string; evalName: string },
+): boolean {
+	return describeStoredRun(runDir, cell).current;
 }
 
 // --- grouping --------------------------------------------------------------

@@ -20,19 +20,14 @@
 // Nothing is retried. A batch that fails is recorded and the plan moves on,
 // so an unattended run ends with a complete account of what it collected.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { basename, isAbsolute, join, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { basename, join, relative } from 'node:path';
 
-import { AGENTIC_REF_CASES, AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
+import { AGENTIC_REF_EVAL_REGISTRY, knownExperimentNames } from '../lib/agentic-reference/cases.ts';
 import { countCollectedRuns } from '../lib/agentic-reference/collected-runs.ts';
-import {
-	AGENT_EVAL_ROOT,
-	EXPERIMENT_NAME_PREFIX,
-	RESULTS_DIR,
-	RUNNER,
-} from '../lib/agentic-reference/constants.ts';
+import { AGENT_EVAL_ROOT, RESULTS_DIR, RUNNER } from '../lib/agentic-reference/constants.ts';
 import { isCurrentSample, parseResultTimestamp } from '../lib/agentic-reference/comparability.ts';
+import { loadPlanConfig, resolvePlanPath } from '../lib/agentic-reference/plan-config.ts';
 import { findResultDirs } from '../lib/agentic-reference/results-tree.ts';
 import { selectionFlags } from '../lib/agentic-reference/selection.ts';
 import {
@@ -41,7 +36,6 @@ import {
 	type PlanBatch,
 	type ResolvedRunPlan,
 	type ResourceSignal,
-	type RunPlan,
 	type StoredSample,
 	explainDeficit,
 	isPlanStoppingSignal,
@@ -349,25 +343,6 @@ function writeReport(report: PlanReport): string {
 	return path;
 }
 
-/** Experiment names the generated stubs (and results directories) carry. */
-function knownExperiments(): string[] {
-	return AGENTIC_REF_CASES.map(
-		(agenticRefCase) => `${EXPERIMENT_NAME_PREFIX}${agenticRefCase.name}`,
-	);
-}
-
-async function loadPlanConfig(configPath: string): Promise<RunPlan> {
-	if (!existsSync(configPath)) {
-		fail(`no plan config at ${relative(AGENT_EVAL_ROOT, configPath)}.`);
-	}
-	const module: unknown = await import(pathToFileURL(configPath).href);
-	const plan = (module as { default?: unknown }).default;
-	if (plan === undefined || typeof plan !== 'object') {
-		fail(`${relative(AGENT_EVAL_ROOT, configPath)} must default-export a RunPlan object.`);
-	}
-	return plan as RunPlan;
-}
-
 // Ctrl-C stops the plan between batches so collected batches still get
 // their report. A second Ctrl-C exits immediately.
 let interrupted = false;
@@ -400,11 +375,11 @@ async function main(): Promise<void> {
 		.parseSync();
 
 	const configArg = argv.config ?? DEFAULT_CONFIG;
-	const configPath = isAbsolute(configArg) ? configArg : resolve(AGENT_EVAL_ROOT, configArg);
+	const configPath = resolvePlanPath(configArg);
 	const plan = await loadPlanConfig(configPath);
 
 	const resolved = resolveRunPlan(plan, {
-		experiments: knownExperiments(),
+		experiments: knownExperimentNames(),
 		evals: AGENTIC_REF_EVAL_REGISTRY,
 	});
 

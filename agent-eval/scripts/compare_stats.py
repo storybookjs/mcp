@@ -296,11 +296,11 @@ def write_report(out_dir, manifest, rows, skipped, anomaly_lines):
     if manifest.get("excludedRuns"):
         lines += ["", "## Excluded runs", ""]
         lines += [f'- `{e["path"]}` — {e["reason"]}' for e in manifest["excludedRuns"]]
-    lines += ["", "## Cells", "", "| Case | Workflow | Batch | Usable | Passed | Failed | Unanalyzed | Stale |", "|---|---|---|---|---|---|---|---|"]
+    lines += ["", "## Cells", "", "| Case | Workflow | Batch | Usable | Passed | Failed | Unanalyzed | Superseded |", "|---|---|---|---|---|---|---|---|"]
     for cell in manifest["cells"]:
         lines.append(
             f'| {cell["case"]} | {cell["workflow"]} | {cell["batch"]} | {cell["usableRuns"]} '
-            f'| {cell["passed"]} | {cell["failed"]} | {cell["unanalyzed"]} | {cell["stale"]} |'
+            f'| {cell["passed"]} | {cell["failed"]} | {cell["unanalyzed"]} | {cell["superseded"]} |'
         )
     lines += ["", "Curves: see `curves/<metric>@<workflow>.svg`.", ""]
     (out_dir / "report.md").write_text("\n".join(lines), encoding="utf-8")

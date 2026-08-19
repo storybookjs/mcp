@@ -16,9 +16,10 @@ export const PLAIN_STYLE: OutputStyle = {
 	reason: (_r, s) => s,
 };
 
+// Yellow: fixable for free by re-running the analyzer. Red: needs collecting.
 const REASON_COLOR: Record<GapReason, 'yellow' | 'red'> = {
-	'stale-analysis': 'yellow',
 	unanalyzed: 'yellow',
+	'superseded-runs': 'red',
 	'missing-runs': 'red',
 };
 

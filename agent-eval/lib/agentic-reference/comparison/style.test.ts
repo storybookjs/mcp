@@ -16,7 +16,7 @@ describe('ansiStyle', () => {
 		expect(style.bold('hello')).toBe('hello');
 		expect(style.caseName('do-dont')).toBe('do-dont');
 		expect(style.reason('missing-runs', 'missing-runs')).toBe('missing-runs');
-		expect(style.reason('stale-analysis', 'stale-analysis')).toBe('stale-analysis');
+		expect(style.reason('superseded-runs', 'superseded-runs')).toBe('superseded-runs');
 		expect(style.reason('unanalyzed', 'unanalyzed')).toBe('unanalyzed');
 	});
 

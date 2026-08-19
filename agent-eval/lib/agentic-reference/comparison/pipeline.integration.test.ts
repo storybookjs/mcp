@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { postAnalysis } from '../post-analysis.ts';
+import { copyTaskFixture, measuredResultJson } from './test-fixtures.ts';
 import { findUv } from './uv.ts';
 
 const uv = findUv();
@@ -24,8 +25,11 @@ const resultsDir = join(root, 'results');
 
 function plantRun(experiment: string, run: number, durationSeconds: number, cacheHitRate: number) {
 	const dir = join(resultsDir, experiment, TS, WF, `run-${run}`);
-	mkdirSync(join(dir, 'project'), { recursive: true });
-	writeFileSync(join(dir, 'result.json'), JSON.stringify({ status: 'passed' }) + '\n');
+	copyTaskFixture(WF, join(dir, 'project'));
+	writeFileSync(
+		join(dir, 'result.json'),
+		JSON.stringify(measuredResultJson(experiment, WF)) + '\n',
+	);
 	const analysis = { speed: { durationSeconds }, cost: { cacheHitRate } };
 	writeFileSync(join(dir, 'analysis.json'), JSON.stringify(analysis, null, 2) + '\n');
 	writeFileSync(
@@ -47,15 +51,10 @@ afterAll(() => {
 	rmSync(root, { recursive: true, force: true });
 });
 
-function runCompare(outDir: string) {
+function runCompare(outDir: string, selection: string[] = ['--cases=do-dont', '--workflows=703']) {
 	execFileSync(
 		process.execPath,
-		[
-			join(AGENT_EVAL_ROOT, 'scripts', 'compare-results.ts'),
-			'--cases=do-dont',
-			`--workflows=703`,
-			`--out=${outDir}`,
-		],
+		[join(AGENT_EVAL_ROOT, 'scripts', 'compare-results.ts'), ...selection, `--out=${outDir}`],
 		{ env: { ...process.env, AGENT_EVAL_RESULTS_DIR: resultsDir }, stdio: 'pipe' },
 	);
 }
@@ -98,6 +97,35 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		expect(stripProvenance(a)).toEqual(stripProvenance(b));
 	}, 300_000);
 
+	it('scopes the comparison to a plan config via --plan', () => {
+		const planPath = join(root, 'do-dont.plan.ts');
+		writeFileSync(
+			planPath,
+			'export default {\n' +
+				`\texperiments: ['${CONTROL_EXP}', '${TREATMENT_EXP}'],\n` +
+				"\tevals: ['703'],\n" +
+				'\truns: 10,\n' +
+				'\tparallelMax: 10,\n' +
+				'};\n',
+		);
+		const outDir = join(root, 'comparisons', 'plan');
+		runCompare(outDir, [`--plan=${planPath}`]);
+		const manifest = JSON.parse(readFileSync(join(outDir, 'manifest.json'), 'utf8'));
+		expect(manifest.spec.plan).toBe(planPath);
+		expect(manifest.spec.treatments.map((t: { shortName: string }) => t.shortName)).toEqual([
+			'do-dont',
+		]);
+		expect(manifest.spec.workflows).toEqual([WF]);
+		// min-runs defaulted to the plan's target sample size.
+		expect(manifest.spec.minRuns).toBe(10);
+		const estimates = JSON.parse(readFileSync(join(outDir, 'estimates.json'), 'utf8'));
+		const duration = estimates.find(
+			(row: { metric: string; context: boolean }) =>
+				row.metric === 'durationSeconds' && !row.context,
+		);
+		expect(duration.beta).toBeCloseTo(Math.log(2), 6);
+	}, 300_000);
+
 	it('early-exits with remediation commands when a cell is short', () => {
 		rmSync(join(resultsDir, TREATMENT_EXP, TS, WF, 'run-10'), { recursive: true });
 		try {
@@ -122,7 +150,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 });
 
 describe.skipIf(uv !== null)('without uv', () => {
-	it('is skipped on machines lacking uv (run pnpm results:compare:setup)', () => {
+	it('is skipped on machines lacking uv (run pnpm results:compare:init)', () => {
 		expect(uv).toBeNull();
 	});
 });

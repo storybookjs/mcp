@@ -32,6 +32,7 @@ import {
 import { readCost, readSpeed } from './metrics/run-signals.ts';
 import { classifyToolUse } from './metrics/tool-taxonomy.ts';
 import { parseResultTimestamp } from './comparability.ts';
+import { shortCase, shortExperiment } from './utils.ts';
 import { diffTrees } from './tree/tree-diff.ts';
 
 import type { FileComplexity } from './metrics/complexity.ts';
@@ -277,17 +278,6 @@ function misuseOf(row: Record<string, unknown>): DsMisuseSummary | null {
 	return isRecord(report) && isRecord(report.summary)
 		? (report.summary as unknown as DsMisuseSummary)
 		: null;
-}
-
-/** Experiment names share a long prefix; the tables read better without it. */
-function shortExperiment(value: unknown): string {
-	return String(value)
-		.replace(/^agentic-ref-cc-/, '')
-		.replace(/-opus-[^-]+$/, '');
-}
-
-function shortCase(value: unknown): string {
-	return String(value).replace(/(-[^\d]+)+$/, '');
 }
 
 /** A stored share (0.0845) as a percentage for display. */

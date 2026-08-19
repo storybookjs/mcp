@@ -34,26 +34,22 @@ export function formatGapTable(gaps: CellGap[], style: OutputStyle = PLAIN_STYLE
 export function remediationCommands(gaps: CellGap[]): string[] {
 	const collect = new Map<string, { workflows: Set<string>; need: number }>();
 	const analyze = new Set<string>();
-	const recompute = new Set<string>();
 	for (const gap of gaps) {
 		const experiment = gap.case.experiment;
-		if (gap.reason === 'missing-runs') {
+		if (gap.reason === 'unanalyzed') {
+			analyze.add(experiment);
+		} else {
+			// missing-runs and superseded-runs both mean data collection is necessary.
 			const entry = collect.get(experiment) ?? { workflows: new Set(), need: 0 };
 			entry.workflows.add(gap.workflow);
 			entry.need = Math.max(entry.need, gap.need);
 			collect.set(experiment, entry);
-		} else if (gap.reason === 'unanalyzed') {
-			analyze.add(experiment);
-		} else {
-			recompute.add(experiment);
 		}
 	}
 	// Freshly collected runs land unanalyzed, so every experiment earning a
-	// collection command also needs an analyze follow-up — unless it already
-	// has a recompute command, whose --recompute re-analyzes stale AND
-	// unanalyzed runs (including the ones just collected) in one pass.
+	// collection command also needs an analyze follow-up.
 	for (const experiment of collect.keys()) {
-		if (!recompute.has(experiment)) analyze.add(experiment);
+		analyze.add(experiment);
 	}
 	return [
 		...[...collect.entries()]
@@ -63,6 +59,5 @@ export function remediationCommands(gaps: CellGap[]): string[] {
 					`AGENTIC_REF_FLOW=${[...workflows].sort().join(',')} AGENTIC_REF_RUNS=${need} pnpm eval:agentic-ref ${experiment}`,
 			),
 		...[...analyze].sort().map((e) => `pnpm results:analyze --experiment=${e}`),
-		...[...recompute].sort().map((e) => `pnpm results:analyze --recompute --experiment=${e}`),
 	];
 }

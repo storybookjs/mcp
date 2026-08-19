@@ -54,13 +54,11 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { groupComparableRuns } from '#lib/agentic-reference/comparability';
+import { describeStoredRun, groupComparableRuns } from '#lib/agentic-reference/comparability';
 import {
 	currentMeasurement,
 	describeDifferences,
 	measurementDifferences,
-	measurementKey,
-	readRunMeasurement,
 } from '#lib/agentic-reference/identity';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
@@ -423,18 +421,7 @@ async function main() {
 
 	const groups = groupComparableRuns(successfulAnalyses, (row) => {
 		const { experiment, evalName, model, runDir } = row.__run;
-		const measurement = readRunMeasurement(runDir, { experiment, evalName });
-		const current = currentMeasurement(experiment, evalName);
-		return {
-			experiment,
-			model,
-			evalName,
-			measurement,
-			current:
-				measurement !== null &&
-				current !== null &&
-				measurementKey(measurement) === measurementKey(current),
-		};
+		return { experiment, model, evalName, ...describeStoredRun(runDir, { experiment, evalName }) };
 	});
 
 	// Superseded groups are the measurement a pair used to make, kept apart so

@@ -5,6 +5,7 @@ import {
 	comparisonSlug,
 	knownWorkflows,
 	resolveCase,
+	resolvePlanScope,
 	resolveTreatments,
 	resolveWorkflows,
 } from './resolve.ts';
@@ -39,23 +40,25 @@ describe('resolveCase', () => {
 describe('resolveTreatments', () => {
 	const control = resolveCase('control-none');
 
-	it('expands all/undefined to non-control cases with data, sorted', () => {
+	it('expands all/nothing to non-control cases with data, sorted', () => {
 		const withData = [
 			'agentic-ref-cc-do-dont-opus-high',
 			'agentic-ref-cc-full-opus-high',
 			'agentic-ref-cc-control-none-opus-high',
 		];
-		const names = resolveTreatments(undefined, control, withData).map((c) => c.shortName);
+		const names = resolveTreatments([], control, withData).map((c) => c.shortName);
 		expect(names).toEqual(['do-dont', 'full']);
-		expect(resolveTreatments('all', control, withData).map((c) => c.shortName)).toEqual(names);
+		expect(resolveTreatments(['all'], control, withData).map((c) => c.shortName)).toEqual(names);
 	});
 
 	it('rejects the control in the treatment list', () => {
-		expect(() => resolveTreatments('control-none,full', control, [])).toThrow(/control/);
+		expect(() => resolveTreatments(['control-none', 'full'], control, [])).toThrow(/control/);
 	});
 
 	it('deduplicates explicit treatment list by caseName', () => {
-		expect(resolveTreatments('full,full', control, []).map((c) => c.shortName)).toEqual(['full']);
+		expect(resolveTreatments(['full', 'full'], control, []).map((c) => c.shortName)).toEqual([
+			'full',
+		]);
 	});
 });
 
@@ -71,11 +74,43 @@ describe('workflows', () => {
 
 	it('resolves numeric prefixes and full names; null for auto mode', () => {
 		const known = ['701-new-ui-flow', '703-fix-bug-flow'];
-		expect(resolveWorkflows('703,701', known)).toEqual(['701-new-ui-flow', '703-fix-bug-flow']);
-		expect(resolveWorkflows('701-new-ui-flow', known)).toEqual(['701-new-ui-flow']);
-		expect(resolveWorkflows('all', known)).toEqual(known);
-		expect(resolveWorkflows(undefined, known)).toBeNull();
-		expect(() => resolveWorkflows('799', known)).toThrow(/701-new-ui-flow/);
+		expect(resolveWorkflows(['703', '701'], known)).toEqual([
+			'701-new-ui-flow',
+			'703-fix-bug-flow',
+		]);
+		expect(resolveWorkflows(['701-new-ui-flow'], known)).toEqual(['701-new-ui-flow']);
+		expect(resolveWorkflows(['all'], known)).toEqual(known);
+		expect(resolveWorkflows([], known)).toBeNull();
+		expect(() => resolveWorkflows(['799'], known)).toThrow(/701-new-ui-flow/);
+	});
+});
+
+describe('resolvePlanScope', () => {
+	const control = resolveCase('control-none');
+
+	it('maps the plan arms minus the control to treatments, and sorts its evals', () => {
+		const scope = resolvePlanScope(
+			{
+				experiments: [
+					'agentic-ref-cc-full-opus-high',
+					'agentic-ref-cc-control-none-opus-high',
+					'agentic-ref-cc-do-dont-opus-high',
+				],
+				evals: ['703-fix-bug-flow', '701-new-ui-flow'],
+			},
+			control,
+		);
+		expect(scope.treatments.map((c) => c.shortName)).toEqual(['full', 'do-dont']);
+		expect(scope.workflows).toEqual(['701-new-ui-flow', '703-fix-bug-flow']);
+	});
+
+	it('rejects a plan that names no case besides the control', () => {
+		expect(() =>
+			resolvePlanScope(
+				{ experiments: ['agentic-ref-cc-control-none-opus-high'], evals: ['701-new-ui-flow'] },
+				control,
+			),
+		).toThrow(/no case besides the control/);
 	});
 });
 

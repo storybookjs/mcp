@@ -11,6 +11,8 @@ export interface ComparisonSpec {
 	mode: 'single-workflow' | 'aggregate';
 	minRuns: number;
 	allBatches: boolean;
+	/** Repo-relative path of the plan config that scoped this comparison, if one did. */
+	plan?: string;
 }
 
 function orderedCells(cells: Cell[], spec: ComparisonSpec): Cell[] {
@@ -78,6 +80,7 @@ export function manifestJson(args: {
 			mode: spec.mode,
 			minRuns: spec.minRuns,
 			allBatches: spec.allBatches,
+			plan: spec.plan ?? null,
 		},
 		metrics,
 		// The BH family: every headline test of this invocation, in test order.
@@ -92,7 +95,7 @@ export function manifestJson(args: {
 			passed: cell.passed,
 			failed: cell.failed,
 			unanalyzed: cell.unanalyzed,
-			stale: cell.stale,
+			superseded: cell.superseded,
 		})),
 		excludedRuns: ordered.flatMap((cell) =>
 			cell.excluded.map((excluded) => ({

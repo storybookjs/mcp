@@ -346,9 +346,8 @@ beats its env var.
 `--experiments` and `--evals` have alternative names to account for how we talk about them in the day to day (`--cases` and `--flows`).
 These options take comma-separated values. Each value can be a full name, or a glob pattern. For evals, a number can also be passed.
 
-The same options drive both `pnpm eval:agentic-ref:dry` and `pnpm results:analyze`,
-env fallbacks included — so one exported selection narrows a run and the analysis
-that follows it alike. `results:analyze` adds `--since <ISO date>`, `--latest`,
+The same options drive `pnpm eval:agentic-ref:dry`, `pnpm results:analyze` and
+`pnpm results:compare`. `results:analyze` adds `--since <ISO date>`, `--latest`,
 `--recompute`, `--superseded` and the `--general`/`--complexity`/`--coverage`
 table flags, each with the same `AGENTIC_REF_` fallback.
 
@@ -392,19 +391,29 @@ overrides).
 Compares a control case against treatment cases over recorded run artifacts:
 per-metric OLS estimates with HC3 robust errors, Benjamini–Hochberg FDR
 verdicts at 5%, and ECDF curves. Reproducible: everything derives from
-`results/` alone. Design: `docs/superpowers/specs/2026-08-10-agentic-ref-analysis-pipeline-design.md`.
+`results/` alone.
 
 ```shell
-pnpm results:compare:setup                  # one-time: installs uv + Python deps
+pnpm results:compare:init                   # one-time: installs uv + Python deps
 pnpm results:compare                        # control-none vs all cases, auto workflows
 pnpm results:compare --cases=do-dont --workflows=701          # one pair, one workflow
 pnpm results:compare --cases=do-dont,full --workflows=701,703 # aggregation mode
+pnpm results:compare --plan=1-levels-create                   # one plan's cases and workflows
 pnpm results:compare --min-runs=5 --all-batches               # quick look, pooled batches
 ```
 
+`--plan` scopes the comparison to one collection plan (`plans/<name>.plan.ts`,
+by name or path) instead of every case with data, and gates cells at the
+plan's target sample size unless `--min-runs` overrides it.
+
+Which stored runs count is decided the same way the plan runner decides what
+to reuse: a run whose measurement differs from what its (experiment, eval)
+pair measures today is superseded and set aside.
+
 Output lands in `comparisons/<slug>/`: `report.md`, `estimates.csv|json`,
-`curves/`, `dataset.csv`, `manifest.json`. When data is missing or analyzed
-by an older metrics version, the command exits and prints the exact
+`curves/`, `dataset.csv`, `manifest.json`. When usable data is missing —
+never collected, superseded, or not yet analyzed by the current metrics
+code — the command exits and prints the exact
 `pnpm eval:agentic-ref` / `pnpm results:analyze` commands to run.
 
 ### View Results

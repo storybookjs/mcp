@@ -28,12 +28,13 @@ describe('remediationCommands', () => {
 			remediationCommands([
 				{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
 				{ case: DO_DONT, workflow: '701-new-ui-flow', have: 3, need: 10, reason: 'missing-runs' },
-				{ case: FULL, workflow: '701-new-ui-flow', have: 2, need: 10, reason: 'stale-analysis' },
+				{ case: FULL, workflow: '701-new-ui-flow', have: 2, need: 10, reason: 'superseded-runs' },
 			]),
 		).toEqual([
 			'AGENTIC_REF_FLOW=701-new-ui-flow,703-fix-bug-flow AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref agentic-ref-cc-do-dont-opus-high',
+			'AGENTIC_REF_FLOW=701-new-ui-flow AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref agentic-ref-cc-full-opus-high',
 			'pnpm results:analyze --experiment=agentic-ref-cc-do-dont-opus-high',
-			'pnpm results:analyze --recompute --experiment=agentic-ref-cc-full-opus-high',
+			'pnpm results:analyze --experiment=agentic-ref-cc-full-opus-high',
 		]);
 	});
 
@@ -56,15 +57,21 @@ describe('remediationCommands', () => {
 		]);
 	});
 
-	it('gets a collect command and a recompute command, not a duplicate analyze line, when an experiment has both missing-runs and stale gaps', () => {
+	it('collects both workflows in one command when an experiment has missing-runs and superseded-runs gaps', () => {
 		expect(
 			remediationCommands([
 				{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
-				{ case: DO_DONT, workflow: '701-new-ui-flow', have: 4, need: 10, reason: 'stale-analysis' },
+				{
+					case: DO_DONT,
+					workflow: '701-new-ui-flow',
+					have: 4,
+					need: 10,
+					reason: 'superseded-runs',
+				},
 			]),
 		).toEqual([
-			'AGENTIC_REF_FLOW=703-fix-bug-flow AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref agentic-ref-cc-do-dont-opus-high',
-			'pnpm results:analyze --recompute --experiment=agentic-ref-cc-do-dont-opus-high',
+			'AGENTIC_REF_FLOW=701-new-ui-flow,703-fix-bug-flow AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref agentic-ref-cc-do-dont-opus-high',
+			'pnpm results:analyze --experiment=agentic-ref-cc-do-dont-opus-high',
 		]);
 	});
 

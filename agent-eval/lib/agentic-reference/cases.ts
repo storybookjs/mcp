@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url';
 
 import type { ExperimentConfig } from '@vercel/agent-eval';
 import type { EvalAgent, EvalIntegration, McpServerSpec } from '../templates.ts';
-import { AGENT_NAME_PARTS, agenticRefExperiment } from './experiment.ts';
+import { EXPERIMENT_NAME_PREFIX } from './constants.ts';
+import { agenticRefExperiment } from './experiment.ts';
 import type { StorybookMcpPackageSpec } from './local-mcp.ts';
 import { resolveEvalSelection } from './selection.ts';
+import { AGENT_NAME_PARTS, shortNameOf } from './utils.ts';
 
 /** The active eval list; every case runs all of them unless it specifies its own `evals`. */
 
@@ -152,27 +154,19 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 /** The single control every comparison runs against unless --control overrides it. */
 export const DEFAULT_CONTROL_CASE = 'cc-control-none-opus-high';
 
+/** Experiment names the generated stubs (and results directories) carry. */
+export function knownExperimentNames(): string[] {
+	return AGENTIC_REF_CASES.map(
+		(agenticRefCase) => `${EXPERIMENT_NAME_PREFIX}${agenticRefCase.name}`,
+	);
+}
+
 // Duplicate names would make agenticRefCaseExperiment always pick the first
 // match and collide generated stubs, results directories, and fingerprints.
 const caseNames = AGENTIC_REF_CASES.map((agenticRefCase) => agenticRefCase.name);
 const duplicateNames = [...new Set(caseNames.filter((name, i) => caseNames.indexOf(name) !== i))];
 if (duplicateNames.length > 0) {
 	throw new Error(`AGENTIC_REF_CASES: duplicate case names: ${duplicateNames.join(', ')}`);
-}
-
-// comparison/resolve.ts derives each case's shortName the same way (strip any
-// agent's prefix/suffix pair); duplicated locally rather than imported
-// because resolve.ts imports AGENTIC_REF_CASES from this module, and pulling
-// shortNameOf back in here would create a cycle.
-function shortNameOf(caseName: string): string {
-	for (const { prefix, modelSuffix } of Object.values(AGENT_NAME_PARTS)) {
-		const head = `${prefix}-`;
-		const tail = `-${modelSuffix}`;
-		if (caseName.startsWith(head) && caseName.endsWith(tail)) {
-			return caseName.slice(head.length, -tail.length);
-		}
-	}
-	return caseName;
 }
 
 // Two cases sharing a derived shortName would be indistinguishable in

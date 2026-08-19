@@ -1,35 +1,74 @@
+// The compare CLI's grammar, on the shared selection vocabulary
+// (lib/agentic-reference/selection.ts): --cases/--experiments and
+// --workflows/--evals are the same flags the runner and analyzer take, with
+// the same comma splitting and AGENTIC_REF_* environment fallbacks.
+import { selectionFlags } from '../selection.ts';
+
 export interface CompareOptions {
 	control: string | undefined;
-	cases: string | undefined;
-	workflows: string | undefined;
-	minRuns: number;
+	/** Treatment cases; empty means every case with recorded data. */
+	cases: string[];
+	/** Workflows; empty means auto-select the complete ones. */
+	workflows: string[];
+	/** Plan config to scope the comparison to, by path or bare plan name. */
+	plan: string | undefined;
+	/** Unset means: the plan's target sample size, then 10. */
+	minRuns: number | undefined;
 	allBatches: boolean;
 	out: string | undefined;
 }
 
-export function parseCompareArgs(argv: string[]): CompareOptions {
-	const options: CompareOptions = {
-		control: undefined,
-		cases: undefined,
-		workflows: undefined,
-		minRuns: 10,
-		allBatches: false,
-		out: undefined,
+/**
+ * The compare CLI's parser, exposed apart from parseCompareArgs so tests can
+ * chain test-friendly failure handling before parsing.
+ */
+export function compareParser(argv: readonly string[], env?: NodeJS.ProcessEnv) {
+	const flags = selectionFlags(env);
+	return flags.parser(
+		argv,
+		{ scriptName: 'results:compare', usage: 'Usage: pnpm results:compare [flags]' },
+		{
+			control: flags.text('control', 'Control case (default cc-control-none-opus-high)'),
+			experiments: {
+				...flags.experiments,
+				describe: 'Treatment cases to compare, by name, or "all" (default: every case with data)',
+			},
+			evals: {
+				...flags.evals,
+				describe: 'Workflows to compare, by name or number (default: auto-select complete ones)',
+			},
+			plan: flags.text('plan', "Compare one collection plan's cases and workflows (name or path)"),
+			minRuns: flags.count(
+				'minRuns',
+				"Usable runs required per cell (default: the plan's runs, then 10)",
+			),
+			allBatches: flags.switch(
+				'allBatches',
+				'Pool runs across timestamp batches instead of the latest',
+			),
+			out: flags.text('out', 'Output directory (default comparisons/<slug>)'),
+		},
+	);
+}
+
+type ParsedCompareArgs = ReturnType<ReturnType<typeof compareParser>['parseSync']>;
+
+/** The parsed flags in the comparison pipeline's vocabulary. */
+export function toCompareOptions(parsed: ParsedCompareArgs): CompareOptions {
+	return {
+		control: parsed.control,
+		cases: parsed.experiments,
+		workflows: parsed.evals,
+		plan: parsed.plan,
+		minRuns: parsed.minRuns,
+		allBatches: parsed.allBatches,
+		out: parsed.out,
 	};
-	for (const arg of argv) {
-		const [flag, value] = arg.split('=');
-		if (flag === '--all-batches') options.allBatches = true;
-		else if (flag === '--control' && value) options.control = value;
-		else if (flag === '--cases' && value) options.cases = value;
-		else if (flag === '--workflows' && value) options.workflows = value;
-		else if (flag === '--out' && value) options.out = value;
-		else if (flag === '--min-runs' && value) {
-			const parsed = Number.parseInt(value, 10);
-			if (!Number.isInteger(parsed) || parsed < 1) {
-				throw new Error(`--min-runs must be a positive integer; received "${value}"`);
-			}
-			options.minRuns = parsed;
-		} else throw new Error(`Unknown argument "${arg}"`);
-	}
-	return options;
+}
+
+export function parseCompareArgs(
+	argv: string[],
+	env: NodeJS.ProcessEnv = process.env,
+): CompareOptions {
+	return toCompareOptions(compareParser(argv, env).parseSync());
 }

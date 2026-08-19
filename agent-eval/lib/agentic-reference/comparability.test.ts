@@ -5,8 +5,9 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
-	countCurrentRuns,
+	describeStoredRun,
 	groupComparableRuns,
+	isCurrentRun,
 	isCurrentSample,
 	parseResultTimestamp,
 	readSampleMeasurement,
@@ -91,23 +92,45 @@ describe('reading a stored sample', () => {
 		expect(readSampleMeasurement(join(root, 'nowhere'), CELL)).toBeNull();
 	});
 
-	it('counts a sample that measures what its cell measures today', () => {
+	it('reads a sample that measures what its cell measures today as current', () => {
 		const sample = writeSample(currentRef(), 3);
 		expect(isCurrentSample(sample, CELL)).toBe(true);
-		expect(countCurrentRuns(sample, CELL)).toBe(3);
 	});
 
 	// The whole point of the bundle: a re-tag of one tree is not a new tree.
-	it('counts a sample pinned to a bundled ref as current', () => {
+	it('reads a sample pinned to a bundled ref as current', () => {
 		expect(isCurrentSample(writeSample('refs/tags/agentic-reference/droppy-70pc-v2'), CELL)).toBe(
 			true,
 		);
 	});
 
-	it('does not count a sample pinned to another tree', () => {
+	it('reads a sample pinned to another tree as superseded', () => {
 		const sample = writeSample('refs/tags/agentic-reference/base-ui-v1', 4);
 		expect(isCurrentSample(sample, CELL)).toBe(false);
-		expect(countCurrentRuns(sample, CELL)).toBe(0);
+	});
+
+	it('reads a run of the current measurement as current', () => {
+		const runDir = join(writeSample(currentRef()), 'run-1');
+		expect(isCurrentRun(runDir, CELL)).toBe(true);
+	});
+
+	it('reads a run pinned to another tree as not current', () => {
+		const sample = writeSample('refs/tags/agentic-reference/base-ui-v1');
+		expect(isCurrentRun(join(sample, 'run-1'), CELL)).toBe(false);
+	});
+
+	it('describes a run with the measurement it recorded', () => {
+		const described = describeStoredRun(join(writeSample(currentRef()), 'run-1'), CELL);
+		expect(described.current).toBe(true);
+		expect(described.measurement).toMatchObject({
+			mcp: 'yannbf/droppy-ds#experiment/full',
+		});
+	});
+
+	it('describes a run whose result.json is unreadable as recording no measurement', () => {
+		const runDir = join(writeSample(currentRef()), 'run-1');
+		writeFileSync(join(runDir, 'result.json'), '{not json');
+		expect(describeStoredRun(runDir, CELL)).toEqual({ measurement: null, current: false });
 	});
 });
 

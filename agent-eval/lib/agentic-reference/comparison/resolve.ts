@@ -1,7 +1,8 @@
 import { readdirSync } from 'node:fs';
 
 import { AGENTIC_REF_CASES } from '../cases.ts';
-import { AGENT_NAME_PARTS } from '../experiment.ts';
+import { EXPERIMENT_NAME_PREFIX } from '../constants.ts';
+import { shortNameOf } from '../utils.ts';
 
 export interface ResolvedCase {
 	caseName: string;
@@ -9,24 +10,10 @@ export interface ResolvedCase {
 	shortName: string;
 }
 
-const EXPERIMENT_PREFIX = 'agentic-ref-';
-
-/** cc-do-dont-opus-high -> do-dont, by stripping any agent's prefix/suffix pair. */
-function shortNameOf(caseName: string): string {
-	for (const { prefix, modelSuffix } of Object.values(AGENT_NAME_PARTS)) {
-		const head = `${prefix}-`;
-		const tail = `-${modelSuffix}`;
-		if (caseName.startsWith(head) && caseName.endsWith(tail)) {
-			return caseName.slice(head.length, -tail.length);
-		}
-	}
-	return caseName;
-}
-
 function resolvedCases(): ResolvedCase[] {
 	return AGENTIC_REF_CASES.map((c) => ({
 		caseName: c.name,
-		experiment: `${EXPERIMENT_PREFIX}${c.name}`,
+		experiment: `${EXPERIMENT_NAME_PREFIX}${c.name}`,
 		shortName: shortNameOf(c.name),
 	}));
 }
@@ -47,17 +34,17 @@ export function resolveCase(input: string): ResolvedCase {
 }
 
 export function resolveTreatments(
-	input: string | undefined,
+	tokens: readonly string[],
 	control: ResolvedCase,
 	experimentsWithData: string[],
 ): ResolvedCase[] {
-	if (input === undefined || input === 'all') {
+	if (tokens.length === 0 || (tokens.length === 1 && tokens[0] === 'all')) {
 		return resolvedCases()
 			.filter((c) => c.caseName !== control.caseName)
 			.filter((c) => experimentsWithData.includes(c.experiment))
 			.sort((a, b) => a.caseName.localeCompare(b.caseName));
 	}
-	const treatments = input.split(',').map((name) => resolveCase(name.trim()));
+	const treatments = tokens.map((name) => resolveCase(name));
 	if (treatments.some((c) => c.caseName === control.caseName)) {
 		throw new Error(`The control case "${control.shortName}" cannot also be a treatment.`);
 	}
@@ -77,11 +64,10 @@ export function knownWorkflows(evalsDir: string): string[] {
 		.sort();
 }
 
-export function resolveWorkflows(input: string | undefined, known: string[]): string[] | null {
-	if (input === undefined) return null;
-	if (input === 'all') return [...known];
-	const resolved = input.split(',').map((raw) => {
-		const name = raw.trim();
+export function resolveWorkflows(tokens: readonly string[], known: string[]): string[] | null {
+	if (tokens.length === 0) return null;
+	if (tokens.length === 1 && tokens[0] === 'all') return [...known];
+	const resolved = tokens.map((name) => {
 		const matches = known.filter((w) => w === name || w.startsWith(`${name}-`));
 		if (matches.length === 1) return matches[0]!;
 		throw new Error(
@@ -91,6 +77,23 @@ export function resolveWorkflows(input: string | undefined, known: string[]): st
 		);
 	});
 	return [...new Set(resolved)].sort();
+}
+
+/**
+ * What a resolved plan asks results:compare to look at: its arms besides the
+ * control become the treatments, its evals the workflow list.
+ */
+export function resolvePlanScope(
+	plan: { experiments: readonly string[]; evals: readonly string[] },
+	control: ResolvedCase,
+): { treatments: ResolvedCase[]; workflows: string[] } {
+	const treatments = plan.experiments
+		.filter((experiment) => experiment !== control.experiment)
+		.map((experiment) => resolveCase(experiment));
+	if (treatments.length === 0) {
+		throw new Error(`The plan names no case besides the control "${control.shortName}".`);
+	}
+	return { treatments, workflows: [...plan.evals].sort() };
 }
 
 /** Deterministic output-directory slug for a comparison. */

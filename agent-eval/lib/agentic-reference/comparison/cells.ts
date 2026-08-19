@@ -1,13 +1,14 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { parseTimestamp, type Run } from '../../post-analysis/runs.ts';
+import { isCurrentRun } from '../comparability.ts';
+import { parseTimestamp, type Run } from '../../post-analysis/discovery.ts';
 import { isCurrentCacheEntry, readCacheEntry } from '../../post-analysis/run-cache.ts';
 import { readJson } from '../../utils/files.ts';
 import type { ResolvedCase } from './resolve.ts';
 
 export type ExclusionReason = 'infra-failure' | 'malformed-analysis';
-export type GapReason = 'missing-runs' | 'unanalyzed' | 'stale-analysis';
+export type GapReason = 'missing-runs' | 'unanalyzed' | 'superseded-runs';
 
 export interface ExcludedRun {
 	runDir: string;
@@ -27,7 +28,8 @@ export interface Cell {
 	runs: UsableRun[];
 	excluded: ExcludedRun[];
 	unanalyzed: number;
-	stale: number;
+	/** Runs measuring something this cell no longer measures (see ../comparability.ts). */
+	superseded: number;
 	passed: number;
 	failed: number;
 }
@@ -50,6 +52,10 @@ interface BuildOptions {
 }
 
 function classify(run: Run, metricsVersion: number | undefined, cell: Cell) {
+	if (!isCurrentRun(run.runDir, run)) {
+		cell.superseded += 1;
+		return;
+	}
 	const result = readJson<{ status?: string }>(join(run.runDir, 'result.json'));
 	if (result?.status === 'passed') cell.passed += 1;
 	else if (result?.status === 'failed') cell.failed += 1;
@@ -67,8 +73,10 @@ function classify(run: Run, metricsVersion: number | undefined, cell: Cell) {
 		cell.excluded.push({ runDir: run.runDir, reason: 'malformed-analysis' });
 		return;
 	}
+	// An analysis stamped by older metrics code counts as not yet analyzed:
+	// the analyzer's version-aware cache recomputes it on a plain pass.
 	if (!isCurrentCacheEntry(readCacheEntry(run.runDir), metricsVersion)) {
-		cell.stale += 1;
+		cell.unanalyzed += 1;
 		return;
 	}
 	cell.runs.push({ run, analysis });
@@ -83,7 +91,7 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 				(run) => run.experiment === resolvedCase.experiment && run.evalName === workflow,
 			);
 			const batches = [...new Set(candidates.map((run) => run.timestamp))].sort(
-				(a, b) => parseTimestamp(a) - parseTimestamp(b),
+				(a, b) => parseTimestamp(a).getTime() - parseTimestamp(b).getTime(),
 			);
 			const batch = options.allBatches ? 'all' : (batches.at(-1) ?? 'none');
 			const selected = options.allBatches
@@ -96,7 +104,7 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 				runs: [],
 				excluded: [],
 				unanalyzed: 0,
-				stale: 0,
+				superseded: 0,
 				passed: 0,
 				failed: 0,
 			};
@@ -106,14 +114,15 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 			cells.push(cell);
 			if (cell.runs.length < options.minRuns) {
 				const shortfall = options.minRuns - cell.runs.length;
+				// Re-analyzing is free, collecting is not: name unanalyzed when the
+				// analyzer alone could close the gap, superseded-runs when stored
+				// data was disqualified, missing-runs when there never was enough.
 				const reason: GapReason =
-					cell.stale >= shortfall
-						? 'stale-analysis'
-						: cell.unanalyzed >= shortfall
-							? 'unanalyzed'
-							: cell.stale + cell.unanalyzed >= shortfall
-								? 'stale-analysis'
-								: 'missing-runs';
+					cell.unanalyzed >= shortfall
+						? 'unanalyzed'
+						: cell.superseded + cell.unanalyzed >= shortfall
+							? 'superseded-runs'
+							: 'missing-runs';
 				gaps.push({
 					case: resolvedCase,
 					workflow,

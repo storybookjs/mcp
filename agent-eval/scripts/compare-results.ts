@@ -2,13 +2,17 @@
 // recorded run artifacts and produces estimates, FDR verdicts, and curves.
 // Orchestration only: resolution/gating/emission logic lives in
 // lib/agentic-reference/comparison/, statistics in scripts/compare_stats.py.
-// Spec: docs/superpowers/specs/2026-08-10-agentic-ref-analysis-pipeline-design.md
+// --plan scopes the comparison to one collection plan's cases and workflows.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { DEFAULT_CONTROL_CASE } from '#lib/agentic-reference/cases';
+import {
+	AGENTIC_REF_EVAL_REGISTRY,
+	DEFAULT_CONTROL_CASE,
+	knownExperimentNames,
+} from '#lib/agentic-reference/cases';
 import { COMPARISON_METRICS } from '#lib/agentic-reference/comparison-metrics';
 import { autoSelectWorkflows, buildCells } from '#lib/agentic-reference/comparison/cells';
 import { formatGapTable, remediationCommands } from '#lib/agentic-reference/comparison/commands';
@@ -22,13 +26,17 @@ import {
 	comparisonSlug,
 	knownWorkflows,
 	resolveCase,
+	resolvePlanScope,
 	resolveTreatments,
 	resolveWorkflows,
+	type ResolvedCase,
 } from '#lib/agentic-reference/comparison/resolve';
 import { ansiStyle } from '#lib/agentic-reference/comparison/style';
 import { findUv } from '#lib/agentic-reference/comparison/uv';
+import { loadPlanConfig, resolvePlanPath } from '#lib/agentic-reference/plan-config';
 import { postAnalysis } from '#lib/agentic-reference/post-analysis';
-import { findRuns } from '#lib/post-analysis/runs';
+import { resolveRunPlan } from '#lib/agentic-reference/run-plan';
+import { findRuns } from '#lib/post-analysis/discovery';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = process.env.AGENT_EVAL_RESULTS_DIR ?? join(ROOT, 'results');
@@ -49,54 +57,90 @@ function messageOf(error: unknown): string {
 async function main() {
 	const options = parseCompareArgs(process.argv.slice(2));
 	const metricsVersion = postAnalysis.metricsVersion;
-	const runs = findRuns(RESULTS_DIR);
+	// Runs without a project tree hold nothing to measure (see
+	// lib/agentic-reference/collected-runs.ts).
+	const runs = findRuns(RESULTS_DIR).filter((run) => run.collected);
 
 	const control = resolveCase(options.control ?? DEFAULT_CONTROL_CASE);
-	const experimentsWithData = [...new Set(runs.map((run) => run.experiment))];
-	const treatments = resolveTreatments(options.cases, control, experimentsWithData);
+
+	let plan: { treatments: ResolvedCase[]; workflows: string[]; runs: number; path: string } | null =
+		null;
+	if (options.plan !== undefined) {
+		if (options.cases.length > 0 || options.workflows.length > 0) {
+			fail(
+				'--plan already names the cases and workflows; drop --cases/--workflows ' +
+					'(or unset AGENTIC_REF_EXPERIMENTS/AGENTIC_REF_EVALS).',
+			);
+		}
+		const path = resolvePlanPath(options.plan);
+		const resolved = resolveRunPlan(await loadPlanConfig(path), {
+			experiments: knownExperimentNames(),
+			evals: AGENTIC_REF_EVAL_REGISTRY,
+		});
+		const repoRelative = relative(ROOT, path);
+		plan = {
+			...resolvePlanScope(resolved, control),
+			runs: resolved.plan.runs,
+			path: repoRelative.startsWith('..') ? path : repoRelative,
+		};
+	}
+	// The plan's target sample size is the gate it was collected for.
+	const minRuns = options.minRuns ?? plan?.runs ?? 10;
+
+	let treatments: ResolvedCase[];
+	if (plan !== null) {
+		treatments = plan.treatments;
+	} else {
+		const experimentsWithData = [...new Set(runs.map((run) => run.experiment))];
+		treatments = resolveTreatments(options.cases, control, experimentsWithData);
+	}
 	if (treatments.length === 0) {
 		fail('No treatment cases with recorded data. Collect runs first: pnpm eval:agentic-ref');
 	}
 	const cases = [control, ...treatments];
 
-	const known = knownWorkflows(EVALS_DIR);
-	const explicit = resolveWorkflows(options.workflows, known);
 	let workflows: string[];
-	if (explicit === null) {
-		const candidates = [...new Set(runs.map((run) => run.evalName))]
-			.filter((name) => /^7\d\d-/.test(name))
-			.sort();
-		const auto = autoSelectWorkflows({
-			runs,
-			cases,
-			candidates,
-			minRuns: options.minRuns,
-			allBatches: options.allBatches,
-			metricsVersion,
-		});
-		if (auto.skipped.length > 0) {
-			console.log(outStyle.bold('Skipping the following workflows:'));
-			for (const { workflow } of auto.skipped) console.log(`  ${workflow}`);
-		}
-		if (auto.selected.length === 0) {
-			const gaps = auto.skipped.flatMap((s) => s.gaps);
-			console.error(`${errStyle.bold('No workflow has enough data for every selected case.')}\n`);
-			console.error(formatGapTable(gaps, errStyle));
-			console.error(`\n${errStyle.bold('Collect the missing data:')}\n`);
-			for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
-			process.exit(1);
-		}
-		workflows = auto.selected;
-		console.log(`${outStyle.bold('Auto-selected workflows:')} ${workflows.join(', ')}`);
+	if (plan !== null) {
+		workflows = plan.workflows;
 	} else {
-		workflows = explicit;
+		const known = knownWorkflows(EVALS_DIR);
+		const explicit = resolveWorkflows(options.workflows, known);
+		if (explicit === null) {
+			const candidates = [...new Set(runs.map((run) => run.evalName))]
+				.filter((name) => /^7\d\d-/.test(name))
+				.sort();
+			const auto = autoSelectWorkflows({
+				runs,
+				cases,
+				candidates,
+				minRuns,
+				allBatches: options.allBatches,
+				metricsVersion,
+			});
+			if (auto.skipped.length > 0) {
+				console.log(outStyle.bold('Skipping the following workflows:'));
+				for (const { workflow } of auto.skipped) console.log(`  ${workflow}`);
+			}
+			if (auto.selected.length === 0) {
+				const gaps = auto.skipped.flatMap((s) => s.gaps);
+				console.error(`${errStyle.bold('No workflow has enough data for every selected case.')}\n`);
+				console.error(formatGapTable(gaps, errStyle));
+				console.error(`\n${errStyle.bold('Collect the missing data:')}\n`);
+				for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
+				process.exit(1);
+			}
+			workflows = auto.selected;
+			console.log(`${outStyle.bold('Auto-selected workflows:')} ${workflows.join(', ')}`);
+		} else {
+			workflows = explicit;
+		}
 	}
 
 	const { cells, gaps } = buildCells({
 		runs,
 		cases,
 		workflows,
-		minRuns: options.minRuns,
+		minRuns,
 		allBatches: options.allBatches,
 		metricsVersion,
 	});
@@ -113,8 +157,9 @@ async function main() {
 		treatments,
 		workflows,
 		mode: workflows.length > 1 ? 'aggregate' : 'single-workflow',
-		minRuns: options.minRuns,
+		minRuns,
 		allBatches: options.allBatches,
+		...(plan === null ? {} : { plan: plan.path }),
 	};
 	const outDir = resolve(
 		options.out ?? join(ROOT, 'comparisons', comparisonSlug(control, treatments, workflows)),
@@ -149,7 +194,7 @@ async function main() {
 	if (uv === null) {
 		console.error(`Dataset and manifest written to ${stagingDir}.`);
 		console.error('uv is missing, so the statistics stage cannot run here.');
-		console.error('Run `pnpm results:compare:setup`, or elsewhere:');
+		console.error('Run `pnpm results:compare:init`, or elsewhere:');
 		console.error(`  uv run --frozen scripts/compare_stats.py ${stagingDir}`);
 		process.exit(1);
 	}

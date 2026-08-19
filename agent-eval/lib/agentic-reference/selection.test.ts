@@ -69,9 +69,12 @@ describe('flag parsing', () => {
 		expect(parse([spelling, 'x'])[canonical]).toEqual(['x']);
 	});
 
-	it.each([['--flows'], ['--flow'], ['--eval']])('resolves %s to evals', (spelling) => {
-		expect(parse([spelling, 'x']).evals).toEqual(['x']);
-	});
+	it.each([['--flows'], ['--flow'], ['--eval'], ['--workflows'], ['--workflow']])(
+		'resolves %s to evals',
+		(spelling) => {
+			expect(parse([spelling, 'x']).evals).toEqual(['x']);
+		},
+	);
 
 	it('reads a switch, its absence, and its negation', () => {
 		expect(parse([]).force).toBe(false);

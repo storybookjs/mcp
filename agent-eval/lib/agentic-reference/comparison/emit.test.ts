@@ -43,6 +43,7 @@ function cell(
 				timestamp: '2026-08-05T00-00-00.000Z',
 				evalName: workflow,
 				run: i + 1,
+				collected: true,
 			},
 			analysis: { speed: { durationSeconds: v } },
 		})),
@@ -50,7 +51,7 @@ function cell(
 			{ runDir: `/root/results/${resolvedCase.experiment}/x/run-9`, reason: 'infra-failure' },
 		],
 		unanalyzed: 0,
-		stale: 0,
+		superseded: 0,
 		passed: values.length,
 		failed: 1,
 	};
@@ -114,9 +115,22 @@ describe('manifestJson', () => {
 		]);
 		expect(parsed.family[0]).toEqual({ metric: 'durationSeconds', treatment: 'do-dont' });
 		expect(parsed.family).toHaveLength(COMPARISON_METRICS.length);
+		expect(parsed.spec.plan).toBeNull();
+		expect(parsed.cells[0]).toMatchObject({ superseded: 0, unanalyzed: 0 });
 		expect(parsed.excludedRuns[0].path.startsWith('results/')).toBe(true);
 		expect(json.endsWith('\n')).toBe(true);
 		expect(JSON.stringify(parsed, null, 2) + '\n').toBe(json);
+	});
+
+	it('records the plan a scoped comparison came from', () => {
+		const json = manifestJson({
+			spec: { ...SPEC, plan: 'plans/1-levels-edit.plan.ts' },
+			metrics: COMPARISON_METRICS,
+			cells: [cell(CONTROL, [7])],
+			agentEvalRoot: '/root',
+			provenance: {},
+		});
+		expect(JSON.parse(json).spec.plan).toBe('plans/1-levels-edit.plan.ts');
 	});
 
 	it('produces identical output for identical input (repeatability)', () => {
