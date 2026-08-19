@@ -50,15 +50,26 @@ the same fold with all multipliers at 1 — the two metrics share one census.
 
 ### Degradation invariant
 
-Multiplication only happens where a usage resolves to a `local` identity whose
-key matches an owner bucket. Everything else — subsetting wrappers already
-collapsed to `ds` by identify, externals, unresolved tags — behaves exactly as
-today. The weighted metric never reports _less_ than the static one for a
-component's body counted at its declaration site — except where fractional
-conditional weights propagate: a usage reached only behind a conditional
-carries a multiplier below 1, so a component used at weight 0.5 legitimately
-halves its body's instances below the static count (pinned by a scenario
-test).
+Multiplication only happens where a usage resolves to a `local` or
+`wrapped-ds` identity whose key matches an owner bucket. Everything else —
+externals, unresolved tags — behaves exactly as today. The weighted metric
+never reports _less_ than the static one for a component's body counted at
+its declaration site — except where fractional conditional weights
+propagate: a usage reached only behind a conditional carries a multiplier
+below 1, so a component used at weight 0.5 legitimately halves its body's
+instances below the static count (pinned by a scenario test).
+
+A subsetting wrapper (a local component that renders a single DS component
+as a restricted passthrough, see Architecture section 1) is a `local`
+identity for this graph in its own right: usages of it feed its own owner
+bucket exactly like any other local component, so it gets a real
+usage-derived multiplier instead of flooring at 1, and any other local JSX
+it renders — a slot passed as a hardcoded prop (`footer={<Footer/>}`), for
+instance — inherits that multiplier rather than the floor. Statically it
+still resolves straight to the DS identity it subsets, unchanged from before
+this graph existed; the split is which of its two identities — the DS one
+or its own local one — a given aggregate resolves it to (see Architecture
+section 1, `wrapped-ds`).
 
 ### Documented limitations (not solved)
 
@@ -66,7 +77,10 @@ test).
 - JSX-valued constants referenced by identifier (`{icon}`) count at their
   declaration site ×1 (module bucket), not per reference.
 - Render-prop JSX (`<Route element={<Page/>}/>`) counts at its syntactic
-  site × the enclosing owner's multiplier, which is dynamically correct.
+  site × the enclosing owner's multiplier, which is dynamically correct —
+  including when the enclosing owner is itself a subsetting wrapper, now
+  that a wrapper's own usages feed its owner bucket like any local
+  component's.
 - Function-scoped and object-literal member components under-attribute: a
   function-scoped component, or an object-literal member — e.g. `Plain` in
   `const AppUI = { Plain: () => <div/> }` — used N times still counts its
@@ -129,6 +143,34 @@ Beside those, the census emits:
 If a declaration name collides with a property-assignment name in the same
 file (`const Header` + `Card.Header = …`), the buckets merge; rare and
 acceptable.
+
+#### `wrapped-ds`: subsetting wrappers resolve to two identities
+
+Identify resolves a subsetting wrapper (a local component whose body forwards
+props to a single DS root, and either no children or its own `children`
+prop straight through — see `react/resolve.ts`) to a `wrapped-ds` identity,
+not directly to `ds`: the wrapper's own module/name, plus the DS identity it
+subsets. This is the one place static and instance aggregates read the same
+resolution differently rather than sharing one fold:
+
+- The usage edge (`owner → local key`) is recorded exactly as for `local`,
+  keyed by the wrapper's own identity — so the multiplier solver sees the
+  wrapper's usages and any other local JSX rooted at the same owner bucket
+  (a hardcoded slot child, say) shares its real multiplier instead of
+  flooring at 1.
+- The static totals, per-file totals, and per-identity `components` map
+  resolve `wrapped-ds` → `ds`, keyed by the DS identity — byte-identical to
+  what a direct `ds` resolution produced before this identity existed.
+- The per-owner bucket that feeds the instance fold (section 3) resolves the
+  same element `wrapped-ds` → `local` instead, keyed by the wrapper's own
+  identity: at the call site, the wrapper is counted as one of its own
+  render-tree nodes, not as a second copy of the DS node its body already
+  contributes (weighted) at its declaration site.
+
+A nested chain of wrappers (a subsetting wrapper whose forwarded root is
+itself another subsetting wrapper) follows through to the DS identity at the
+end of the chain, so static counts read the same as if every level had
+collapsed straight to `ds`, as before this identity existed.
 
 ### 2. `multipliers.ts`: shared solver (framework-agnostic, new)
 
@@ -215,10 +257,17 @@ Existing fixtures must pass unchanged (static behavior is frozen).
    multiply `Header`'s body.
 9. Children passthrough: `<LocalCard><DSButton/></LocalCard>` does not
    double-count the child.
-10. Subsetting wrapper (usages resolve `ds`): counts unchanged vs today.
+10. Subsetting wrapper (statics resolve `ds`, unchanged): its own usages now
+    feed its owner bucket like any local component, so its multiplier is
+    usage-derived rather than floored at 1.
 11. Loose module-level JSX: ×1.
 12. Inner (function-scoped) component: body attributes to enclosing owner.
 13. `export default function Page` naming: usages and owner key line up.
+14. Subsetting wrapper with a local slot child hardcoded into a prop
+    (`footer={<Footer/>}`): the child's multiplier equals the wrapper's, no
+    longer floored at 1 alongside it (the blind spot this revision fixes).
+15. A subsetting wrapper used from inside an already-multiplied caller:
+    multipliers compose through the wrapped-ds edge like any other chain.
 
 ## Review against PR #398/#399
 

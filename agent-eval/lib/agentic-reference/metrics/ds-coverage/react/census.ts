@@ -127,7 +127,10 @@ export function censusReactTree(
 			if (isNonRenderingIdentity(resolution)) return;
 
 			const owner = ownerKey(file.path, ownerName(element));
-			if (resolution.category === 'local') {
+			// A subsetting wrapper (`wrapped-ds`) is a local identity in its own
+			// right: usages feed its own owner bucket exactly like any other local
+			// component, so the multiplier solver sees them.
+			if (resolution.category === 'local' || resolution.category === 'wrapped-ds') {
 				edges.push({ from: owner, to: `${resolution.module}#${resolution.name}`, weight });
 			}
 			if (!counted) return;
@@ -165,6 +168,41 @@ export function censusReactTree(
 			}
 
 			add('component');
+
+			if (resolution.category === 'wrapped-ds') {
+				// Static aggregates resolve wrapped-ds -> ds: the same element the
+				// pre-collapsed `ds` resolution used to produce, keyed by the DS
+				// identity the wrapper subsets.
+				totals.ds += weight;
+				fileTotals.ds += weight;
+				const dsKey = `${resolution.ds.module}#${resolution.ds.name}`;
+				addComponent(components, dsKey, 'ds');
+
+				// Instance (weighted) aggregates resolve wrapped-ds -> local instead:
+				// the wrapper's own usages count as local render-tree nodes, so its
+				// owner bucket gets a real usage-derived multiplier (from the edge
+				// above) and any local JSX inside the wrapper's own body — slot
+				// children included — inherits it rather than flooring at 1.
+				bucket.totals.local += weight;
+				const localKey = `${resolution.module}#${resolution.name}`;
+				addComponent(bucket.components, localKey, 'local');
+
+				if (includeNodes) {
+					nodeList.push({
+						path: nextPath(element),
+						file: file.path,
+						line: file.sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1,
+						tag: elementTag(element),
+						category: 'ds',
+						module: resolution.ds.module,
+						name: resolution.ds.name,
+						weight,
+						props: propNames(element),
+						owner,
+					});
+				}
+				return;
+			}
 
 			if (
 				resolution.category === 'ds' ||

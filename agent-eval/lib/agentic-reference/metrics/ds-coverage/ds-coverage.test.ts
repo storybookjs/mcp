@@ -266,11 +266,13 @@ describe('identification through the module graph', () => {
 				'export const App = () => <SmallButton />',
 			].join('\n'),
 		});
-		// The subsetting wrapper still reaches the DS through the cyclic barrel.
+		// The subsetting wrapper still reaches the DS through the cyclic barrel,
+		// statically. Weighted, only the wrapper's own body renders a real
+		// Button; the use site is now a `local` SmallButton node.
 		expect(report.components['@ds/core#Button']).toEqual({
 			category: 'ds',
 			count: 2,
-			instances: 2,
+			instances: 1,
 		});
 	});
 
@@ -827,11 +829,14 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <SmallButton />',
 			].join('\n'),
 		});
-		// Both the wrapper's own render and the use site attribute to the DS.
+		// Both the wrapper's own render and the use site attribute to the DS,
+		// statically. Weighted, the use site is now the wrapper's own instance
+		// (a `local` node, credited to SmallButton's multiplier) rather than a
+		// second DS node: only the wrapper's own body renders a real Button.
 		expect(report.components['@ds/core#Button']).toEqual({
 			category: 'ds',
 			count: 2,
-			instances: 2,
+			instances: 1,
 		});
 	});
 
@@ -847,10 +852,13 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <SmallDanger />',
 			].join('\n'),
 		});
+		// Statically, each wrapper level and the use site all attribute to the
+		// DS. Weighted, only Small's own body renders a real Button — SmallDanger
+		// and its use site are both `local` nodes now.
 		expect(report.components['@ds/core#Button']).toEqual({
 			category: 'ds',
 			count: 3,
-			instances: 3,
+			instances: 1,
 		});
 	});
 
@@ -913,7 +921,9 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Panel>hi</Panel>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2, instances: 2 });
+		// Weighted, only Panel's own body renders a real Card; the use site is
+		// now a `local` Panel node instead of a second DS node.
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2, instances: 1 });
 	});
 
 	it('counts a wrapper that forwards props.children through as the DS component', () => {
@@ -929,7 +939,7 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Panel>hi</Panel>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2, instances: 2 });
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2, instances: 1 });
 	});
 
 	it('keeps a wrapper local when it decorates the forwarded children', () => {
@@ -1117,10 +1127,12 @@ describe('wrapper and styled attribution', () => {
 				'\n',
 			),
 		});
+		// Weighted, only Fancy's own body renders a real Button; the use site is
+		// now a `local` Fancy node.
 		expect(report.components['@ds/core#Button']).toEqual({
 			category: 'ds',
 			count: 2,
-			instances: 2,
+			instances: 1,
 		});
 	});
 
@@ -1771,6 +1783,32 @@ describe('instance weighting', () => {
 		expect(report.components['div']).toEqual({ category: 'host', count: 1, instances: 1 });
 	});
 
+	it('projects a member access through a subsetting wrapper onto the DS member', () => {
+		const report = analyze({
+			'src/Branded.tsx': [
+				"import { Card } from '@ds/core'",
+				'export const Branded = (props) => <Card {...props} />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Branded } from './Branded'",
+				'export const App = () => <main><Branded.Header /></main>',
+			].join('\n'),
+		});
+		// No `Branded.Header = …` assignment sits beside the declaration, so this
+		// falls past the compound-component check into the wrapped-ds member
+		// case: it resolves onto the DS member it subsets, never `unresolved`.
+		expect(report.components['@ds/core#Card.Header']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.nodes.unresolved).toBe(0);
+		// The member access resolves straight to `ds`, not `wrapped-ds`, so it
+		// behaves like any other ds member access: no edge into Branded's own
+		// bucket, and instances stay consistent with statics.
+		expect(report.instances.multipliers).toEqual({});
+	});
+
 	it('does not double-count children passed through a local component', () => {
 		const report = analyze({
 			'src/Card.tsx': 'export const Card = ({ children }) => <div>{children}</div>',
@@ -1784,7 +1822,7 @@ describe('instance weighting', () => {
 		expect(report.instances.nodes.ds).toBe(1);
 	});
 
-	it('leaves a subsetting wrapper exactly as the static census had it', () => {
+	it('multiplies a subsetting wrapper through its own usage sites, statics unchanged', () => {
 		const report = analyze({
 			'src/Branded.tsx': [
 				"import { DSButton } from '@ds/button'",
@@ -1795,14 +1833,118 @@ describe('instance weighting', () => {
 				'export const App = () => <main><Branded /><Branded /></main>',
 			].join('\n'),
 		});
-		// Usages resolve straight to `ds` (a subsetting wrapper), never to a
-		// `local` identity, so no edge targets Branded: its multiplier stays
-		// the default of 1 and instances equal static here — not a general
-		// "never less than static" guarantee (fractional weights can still
-		// drop instances below static elsewhere; see "propagates conditional
-		// halving into multipliers" above).
-		expect(report.instances.nodes).toEqual(report.nodes);
-		expect(report.instances.multipliers).toEqual({});
+		// Static: unchanged from a plain `ds` resolution — every usage of
+		// Branded is its own ds node (2), plus the wrapper's own DSButton (1).
+		expect(report.nodes).toEqual({
+			all: 4,
+			host: 1,
+			component: 3,
+			ds: 3,
+			external: 0,
+			local: 0,
+			unresolved: 0,
+		});
+		// Weighted: each `<Branded/>` usage now feeds Branded's own owner
+		// bucket as a `local` edge — the wrapper is used twice, so its
+		// multiplier is 2, not the floor of 1 a subsetting wrapper without
+		// this fix would keep. The two use sites themselves count as `local`
+		// nodes (2); only the wrapper's own DSButton, multiplied, counts `ds`.
+		expect(report.instances.multipliers).toEqual({ 'src/Branded.tsx#Branded': 2 });
+		expect(report.instances.nodes).toEqual({
+			all: 5,
+			host: 1,
+			component: 4,
+			ds: 2,
+			external: 0,
+			local: 2,
+			unresolved: 0,
+		});
+	});
+
+	it('gives a subsetting wrapper its usage-derived multiplier, and its local slot child inherits it', () => {
+		// The PageTemplate/Footer shape: a subsetting wrapper (forwards props to
+		// a single DS root) that also hardcodes a local component into one of
+		// that root's own props. Before this fix, PageTemplate collapsed
+		// straight to the DS identity, so no usage edge ever reached its own
+		// owner bucket — its multiplier floored at 1, and Footer floored with
+		// it despite PageTemplate being used 3 times.
+		const report = analyze({
+			'src/Footer.tsx': 'export const Footer = () => <footer>f</footer>',
+			'src/PageTemplate.tsx': [
+				"import { DSPage } from '@ds/page'",
+				"import { Footer } from './Footer'",
+				'export const PageTemplate = (props) => <DSPage {...props} footer={<Footer />} />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { PageTemplate } from './PageTemplate'",
+				'export const App = () => (',
+				'	<main>',
+				'		<PageTemplate />',
+				'		<PageTemplate />',
+				'		<PageTemplate />',
+				'	</main>',
+				')',
+			].join('\n'),
+		});
+		// Static: PageTemplate collapses to the DS identity at each of its 3
+		// usages plus its own declaration (4); the footer slot resolves to the
+		// local Footer, counted once, exactly at its syntactic site.
+		expect(report.components['@ds/page#DSPage']).toEqual({
+			category: 'ds',
+			count: 4,
+			instances: 3,
+		});
+		expect(report.components['src/Footer.tsx#Footer']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 3,
+		});
+		// Weighted: PageTemplate's 3 usages now feed its own owner bucket, so
+		// its multiplier is usage-derived (3), not floored at 1 — and Footer,
+		// rooted in that same bucket, inherits the identical multiplier.
+		expect(report.instances.multipliers).toEqual({
+			'src/PageTemplate.tsx#PageTemplate': 3,
+			'src/Footer.tsx#Footer': 3,
+		});
+		// The wrapper's own inner DS node (DSPage, counted once statically at
+		// PageTemplate's declaration) carries the wrapper's multiplier: 1 × 3.
+		expect(report.instances.nodes.ds).toBe(3);
+		expect(report.instances.nodes).toEqual({
+			all: 13,
+			host: 4,
+			component: 9,
+			ds: 3,
+			external: 0,
+			local: 6,
+			unresolved: 0,
+		});
+	});
+
+	it('composes a wrapper multiplier through an already-multiplied caller', () => {
+		const report = analyze({
+			'src/Branded.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Branded = (props) => <DSButton {...props} />',
+			].join('\n'),
+			'src/Row.tsx': [
+				"import { Branded } from './Branded'",
+				'export const Row = () => <div><Branded /><Branded /></div>',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Row } from './Row'",
+				'export const App = () => <main><Row /><Row /><Row /></main>',
+			].join('\n'),
+		});
+		// Row (used 3x) multiplies Branded (used 2x per Row): the wrapper's
+		// multiplier composes the two chained usage counts, not just its own
+		// immediate call count.
+		expect(report.instances.multipliers).toEqual({
+			'src/Row.tsx#Row': 3,
+			'src/Branded.tsx#Branded': 6,
+		});
+		// Branded's own DSButton, counted once statically, carries the full
+		// composed multiplier.
+		expect(report.instances.nodes.ds).toBe(6);
 	});
 
 	it('roots an entry-point render call at multiplier 1', () => {

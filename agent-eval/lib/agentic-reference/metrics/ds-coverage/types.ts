@@ -25,6 +25,11 @@ export interface DeclaredAt {
  * - `ds`: a component of a package matching the DS pattern
  * - `external`: a component of any other package
  * - `local`: a component the project defines itself
+ * - `wrapped-ds`: a local subsetting wrapper around a `ds` component (see
+ *   react/resolve.ts). It is a local identity in its own right — usages of
+ *   it feed the multiplier graph like any other local component — that also
+ *   remembers the `ds` identity it collapses to for the static census. Which
+ *   half applies is a per-consumer choice, not baked into the resolution.
  * - `unresolved`: statically unresolvable
  */
 export type Identity =
@@ -32,6 +37,12 @@ export type Identity =
 	| ({ category: 'ds'; module: string; name: string } & DeclaredAt)
 	| ({ category: 'external'; module: string; name: string } & DeclaredAt)
 	| ({ category: 'local'; module: string; name: string } & DeclaredAt)
+	| ({
+			category: 'wrapped-ds';
+			module: string;
+			name: string;
+			ds: { module: string; name: string };
+	  } & DeclaredAt)
 	| ({ category: 'unresolved'; reason: string; circular?: boolean } & DeclaredAt);
 
 /**

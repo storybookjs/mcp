@@ -366,7 +366,11 @@ function forwardsChildren(fn: ts.SignatureDeclaration, element: ts.JsxElement): 
  * local components as DS components, e.g. if the app defines a Button that
  * hardcodes `size="small"` on a DS Button, we still wanna count that as DS.
  * If the local function forwards props *and* its subtree to a single DS
- * component, it's evidence of a DS override and we return "DS".
+ * component, it's evidence of a DS override and we return `wrapped-ds`: a
+ * local identity that also remembers the DS target it collapses to, so
+ * usages of the wrapper still feed its own multiplier (see census.ts) while
+ * the static census keeps resolving it straight to the DS identity, exactly
+ * as a plain `ds` resolution would.
  */
 function analyzeFunctionComponent(
 	file: ModuleFile,
@@ -383,8 +387,14 @@ function analyzeFunctionComponent(
 		const forwardsProps = opening.attributes.properties.some(ts.isJsxSpreadAttribute);
 		if (forwardsProps && (!ts.isJsxElement(root) || forwardsChildren(fn, root))) {
 			const target = resolveJsxTag(file, opening.tagName, resolver);
-			if (target.category === 'ds') {
-				return target;
+			// The root tag can itself be a subsetting wrapper (nested wrappers,
+			// `SmallDanger` over `Small` over `Button`): follow through to the
+			// DS identity at the end of the chain rather than stopping one level
+			// short of it.
+			if (target.category === 'ds' || target.category === 'wrapped-ds') {
+				const ds =
+					target.category === 'ds' ? { module: target.module, name: target.name } : target.ds;
+				return { category: 'wrapped-ds', module: file.path, name, ds };
 			}
 		}
 	}
