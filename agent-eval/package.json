@@ -23,7 +23,7 @@
 		"results:prune": "node ./scripts/prune-incomplete-runs.ts",
 		"results:analyze": "pnpm gen:agentic-ref && node ./scripts/analyze-results.ts",
 		"results:compare": "pnpm gen:agentic-ref && node ./scripts/compare-results.ts",
-		"results:compare:init": "node ./scripts/setup-compare-stats.ts",
+		"results:compare:setup": "node ./scripts/setup-compare-stats.ts",
 		"judge:ds-misuse": "node --env-file-if-exists=.env.local ./scripts/judge-ds-misuse.ts",
 		"judge:ds-misuse:dry": "node --env-file-if-exists=.env.local ./scripts/judge-ds-misuse.ts --dry",
 		"test": "vitest",
