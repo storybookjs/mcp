@@ -18,3 +18,4 @@ comparisons/
 !.env.example
 # Generated agentic-reference work directory; cases.ts is the source of truth.
 .agentic-ref/
+results-export-*.zip
