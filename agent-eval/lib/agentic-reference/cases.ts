@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url';
 
 import type { ExperimentConfig } from '@vercel/agent-eval';
 import type { EvalAgent, EvalIntegration, McpServerSpec } from '../templates.ts';
-import { AGENT_NAME_PARTS, agenticRefExperiment } from './experiment.ts';
+import { EXPERIMENT_NAME_PREFIX } from './constants.ts';
+import { agenticRefExperiment } from './experiment.ts';
 import type { StorybookMcpPackageSpec } from './local-mcp.ts';
 import { resolveEvalSelection } from './selection.ts';
+import { AGENT_NAME_PARTS, shortNameOf } from './utils.ts';
 
 /** The active eval list; every case runs all of them unless it specifies its own `evals`. */
 
@@ -149,12 +151,36 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	},
 ];
 
+/** The single control every comparison runs against unless --control overrides it. */
+export const DEFAULT_CONTROL_CASE = 'cc-control-none-opus-high';
+
+/** Experiment names the generated stubs (and results directories) carry. */
+export function knownExperimentNames(): string[] {
+	return AGENTIC_REF_CASES.map(
+		(agenticRefCase) => `${EXPERIMENT_NAME_PREFIX}${agenticRefCase.name}`,
+	);
+}
+
 // Duplicate names would make agenticRefCaseExperiment always pick the first
 // match and collide generated stubs, results directories, and fingerprints.
 const caseNames = AGENTIC_REF_CASES.map((agenticRefCase) => agenticRefCase.name);
 const duplicateNames = [...new Set(caseNames.filter((name, i) => caseNames.indexOf(name) !== i))];
 if (duplicateNames.length > 0) {
 	throw new Error(`AGENTIC_REF_CASES: duplicate case names: ${duplicateNames.join(', ')}`);
+}
+
+// Two cases sharing a derived shortName would be indistinguishable in
+// results:compare's CSV/manifest output — commands.ts, cells.ts, and the
+// stats stage all key on shortName, so a collision would silently conflate
+// two different experiments under one label.
+const shortNamesByCase = new Map(caseNames.map((name) => [name, shortNameOf(name)]));
+const shortNameCollisions = [...new Set(shortNamesByCase.values())]
+	.map((shortName) => caseNames.filter((name) => shortNamesByCase.get(name) === shortName))
+	.filter((group) => group.length > 1);
+if (shortNameCollisions.length > 0) {
+	throw new Error(
+		`AGENTIC_REF_CASES: cases share a derived short name: ${shortNameCollisions.map((group) => group.join(', ')).join('; ')}`,
+	);
 }
 
 // AGENTIC_REF_EVALS=<eval>[,<eval>] narrows every case's supported workflow evals

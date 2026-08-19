@@ -91,14 +91,6 @@ export const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	},
 };
 
-// Case-name segments for each AGENT_CONFIG entry, so generated case names
-// (`<prefix>-<variant>-<modelSuffix>`) spell out the model and effort the
-// entry pins.
-export const AGENT_NAME_PARTS: Record<EvalAgent, { prefix: string; modelSuffix: string }> = {
-	'claude-code': { prefix: 'cc', modelSuffix: 'opus-high' },
-	codex: { prefix: 'codex', modelSuffix: 'gpt-5.5-medium' },
-};
-
 /** Research sample size, from --runs (AGENTIC_REF_RUNS). */
 function resolveRuns(): number {
 	return (

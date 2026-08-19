@@ -116,12 +116,12 @@ export function selectionFlags(env?: NodeJS.ProcessEnv) {
 			describe: 'Experiments to select, by name or glob',
 		} as const,
 
-		/** Evals (flows), by name, number or glob. */
+		/** Evals (flows, workflows), by name, number or glob. */
 		evals: {
 			type: 'array',
 			string: true,
 			requiresArg: true,
-			alias: ['eval', 'flows', 'flow'],
+			alias: ['eval', 'flows', 'flow', 'workflows', 'workflow'],
 			default: splitCommas([fallback('evals') ?? '']),
 			coerce: splitCommas,
 			describe: 'Evals to select, by name, number (703) or glob (70*)',

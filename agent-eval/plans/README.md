@@ -5,9 +5,13 @@ comparison group and one workflow family, at 10 runs per cell and at most 20
 sandboxes at once.
 
 ```bash
-pnpm eval:plan --config plans/1-levels-create.plan.ts --dry   # what it would collect
-pnpm eval:plan --config plans/1-levels-create.plan.ts         # collect
+pnpm eval:plan --plan 1-levels-create --dry   # what it would collect
+pnpm eval:plan --plan 1-levels-create         # collect
 ```
+
+`--plan` (alias `--config`) takes a bare plan name or a path; the same
+spelling scopes `pnpm results:compare --plan` to the plan's cases and
+workflows.
 
 Always run `--dry` first. It costs nothing, resolves every batch against the
 case registry and what is already on disk, and prints why each cell needs
