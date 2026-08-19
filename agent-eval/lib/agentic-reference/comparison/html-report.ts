@@ -375,7 +375,7 @@ interface TreatmentStyle {
 // CASE_COLORS); the index palette only serves manifests from before that.
 function treatmentStyles(
 	treatments: ManifestCase[],
-	colors: ManifestJson['colors'],
+	colors: ManifestJson['colors']
 ): TreatmentStyle[] {
 	return treatments.map((t, i) => {
 		const assigned = colors?.[t.shortName];
@@ -563,34 +563,43 @@ function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string
 			? ` ${manifest.provenance.statsmodels}`
 			: '';
 	const lines = [
-		'<li><b>Effect (β)</b> — an OLS regression coefficient of treatment vs control, with ' +
-			'HC3 robust standard errors. Log-scaled metrics display exp(β)−1 as a percent change.</li>',
-		'<li><b>95% CI</b> — the range that would capture the true effect in 95% of ' +
-			'identical re-runs of this experiment.</li>',
-		`<li><b>q (BH-FDR)</b> — this report runs ${tests} test${tests === 1 ? '' : 's'} at once; at ` +
-			'p &lt; 0.05 alone, about 1 in 20 true-null tests would come out significant by luck. ' +
-			'Benjamini&ndash;Hochberg corrects that multiple-testing bias by controlling the ' +
-			'false-discovery rate: of the results it calls significant, at most ~5% are expected ' +
-			'to be false discoveries. Significant iff q &le; 0.05.</li>',
+		'<li><b>What one result means.</b> Every result compares one treatment with the control, ' +
+			'using only those two arms&#39; runs. The estimate (β) is the effect on the model scale: ' +
+			'for raw metrics, the difference in average values; for log-scaled metrics (durations, ' +
+			'cost, tokens), the log of the ratio — displayed as a percent change.</li>',
+		'<li><b>How sure we are.</b> The 95% CI is the range of effects still compatible with the ' +
+			'data: were the experiment repeated many times, 95% of such intervals would contain the ' +
+			'true effect. A wide interval means little certainty. Standard errors are HC3-robust, so ' +
+			'arms with unequal variance cannot fake precision.</li>',
+		`<li><b>Why p alone misleads.</b> p is the chance of seeing an effect at least this large ` +
+			`when the treatment truly does nothing. This report runs ${tests} test${
+				tests === 1 ? '' : 's'
+			} ` +
+			'at once; at p &lt; 0.05 each, about 1 in 20 true-null tests would come out significant ' +
+			'by luck alone.</li>',
+		'<li><b>The correction.</b> Benjamini&ndash;Hochberg rescales every p to the size of the ' +
+			'whole grid, giving q — the false-discovery rate. Among all the results this report calls ' +
+			'significant, at most about 5% are expected to be false discoveries. A result is ' +
+			'significant iff q &le; 0.05.</li>',
 	];
 	if (aggregate) {
 		lines.push(
-			'<li><b>Aggregation</b> — multi-workflow effects weight every workflow equally, ' +
+			'<li><b>Aggregation.</b> Multi-workflow effects weight every workflow equally, ' +
 				'regardless of run counts.</li>'
 		);
 	}
 	lines.push(
-		`<li><b>Engine</b> — statsmodels${escapeHtml(
+		`<li><b>Engine.</b> statsmodels${escapeHtml(
 			statsmodelsVersion
-		)} OLS (Python); details in manifest.json.</li>`
+		)} OLS (Python); full provenance in manifest.json.</li>`
 	);
 	return `
-<div class="statsbox">
-<h3>How the statistics work</h3>
+<details class="statsbox">
+<summary>How the statistics work</summary>
 <ul>
 ${lines.join('\n')}
 </ul>
-</div>`;
+</details>`;
 }
 
 function buildSample(manifest: ManifestJson, styles: TreatmentStyle[]): string {
@@ -829,13 +838,27 @@ ${familySections.join('\n')}
 <p class="empty-note" id="effectsEmpty" hidden>Nothing matches the current filters.</p>`;
 }
 
-function verdictChip(row: EstimateRow, effect: Effect): string {
-	if (row.context) return '<span class="chip na">not tested</span>';
-	if (row.verdict !== 'significant') return '<span class="chip na">not significant</span>';
-	if (row.direction === 'neutral') return '<span class="chip shift">changed</span>';
-	return isBetter(effect.value, row.direction)
-		? '<span class="chip good">better</span>'
-		: '<span class="chip bad">worse</span>';
+// The verdict, folded into the Effect column as a suffix icon: colored arrows
+// for significant directional results, ± for a significant change of a
+// descriptive metric, ? in gray when no call can be made.
+function verdictIcon(row: EstimateRow, effect: Effect): string {
+	const icon = (cls: string, tip: string, glyph: string) =>
+		`<span class="vicon ${cls} tipsrc" tabindex="0" data-tip-title="${escapeHtml(
+			tip
+		)}">${glyph}</span>`;
+	if (row.context) return icon('na', 'not FDR-tested (per-workflow view)', '?');
+	if (row.verdict !== 'significant') {
+		return icon('na', `not significant at FDR 5% (q=${formatPQ(row.q ?? Number.NaN)})`, '?');
+	}
+	if (row.direction === 'neutral') {
+		return icon('shift', 'significant — changed (descriptive metric)', '±');
+	}
+	const better = isBetter(effect.value, row.direction);
+	return icon(
+		better ? 'good' : 'bad',
+		`significant — ${better ? 'better' : 'worse'} (q=${formatPQ(row.q ?? Number.NaN)})`,
+		effect.value < 0 ? '↓' : '↑'
+	);
 }
 
 function buildFullReport(
@@ -856,6 +879,16 @@ function buildFullReport(
 		manifest.spec.mode === 'aggregate'
 			? [...estimates.filter((row) => row.context)].sort(sortRows)
 			: [];
+	// A pair whose n falls below its arm's usual sample lost runs to missing
+	// values for that metric; the * marker calls that out.
+	const maxN = new Map<string, { c: number; t: number }>();
+	for (const row of [...headline, ...contexts]) {
+		const key = `${row.treatment} ${row.context ? row.scope : defaultScope}`;
+		const entry = maxN.get(key) ?? { c: 0, t: 0 };
+		entry.c = Math.max(entry.c, row.nControl);
+		entry.t = Math.max(entry.t, row.nTreatment);
+		maxN.set(key, entry);
+	}
 	let anomalyTotal = 0;
 	const trs = [...headline, ...contexts]
 		.map((row) => {
@@ -868,23 +901,26 @@ function buildFullReport(
 			const sigAttr = row.context ? '' : ` data-sig="${sig ? 1 : 0}"`;
 			const anomalies = row.anomalies ?? 0;
 			if (!row.context) anomalyTotal += anomalies;
-			const marker =
+			const anomalyMarker =
 				anomalies > 0 ? `<sup title="${anomalies} anomalous value(s) excluded">&dagger;</sup>` : '';
+			const arm = maxN.get(`${row.treatment} ${scope}`)!;
+			const nMarker =
+				row.nControl < arm.c || row.nTreatment < arm.t
+					? `<sup class="nnote tipsrc" tabindex="0" data-tip-title="n=${row.nControl}/${row.nTreatment} — some runs lack this metric">*</sup>`
+					: '';
 			return (
 				`<tr class="t-${t.slug}" data-t="${t.slug}" data-scope="${escapeHtml(
 					scope
 				)}"${sigAttr}${hidden}>` +
-				`<td>${escapeHtml(metricName(row.metric))}${marker}</td>` +
+				`<td>${escapeHtml(metricName(row.metric))}${anomalyMarker}${nMarker}</td>` +
 				`<td><span class="dot" style="background:var(--c-${t.slug})"></span>${escapeHtml(
 					row.treatment
 				)}</td>` +
-				`<td class="num">${row.nControl} / ${row.nTreatment}</td>` +
-				`<td class="num">${escapeHtml(effect.label)}</td>` +
+				`<td class="num">${escapeHtml(effect.label)} ${verdictIcon(row, effect)}</td>` +
 				`<td class="num">${escapeHtml(effect.ciLabel)}</td>` +
 				`<td class="num">${escapeHtml(formatBeta(row.beta))}</td>` +
 				`<td class="num">${escapeHtml(formatPQ(row.p))}</td>` +
-				`<td class="num">${row.q === null ? '—' : escapeHtml(formatPQ(row.q))}</td>` +
-				`<td>${verdictChip(row, effect)}</td></tr>`
+				`<td class="num">${row.q === null ? '—' : escapeHtml(formatPQ(row.q))}</td></tr>`
 			);
 		})
 		.join('\n');
@@ -938,16 +974,17 @@ function buildFullReport(
 	return `
 ${badge}
 <div class="tablewrap tall"><table id="verdictTable">
-<thead><tr><th>Metric</th><th>Arm</th><th>n</th><th class="num">Effect</th><th class="num">95% CI</th><th class="num nocase">β</th><th class="num nocase">p</th><th class="num nocase">q</th><th>Verdict</th></tr></thead>
+<thead><tr><th>Metric</th><th>Arm</th><th class="num">Effect</th><th class="num">95% CI</th><th class="num nocase tipsrc" tabindex="0" data-tip-title="β — regression coefficient" data-tip-effect="The effect on the model scale: a difference in means for raw metrics, a log-ratio for log-scaled ones (the Effect column shows it as a % change).">β</th><th class="num nocase tipsrc" tabindex="0" data-tip-title="p — raw p-value" data-tip-effect="The chance of an effect at least this large when the treatment truly does nothing (HC3-robust t-test), before correcting for running many tests at once.">p</th><th class="num nocase tipsrc" tabindex="0" data-tip-title="q — corrected p-value" data-tip-effect="p adjusted for the whole test grid with Benjamini–Hochberg false-discovery-rate control. Significant iff q ≤ 0.05.">q</th></tr></thead>
 <tbody>
 ${trs}
 </tbody>
 </table></div>
 <p class="empty-note" id="fullEmpty" hidden>Nothing matches the current filters.</p>
-<p class="note">"Better"/"worse" follows each metric's own direction; descriptive metrics get
-"changed", not a value judgment. n is control / treatment. β is on the model scale (log for
-log-scaled metrics); Effect and CI are on the display scale. q is the false-discovery-corrected
-p-value; the bar is q&nbsp;&le;&nbsp;0.05.</p>${anomalyNote}${untestedSection}${excludedSection}`;
+<p class="note">Icons follow each metric's own direction: colored arrows mark significant
+improvements or regressions, ± a significant change of a descriptive metric, and ? no call
+(the bar is q&nbsp;&le;&nbsp;0.05). * marks a pair where some runs lack the metric. β is on the
+model scale (log for log-scaled metrics); Effect and CI are on the display
+scale.</p>${anomalyNote}${untestedSection}${excludedSection}`;
 }
 
 // Strip the XML prolog, DOCTYPE, and matplotlib <metadata> block matplotlib
@@ -1076,10 +1113,11 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .summary li { margin:6px 0; }
 .summary b { color:var(--ink); }
 .statsbox { background:var(--wash); border:1px solid var(--line); border-radius:12px;
-  padding:14px 18px; margin:24px 0; font-size:.84rem; color:var(--ink-2); }
-.statsbox h3 { margin:0 0 4px; }
-.statsbox ul { margin:0; padding-left:18px; }
-.statsbox li { margin:5px 0; }
+  padding:12px 18px; margin:28px 0; font-size:.84rem; color:var(--ink-2); }
+.statsbox summary { cursor:pointer; font-weight:600; color:var(--ink);
+  font-family:Spectral,Georgia,serif; font-size:1.05rem; }
+.statsbox ul { margin:10px 0 4px; padding-left:18px; }
+.statsbox li { margin:7px 0; }
 .statsbox b { color:var(--ink); }
 .effects-head { margin:14px 0 6px; }
 .glyphs { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.76rem; color:var(--ink-3); }
@@ -1097,7 +1135,7 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .stat-toggle button[aria-pressed="true"] { color:var(--ink); background:var(--wash); border-color:var(--ink-3); }
 .wfBadge { font-size:.74rem; font-weight:600; color:var(--ink-2); background:var(--wash);
   border:1px solid var(--line); border-radius:99px; padding:3px 11px; }
-.family h3 { margin:34px 0 2px; }
+.family h3 { margin:34px 0 2px; font-size:1.3rem; }
 .family-intro { font-size:.82rem; color:var(--ink-3); margin:0 0 8px; max-width:70ch; }
 .frow { display:grid; grid-template-columns:220px 1fr 130px; gap:14px; align-items:center;
   padding:9px 0; border-bottom:1px solid var(--line); }
@@ -1129,12 +1167,16 @@ td.num { text-align:right; white-space:nowrap; }
 tr[data-sig="0"] td { opacity:.55; }
 .control-row td { background:color-mix(in srgb, var(--good) 7%, transparent); }
 .chip { font-size:.72rem; font-weight:600; padding:2px 9px; border-radius:99px; white-space:nowrap; }
-.chip.good { background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good); }
-.chip.bad { background:color-mix(in srgb, var(--bad) 14%, transparent); color:var(--bad); }
-.chip.na { background:var(--wash); color:var(--ink-3); }
-.chip.shift { background:color-mix(in srgb, var(--ink-2) 12%, transparent); color:var(--ink-2); }
 .chip.control { background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good);
   margin-left:6px; }
+.vicon { display:inline-block; min-width:1.15em; text-align:center; font-weight:700;
+  margin-left:5px; cursor:default; font-family:"IBM Plex Sans",system-ui,sans-serif; }
+.vicon.good { color:var(--good); }
+.vicon.bad { color:var(--bad); }
+.vicon.na { color:var(--ink-3); }
+.vicon.shift { color:var(--ink); }
+.nnote { color:var(--ink-3); cursor:default; margin-left:2px; }
+thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-offset:3px; }
 .tablewrap { overflow-x:auto; }
 .tablewrap.tall { max-height:74vh; overflow:auto; margin-top:14px; }
 .untested { font-size:.85rem; color:var(--ink-2); margin:6px 0; padding-left:18px; }
@@ -1234,17 +1276,24 @@ function refresh() {
     var t = tr.getAttribute('data-t');
     tr.hidden = !wfOk || (t !== null && off[t] === true);
   });
-  $('.summary li[data-t]').forEach(function (li) {
-    li.hidden = off[li.getAttribute('data-t')] === true;
-  });
   $('.curve').forEach(function (curve) {
     curve.hidden = contextView && curve.getAttribute('data-workflow') !== scope;
   });
 }
 chips.forEach(function (chip) {
-  chip.addEventListener('click', function () {
-    var on = chip.getAttribute('aria-pressed') === 'true';
-    chip.setAttribute('aria-pressed', String(!on));
+  chip.addEventListener('click', function (event) {
+    if (event.ctrlKey || event.metaKey) {
+      // Ctrl-click solos the chip; ctrl-click on the only active chip restores all.
+      var alreadySolo = chips.every(function (c) {
+        return (c.getAttribute('aria-pressed') === 'true') === (c === chip);
+      });
+      chips.forEach(function (c) {
+        c.setAttribute('aria-pressed', String(alreadySolo || c === chip));
+      });
+    } else {
+      var on = chip.getAttribute('aria-pressed') === 'true';
+      chip.setAttribute('aria-pressed', String(!on));
+    }
     refresh();
   });
 });
@@ -1316,7 +1365,7 @@ refresh();`;
 
 export function renderHtmlReport(input: HtmlReportInput): string {
 	const { estimates, manifest, curves, dataset } = input;
-	const styles = treatmentStyles(manifest.spec.treatments);
+	const styles = treatmentStyles(manifest.spec.treatments, manifest.colors);
 	const title = `${manifest.spec.control.shortName} vs ${manifest.spec.treatments
 		.map((t) => t.shortName)
 		.join(' + ')}`;
@@ -1326,8 +1375,8 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 			label: 'Summary',
 			body:
 				buildSummary(estimates, styles) +
-				buildStatsBox(estimates, manifest) +
-				buildSample(manifest, styles),
+				buildSample(manifest, styles) +
+				buildStatsBox(estimates, manifest),
 		},
 		{
 			id: 'effects',
@@ -1341,7 +1390,7 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 		},
 		{
 			id: 'curves',
-			label: 'Curves',
+			label: 'ECDF curves',
 			body: buildCurves(curves, manifest),
 		},
 	];

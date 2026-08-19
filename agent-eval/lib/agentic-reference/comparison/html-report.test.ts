@@ -256,7 +256,7 @@ describe('renderHtmlReport structure', () => {
 	it('solos a chip on ctrl-click and never filters the summary list', () => {
 		const html = render({});
 		expect(html).toContain('ctrlKey');
-		expect(html).not.toContain('.summary li');
+		expect(html).not.toContain('.summary li[data-t]');
 	});
 
 	it('mentions equal workflow weighting only in aggregate mode', () => {
@@ -389,13 +389,21 @@ describe('renderHtmlReport full report table', () => {
 		const html = render({
 			estimates: [
 				row({ verdict: 'significant', q: 0.001 }),
-				row({ treatment: 'empty', verdict: 'not-significant', q: 0.2, beta: 0.05, pctChange: 0.05 }),
+				row({
+					treatment: 'empty',
+					verdict: 'not-significant',
+					q: 0.2,
+					beta: 0.05,
+					pctChange: 0.05,
+				}),
 			],
 		});
 		// Significant improvement on a lower-better metric: down arrow, good color.
 		expect(html).toMatch(/class="vicon good tipsrc"[^>]*data-tip-title="[^"]*better[^"]*"[^>]*>↓</);
 		// Not significant: gray question mark.
-		expect(html).toMatch(/class="vicon na tipsrc"[^>]*data-tip-title="[^"]*not significant[^"]*"[^>]*>\?</);
+		expect(html).toMatch(
+			/class="vicon na tipsrc"[^>]*data-tip-title="[^"]*not significant[^"]*"[^>]*>\?</
+		);
 	});
 
 	it('uses ± for significant changes of descriptive metrics', () => {
@@ -412,7 +420,9 @@ describe('renderHtmlReport full report table', () => {
 				}),
 			],
 		});
-		expect(html).toMatch(/class="vicon shift tipsrc"[^>]*data-tip-title="[^"]*changed[^"]*"[^>]*>±</);
+		expect(html).toMatch(
+			/class="vicon shift tipsrc"[^>]*data-tip-title="[^"]*changed[^"]*"[^>]*>±</
+		);
 	});
 
 	it('marks rows whose n differs from the rest of their arm', () => {
