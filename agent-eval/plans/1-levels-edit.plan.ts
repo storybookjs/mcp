@@ -23,7 +23,7 @@ export default {
 	],
 	evals: ['702', '703', '704'],
 	runs: 10,
-	parallelMax: 10,
+	parallelMax: 5,
 	// Off, so an interrupted plan resumes and repeated arms are collected once.
 	force: false,
 	// Off, so infra and timeout runs are dropped rather than mixed into the
