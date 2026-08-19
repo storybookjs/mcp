@@ -55,6 +55,7 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { describeStoredRun, groupComparableRuns } from '#lib/agentic-reference/comparability';
+import { bold, cyan, dim, red, yellow } from '#lib/utils/colors';
 import {
 	currentMeasurement,
 	describeDifferences,
@@ -356,9 +357,11 @@ async function main() {
 
 	if (incomplete > 0) {
 		console.log(
-			`Skipped ${incomplete} run director${incomplete === 1 ? 'y' : 'ies'} holding no project ` +
-				'tree: those runs stopped on billing, a timeout or another infra failure. ' +
-				'Run `pnpm results:prune` to see and clear them.',
+			yellow(
+				`Skipped ${incomplete} run director${incomplete === 1 ? 'y' : 'ies'} holding no project ` +
+					'tree: those runs stopped on billing, a timeout or another infra failure. ' +
+					'Run `pnpm results:prune` to see and clear them.',
+			),
 		);
 	}
 	if (withoutHook > 0) {
@@ -391,10 +394,8 @@ async function main() {
 		(row) => readMisuseReport(row.__run.runDir) === null,
 	).length;
 	if (unjudged > 0) {
-		const bold = '\x1b[1;31m';
-		const reset = '\x1b[0m';
 		console.error(
-			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+			`\n${bold(red(`No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).`))}\n` +
 				'  Run: pnpm judge:ds-misuse' +
 				(options.experiments.length ? ` --experiments=${options.experiments.join(',')}` : '') +
 				(options.latest ? ' --latest' : ''),
@@ -433,7 +434,7 @@ async function main() {
 	for (const group of groups) {
 		const show = options.superseded || group.current;
 		if (show) {
-			console.log(`\n===  ${heading(group)}  ===\n`);
+			console.log(`\n${dim('===')}  ${bold(cyan(heading(group)))}  ${dim('===')}\n`);
 			if (!group.current) {
 				console.log(`  superseded — ${supersessionNote(group)}\n`);
 			}

@@ -46,6 +46,7 @@ import type {
 	SummarizeOptions,
 } from '../post-analysis/types.ts';
 import { finiteNumbers, mean, round, sum } from '../utils/math.ts';
+import { green, red } from '../utils/colors.ts';
 import { printTable } from '../utils/table.ts';
 import { isRecord } from '../utils/type.ts';
 
@@ -280,6 +281,14 @@ function misuseOf(row: Record<string, unknown>): DsMisuseSummary | null {
 		: null;
 }
 
+/** A run status colored by outcome, so failures stand out in a long table. */
+function statusLabel(status: unknown): string | null {
+	if (typeof status !== 'string') {
+		return null;
+	}
+	return status === 'passed' ? green(status) : red(status);
+}
+
 /** A stored share (0.0845) as a percentage for display. */
 function percent(value: number | null | undefined): string | null {
 	const scaled = value === null || value === undefined ? null : round(value * 100, 2);
@@ -474,10 +483,15 @@ export function summarize(
 		printTable(
 			analyses.map((row) => ({
 				run: runLabel(row),
-				status: row.status,
-				seconds: (row.speed as { durationSeconds?: number } | null)?.durationSeconds ?? null,
+				status: statusLabel(row.status),
+				seconds: round(
+					(row.speed as { durationSeconds?: number } | null)?.durationSeconds ?? null,
+					1,
+				),
 				turns: (row.speed as { turns?: number } | null)?.turns ?? null,
-				costUsd: (row.cost as { estimatedCostUsd?: number } | null)?.estimatedCostUsd ?? null,
+				costUsd: round(
+					(row.cost as { estimatedCostUsd?: number } | null)?.estimatedCostUsd ?? null,
+				),
 				docs: (row.toolUse as { buckets?: { docs?: number } } | null)?.buckets?.docs ?? null,
 				explore:
 					(row.toolUse as { buckets?: { exploration?: number } } | null)?.buckets?.exploration ??

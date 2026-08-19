@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { dim } from '../utils/colors.ts';
 import { readJson } from '../utils/files.ts';
 
 // One entry per run, stored next to the other artifacts; --recompute ignores it.
@@ -30,7 +31,7 @@ export function writeCacheEntry(
 	output: Record<string, unknown> | null,
 	metricsVersion: number | undefined,
 ) {
-	console.log(`Writing ${CACHE_FILENAME} for ${runDir}`);
+	console.log(dim(`Writing ${CACHE_FILENAME} for ${runDir}`));
 	const entry: CacheEntry = { analyzedAt: new Date().toISOString(), output };
 	if (metricsVersion !== undefined) entry.metricsVersion = metricsVersion;
 	writeFileSync(join(runDir, CACHE_FILENAME), JSON.stringify(entry, null, 2) + '\n');
