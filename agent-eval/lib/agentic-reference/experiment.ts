@@ -176,6 +176,12 @@ export function agenticRefExperiment(
 	async function setup(sandbox: Sandbox): Promise<void> {
 		await setupSandbox(sandbox, { agent, integration });
 		await setupExternalRepo(sandbox);
+		// External repos can ship their own MCP client config (MealDrop's .mcp.json
+		// points at its Storybook dev server). A bare arm must offer no MCP at all,
+		// not a dormant one an agent could bring up mid-run.
+		if (integration === 'none') {
+			await sandbox.runCommand('rm', ['-f', '.mcp.json']);
+		}
 		if (storybookMcpUrl) {
 			await registerExternalStorybookMcp(sandbox, storybookMcpUrl, agent);
 		}
