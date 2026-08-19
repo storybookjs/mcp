@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 
 import { findUv } from '../lib/agentic-reference/comparison/uv.ts';
 
-const scriptsDir = dirname(fileURLToPath(import.meta.url));
+const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 
 let uv = findUv();
 if (uv === null) {
@@ -30,5 +30,5 @@ if (uv === null) {
 }
 
 console.log('Prefetching the Python interpreter and locked dependencies...');
-execFileSync(uv, ['sync', '--script', join(scriptsDir, 'compare_stats.py')], { stdio: 'inherit' });
+execFileSync(uv, ['sync', '--script', join(SCRIPTS_DIR, 'compare_stats.py')], { stdio: 'inherit' });
 console.log('Done. `pnpm results:compare` is ready.');
