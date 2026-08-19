@@ -25,6 +25,7 @@ import {
 	manifestJson,
 	type ComparisonSpec,
 } from '#lib/agentic-reference/comparison/emit';
+import { writeHtmlReport } from '#lib/agentic-reference/comparison/html-report';
 import { parseCompareArgs } from '#lib/agentic-reference/comparison/options';
 import {
 	comparisonSlug,
@@ -198,10 +199,13 @@ async function main() {
 		);
 	}
 
+	writeHtmlReport(stagingDir);
+
 	rmSync(outDir, { recursive: true, force: true });
 	renameSync(stagingDir, outDir);
 	console.log(`\nComparison written to ${outDir}`);
 	console.log(`Report: ${join(outDir, 'report.md')}`);
+	console.log(`HTML report: ${join(outDir, 'report.html')}`);
 }
 
 main().catch((error) => {
