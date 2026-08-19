@@ -23,12 +23,18 @@ const CACHE_HIT_RATES = [0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.
 const root = mkdtempSync(join(tmpdir(), 'agentic-ref-compare-'));
 const resultsDir = join(root, 'results');
 
-function plantRun(experiment: string, run: number, durationSeconds: number, cacheHitRate: number) {
-	const dir = join(resultsDir, experiment, TS, WF, `run-${run}`);
-	copyTaskFixture(WF, join(dir, 'project'));
+function plantRun(
+	experiment: string,
+	run: number,
+	durationSeconds: number,
+	cacheHitRate: number,
+	workflow = WF,
+) {
+	const dir = join(resultsDir, experiment, TS, workflow, `run-${run}`);
+	copyTaskFixture(workflow, join(dir, 'project'));
 	writeFileSync(
 		join(dir, 'result.json'),
-		JSON.stringify(measuredResultJson(experiment, WF)) + '\n',
+		JSON.stringify(measuredResultJson(experiment, workflow)) + '\n',
 	);
 	const analysis = { speed: { durationSeconds }, cost: { cacheHitRate } };
 	writeFileSync(join(dir, 'analysis.json'), JSON.stringify(analysis, null, 2) + '\n');
@@ -124,6 +130,30 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 				row.metric === 'durationSeconds' && !row.context,
 		);
 		expect(duration.beta).toBeCloseTo(Math.log(2), 6);
+	}, 300_000);
+
+	it('weights every workflow equally in aggregate mode, regardless of run counts', () => {
+		// 703 has 10 runs per arm with an exact x2 duration effect (log 2).
+		// Plant 15 runs per arm in 701 with an exact x4 effect (log 4). Equal
+		// workflow weighting yields (log 2 + log 4) / 2 = 1.5 * log 2; run-count
+		// weighting would yield (10*log2 + 15*log4) / 25 ≈ 1.109 instead.
+		const WF2 = '701-new-ui-flow';
+		for (let i = 1; i <= 15; i++) {
+			plantRun(CONTROL_EXP, i, 200 + i, 0.8, WF2);
+			plantRun(TREATMENT_EXP, i, (200 + i) * 4, 0.8, WF2);
+		}
+		const outDir = join(root, 'comparisons', 'equal-weight');
+		runCompare(outDir, ['--cases=do-dont', '--workflows=701,703']);
+		const estimates = JSON.parse(readFileSync(join(outDir, 'estimates.json'), 'utf8'));
+		const duration = estimates.find(
+			(row: { metric: string; context: boolean }) =>
+				row.metric === 'durationSeconds' && !row.context,
+		);
+		expect(duration.scope).toBe('pooled');
+		expect(duration.beta).toBeCloseTo(1.5 * Math.log(2), 6);
+		expect(readFileSync(join(outDir, 'report.md'), 'utf8')).toContain(
+			'weight every workflow equally',
+		);
 	}, 300_000);
 
 	it('early-exits with remediation commands when a cell is short', () => {

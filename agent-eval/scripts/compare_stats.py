@@ -53,20 +53,55 @@ def transform_series(series, transform):
     return series, pd.Series(False, index=series.index)
 
 
+DEGENERATE = {
+    "beta": float("nan"),
+    "se": float("nan"),
+    "ciLow": float("nan"),
+    "ciHigh": float("nan"),
+    "p": float("nan"),
+}
+
+
 def fit_pair(frame, control, treatment, pooled):
-    """OLS with HC3 on control+treatment rows; returns the treatment term stats."""
+    """OLS with HC3 on control+treatment rows; returns the treatment term stats.
+
+    Pooled fits use a case x workflow interaction model and report the
+    unweighted average of the per-workflow effects, so every workflow weighs
+    the same no matter how many runs it holds.
+    """
+    term = f'C(case, Treatment(reference="{control}"))[T.{treatment}]'
     formula = f'y ~ C(case, Treatment(reference="{control}"))'
     if pooled:
-        formula += " + C(workflow)"
+        formula += " * C(workflow)"
     fit = smf.ols(formula, frame).fit(cov_type="HC3")
-    term = f'C(case, Treatment(reference="{control}"))[T.{treatment}]'
-    ci_low, ci_high = fit.conf_int(alpha=ALPHA).loc[term]
+    if not pooled:
+        ci_low, ci_high = fit.conf_int(alpha=ALPHA).loc[term]
+        return {
+            "beta": float(fit.params[term]),
+            "se": float(fit.bse[term]),
+            "ciLow": float(ci_low),
+            "ciHigh": float(ci_high),
+            "p": float(fit.pvalues[term]),
+        }
+    # Per-workflow effect = main term (+ its interaction term outside the
+    # reference workflow); the equal-weight average is one linear combination.
+    interactions = [name for name in fit.params.index if name.startswith(f"{term}:C(workflow)")]
+    n_workflows = int(frame["workflow"].nunique())
+    if len(interactions) != n_workflows - 1:
+        # A workflow lost an arm for this metric: the average is undefined.
+        return dict(DEGENERATE)
+    weights = pd.Series(0.0, index=fit.params.index)
+    weights[term] = 1.0
+    weights[interactions] = 1.0 / n_workflows
+    combined = fit.t_test(weights.to_numpy())
+    ci_low, ci_high = (float(value) for value in combined.conf_int(alpha=ALPHA)[0])
     return {
-        "beta": float(fit.params[term]),
-        "se": float(fit.bse[term]),
-        "ciLow": float(ci_low),
-        "ciHigh": float(ci_high),
-        "p": float(fit.pvalues[term]),
+        # t_test result arrays come back 1x1; ravel to scalars.
+        "beta": float(np.asarray(combined.effect).ravel()[0]),
+        "se": float(np.asarray(combined.sd).ravel()[0]),
+        "ciLow": ci_low,
+        "ciHigh": ci_high,
+        "p": float(np.asarray(combined.pvalue).ravel()[0]),
     }
 
 
@@ -260,7 +295,12 @@ def write_report(out_dir, manifest, rows, skipped, anomaly_lines):
     lines = [
         f'# Comparison: {spec["control"]["shortName"]} vs {"+".join(t["shortName"] for t in spec["treatments"])}',
         "",
-        f'Workflows: {", ".join(spec["workflows"])} — mode: {spec["mode"]}, min runs: {spec["minRuns"]}.',
+        f'Workflows: {", ".join(spec["workflows"])} — mode: {spec["mode"]}, min runs: {spec["minRuns"]}.'
+        + (
+            " Aggregate effects weight every workflow equally, regardless of run counts."
+            if spec["mode"] == "aggregate"
+            else ""
+        ),
         "",
         "## Verdicts",
         "",
