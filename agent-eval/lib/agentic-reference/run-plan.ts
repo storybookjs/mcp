@@ -127,16 +127,6 @@ export function resolveRunPlan(
 	const runs = assertPositiveInteger('runs', plan.runs);
 	const parallelMax = assertPositiveInteger('parallelMax', plan.parallelMax);
 
-	// A pair's repetitions all start in one invocation, so a pair is
-	// indivisible here. A deficit never exceeds the target, so this bound
-	// covers every batch.
-	if (runs > parallelMax) {
-		throw new Error(
-			`runs (${runs}) exceeds parallelMax (${parallelMax}): one cell's repetitions all start ` +
-				'at once and cannot be split across invocations. Lower runs or raise parallelMax.',
-		);
-	}
-
 	const experiments = resolveExperimentSelection(plan.experiments, known.experiments);
 	const evals = resolveEvalSelection(plan.evals, known.evals);
 
@@ -290,6 +280,11 @@ export interface PlanBatch {
  * carries a single `--runs`, so pairs share a batch only when their deficits
  * match; within an eval they're grouped by deficit, deepest first, so batches
  * stay one eval wide and keep the eval-major order intact.
+ *
+ * A deficit larger than parallelMax is collected in waves: sequential
+ * invocations of at most parallelMax repetitions each. Every invocation runs
+ * with --force and saves its own result directory, and a pair's sample is
+ * counted across all of its directories, so the waves add up to one sample.
  */
 export function planBatches(
 	cells: readonly CellPlan[],
@@ -303,9 +298,16 @@ export function planBatches(
 
 		const byDeficit = new Map<number, string[]>();
 		for (const cell of outstanding) {
-			const group = byDeficit.get(cell.deficit) ?? [];
-			group.push(cell.experiment);
-			byDeficit.set(cell.deficit, group);
+			// Wave slices of parallelMax fill a batch on their own (perBatch
+			// below is 1), so one pair's waves can never share an invocation.
+			let remaining = cell.deficit;
+			while (remaining > 0) {
+				const slice = Math.min(remaining, parallelMax);
+				const group = byDeficit.get(slice) ?? [];
+				group.push(cell.experiment);
+				byDeficit.set(slice, group);
+				remaining -= slice;
+			}
 		}
 
 		for (const deficit of [...byDeficit.keys()].sort((a, b) => b - a)) {

@@ -97,11 +97,6 @@ describe('resolveRunPlan', () => {
 		]);
 	});
 
-	// A deficit never exceeds the target, so this bound covers every batch.
-	it('refuses a plan whose sample cannot fit in one batch', () => {
-		expect(() => resolveRunPlan(plan({ runs: 30 }), KNOWN)).toThrow(/exceeds parallelMax/);
-	});
-
 	it('rejects non-positive-integer knobs', () => {
 		expect(() => resolveRunPlan(plan({ runs: 0 }), KNOWN)).toThrow(/runs must be a positive/);
 		expect(() => resolveRunPlan(plan({ parallelMax: 2.5 }), KNOWN)).toThrow(
@@ -284,6 +279,26 @@ describe('planBatches', () => {
 
 	it('skips cells that already have their full sample', () => {
 		expect(planBatches([cell('a', '701', 0), cell('b', '701', 0)], ['701'], 20)).toEqual([]);
+	});
+
+	it('collects a deficit deeper than parallelMax in sequential waves', () => {
+		const batches = planBatches([cell('a', '701', 10), cell('b', '701', 10)], ['701'], 5);
+
+		expect(batches.map((batch) => [batch.experiments, batch.runs, batch.parallel])).toEqual([
+			[['a'], 5, 5],
+			[['a'], 5, 5],
+			[['b'], 5, 5],
+			[['b'], 5, 5],
+		]);
+	});
+
+	it('sizes a deficit remainder wave to what is left, not parallelMax', () => {
+		const batches = planBatches([cell('a', '701', 7)], ['701'], 5);
+
+		expect(batches.map((batch) => [batch.runs, batch.parallel])).toEqual([
+			[5, 5],
+			[2, 2],
+		]);
 	});
 
 	it('keeps batches one eval wide, in registry order', () => {
