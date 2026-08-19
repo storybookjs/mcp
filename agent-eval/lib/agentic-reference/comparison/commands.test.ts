@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Cell } from './cells.ts';
 import type { ResolvedCase } from './resolve.ts';
-import { formatGapTable, remediationCommands } from './commands.ts';
-import { PLAIN_STYLE, type OutputStyle } from './style.ts';
+import { cellStatuses, formatCellTable, remediationCommands } from './commands.ts';
+import { PLAIN_STYLE, type OutputStyle } from '../style.ts';
 
 /** Distinct, greppable markers (not ANSI) so alignment assertions are deterministic. */
 const MARKER_STYLE: OutputStyle = {
 	bold: (s) => `[B]${s}[/B]`,
 	caseName: (s) => `[C]${s}[/C]`,
+	tone: (t, s) => `[T:${t}]${s}[/T]`,
+	dim: (s) => `[D]${s}[/D]`,
 	reason: (r, s) => `[R:${r}]${s}[/R]`,
 };
 
@@ -88,9 +91,62 @@ describe('remediationCommands', () => {
 	});
 });
 
-describe('formatGapTable', () => {
+describe('cellStatuses', () => {
+	function cell(resolvedCase: ResolvedCase, workflow: string, usable: number): Cell {
+		return {
+			case: resolvedCase,
+			workflow,
+			runs: Array.from({ length: usable }, (_, i) => ({
+				run: {
+					runDir: `/results/${resolvedCase.experiment}/t/${workflow}/run-${i + 1}`,
+					projectDir: '',
+					experiment: resolvedCase.experiment,
+					model: '',
+					timestamp: 't',
+					evalName: workflow,
+					run: i + 1,
+					collected: true,
+				},
+				analysis: {},
+			})),
+			excluded: [],
+			unanalyzed: 0,
+			superseded: 0,
+			passed: usable,
+			failed: 0,
+		};
+	}
+
+	it('lists every cell in cell order: gaps as themselves, the rest as complete', () => {
+		const cells = [cell(DO_DONT, '701-new-ui-flow', 12), cell(FULL, '701-new-ui-flow', 4)];
+		const gap = {
+			case: FULL,
+			workflow: '701-new-ui-flow',
+			have: 4,
+			need: 10,
+			reason: 'missing-runs' as const,
+		};
+		expect(cellStatuses(cells, [gap], 10)).toEqual([
+			{ case: DO_DONT, workflow: '701-new-ui-flow', have: 12, need: 10, reason: 'complete' },
+			gap,
+		]);
+	});
+});
+
+describe('formatCellTable', () => {
+	it('renders a complete cell with its full count and a complete reason', () => {
+		const table = formatCellTable(
+			[
+				{ case: DO_DONT, workflow: '701-new-ui-flow', have: 12, need: 10, reason: 'complete' },
+				{ case: FULL, workflow: '701-new-ui-flow', have: 4, need: 10, reason: 'missing-runs' },
+			],
+			MARKER_STYLE,
+		);
+		expect(table).toContain('12/10');
+		expect(table).toContain('[R:complete]complete[/R]');
+	});
 	it('renders one aligned line per gap', () => {
-		const table = formatGapTable([
+		const table = formatCellTable([
 			{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
 		]);
 		expect(table).toContain('case');
@@ -104,7 +160,7 @@ describe('formatGapTable', () => {
 			{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
 			{ case: FULL, workflow: '701-new-ui-flow', have: 4, need: 10, reason: 'unanalyzed' },
 		] as const;
-		expect(formatGapTable([...gaps])).toBe(formatGapTable([...gaps], PLAIN_STYLE));
+		expect(formatCellTable([...gaps])).toBe(formatCellTable([...gaps], PLAIN_STYLE));
 	});
 
 	it('bolds the header row, wraps case and reason cells, and preserves column alignment', () => {
@@ -112,8 +168,8 @@ describe('formatGapTable', () => {
 			{ case: DO_DONT, workflow: '703-fix-bug-flow', have: 0, need: 10, reason: 'missing-runs' },
 			{ case: FULL, workflow: '701-new-ui-flow', have: 4, need: 10, reason: 'unanalyzed' },
 		] as const;
-		const plain = formatGapTable([...gaps]);
-		const styled = formatGapTable([...gaps], MARKER_STYLE);
+		const plain = formatCellTable([...gaps]);
+		const styled = formatCellTable([...gaps], MARKER_STYLE);
 
 		// Stripping every marker recovers exactly the plain table: styling never
 		// disturbs the column widths computed from plain text.

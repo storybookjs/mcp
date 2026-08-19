@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { PLAIN_STYLE, type OutputStyle } from './style.ts';
 import {
 	type CellPlan,
 	type PlanCell,
@@ -189,9 +190,9 @@ describe('planCell', () => {
 		expect(planned).toMatchObject({ qualifying: 10, deficit: 0 });
 	});
 
-	it('never reports a negative deficit for an over-collected cell', () => {
+	it('shows the full qualifying count of an over-collected cell, never a negative deficit', () => {
 		expect(planCell(CELL, [sample({ runs: 14 })], options)).toMatchObject({
-			qualifying: 10,
+			qualifying: 14,
 			deficit: 0,
 		});
 	});
@@ -220,6 +221,19 @@ describe('planCell', () => {
 		expect(explainDeficit(planCell(CELL, [], options))).toBe('no qualifying runs');
 		expect(explainDeficit(planCell(CELL, [sample({ current: false })], options))).toBe(
 			'no qualifying runs (discounting 10 superseded)',
+		);
+	});
+
+	it('dims only the discounting note when a style is given', () => {
+		const dimMarked: OutputStyle = {
+			...PLAIN_STYLE,
+			dim: (s) => `[D]${s}[/D]`,
+		};
+		expect(explainDeficit(planCell(CELL, [sample({ current: false })], options), dimMarked)).toBe(
+			'no qualifying runs[D] (discounting 10 superseded)[/D]',
+		);
+		expect(explainDeficit(planCell(CELL, [sample({ runs: 6 })], options), dimMarked)).toBe(
+			'6/10 runs already collected',
 		);
 	});
 });

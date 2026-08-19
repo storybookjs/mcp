@@ -16,7 +16,6 @@ describe('the compare CLI grammar', () => {
 			workflows: [],
 			plan: undefined,
 			minRuns: undefined,
-			allBatches: false,
 			out: undefined,
 		});
 	});
@@ -29,7 +28,6 @@ describe('the compare CLI grammar', () => {
 				'--workflows=701,703',
 				'--plan=plans/1-levels-edit.plan.ts',
 				'--min-runs=5',
-				'--all-batches',
 				'--out=/tmp/x',
 			]),
 		).toEqual({
@@ -38,7 +36,6 @@ describe('the compare CLI grammar', () => {
 			workflows: ['701', '703'],
 			plan: 'plans/1-levels-edit.plan.ts',
 			minRuns: 5,
-			allBatches: true,
 			out: '/tmp/x',
 		});
 	});
@@ -54,12 +51,10 @@ describe('the compare CLI grammar', () => {
 			AGENTIC_REF_EXPERIMENTS: 'do-dont',
 			AGENTIC_REF_EVALS: '703',
 			AGENTIC_REF_MIN_RUNS: '7',
-			AGENTIC_REF_ALL_BATCHES: '1',
 		});
 		expect(options.cases).toEqual(['do-dont']);
 		expect(options.workflows).toEqual(['703']);
 		expect(options.minRuns).toBe(7);
-		expect(options.allBatches).toBe(true);
 	});
 
 	it('lets a flag beat its environment fallback', () => {
@@ -68,6 +63,7 @@ describe('the compare CLI grammar', () => {
 
 	it('rejects unknown arguments and bad min-runs', () => {
 		expect(() => parse(['--nope'])).toThrow(/Unknown argument/);
+		expect(() => parse(['--all-batches'])).toThrow(/Unknown argument/);
 		expect(() => parse(['--min-runs=0'])).toThrow(/must be a positive integer/);
 		expect(() => parse(['--min-runs=x'])).toThrow(/must be a positive integer/);
 	});

@@ -14,7 +14,6 @@ export interface CompareOptions {
 	plan: string | undefined;
 	/** Unset means: the plan's target sample size, then 10. */
 	minRuns: number | undefined;
-	allBatches: boolean;
 	out: string | undefined;
 }
 
@@ -42,10 +41,6 @@ export function compareParser(argv: readonly string[], env?: NodeJS.ProcessEnv) 
 				'minRuns',
 				"Usable runs required per cell (default: the plan's runs, then 10)",
 			),
-			allBatches: flags.switch(
-				'allBatches',
-				'Pool runs across timestamp batches instead of the latest',
-			),
 			out: flags.text('out', 'Output directory (default comparisons/<slug>)'),
 		},
 	);
@@ -61,7 +56,6 @@ export function toCompareOptions(parsed: ParsedCompareArgs): CompareOptions {
 		workflows: parsed.evals,
 		plan: parsed.plan,
 		minRuns: parsed.minRuns,
-		allBatches: parsed.allBatches,
 		out: parsed.out,
 	};
 }

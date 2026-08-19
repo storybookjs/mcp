@@ -11,7 +11,6 @@
 Reads dataset.csv + manifest.json from the staging directory given as argv[1];
 writes estimates.csv/json, report.md, and curves/ back into it. Deterministic:
 no seeds, no wall-clock values outside the manifest provenance block.
-Spec: docs/superpowers/specs/2026-08-10-agentic-ref-analysis-pipeline-design.md
 """
 
 import csv
@@ -261,7 +260,7 @@ def write_report(out_dir, manifest, rows, skipped, anomaly_lines):
     lines = [
         f'# Comparison: {spec["control"]["shortName"]} vs {"+".join(t["shortName"] for t in spec["treatments"])}',
         "",
-        f'Workflows: {", ".join(spec["workflows"])} — mode: {spec["mode"]}, min runs: {spec["minRuns"]}, batches: {"all" if spec["allBatches"] else "latest"}.',
+        f'Workflows: {", ".join(spec["workflows"])} — mode: {spec["mode"]}, min runs: {spec["minRuns"]}.',
         "",
         "## Verdicts",
         "",
@@ -296,10 +295,10 @@ def write_report(out_dir, manifest, rows, skipped, anomaly_lines):
     if manifest.get("excludedRuns"):
         lines += ["", "## Excluded runs", ""]
         lines += [f'- `{e["path"]}` — {e["reason"]}' for e in manifest["excludedRuns"]]
-    lines += ["", "## Cells", "", "| Case | Workflow | Batch | Usable | Passed | Failed | Unanalyzed | Superseded |", "|---|---|---|---|---|---|---|---|"]
+    lines += ["", "## Cells", "", "| Case | Workflow | Usable | Passed | Failed | Unanalyzed | Superseded |", "|---|---|---|---|---|---|---|"]
     for cell in manifest["cells"]:
         lines.append(
-            f'| {cell["case"]} | {cell["workflow"]} | {cell["batch"]} | {cell["usableRuns"]} '
+            f'| {cell["case"]} | {cell["workflow"]} | {cell["usableRuns"]} '
             f'| {cell["passed"]} | {cell["failed"]} | {cell["unanalyzed"]} | {cell["superseded"]} |'
         )
     lines += ["", "Curves: see `curves/<metric>@<workflow>.svg`.", ""]

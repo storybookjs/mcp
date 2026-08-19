@@ -22,7 +22,6 @@ const SPEC: ComparisonSpec = {
 	workflows: ['703-fix-bug-flow'],
 	mode: 'single-workflow',
 	minRuns: 1,
-	allBatches: false,
 };
 
 function cell(
@@ -33,7 +32,6 @@ function cell(
 	return {
 		case: resolvedCase,
 		workflow,
-		batch: '2026-08-05T00-00-00.000Z',
 		runs: values.map((v, i) => ({
 			run: {
 				runDir: `/root/results/${resolvedCase.experiment}/2026-08-05T00-00-00.000Z/${workflow}/run-${i + 1}`,
@@ -80,7 +78,6 @@ describe('datasetCsv', () => {
 			workflows: ['703-fix-bug-flow', '1701-wide-flow'],
 			mode: 'single-workflow' as const,
 			minRuns: 1,
-			allBatches: false,
 		};
 		const csv = datasetCsv(
 			[cell(CONTROL, [7], '1701-wide-flow'), cell(CONTROL, [8], '703-fix-bug-flow')],
@@ -116,7 +113,10 @@ describe('manifestJson', () => {
 		expect(parsed.family[0]).toEqual({ metric: 'durationSeconds', treatment: 'do-dont' });
 		expect(parsed.family).toHaveLength(COMPARISON_METRICS.length);
 		expect(parsed.spec.plan).toBeNull();
+		expect(parsed.spec.allBatches).toBeUndefined();
 		expect(parsed.cells[0]).toMatchObject({ superseded: 0, unanalyzed: 0 });
+		// The cell describes the pooled sample; per-run batches live in the dataset.
+		expect(parsed.cells[0].batch).toBeUndefined();
 		expect(parsed.excludedRuns[0].path.startsWith('results/')).toBe(true);
 		expect(json.endsWith('\n')).toBe(true);
 		expect(JSON.stringify(parsed, null, 2) + '\n').toBe(json);

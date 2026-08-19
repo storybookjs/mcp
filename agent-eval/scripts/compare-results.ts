@@ -15,7 +15,11 @@ import {
 } from '#lib/agentic-reference/cases';
 import { COMPARISON_METRICS } from '#lib/agentic-reference/comparison-metrics';
 import { autoSelectWorkflows, buildCells } from '#lib/agentic-reference/comparison/cells';
-import { formatGapTable, remediationCommands } from '#lib/agentic-reference/comparison/commands';
+import {
+	cellStatuses,
+	formatCellTable,
+	remediationCommands,
+} from '#lib/agentic-reference/comparison/commands';
 import {
 	datasetCsv,
 	manifestJson,
@@ -31,7 +35,7 @@ import {
 	resolveWorkflows,
 	type ResolvedCase,
 } from '#lib/agentic-reference/comparison/resolve';
-import { ansiStyle } from '#lib/agentic-reference/comparison/style';
+import { ansiStyle } from '#lib/agentic-reference/style';
 import { findUv } from '#lib/agentic-reference/comparison/uv';
 import { loadPlanConfig, resolvePlanPath } from '#lib/agentic-reference/plan-config';
 import { postAnalysis } from '#lib/agentic-reference/post-analysis';
@@ -109,14 +113,7 @@ async function main() {
 			const candidates = [...new Set(runs.map((run) => run.evalName))]
 				.filter((name) => /^7\d\d-/.test(name))
 				.sort();
-			const auto = autoSelectWorkflows({
-				runs,
-				cases,
-				candidates,
-				minRuns,
-				allBatches: options.allBatches,
-				metricsVersion,
-			});
+			const auto = autoSelectWorkflows({ runs, cases, candidates, minRuns, metricsVersion });
 			if (auto.skipped.length > 0) {
 				console.log(outStyle.bold('Skipping the following workflows:'));
 				for (const { workflow } of auto.skipped) console.log(`  ${workflow}`);
@@ -124,7 +121,7 @@ async function main() {
 			if (auto.selected.length === 0) {
 				const gaps = auto.skipped.flatMap((s) => s.gaps);
 				console.error(`${errStyle.bold('No workflow has enough data for every selected case.')}\n`);
-				console.error(formatGapTable(gaps, errStyle));
+				console.error(formatCellTable(gaps, errStyle));
 				console.error(`\n${errStyle.bold('Collect the missing data:')}\n`);
 				for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
 				process.exit(1);
@@ -136,17 +133,10 @@ async function main() {
 		}
 	}
 
-	const { cells, gaps } = buildCells({
-		runs,
-		cases,
-		workflows,
-		minRuns,
-		allBatches: options.allBatches,
-		metricsVersion,
-	});
+	const { cells, gaps } = buildCells({ runs, cases, workflows, minRuns, metricsVersion });
 	if (gaps.length > 0) {
 		console.error(`${errStyle.bold('Comparison impossible: insufficient usable data.')}\n`);
-		console.error(formatGapTable(gaps, errStyle));
+		console.error(formatCellTable(cellStatuses(cells, gaps, minRuns), errStyle));
 		console.error(`\n${errStyle.bold('Collect the missing data, then re-run this command:')}\n`);
 		for (const command of remediationCommands(gaps)) console.error(`  ${command}`);
 		process.exit(1);
@@ -158,7 +148,6 @@ async function main() {
 		workflows,
 		mode: workflows.length > 1 ? 'aggregate' : 'single-workflow',
 		minRuns,
-		allBatches: options.allBatches,
 		...(plan === null ? {} : { plan: plan.path }),
 	};
 	const outDir = resolve(

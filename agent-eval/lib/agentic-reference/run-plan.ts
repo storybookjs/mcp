@@ -9,6 +9,7 @@
 // experiment. Slicing the matrix into batches of at most `parallelMax`
 // sandboxes each, with their own saveResults, caps that loss to one batch.
 import { matchesAnySelector, resolveEvalSelection } from './selection.ts';
+import { PLAIN_STYLE, type OutputStyle } from './style.ts';
 
 /**
  * A data-collection plan: which cells to sample, how deeply, and how much of
@@ -213,7 +214,7 @@ export function judgeSample(sample: StoredSample, since: Date | null): SampleVer
 export interface CellPlan extends PlanCell {
 	/** The plan's target sample size. */
 	target: number;
-	/** Runs already on disk that count towards the target. */
+	/** Runs already on disk that count towards the target; can exceed it. */
 	qualifying: number;
 	/** Runs still to collect. */
 	deficit: number;
@@ -224,8 +225,9 @@ export interface CellPlan extends PlanCell {
 /**
  * Works out how much of a pair is still missing.
  *
- * Qualifying runs are capped at the target: a pair over-collected by an
- * earlier round has a deficit of zero, never a negative one.
+ * The deficit is clamped at zero: a pair over-collected by an earlier round
+ * has nothing left to collect, and its qualifying count stays the real one
+ * so over-collection is visible.
  */
 export function planCell(
 	cell: PlanCell,
@@ -246,22 +248,22 @@ export function planCell(
 		}
 	}
 
-	qualifying = Math.min(qualifying, options.target);
 	return {
 		...cell,
 		target: options.target,
 		qualifying,
-		deficit: options.target - qualifying,
+		deficit: Math.max(0, options.target - qualifying),
 		discounted,
 	};
 }
 
 /** Why a pair has to be collected, in one phrase, for the plan output. */
-export function explainDeficit(cell: CellPlan): string {
+export function explainDeficit(cell: CellPlan, style: OutputStyle = PLAIN_STYLE): string {
 	const discounted = Object.entries(cell.discounted)
 		.filter(([, runs]) => runs > 0)
 		.map(([reason, runs]) => `${runs} ${reason.replace('-', ' ')}`);
-	const discardedNote = discounted.length === 0 ? '' : ` (discounting ${discounted.join(', ')})`;
+	const discardedNote =
+		discounted.length === 0 ? '' : style.dim(` (discounting ${discounted.join(', ')})`);
 
 	if (cell.qualifying === 0) {
 		return `no qualifying runs${discardedNote}`;

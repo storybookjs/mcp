@@ -1,10 +1,44 @@
-import type { CellGap } from './cells.ts';
-import { PLAIN_STYLE, type OutputStyle } from './style.ts';
+import type { Cell, CellGap, CellReason } from './cells.ts';
+import type { ResolvedCase } from './resolve.ts';
+import { PLAIN_STYLE, type OutputStyle } from '../style.ts';
 
-export function formatGapTable(gaps: CellGap[], style: OutputStyle = PLAIN_STYLE): string {
+/** One table row: a cell's gap, or its complete state. */
+export interface CellStatus {
+	case: ResolvedCase;
+	workflow: string;
+	have: number;
+	need: number;
+	reason: CellReason;
+}
+
+/** Every cell as a table row, in cell order: its gap, or a complete line. */
+export function cellStatuses(cells: Cell[], gaps: CellGap[], need: number): CellStatus[] {
+	return cells.map(
+		(cell) =>
+			gaps.find(
+				(gap) => gap.case.caseName === cell.case.caseName && gap.workflow === cell.workflow,
+			) ?? {
+				case: cell.case,
+				workflow: cell.workflow,
+				have: cell.runs.length,
+				need,
+				reason: 'complete',
+			},
+	);
+}
+
+export function formatCellTable(
+	statuses: readonly CellStatus[],
+	style: OutputStyle = PLAIN_STYLE,
+): string {
 	const rows = [
 		['case', 'workflow', 'runs', 'reason'],
-		...gaps.map((gap) => [gap.case.shortName, gap.workflow, `${gap.have}/${gap.need}`, gap.reason]),
+		...statuses.map((status) => [
+			status.case.shortName,
+			status.workflow,
+			`${status.have}/${status.need}`,
+			status.reason,
+		]),
 	];
 	const widths = rows[0]!.map((_, col) => Math.max(...rows.map((row) => row[col]!.length)));
 	// Column widths are computed from plain text above; styling is applied
@@ -19,11 +53,11 @@ export function formatGapTable(gaps: CellGap[], style: OutputStyle = PLAIN_STYLE
 				col === lastCol ? value : value.padEnd(widths[col]!),
 			);
 			if (rowIndex === 0) return padded.map((cell) => style.bold(cell)).join('  ');
-			const gap = gaps[rowIndex - 1]!;
+			const status = statuses[rowIndex - 1]!;
 			return padded
 				.map((cell, col) => {
 					if (col === 0) return style.caseName(cell);
-					if (col === lastCol) return style.reason(gap.reason, cell);
+					if (col === lastCol) return style.reason(status.reason, cell);
 					return cell;
 				})
 				.join('  ');

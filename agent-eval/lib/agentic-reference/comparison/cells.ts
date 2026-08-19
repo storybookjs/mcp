@@ -2,13 +2,15 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { isCurrentRun } from '../comparability.ts';
-import { parseTimestamp, type Run } from '../../post-analysis/discovery.ts';
+import type { Run } from '../../post-analysis/discovery.ts';
 import { isCurrentCacheEntry, readCacheEntry } from '../../post-analysis/run-cache.ts';
 import { readJson } from '../../utils/files.ts';
 import type { ResolvedCase } from './resolve.ts';
 
 export type ExclusionReason = 'infra-failure' | 'malformed-analysis';
 export type GapReason = 'missing-runs' | 'unanalyzed' | 'superseded-runs';
+/** A gap's reason, or 'complete' for a cell that meets the gate. */
+export type CellReason = GapReason | 'complete';
 
 export interface ExcludedRun {
 	runDir: string;
@@ -20,11 +22,12 @@ export interface UsableRun {
 	analysis: Record<string, unknown>;
 }
 
+// A cell pools every batch of its (case, workflow) pair: a sample is topped
+// up across invocations, and the per-run supersession check already keeps
+// runs of replaced measurements out, which is what batch selection was for.
 export interface Cell {
 	case: ResolvedCase;
 	workflow: string;
-	/** Selected timestamp, or 'all' when pooling batches. */
-	batch: string;
 	runs: UsableRun[];
 	excluded: ExcludedRun[];
 	unanalyzed: number;
@@ -47,7 +50,6 @@ interface BuildOptions {
 	cases: ResolvedCase[];
 	workflows: string[];
 	minRuns: number;
-	allBatches: boolean;
 	metricsVersion: number | undefined;
 }
 
@@ -90,17 +92,9 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 			const candidates = options.runs.filter(
 				(run) => run.experiment === resolvedCase.experiment && run.evalName === workflow,
 			);
-			const batches = [...new Set(candidates.map((run) => run.timestamp))].sort(
-				(a, b) => parseTimestamp(a).getTime() - parseTimestamp(b).getTime(),
-			);
-			const batch = options.allBatches ? 'all' : (batches.at(-1) ?? 'none');
-			const selected = options.allBatches
-				? candidates
-				: candidates.filter((run) => run.timestamp === batch);
 			const cell: Cell = {
 				case: resolvedCase,
 				workflow,
-				batch,
 				runs: [],
 				excluded: [],
 				unanalyzed: 0,
@@ -108,7 +102,9 @@ export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGa
 				passed: 0,
 				failed: 0,
 			};
-			for (const run of selected.sort((a, b) => a.run - b.run)) {
+			for (const run of candidates.sort(
+				(a, b) => a.timestamp.localeCompare(b.timestamp) || a.run - b.run,
+			)) {
 				classify(run, options.metricsVersion, cell);
 			}
 			cells.push(cell);

@@ -10,7 +10,6 @@ export interface ComparisonSpec {
 	workflows: string[];
 	mode: 'single-workflow' | 'aggregate';
 	minRuns: number;
-	allBatches: boolean;
 	/** Repo-relative path of the plan config that scoped this comparison, if one did. */
 	plan?: string;
 }
@@ -25,8 +24,7 @@ function orderedCells(cells: Cell[], spec: ComparisonSpec): Cell[] {
 		(a, b) =>
 			caseRank(a.case).localeCompare(caseRank(b.case)) ||
 			workflowNumericId(a.workflow) - workflowNumericId(b.workflow) ||
-			a.workflow.localeCompare(b.workflow) ||
-			a.batch.localeCompare(b.batch),
+			a.workflow.localeCompare(b.workflow),
 	);
 }
 
@@ -79,7 +77,6 @@ export function manifestJson(args: {
 			workflows: spec.workflows,
 			mode: spec.mode,
 			minRuns: spec.minRuns,
-			allBatches: spec.allBatches,
 			plan: spec.plan ?? null,
 		},
 		metrics,
@@ -87,10 +84,10 @@ export function manifestJson(args: {
 		family: metrics.flatMap((metric) =>
 			spec.treatments.map((treatment) => ({ metric: metric.key, treatment: treatment.shortName })),
 		),
+		// Per-run batches live in the dataset; a cell here is the pooled sample.
 		cells: ordered.map((cell) => ({
 			case: cell.case.shortName,
 			workflow: cell.workflow,
-			batch: cell.batch,
 			usableRuns: cell.runs.length,
 			passed: cell.passed,
 			failed: cell.failed,

@@ -77,33 +77,35 @@ function build(overrides: Partial<Parameters<typeof buildCells>[0]> = {}) {
 		cases: [CONTROL, TREATMENT],
 		workflows: [WF],
 		minRuns: 2,
-		allBatches: false,
 		metricsVersion: 6,
 		...overrides,
 	});
 }
 
 describe('buildCells', () => {
-	it('accepts a complete comparison and picks the latest batch', () => {
+	// A pair's sample is topped up across invocations, so its comparable runs
+	// span several result directories; a cell is the union of them all.
+	it('pools every batch of a cell into one sample', () => {
 		for (let i = 1; i <= 2; i++) mkRun(CONTROL.experiment, TS1, i, 'usable');
 		for (let i = 1; i <= 2; i++) mkRun(CONTROL.experiment, TS2, i, 'usable');
 		for (let i = 1; i <= 2; i++) mkRun(TREATMENT.experiment, TS2, i, 'usable');
 		const { cells, gaps } = build();
 		expect(gaps).toEqual([]);
 		expect(cells).toHaveLength(2);
-		expect(cells.every((c) => c.batch === TS2)).toBe(true);
-		expect(cells[0]!.runs).toHaveLength(2);
+		expect(cells.find((c) => c.case === CONTROL)!.runs).toHaveLength(4);
+		expect(cells.find((c) => c.case === TREATMENT)!.runs).toHaveLength(2);
 	});
 
-	it('pools batches with allBatches', () => {
-		mkRun(CONTROL.experiment, TS1, 1, 'usable');
-		mkRun(CONTROL.experiment, TS2, 1, 'usable');
-		mkRun(TREATMENT.experiment, TS2, 1, 'usable');
-		mkRun(TREATMENT.experiment, TS2, 2, 'usable');
-		const { cells, gaps } = build({ allBatches: true });
+	it('keeps superseded runs of an old batch out of the pooled sample', () => {
+		mkRun(CONTROL.experiment, TS1, 1, 'superseded');
+		mkRun(CONTROL.experiment, TS1, 2, 'superseded');
+		for (let i = 1; i <= 2; i++) mkRun(CONTROL.experiment, TS2, i, 'usable');
+		for (let i = 1; i <= 2; i++) mkRun(TREATMENT.experiment, TS2, i, 'usable');
+		const { cells, gaps } = build();
 		expect(gaps).toEqual([]);
-		expect(cells.find((c) => c.case === CONTROL)!.runs).toHaveLength(2);
-		expect(cells.find((c) => c.case === CONTROL)!.batch).toBe('all');
+		const control = cells.find((c) => c.case === CONTROL)!;
+		expect(control.runs).toHaveLength(2);
+		expect(control.superseded).toBe(2);
 	});
 
 	it('excludes infra failures and reports missing-runs gaps', () => {
@@ -206,7 +208,6 @@ describe('autoSelectWorkflows', () => {
 			cases: [CONTROL, TREATMENT],
 			candidates: [WF, '701-new-ui-flow'],
 			minRuns: 2,
-			allBatches: false,
 			metricsVersion: 6,
 		});
 		expect(selected).toEqual([WF]);

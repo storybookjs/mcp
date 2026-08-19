@@ -399,7 +399,7 @@ pnpm results:compare                        # control-none vs all cases, auto wo
 pnpm results:compare --cases=do-dont --workflows=701          # one pair, one workflow
 pnpm results:compare --cases=do-dont,full --workflows=701,703 # aggregation mode
 pnpm results:compare --plan=1-levels-create                   # one plan's cases and workflows
-pnpm results:compare --min-runs=5 --all-batches               # quick look, pooled batches
+pnpm results:compare --min-runs=5                             # quick look at a smaller gate
 ```
 
 `--plan` scopes the comparison to one collection plan (`plans/<name>.plan.ts`,
@@ -408,7 +408,9 @@ plan's target sample size unless `--min-runs` overrides it.
 
 Which stored runs count is decided the same way the plan runner decides what
 to reuse: a run whose measurement differs from what its (experiment, eval)
-pair measures today is superseded and set aside.
+pair measures today is superseded and set aside. A cell pools every remaining
+comparable run across all of its collection batches, so a sample topped up
+over several invocations counts as one sample.
 
 Output lands in `comparisons/<slug>/`: `report.md`, `estimates.csv|json`,
 `curves/`, `dataset.csv`, `manifest.json`. When usable data is missing —

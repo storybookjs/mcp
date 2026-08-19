@@ -139,6 +139,9 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 				output = failed.stderr.toString();
 			}
 			expect(output).toContain('9/10');
+			// The table also lists the cells that are already complete.
+			expect(output).toContain('10/10');
+			expect(output).toContain('complete');
 			expect(output).toContain(
 				`AGENTIC_REF_FLOW=${WF} AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref ${TREATMENT_EXP}`,
 			);
