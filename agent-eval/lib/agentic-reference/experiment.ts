@@ -73,15 +73,16 @@ interface AgenticRefExperimentOptions {
 	overrides?: Partial<ExperimentConfig & PostAnalysisExperiment>;
 }
 
-// Codex runs direct (the AI Gateway Codex path mis-handles its Responses tool
-// shape) with effort folded into the model id; Claude Code runs gateway-routed
-// with a separate effort option.
+// Both agents run against their provider's API directly, not the AI Gateway:
+// the gateway's Codex path mis-handles its Responses tool shape, and its BYOK
+// failover silently retries failed Anthropic calls on Vercel's paid pool.
+// Codex folds effort into the model id; Claude Code takes a separate option.
 type AgentConfig = Pick<ExperimentConfig, 'agent' | 'model'> &
 	Partial<Pick<ExperimentConfig, 'agentOptions'>>;
 
 export const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	'claude-code': {
-		agent: 'vercel-ai-gateway/claude-code',
+		agent: 'claude-code',
 		model: 'opus',
 		agentOptions: { effort: 'high' },
 	},
