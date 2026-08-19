@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { coverageDelta, isDsCoverage } from './coverage.ts';
+import { round } from '../../utils/math.ts';
 
 import type { DsCoverage } from './coverage.ts';
 
 function slice(ds: number, instanceDs: number | null): DsCoverage {
 	const nodes = { all: 10, host: 4, component: 6, ds, external: 0, local: 6 - ds, unresolved: 0 };
+	// The instance view scales the whole tree up (JSX inside a reused component
+	// counts once per instantiation), so its totals are a separate, internally
+	// consistent NodeTotals — not the static one with only `ds` and `all`
+	// overridden, which would leave `all` disagreeing with `host + component`
+	// and let `ds` exceed `component`.
+	const instanceComponent = 12;
+	const instanceHost = 8;
 	return {
 		dsPackages: ['@ds/*'],
 		files: 2,
@@ -18,9 +26,17 @@ function slice(ds: number, instanceDs: number | null): DsCoverage {
 			? {}
 			: {
 					instances: {
-						nodes: { ...nodes, ds: instanceDs, all: 20 },
-						dsShareOfAllNodes: instanceDs / 20,
-						dsShareOfComponentNodes: instanceDs / 6,
+						nodes: {
+							all: instanceHost + instanceComponent,
+							host: instanceHost,
+							component: instanceComponent,
+							ds: instanceDs,
+							external: 0,
+							local: instanceComponent - instanceDs,
+							unresolved: 0,
+						},
+						dsShareOfAllNodes: instanceDs / (instanceHost + instanceComponent),
+						dsShareOfComponentNodes: instanceDs / instanceComponent,
 					},
 				}),
 	};
@@ -31,6 +47,11 @@ describe('coverageDelta instances', () => {
 		const delta = coverageDelta(slice(2, 4), slice(3, 8));
 		expect(delta.instances?.nodes.ds).toEqual({ before: 4, after: 8, delta: 4 });
 		expect(delta.instances?.dsShareOfAllNodes).toEqual({ before: 0.2, after: 0.4, delta: 0.2 });
+		expect(delta.instances?.dsShareOfComponentNodes).toEqual({
+			before: 4 / 12,
+			after: 8 / 12,
+			delta: round(8 / 12 - 4 / 12, 4),
+		});
 	});
 
 	it('is null when either side predates instance measurement', () => {

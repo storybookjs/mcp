@@ -861,10 +861,14 @@ it('attributes a function-scoped component to its enclosing declaration', () => 
 			'export const Page = () => { const Inner = () => <DSButton />; return <div><Inner /><Inner /></div> }',
 		].join('\n'),
 	});
-	// Inner is not a module-scope binding: its usages stay unresolved (the
-	// pre-existing behavior) and its body counts as Page's markup, once.
+	// Inner is not a *top-level* declaration, so ownerName() cannot give it a
+	// bucket of its own: DSButton is attributed to Page and counts once, at
+	// Page's multiplier. The <Inner/> tags themselves still resolve normally
+	// to `local` — resolveScopedName analyzes function-scope declarations
+	// like any other — so they are not unresolved.
 	expect(report.instances.nodes.ds).toBe(1);
-	expect(report.instances.nodes.unresolved).toBe(2);
+	expect(report.instances.nodes.local).toBe(2);
+	expect(report.instances.nodes.unresolved).toBe(0);
 });
 ```
 
