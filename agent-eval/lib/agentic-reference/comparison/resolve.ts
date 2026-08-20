@@ -8,6 +8,7 @@ export interface ResolvedCase {
 	caseName: string;
 	experiment: string;
 	shortName: string;
+	description?: string;
 }
 
 function resolvedCases(): ResolvedCase[] {
@@ -15,6 +16,7 @@ function resolvedCases(): ResolvedCase[] {
 		caseName: c.name,
 		experiment: `${EXPERIMENT_NAME_PREFIX}${c.name}`,
 		shortName: shortNameOf(c.name),
+		description: c.description,
 	}));
 }
 

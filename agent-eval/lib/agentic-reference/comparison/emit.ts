@@ -25,20 +25,20 @@ function orderedCells(cells: Cell[], spec: ComparisonSpec): Cell[] {
 		(a, b) =>
 			caseRank(a.case).localeCompare(caseRank(b.case)) ||
 			workflowNumericId(a.workflow) - workflowNumericId(b.workflow) ||
-			a.workflow.localeCompare(b.workflow)
+			a.workflow.localeCompare(b.workflow),
 	);
 }
 
 export function datasetCsv(
 	cells: Cell[],
 	metrics: ComparisonMetric[],
-	spec: ComparisonSpec
+	spec: ComparisonSpec,
 ): string {
 	const header = ['case', 'workflow', 'batch', 'run', ...metrics.map((m) => m.key)];
 	const lines = [header.join(',')];
 	for (const cell of orderedCells(cells, spec)) {
 		for (const usable of [...cell.runs].sort(
-			(a, b) => a.run.timestamp.localeCompare(b.run.timestamp) || a.run.run - b.run.run
+			(a, b) => a.run.timestamp.localeCompare(b.run.timestamp) || a.run.run - b.run.run,
 		)) {
 			const values = metrics.map((metric) => {
 				const value = metricValueAt(usable.analysis, metric.path);
@@ -51,7 +51,7 @@ export function datasetCsv(
 					usable.run.timestamp,
 					String(usable.run.run),
 					...values,
-				].join(',')
+				].join(','),
 			);
 		}
 	}
@@ -83,7 +83,7 @@ export function manifestJson(args: {
 		metrics,
 		// The BH family: every headline test of this invocation, in test order.
 		family: metrics.flatMap((metric) =>
-			spec.treatments.map((treatment) => ({ metric: metric.key, treatment: treatment.shortName }))
+			spec.treatments.map((treatment) => ({ metric: metric.key, treatment: treatment.shortName })),
 		),
 		// Stable per-case colors, shared by report.html and the ECDF curves.
 		colors: caseColors([spec.control, ...spec.treatments].map((c) => c.shortName)),
@@ -101,7 +101,7 @@ export function manifestJson(args: {
 			cell.excluded.map((excluded) => ({
 				path: toPosix(relative(agentEvalRoot, excluded.runDir)),
 				reason: excluded.reason,
-			}))
+			})),
 		),
 		provenance,
 	};

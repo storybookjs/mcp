@@ -33,6 +33,8 @@ interface ManifestCase {
 	caseName: string;
 	experiment: string;
 	shortName: string;
+	/** The case registry's definition of the arm; absent in older manifests. */
+	description?: string;
 }
 
 interface ManifestMetric {
@@ -97,76 +99,232 @@ export interface HtmlReportInput {
 	dataset: DatasetRow[];
 }
 
-// Plain-English name and one-line description per metric. Metrics outside
-// this map render under their raw registry key with no description.
-const METRICS: Record<string, { name: string; description: string }> = {
+// Plain-English copy per metric. `description` is the one-liner under the
+// metric name; `computes` and `relevance` are the two halves of the hover
+// definition, written for readers with no project context: what exactly is
+// measured, then why anyone should care. Metrics outside this map render
+// under their raw registry key with no description or tooltip.
+interface MetricCopy {
+	name: string;
+	description: string;
+	computes: string;
+	relevance: string;
+}
+
+const METRICS: Record<string, MetricCopy> = {
 	estimatedCostUsd: {
 		name: 'Cost per run',
-		description: 'How many dollars one run spends',
+		description: 'What one run costs in API dollars',
+		computes: "The run's estimated API bill, priced from its token usage at the model's rates.",
+		relevance: 'The bottom line. Savings in time or tokens only matter if they show up here.',
 	},
 	durationSeconds: {
 		name: 'Time to finish',
 		description: 'Wall-clock seconds per run',
+		computes: 'Wall-clock time for the whole run, from the agent starting the task to it stopping.',
+		relevance: 'The most direct measure of whether documentation makes the agent faster.',
 	},
 	outputTokens: {
 		name: 'Output tokens',
 		description: 'Text and code the model writes',
+		computes: 'Every token the model generated during the run: prose, code, and tool calls.',
+		relevance:
+			'Output tokens are the most expensive kind, and heavy output usually means long ' +
+			'detours or rewritten work.',
 	},
 	cacheHitRate: {
 		name: 'Cache hit rate',
 		description: 'Share of context read from cache',
+		computes:
+			'The share of everything the model read that came from prompt cache instead of being ' +
+			'processed at the full price.',
+		relevance:
+			'A high rate means the agent kept a stable context between turns; a low one makes the ' +
+			'same work cost more.',
 	},
 	inputTokens: {
 		name: 'Uncached input tokens',
-		description: 'Context paid at the raw rate',
+		description: 'Context paid at the full rate',
+		computes: 'Input the model read without cache help — tokens billed at the full rate.',
+		relevance:
+			'The expensive kind of reading. Good docs shrink it by getting the agent to the ' +
+			'answer with less context.',
 	},
-	turns: { name: 'Conversation turns', description: 'Agent loop iterations' },
-	totalToolCalls: { name: 'Tool calls', description: 'Every tool invocation' },
+	turns: {
+		name: 'Conversation turns',
+		description: 'Agent loop iterations',
+		computes:
+			'How many rounds the agent loop ran — each turn is one model response, usually ' +
+			'followed by tool calls.',
+		relevance:
+			'Fewer turns means less back-and-forth to reach a result; many turns usually mean ' +
+			'searching or retrying.',
+	},
+	totalToolCalls: {
+		name: 'Tool calls',
+		description: 'Every tool invocation',
+		computes:
+			'Every tool invocation across the run: file reads and writes, shell commands, MCP ' +
+			'calls, all of it.',
+		relevance:
+			'A rough size of the work performed. Large gaps between arms mean the workflow ' +
+			'changed shape, not just pace.',
+	},
 	docsCalls: {
 		name: 'Documentation lookups',
-		description: 'Calls that read DS docs (MCP)',
+		description: 'Calls that read docs (MCP or web)',
+		computes:
+			"Tool calls that read documentation: the design system's docs endpoints, plus web " +
+			'fetches and searches.',
+		relevance:
+			'Shows whether the agent actually consulted the docs its arm serves — a treatment ' +
+			'can only work through this door.',
 	},
 	explorationCalls: {
 		name: 'Exploration calls',
 		description: 'Reading and searching the codebase',
+		computes:
+			'Tool calls that read code: file reads, directory listings, searches, and read-only ' +
+			'shell commands.',
+		relevance:
+			'Reading source is how an agent compensates for missing docs, so better docs should ' +
+			'push this down.',
 	},
-	editCalls: { name: 'Edit calls', description: 'File-writing tool calls' },
+	editCalls: {
+		name: 'Edit calls',
+		description: 'File-writing tool calls',
+		computes:
+			'Tool calls that write: file edits and creations, plus shell commands that copy, ' +
+			'move, or delete.',
+		relevance:
+			'Edits beyond what the change needs are rework — write, check, rewrite loops show ' +
+			'up here.',
+	},
 	verificationCalls: {
 		name: 'Verification calls',
-		description: 'Tests, typechecks, build checks',
+		description: 'Tests, typechecks, builds',
+		computes: 'Tool calls that check the work: test runs, typechecking, linting, builds.',
+		relevance:
+			'Some checking is healthy; how much of it an agent needs tracks how confident it is ' +
+			'in its changes.',
 	},
 	filesEdited: {
 		name: 'Files touched',
 		description: 'Distinct files the agent edited',
+		computes:
+			'How many distinct project files the agent wrote at least once during the run. ' +
+			"Renames are followed; scratch files outside the project don't count.",
+		relevance:
+			'Touching many files for a contained task is a sign of thrashing; a focused agent ' +
+			'edits the few files the change needs.',
+	},
+	meanEditsPerFile: {
+		name: 'Mean edits per file',
+		description: 'Average rewrites per touched file',
+		computes:
+			'For the files the agent touched, the average number of times each one was written ' +
+			'over the run.',
+		relevance:
+			'An agent that understood the change writes a file once or twice; high averages ' +
+			'mean write-check-rewrite loops.',
+	},
+	maxEditsPerFile: {
+		name: 'Max edits per file',
+		description: 'Rewrites of the most-edited file',
+		computes: 'How many times the most-rewritten file was written over the run.',
+		relevance: 'Catches the one file the agent fought with, which an average smooths away.',
 	},
 	diffFilesChanged: {
 		name: 'Files changed in diff',
 		description: 'Files in the final change',
+		computes:
+			'How many files differ between the finished project and the tree the run started from.',
+		relevance:
+			'The footprint a reviewer faces. Files touched counts the work; this counts what is ' +
+			'left at the end.',
 	},
 	slocAdded: {
 		name: 'Lines added',
 		description: 'Source lines the change adds',
+		computes:
+			'Source lines the final change adds over the starting tree, with blank lines and ' +
+			'comments stripped before counting.',
+		relevance:
+			'The size of the solution. For the same task, needing fewer new lines usually means ' +
+			'leaning on existing components.',
 	},
-	slocNet: { name: 'Net lines', description: 'Adds minus removals' },
+	slocNet: {
+		name: 'Net lines',
+		description: 'Adds minus removals',
+		computes: 'Lines added minus lines removed, under the same counting rules.',
+		relevance:
+			'How much the codebase grew. A small net with many added lines means the run mostly ' +
+			'replaced code rather than piling it on.',
+	},
 	dsShareOfAllNodes: {
 		name: 'DS share of UI',
-		description: 'Design-system share of rendered nodes',
+		description: 'Design-system share of UI elements',
+		computes:
+			'Of all UI elements in the finished app — plain HTML tags included — the share that ' +
+			'comes from the design system.',
+		relevance:
+			'The headline adoption number: how much of the interface is built from the system ' +
+			'rather than raw markup.',
 	},
 	dsShareOfComponentNodes: {
 		name: 'DS share of components',
-		description: 'DS share of component nodes only',
+		description: 'DS share among components only',
+		computes:
+			'The design-system share counting only components, with plain HTML tags like div and ' +
+			'span left out.',
+		relevance:
+			'A narrower question: when the agent reached for a component, did it pick the design ' +
+			"system's?",
+	},
+	dsShareOfAllNodesDelta: {
+		name: 'DS share of UI Δ',
+		description: 'How the DS share of UI moved',
+		computes:
+			"The change in the design system's share of all UI elements: the finished app's " +
+			"share minus the untouched app's.",
+		relevance:
+			'Whether the run moved the app toward or away from the design system — sharper than ' +
+			'the absolute share when the app starts with plenty of existing UI.',
+	},
+	dsShareOfComponentNodesDelta: {
+		name: 'DS share of components Δ',
+		description: 'How the DS component share moved',
+		computes:
+			"The change in the design system's share of components (plain HTML tags left out): " +
+			"the finished app's share minus the untouched app's.",
+		relevance:
+			'Did the components this run added come from the design system, net of what it removed?',
 	},
 	cyclomaticDelta: {
 		name: 'Cyclomatic complexity added',
 		description: 'Branching complexity the change adds',
+		computes:
+			"How much the project's cyclomatic complexity rose over the run: the classic count " +
+			'of independent paths through the code.',
+		relevance: 'More branches means more cases to test and more ways to be wrong.',
 	},
 	cognitiveDelta: {
 		name: 'Cognitive complexity added',
 		description: 'Readability cost the change adds',
+		computes:
+			"How much the project's cognitive complexity rose — a readability score that charges " +
+			'extra for nesting and tangled control flow.',
+		relevance: "The closest number to 'how much harder did this code just get to read'.",
 	},
 	jsxCognitiveDelta: {
 		name: 'JSX complexity added',
 		description: 'Markup complexity the change adds',
+		computes:
+			'Cognitive complexity again, but JSX-aware: render loops and conditional markup ' +
+			'count too, weighted by how deep they nest.',
+		relevance:
+			'In UI code most of the complexity lives in the markup, which the classic scores ' +
+			'barely see.',
 	},
 };
 
@@ -187,11 +345,11 @@ const FAMILIES: Record<string, { name: string; intro: string }> = {
 	},
 	churn: {
 		name: 'Churn',
-		intro: 'How many files the agent touches while working.',
+		intro: 'How much the agent rewrites while working: files touched, and repeat edits per file.',
 	},
 	dsCoverage: {
 		name: 'DS coverage',
-		intro: 'How much of the produced UI uses the design system.',
+		intro: 'How much of the produced UI uses the design system, and how far the run moved it.',
 	},
 	complexity: {
 		name: 'Complexity',
@@ -202,7 +360,13 @@ const FAMILIES: Record<string, { name: string; intro: string }> = {
 
 // Metrics measured as a 0-1 share; values and absolute-delta effects display
 // as percentages (value * 100), never as a relative percent change.
-const SHARE_METRICS = new Set(['dsShareOfAllNodes', 'dsShareOfComponentNodes', 'cacheHitRate']);
+const SHARE_METRICS = new Set([
+	'dsShareOfAllNodes',
+	'dsShareOfComponentNodes',
+	'dsShareOfAllNodesDelta',
+	'dsShareOfComponentNodesDelta',
+	'cacheHitRate',
+]);
 
 // Small-count metrics whose values and deltas display with one decimal.
 const COUNT_METRICS = new Set([
@@ -213,11 +377,19 @@ const COUNT_METRICS = new Set([
 	'editCalls',
 	'verificationCalls',
 	'filesEdited',
+	'meanEditsPerFile',
+	'maxEditsPerFile',
 	'diffFilesChanged',
 	'cyclomaticDelta',
 	'cognitiveDelta',
 	'jsxCognitiveDelta',
 ]);
+
+// Parked metrics: tested and q-corrected like every other, but hidden until
+// the Metrics toggle is set to "all" — the grid stays intact while the default
+// view shows the story that matters. Move keys in and out freely; nothing
+// statistical depends on this set.
+const EXTRA_METRICS = new Set(['cyclomaticDelta', 'inputTokens', 'slocAdded', 'totalToolCalls']);
 
 // Line counts: whole numbers with thousands separators.
 const SLOC_METRICS = new Set(['slocAdded', 'slocNet']);
@@ -375,7 +547,7 @@ interface TreatmentStyle {
 // CASE_COLORS); the index palette only serves manifests from before that.
 function treatmentStyles(
 	treatments: ManifestCase[],
-	colors: ManifestJson['colors']
+	colors: ManifestJson['colors'],
 ): TreatmentStyle[] {
 	return treatments.map((t, i) => {
 		const assigned = colors?.[t.shortName];
@@ -394,6 +566,26 @@ function metricName(key: string): string {
 
 function metricDescription(key: string): string {
 	return METRICS[key]?.description ?? '';
+}
+
+// Hover definition for a metric name: what it computes, then why it matters.
+// data-tip-q carries the tooltip's third line (see showTip); empty for
+// metrics outside the copy map.
+function metricTipAttributes(key: string): string {
+	const copy = METRICS[key];
+	if (!copy) return '';
+	return (
+		` tabindex="0" data-tip-title="${escapeHtml(copy.name)}" ` +
+		`data-tip-effect="${escapeHtml(copy.computes)}" ` +
+		`data-tip-q="${escapeHtml(copy.relevance)}"`
+	);
+}
+
+/** The metric name as a span, made a hover target when a definition exists. */
+function metricNameHtml(key: string, baseClass: string): string {
+	const tip = metricTipAttributes(key);
+	const cls = [baseClass, ...(tip === '' ? [] : ['mname', 'tipsrc'])].filter(Boolean).join(' ');
+	return `<span${cls === '' ? '' : ` class="${cls}"`}${tip}>${escapeHtml(metricName(key))}</span>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -423,7 +615,7 @@ function usableValues(
 	dataset: DatasetRow[],
 	caseName: string,
 	workflow: string,
-	metric: ManifestMetric
+	metric: ManifestMetric,
 ): number[] {
 	return dataset
 		.filter((row) => row.case === caseName && row.workflow === workflow)
@@ -442,7 +634,7 @@ function caseStat(
 	metric: ManifestMetric,
 	scope: string,
 	workflows: string[],
-	kind: 'mean' | 'median'
+	kind: 'mean' | 'median',
 ): number | null {
 	const scoped = scope === 'pooled' ? workflows : [scope];
 	const perWorkflow: number[] = [];
@@ -452,12 +644,29 @@ function caseStat(
 		perWorkflow.push(
 			kind === 'median'
 				? median(values)
-				: mean(values.map((v) => transformValue(v, metric.transform)))
+				: mean(values.map((v) => transformValue(v, metric.transform))),
 		);
 	}
 	if (perWorkflow.length === 0) return null;
 	const combined = mean(perWorkflow);
 	return kind === 'median' ? combined : backTransform(combined, metric.transform);
+}
+
+// The shift of a case statistic against the control's, on the effect display
+// scale: a ratio for log-scaled metrics (they display as percent changes), a
+// difference otherwise. Null when a statistic is missing or a ratio is
+// undefined; callers fall back to the model estimate then.
+function descriptiveEffect(
+	transform: EstimateTransform,
+	control: number | null,
+	treatment: number | null,
+): number | null {
+	if (control === null || treatment === null) return null;
+	if (transform === 'log' || transform === 'log0') {
+		if (control <= 0 || treatment < 0) return null;
+		return treatment / control - 1;
+	}
+	return treatment - control;
 }
 
 // ---------------------------------------------------------------------------
@@ -477,19 +686,27 @@ function buildHeader(manifest: ManifestJson): string {
 <span class="eyebrow">results:compare</span>
 <h1>${escapeHtml(title)}</h1>
 <p class="lede mono">generated ${escapeHtml(generatedAt)} &middot; ${escapeHtml(
-		sha
+		sha,
 	)} &middot; metrics v${escapeHtml(String(metricsVersion))}</p>`;
 }
 
 function buildFilterBar(manifest: ManifestJson, styles: TreatmentStyle[]): string {
+	const definitions = new Map(manifest.spec.treatments.map((t) => [t.shortName, t.description]));
 	const chips = styles
-		.map(
-			(t) =>
-				`<button type="button" class="chip-toggle" data-t="${t.slug}" aria-pressed="true" ` +
+		.map((t) => {
+			const definition = definitions.get(t.shortName);
+			const tip = definition
+				? ` data-tip-title="${escapeHtml(t.shortName)}" data-tip-effect="${escapeHtml(definition)}"`
+				: '';
+			return (
+				`<button type="button" class="chip-toggle${
+					definition ? ' tipsrc' : ''
+				}" data-t="${t.slug}" aria-pressed="true"${tip} ` +
 				`style="--tc:var(--c-${t.slug})"><span class="dot"></span>${escapeHtml(
-					t.shortName
+					t.shortName,
 				)}</button>`
-		)
+			);
+		})
 		.join('\n');
 	const workflowSelect =
 		manifest.spec.mode === 'aggregate'
@@ -504,14 +721,28 @@ ${manifest.spec.workflows
 			: '';
 	return `
 <div class="filterbar">
+<div class="fbrow">
 <div class="legend">${chips}</div>
-<label class="select">Significance
-<select id="sigFilter">
-<option value="all" selected>All</option>
-<option value="sig">Significant</option>
-<option value="nonsig">Non-significant</option>
-</select></label>${workflowSelect}
 <button type="button" id="resetFilters">Reset filters</button>
+</div>
+<div class="fbrow fbopts">${workflowSelect}
+<span class="select">Significance
+<span class="seg" id="sigFilter" role="group" aria-label="Significance filter">
+<button type="button" data-sig="all" aria-pressed="true">All</button>
+<button type="button" data-sig="sig" aria-pressed="false">Significant</button>
+<button type="button" data-sig="nonsig" aria-pressed="false">Not significant</button>
+</span></span>
+<span class="select">Test
+<span class="seg" id="sigMode" role="group" aria-label="Significance test">
+<button type="button" data-sigmode="fdr" aria-pressed="true">FDR q &le; 0.05</button>
+<button type="button" data-sigmode="naive" aria-pressed="false">raw p &lt; 0.05</button>
+</span></span>
+<span class="select">Metrics
+<span class="seg" id="metricsMode" role="group" aria-label="Metric set">
+<button type="button" data-metrics="core" aria-pressed="true">core</button>
+<button type="button" data-metrics="all" aria-pressed="false">all</button>
+</span></span>
+</div>
 </div>`;
 }
 
@@ -521,38 +752,75 @@ function headlineRows(estimates: EstimateRow[]): EstimateRow[] {
 	return estimates.filter((row) => !row.context && row.verdict !== null);
 }
 
+// Naive per-test call, before FDR correction; the report's Test toggle switches
+// every verdict between this and row.verdict === 'significant'.
+function isNaiveSignificant(row: EstimateRow): boolean {
+	return row.p < 0.05;
+}
+
+function summaryCounts(rows: EstimateRow[], isSig: (row: EstimateRow) => boolean): string {
+	let better = 0;
+	let worse = 0;
+	let changed = 0;
+	let inconclusive = 0;
+	for (const row of rows) {
+		if (!isSig(row)) {
+			inconclusive++;
+		} else if (row.direction === 'neutral') {
+			changed++;
+		} else if (isBetter(effectOf(row).value, row.direction)) {
+			better++;
+		} else {
+			worse++;
+		}
+	}
+	return (
+		`${better} better, ${worse} worse, ${changed} changed, ` +
+		`${inconclusive} not significant (of ${rows.length} metrics)`
+	);
+}
+
 function buildSummary(estimates: EstimateRow[], styles: TreatmentStyle[]): string {
 	const rows = headlineRows(estimates);
 	const items = styles
 		.map((t) => {
 			const forTreatment = rows.filter((r) => r.treatment === t.shortName);
-			let better = 0;
-			let worse = 0;
-			let changed = 0;
-			let inconclusive = 0;
-			for (const row of forTreatment) {
-				if (row.verdict !== 'significant') {
-					inconclusive++;
-				} else if (row.direction === 'neutral') {
-					changed++;
-				} else if (isBetter(effectOf(row).value, row.direction)) {
-					better++;
-				} else {
-					worse++;
-				}
-			}
 			return (
 				`<li class="t-${t.slug}" data-t="${t.slug}"><span class="dot" style="background:var(--c-${t.slug})"></span>` +
-				`<b>${escapeHtml(
-					t.shortName
-				)}</b>: ${better} better, ${worse} worse, ${changed} changed, ` +
-				`${inconclusive} not significant (of ${forTreatment.length} metrics)</li>`
+				`<b>${escapeHtml(t.shortName)}</b>: ` +
+				`<span class="m-fdr">${summaryCounts(
+					forTreatment,
+					(r) => r.verdict === 'significant',
+				)}</span>` +
+				`<span class="m-naive">${summaryCounts(forTreatment, isNaiveSignificant)}</span></li>`
 			);
 		})
 		.join('\n');
 	return `
 <h2>Summary</h2>
 <ul class="summary">${items}</ul>`;
+}
+
+// What each arm is, from the case registry's definitions. Omitted entirely
+// for manifests that predate definitions.
+function buildCases(manifest: ManifestJson, styles: TreatmentStyle[]): string {
+	const { control, treatments } = manifest.spec;
+	if ([control, ...treatments].every((c) => !c.description)) return '';
+	const bySlug = new Map(styles.map((t) => [t.shortName, t.slug]));
+	const item = (c: ManifestCase, isControl: boolean) => {
+		const slug = bySlug.get(c.shortName);
+		const dot = isControl
+			? '<span class="dot" style="background:var(--ink-3)"></span>'
+			: `<span class="dot" style="background:var(--c-${slug ?? ''})"></span>`;
+		const badge = isControl ? ' <span class="chip control">control</span>' : '';
+		const definition = c.description ? ` — ${escapeHtml(c.description)}` : '';
+		return `<li>${dot}<b>${escapeHtml(c.shortName)}</b>${badge}${definition}</li>`;
+	};
+	return `
+<h2>Cases</h2>
+<ul class="cases">
+${[item(control, true), ...treatments.map((t) => item(t, false))].join('\n')}
+</ul>`;
 }
 
 function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string {
@@ -581,17 +849,21 @@ function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string
 			'whole grid, giving q — the false-discovery rate. Among all the results this report calls ' +
 			'significant, at most about 5% are expected to be false discoveries. A result is ' +
 			'significant iff q &le; 0.05.</li>',
+		'<li><b>The Test toggle.</b> The filter bar can switch every verdict, icon, and filter ' +
+			'from the corrected call (q &le; 0.05) to the naive per-test call (p &lt; 0.05). ' +
+			'Raw p ignores the multiple-testing problem above; treat it as exploratory, not ' +
+			'confirmatory.</li>',
 	];
 	if (aggregate) {
 		lines.push(
 			'<li><b>Aggregation.</b> Multi-workflow effects weight every workflow equally, ' +
-				'regardless of run counts.</li>'
+				'regardless of run counts.</li>',
 		);
 	}
 	lines.push(
 		`<li><b>Engine.</b> statsmodels${escapeHtml(
-			statsmodelsVersion
-		)} OLS (Python); full provenance in manifest.json.</li>`
+			statsmodelsVersion,
+		)} OLS (Python); full provenance in manifest.json.</li>`,
 	);
 	return `
 <details class="statsbox">
@@ -613,7 +885,7 @@ function buildSample(manifest: ManifestJson, styles: TreatmentStyle[]): string {
 			const badge = isControl ? ' <span class="chip control">control</span>' : '';
 			return (
 				`<tr ${attrs} data-workflow="${escapeHtml(c.workflow)}"><td>${escapeHtml(
-					c.case
+					c.case,
 				)}${badge}</td>` +
 				`<td>${escapeHtml(c.workflow)}</td><td class="num">${c.usableRuns}</td></tr>`
 			);
@@ -645,7 +917,7 @@ function scopesFor(metricKey: string, estimates: EstimateRow[], manifest: Manife
 	if (manifest.spec.mode === 'aggregate') {
 		for (const workflow of manifest.spec.workflows) {
 			const rows = estimates.filter(
-				(row) => row.context && row.metric === metricKey && row.scope === workflow
+				(row) => row.context && row.metric === metricKey && row.scope === workflow,
 			);
 			if (rows.length > 0) scopes.push({ scope: workflow, context: true, rows });
 		}
@@ -654,7 +926,17 @@ function scopesFor(metricKey: string, estimates: EstimateRow[], manifest: Manife
 }
 
 function defaultScopeOf(manifest: ManifestJson): string {
-	return manifest.spec.mode === 'aggregate' ? 'pooled' : manifest.spec.workflows[0] ?? 'pooled';
+	return manifest.spec.mode === 'aggregate' ? 'pooled' : (manifest.spec.workflows[0] ?? 'pooled');
+}
+
+// Shown while a single workflow of an aggregate comparison is selected; the
+// naive variant reminds that raw p works there but stays uncorrected.
+function wfBadge(manifest: ManifestJson): string {
+	if (manifest.spec.mode !== 'aggregate') return '';
+	return (
+		'<span class="wfBadge" hidden><span class="m-fdr">per-workflow view — not FDR-tested</span>' +
+		'<span class="m-naive">per-workflow view — raw p, uncorrected</span></span>'
+	);
 }
 
 function tipAttributes(
@@ -665,18 +947,23 @@ function tipAttributes(
 		treatment: string;
 		controlMedian: string;
 		treatmentMedian: string;
-	}
+	},
 ): string {
 	const sig = row.verdict === 'significant';
 	const call = row.context
 		? `p=${formatPQ(row.p)} · not FDR-tested`
 		: `q=${formatPQ(row.q ?? Number.NaN)} · ${sig ? 'significant' : 'not significant'} · n=${
 				row.nControl
-		  }/${row.nTreatment}`;
+			}/${row.nTreatment}`;
+	const naiveCall =
+		`p=${formatPQ(row.p)} · ${
+			isNaiveSignificant(row) ? 'significant' : 'not significant'
+		} (raw, no FDR)` + ` · n=${row.nControl}/${row.nTreatment}`;
 	return (
 		`data-tip-title="${escapeHtml(`${metricName(row.metric)} — ${row.treatment}`)}" ` +
 		`data-tip-effect="${escapeHtml(`${effect.label} (95% CI ${effect.ciLabel})`)}" ` +
 		`data-tip-q="${escapeHtml(call)}" ` +
+		`data-tip-qn="${escapeHtml(naiveCall)}" ` +
 		`data-tip-control="${escapeHtml(stats.control)}" ` +
 		`data-tip-control-median="${escapeHtml(stats.controlMedian)}" ` +
 		`data-tip-treatment="${escapeHtml(stats.treatment)}" ` +
@@ -688,7 +975,7 @@ function buildEffects(
 	estimates: EstimateRow[],
 	manifest: ManifestJson,
 	styles: TreatmentStyle[],
-	dataset: DatasetRow[]
+	dataset: DatasetRow[],
 ): string {
 	const byShortName = new Map(styles.map((t) => [t.shortName, t]));
 	const controlName = manifest.spec.control.shortName;
@@ -706,41 +993,53 @@ function buildEffects(
 			const groups: string[] = [];
 			const valueGroups: string[] = [];
 			for (const { scope, context, rows } of scopes) {
+				const controlMean = caseStat(dataset, controlName, metric, scope, workflows, 'mean');
+				const controlMedian = caseStat(dataset, controlName, metric, scope, workflows, 'median');
 				const marks = rows
-					.map((row) => ({ row, effect: effectOf(row) }))
-					.filter(({ row }) => byShortName.has(row.treatment));
+					.filter((row) => byShortName.has(row.treatment))
+					.map((row) => {
+						const tMean = caseStat(dataset, row.treatment, metric, scope, workflows, 'mean');
+						const tMedian = caseStat(dataset, row.treatment, metric, scope, workflows, 'median');
+						return {
+							row,
+							effect: effectOf(row),
+							tMean,
+							tMedian,
+							meanEff: descriptiveEffect(metric.transform, controlMean, tMean),
+							medianEff: descriptiveEffect(metric.transform, controlMedian, tMedian),
+						};
+					});
 				if (marks.length === 0) continue;
 				const span = Math.max(
-					...marks.flatMap(({ effect }) => [
+					...marks.flatMap(({ effect, meanEff, medianEff }) => [
 						Math.abs(effect.value),
 						Math.abs(effect.lo),
 						Math.abs(effect.hi),
+						Math.abs(meanEff ?? 0),
+						Math.abs(medianEff ?? 0),
 					]),
-					1e-9
+					1e-9,
 				);
 				const x = (v: number) => 50 + (v / span) * 44;
-				const controlMean = caseStat(dataset, controlName, metric, scope, workflows, 'mean');
-				const controlMedian = caseStat(dataset, controlName, metric, scope, workflows, 'median');
 				const controlLabel =
 					controlMean === null
 						? ''
 						: `<span class="fctrl" data-mean="${escapeHtml(
-								formatMetricValue(metric.key, controlMean)
-						  )}" ` +
-						  `data-median="${escapeHtml(
-								formatMetricValue(metric.key, controlMedian ?? controlMean)
-						  )}">` +
-						  `${escapeHtml(formatMetricValue(metric.key, controlMean))}</span>`;
+								formatMetricValue(metric.key, controlMean),
+							)}" ` +
+							`data-median="${escapeHtml(
+								formatMetricValue(metric.key, controlMedian ?? controlMean),
+							)}">` +
+							`${escapeHtml(formatMetricValue(metric.key, controlMean))}</span>`;
 				// Marks are percent-positioned HTML, not SVG: an SVG stretched to the
 				// column width (preserveAspectRatio="none") scales circles into ovals.
 				const plotParts = ['<span class="fzero"></span>', controlLabel];
 				const labelParts: string[] = [];
-				marks.forEach(({ row, effect }, i) => {
+				marks.forEach(({ row, effect, tMean, tMedian, meanEff, medianEff }, i) => {
 					const t = byShortName.get(row.treatment)!;
 					const lane = 18 + (i + 0.5) * 16;
 					const sig = row.verdict === 'significant';
-					const tMean = caseStat(dataset, row.treatment, metric, scope, workflows, 'mean');
-					const tMedian = caseStat(dataset, row.treatment, metric, scope, workflows, 'median');
+					const sigP = isNaiveSignificant(row);
 					const stats = {
 						control: controlMean === null ? '' : formatMetricValue(metric.key, controlMean),
 						controlMedian:
@@ -750,55 +1049,54 @@ function buildEffects(
 					};
 					const tip = tipAttributes(row, effect, stats);
 					const lo = x(effect.lo);
+					// Significance styling (dot fill, CI/label dimming) lives in CSS keyed
+					// on data-sig / data-sig-p so the Test toggle can switch it live.
+					const sigAttrs = `${context ? '' : ` data-sig="${sig ? 1 : 0}"`} data-sig-p="${
+						sigP ? 1 : 0
+					}"`;
+					// The dot sits at the shift of the selected statistic; the CI is the
+					// model's and stays put, so the mean dot can sit off its center.
+					const xMean = x(meanEff ?? effect.value).toFixed(1);
+					const xMedian = x(medianEff ?? effect.value).toFixed(1);
 					plotParts.push(
-						`<span class="fmark" data-t="${t.slug}"${
-							context ? '' : ` data-sig="${sig ? 1 : 0}"`
-						}>` +
+						`<span class="fmark" data-t="${t.slug}"${sigAttrs} style="--tc:var(--c-${t.slug})">` +
 							`<span class="fci" style="left:${lo.toFixed(1)}%;width:${(x(effect.hi) - lo).toFixed(
-								1
-							)}%;` +
-							`top:${lane}px;background:var(--c-${t.slug});opacity:${sig ? 1 : 0.45}"></span>` +
-							`<span class="fdot tipsrc" tabindex="0" ${tip} style="left:${x(effect.value).toFixed(
-								1
-							)}%;top:${lane}px;` +
-							`border-color:var(--c-${t.slug});${
-								sig ? `background:var(--c-${t.slug})` : ''
-							}"></span>` +
-							'</span>'
+								1,
+							)}%;top:${lane}px"></span>` +
+							`<span class="fdot tipsrc" tabindex="0" ${tip} data-left-mean="${xMean}%" ` +
+							`data-left-median="${xMedian}%" style="left:${xMean}%;top:${lane}px"></span>` +
+							'</span>',
 					);
 					labelParts.push(
-						`<span class="flab fmark-lab tipsrc${sig ? '' : ' dim'}" tabindex="0" data-t="${
-							t.slug
-						}"` +
-							`${context ? '' : ` data-sig="${sig ? 1 : 0}"`} ${tip} style="color:var(--c-${
-								t.slug
-							})">` +
-							`${escapeHtml(effect.label)}</span>`
+						`<span class="flab fmark-lab tipsrc" tabindex="0" data-t="${t.slug}"` +
+							`${sigAttrs} ${tip} style="color:var(--c-${t.slug})">` +
+							`${escapeHtml(effect.label)}</span>`,
 					);
 				});
 				const height = 18 + marks.length * 16 + 6;
 				const hidden = scope === defaultScope ? '' : ' hidden';
 				groups.push(
 					`<div class="fgroup" data-scope="${escapeHtml(
-						scope
-					)}"${hidden} style="height:${height}px">${plotParts.join('')}</div>`
+						scope,
+					)}"${hidden} style="height:${height}px">${plotParts.join('')}</div>`,
 				);
 				valueGroups.push(
 					`<div class="fvgroup" data-scope="${escapeHtml(scope)}"${hidden}>${labelParts.join(
-						''
-					)}</div>`
+						'',
+					)}</div>`,
 				);
 			}
 			if (groups.length === 0) continue;
 			const desc = metricDescription(metric.key);
 			const descLabel = desc ? `${escapeHtml(desc)} · ` : '';
+			const extraAttr = EXTRA_METRICS.has(metric.key) ? ' data-extra="1"' : '';
 			metricRows.push(
-				'<div class="frow">' +
-					`<div class="fmeta"><span class="fname">${escapeHtml(metricName(metric.key))}</span>` +
+				`<div class="frow"${extraAttr}>` +
+					`<div class="fmeta">${metricNameHtml(metric.key, 'fname')}` +
 					`<span class="fdesc">${descLabel}${directionText(metric.direction)}</span></div>` +
 					`<div class="fplot">${groups.join('')}</div>` +
 					`<div class="fvals">${valueGroups.join('')}</div>` +
-					'</div>'
+					'</div>',
 			);
 		}
 		if (metricRows.length === 0) continue;
@@ -808,47 +1106,56 @@ function buildEffects(
 				`<h3>${escapeHtml(meta.name)}</h3>` +
 				(meta.intro ? `<p class="family-intro">${escapeHtml(meta.intro)}</p>` : '') +
 				metricRows.join('\n') +
-				'</section>'
+				'</section>',
 		);
 	}
 	void metricByKey;
 
-	const badge =
-		manifest.spec.mode === 'aggregate'
-			? '<span class="wfBadge" hidden>per-workflow view — not FDR-tested</span>'
-			: '';
+	const badge = wfBadge(manifest);
 	return `
 <div class="effects-head">
 <div class="glyphs">
-<span class="glyph"><span class="g-dot solid"></span>significant (q &le; 0.05)</span>
+<span class="glyph"><span class="g-dot solid"></span>significant (<span class="m-fdr">q &le; 0.05</span><span class="m-naive">p &lt; 0.05, raw</span>)</span>
 <span class="glyph"><span class="g-dot hollow"></span>not significant</span>
 <span class="glyph"><span class="g-ci"></span>95% CI</span>
 <span class="glyph"><span class="g-line"></span>center line = control value</span>
+<span class="glyph">dot = shift of the selected statistic; CI from the model</span>
 <span class="glyph">% for log-scaled metrics, absolute &Delta; otherwise</span>
 <span class="glyph">hover a dot or value for exact numbers</span>
 </div>
 <div class="effects-tools">
-<span class="stat-toggle">Control value:
+<span class="select">Statistic
+<span class="seg stat-toggle">
 <button type="button" data-stat="mean" aria-pressed="true">mean</button><button type="button" data-stat="median" aria-pressed="false">median</button>
-</span>
+</span></span>
 ${badge}
 </div>
 </div>
 ${familySections.join('\n')}
-<p class="empty-note" id="effectsEmpty" hidden>Nothing matches the current filters.</p>`;
+<p class="empty-note" id="effectsEmpty" hidden>Nothing matches the current filters.</p>
+<div class="secjump" role="group" aria-label="Jump between sections">
+<button type="button" class="secbtn" data-dir="-1" aria-label="Previous section">↑</button>
+<button type="button" class="secbtn" data-dir="1" aria-label="Next section">↓</button>
+</div>`;
 }
 
 // The verdict, folded into the Effect column as a suffix icon: colored arrows
 // for significant directional results, ± for a significant change of a
 // descriptive metric, ? in gray when no call can be made.
-function verdictIcon(row: EstimateRow, effect: Effect): string {
+function verdictIcon(row: EstimateRow, effect: Effect, mode: 'fdr' | 'naive'): string {
 	const icon = (cls: string, tip: string, glyph: string) =>
 		`<span class="vicon ${cls} tipsrc" tabindex="0" data-tip-title="${escapeHtml(
-			tip
+			tip,
 		)}">${glyph}</span>`;
-	if (row.context) return icon('na', 'not FDR-tested (per-workflow view)', '?');
-	if (row.verdict !== 'significant') {
-		return icon('na', `not significant at FDR 5% (q=${formatPQ(row.q ?? Number.NaN)})`, '?');
+	if (mode === 'fdr' && row.context) return icon('na', 'not FDR-tested (per-workflow view)', '?');
+	const sig = mode === 'fdr' ? row.verdict === 'significant' : isNaiveSignificant(row);
+	const call = mode === 'fdr' ? `q=${formatPQ(row.q ?? Number.NaN)}` : `p=${formatPQ(row.p)}, raw`;
+	if (!sig) {
+		return icon(
+			'na',
+			`not significant at ${mode === 'fdr' ? 'FDR 5%' : 'raw p < 0.05'} (${call})`,
+			'?',
+		);
 	}
 	if (row.direction === 'neutral') {
 		return icon('shift', 'significant — changed (descriptive metric)', '±');
@@ -856,15 +1163,23 @@ function verdictIcon(row: EstimateRow, effect: Effect): string {
 	const better = isBetter(effect.value, row.direction);
 	return icon(
 		better ? 'good' : 'bad',
-		`significant — ${better ? 'better' : 'worse'} (q=${formatPQ(row.q ?? Number.NaN)})`,
-		effect.value < 0 ? '↓' : '↑'
+		`significant — ${better ? 'better' : 'worse'} (${call})`,
+		effect.value < 0 ? '↓' : '↑',
+	);
+}
+
+// Both modes' icons; CSS shows the one matching body[data-sigmode].
+function verdictIcons(row: EstimateRow, effect: Effect): string {
+	return (
+		`<span class="m-fdr">${verdictIcon(row, effect, 'fdr')}</span>` +
+		`<span class="m-naive">${verdictIcon(row, effect, 'naive')}</span>`
 	);
 }
 
 function buildFullReport(
 	estimates: EstimateRow[],
 	manifest: ManifestJson,
-	styles: TreatmentStyle[]
+	styles: TreatmentStyle[],
 ): string {
 	const byShortName = new Map(styles.map((t) => [t.shortName, t]));
 	const orderedMetrics = manifest.metrics.map((m) => m.key);
@@ -898,7 +1213,10 @@ function buildFullReport(
 			const sig = row.verdict === 'significant';
 			const scope = row.context ? row.scope : defaultScope;
 			const hidden = scope === defaultScope ? '' : ' hidden';
-			const sigAttr = row.context ? '' : ` data-sig="${sig ? 1 : 0}"`;
+			const sigAttr =
+				(row.context ? '' : ` data-sig="${sig ? 1 : 0}"`) +
+				` data-sig-p="${isNaiveSignificant(row) ? 1 : 0}"` +
+				(EXTRA_METRICS.has(row.metric) ? ' data-extra="1"' : '');
 			const anomalies = row.anomalies ?? 0;
 			if (!row.context) anomalyTotal += anomalies;
 			const anomalyMarker =
@@ -910,13 +1228,13 @@ function buildFullReport(
 					: '';
 			return (
 				`<tr class="t-${t.slug}" data-t="${t.slug}" data-scope="${escapeHtml(
-					scope
+					scope,
 				)}"${sigAttr}${hidden}>` +
-				`<td>${escapeHtml(metricName(row.metric))}${anomalyMarker}${nMarker}</td>` +
+				`<td>${metricNameHtml(row.metric, '')}${anomalyMarker}${nMarker}</td>` +
 				`<td><span class="dot" style="background:var(--c-${t.slug})"></span>${escapeHtml(
-					row.treatment
+					row.treatment,
 				)}</td>` +
-				`<td class="num">${escapeHtml(effect.label)} ${verdictIcon(row, effect)}</td>` +
+				`<td class="num">${escapeHtml(effect.label)} ${verdictIcons(row, effect)}</td>` +
 				`<td class="num">${escapeHtml(effect.ciLabel)}</td>` +
 				`<td class="num">${escapeHtml(formatBeta(row.beta))}</td>` +
 				`<td class="num">${escapeHtml(formatPQ(row.p))}</td>` +
@@ -932,8 +1250,8 @@ function buildFullReport(
 			if (!tested.has(`${metric.key} ${t.shortName}`)) {
 				untested.push(
 					`<li><span class="mono">${escapeHtml(metric.key)}</span> × ${escapeHtml(
-						t.shortName
-					)}</li>`
+						t.shortName,
+					)}</li>`,
 				);
 			}
 		}
@@ -955,8 +1273,8 @@ function buildFullReport(
 					.map(
 						(run) =>
 							`<li><span class="mono">${escapeHtml(run.path ?? '')}</span> — ${escapeHtml(
-								run.reason ?? ''
-							)}</li>`
+								run.reason ?? '',
+							)}</li>`,
 					)
 					.join('\n')}</ul>`
 			: '';
@@ -967,12 +1285,8 @@ function buildFullReport(
 <p class="note">&dagger; ${anomalyTotal} value(s) &le; 0 were excluded from log-scaled metrics; see report.md for the run list.</p>`
 			: '';
 
-	const badge =
-		manifest.spec.mode === 'aggregate'
-			? '<span class="wfBadge" hidden>per-workflow view — not FDR-tested</span>'
-			: '';
 	return `
-${badge}
+${wfBadge(manifest)}
 <div class="tablewrap tall"><table id="verdictTable">
 <thead><tr><th>Metric</th><th>Arm</th><th class="num">Effect</th><th class="num">95% CI</th><th class="num nocase tipsrc" tabindex="0" data-tip-title="β — regression coefficient" data-tip-effect="The effect on the model scale: a difference in means for raw metrics, a log-ratio for log-scaled ones (the Effect column shows it as a % change).">β</th><th class="num nocase tipsrc" tabindex="0" data-tip-title="p — raw p-value" data-tip-effect="The chance of an effect at least this large when the treatment truly does nothing (HC3-robust t-test), before correcting for running many tests at once.">p</th><th class="num nocase tipsrc" tabindex="0" data-tip-title="q — corrected p-value" data-tip-effect="p adjusted for the whole test grid with Benjamini–Hochberg false-discovery-rate control. Significant iff q ≤ 0.05.">q</th></tr></thead>
 <tbody>
@@ -982,7 +1296,8 @@ ${trs}
 <p class="empty-note" id="fullEmpty" hidden>Nothing matches the current filters.</p>
 <p class="note">Icons follow each metric's own direction: colored arrows mark significant
 improvements or regressions, ± a significant change of a descriptive metric, and ? no call
-(the bar is q&nbsp;&le;&nbsp;0.05). * marks a pair where some runs lack the metric. β is on the
+(the bar is <span class="m-fdr">q&nbsp;&le;&nbsp;0.05</span><span class="m-naive">p&nbsp;&lt;&nbsp;0.05,
+uncorrected</span>). * marks a pair where some runs lack the metric. β is on the
 model scale (log for log-scaled metrics); Effect and CI are on the display
 scale.</p>${anomalyNote}${untestedSection}${excludedSection}`;
 }
@@ -1009,8 +1324,9 @@ function buildCurves(curves: CurveInput[], manifest: ManifestJson): string {
 			const title = multiScope
 				? `${metricName(curve.metric)} · ${curve.workflow}`
 				: metricName(curve.metric);
+			const extraAttr = EXTRA_METRICS.has(curve.metric) ? ' data-extra="1"' : '';
 			return (
-				`<details class="curve" data-workflow="${escapeHtml(curve.workflow)}"><summary>` +
+				`<details class="curve" data-workflow="${escapeHtml(curve.workflow)}"${extraAttr}><summary>` +
 				escapeHtml(title) +
 				'</summary><div class="curve-card">' +
 				stripSvgWrapper(curve.svg) +
@@ -1033,7 +1349,7 @@ function buildTabs(panels: { id: string; label: string; body: string }[]): strin
 				`<button class="tab" role="tab" id="tab-${panel.id}" aria-controls="panel-${panel.id}" ` +
 				`aria-selected="${i === 0 ? 'true' : 'false'}"${i === 0 ? '' : ' tabindex="-1"'}>${
 					panel.label
-				}</button>`
+				}</button>`,
 		)
 		.join('\n');
 	const sections = panels
@@ -1043,7 +1359,7 @@ function buildTabs(panels: { id: string; label: string; body: string }[]): strin
 					panel.id
 				}"${i === 0 ? '' : ' hidden'}>
 ${panel.body}
-</section>`
+</section>`,
 		)
 		.join('\n');
 	return `
@@ -1087,9 +1403,13 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .eyebrow { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
 .lede { color:var(--ink-2); max-width:62ch; }
 .mono, .num { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:.86em; }
-.filterbar { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin:22px 0 0;
+.filterbar { display:flex; flex-direction:column; gap:10px; margin:22px 0 0;
   padding:12px 14px; background:var(--wash); border:1px solid var(--line); border-radius:12px; }
+.fbrow { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+.fbopts { border-top:1px solid var(--line); padding-top:10px; }
 .legend { display:flex; gap:8px; flex-wrap:wrap; font-size:.85rem; margin-right:auto; }
+body[data-sigmode="fdr"] .m-naive { display:none; }
+body[data-sigmode="naive"] .m-fdr { display:none; }
 .chip-toggle { display:inline-flex; align-items:center; gap:7px; font:inherit; font-weight:600;
   color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:99px;
   padding:4px 12px; cursor:pointer; }
@@ -1112,6 +1432,11 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .summary { list-style:none; padding:0; margin:12px 0; font-size:.92rem; color:var(--ink-2); }
 .summary li { margin:6px 0; }
 .summary b { color:var(--ink); }
+.cases { list-style:none; padding:0; margin:12px 0; font-size:.9rem; color:var(--ink-2); }
+.cases li { margin:7px 0; max-width:82ch; }
+.cases b { color:var(--ink); }
+.mname.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-offset:3px;
+  text-decoration-color:var(--ink-3); }
 .statsbox { background:var(--wash); border:1px solid var(--line); border-radius:12px;
   padding:12px 18px; margin:28px 0; font-size:.84rem; color:var(--ink-2); }
 .statsbox summary { cursor:pointer; font-weight:600; color:var(--ink);
@@ -1128,14 +1453,25 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .g-ci { width:16px; height:3px; border-radius:2px; background:var(--ink-2); }
 .g-line { width:1px; height:12px; background:var(--line); outline:1px solid var(--line); }
 .effects-tools { display:flex; align-items:center; gap:14px; margin-top:10px; font-size:.8rem; color:var(--ink-2); }
-.stat-toggle button { font:600 .78rem/1.3 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink-2);
-  background:var(--card); border:1px solid var(--line); padding:3px 10px; cursor:pointer; }
-.stat-toggle button:first-of-type { border-radius:7px 0 0 7px; }
-.stat-toggle button:last-of-type { border-radius:0 7px 7px 0; margin-left:-1px; }
-.stat-toggle button[aria-pressed="true"] { color:var(--ink); background:var(--wash); border-color:var(--ink-3); }
+.seg { display:inline-flex; }
+.seg button { font:600 .78rem/1.3 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink-2);
+  background:var(--card); border:1px solid var(--line); padding:4px 10px; cursor:pointer;
+  white-space:nowrap; }
+.seg button:first-child { border-radius:7px 0 0 7px; }
+.seg button:last-child { border-radius:0 7px 7px 0; margin-left:-1px; }
+.seg button[aria-pressed="true"] { color:var(--surface); background:var(--ink);
+  border-color:var(--ink); position:relative; }
+.seg button:disabled { opacity:.45; cursor:default; }
 .wfBadge { font-size:.74rem; font-weight:600; color:var(--ink-2); background:var(--wash);
   border:1px solid var(--line); border-radius:99px; padding:3px 11px; }
+.family { scroll-margin-top:12px; }
 .family h3 { margin:34px 0 2px; font-size:1.3rem; }
+.secjump { position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column;
+  gap:4px; z-index:20; }
+.secbtn { width:32px; height:32px; padding:0; font:600 .95rem/1 "IBM Plex Sans",system-ui,sans-serif;
+  color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:8px;
+  cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+.secbtn:hover { color:var(--ink); border-color:var(--ink-3); }
 .family-intro { font-size:.82rem; color:var(--ink-3); margin:0 0 8px; max-width:70ch; }
 .frow { display:grid; grid-template-columns:220px 1fr 130px; gap:14px; align-items:center;
   padding:9px 0; border-bottom:1px solid var(--line); }
@@ -1146,13 +1482,20 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .fctrl { position:absolute; left:50%; top:-2px; transform:translateX(-50%);
   font:500 .68rem/1.3 "IBM Plex Mono",monospace; color:var(--ink-3);
   background:var(--surface); padding:0 5px; white-space:nowrap; }
-.fci { position:absolute; height:3px; border-radius:2px; transform:translateY(-50%); }
+.fci { position:absolute; height:3px; border-radius:2px; transform:translateY(-50%);
+  background:var(--tc); }
 .fdot { position:absolute; width:9px; height:9px; box-sizing:border-box; border-radius:50%;
-  border:1.5px solid; background:var(--card); transform:translate(-50%,-50%); cursor:default; }
+  border:1.5px solid var(--tc); background:var(--card); transform:translate(-50%,-50%);
+  cursor:default; transition:left .2s ease; }
+body[data-sigmode="fdr"] .fmark[data-sig="1"] .fdot { background:var(--tc); }
+body[data-sigmode="naive"] .fmark[data-sig-p="1"] .fdot { background:var(--tc); }
+body[data-sigmode="fdr"] .fmark:not([data-sig="1"]) .fci { opacity:.45; }
+body[data-sigmode="naive"] .fmark:not([data-sig-p="1"]) .fci { opacity:.45; }
 .fvals { display:flex; flex-direction:column; }
 .fvgroup { display:flex; flex-direction:column; gap:2px; align-items:flex-end; }
 .flab { font-family:"IBM Plex Mono",monospace; font-size:.8rem; cursor:default; }
-.flab.dim { opacity:.55; }
+body[data-sigmode="fdr"] .flab:not([data-sig="1"]) { opacity:.55; }
+body[data-sigmode="naive"] .flab:not([data-sig-p="1"]) { opacity:.55; }
 #tip { position:fixed; z-index:50; max-width:320px; background:var(--ink); color:var(--surface);
   padding:9px 12px; border-radius:8px; font-size:.78rem; line-height:1.5; pointer-events:none; }
 #tip .tip-title { font-weight:600; }
@@ -1164,7 +1507,8 @@ thead th.num { text-align:right; }
 thead th.nocase { text-transform:none; font-size:.82rem; }
 td { padding:7px 10px; border-bottom:1px solid var(--line); }
 td.num { text-align:right; white-space:nowrap; }
-tr[data-sig="0"] td { opacity:.55; }
+body[data-sigmode="fdr"] tr[data-sig="0"] td { opacity:.55; }
+body[data-sigmode="naive"] tr[data-sig-p="0"] td { opacity:.55; }
 .control-row td { background:color-mix(in srgb, var(--good) 7%, transparent); }
 .chip { font-size:.72rem; font-weight:600; padding:2px 9px; border-radius:99px; white-space:nowrap; }
 .chip.control { background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good);
@@ -1199,14 +1543,15 @@ var $ = function (sel, root) { return [].slice.call((root || document).querySele
 var byId = function (id) { return document.getElementById(id); };
 
 var tabs = $('.tab');
-function selectTab(index) {
+function selectTab(index, focus) {
   tabs.forEach(function (tab, i) {
     var on = i === index;
     tab.setAttribute('aria-selected', String(on));
     tab.tabIndex = on ? 0 : -1;
     byId(tab.getAttribute('aria-controls')).hidden = !on;
   });
-  tabs[index].focus();
+  if (focus !== false) tabs[index].focus();
+  syncUrl();
 }
 tabs.forEach(function (tab, i) {
   tab.addEventListener('click', function () { selectTab(i); });
@@ -1216,7 +1561,18 @@ tabs.forEach(function (tab, i) {
   });
 });
 
-var sigFilter = byId('sigFilter');
+var sigButtons = $('#sigFilter button');
+var sigFilterMode = 'all';
+function setSigFilter(mode) {
+  sigFilterMode = mode;
+  sigButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-sig') === mode));
+  });
+  refresh();
+}
+sigButtons.forEach(function (b) {
+  b.addEventListener('click', function () { setSigFilter(b.getAttribute('data-sig')); });
+});
 var wfFilter = byId('wfFilter');
 var chips = $('.chip-toggle');
 var mode = document.body.getAttribute('data-mode');
@@ -1226,6 +1582,7 @@ function currentScope() {
   return wfFilter && wfFilter.value !== 'pooled' ? wfFilter.value : defaultScope;
 }
 function isContextView() { return mode === 'aggregate' && currentScope() !== defaultScope; }
+function sigNaive() { return document.body.getAttribute('data-sigmode') === 'naive'; }
 function offTreatments() {
   var off = {};
   chips.forEach(function (chip) {
@@ -1234,19 +1591,27 @@ function offTreatments() {
   return off;
 }
 function sigMatch(el, sigMode, contextView) {
-  if (contextView || sigMode === 'all') return true;
-  var s = el.getAttribute('data-sig');
+  if (sigMode === 'all') return true;
+  // Per-workflow rows carry no FDR verdict, so the filter only bites there
+  // when the raw-p test is selected.
+  if (contextView && !sigNaive()) return true;
+  var s = el.getAttribute(sigNaive() ? 'data-sig-p' : 'data-sig');
   return sigMode === 'sig' ? s === '1' : s === '0';
 }
 function anyVisible(els) {
   return els.some(function (el) { return !el.hidden; });
 }
+function isExtra(el) { return el.getAttribute('data-extra') === '1'; }
 function refresh() {
   var scope = currentScope();
   var contextView = isContextView();
-  var sigMode = sigFilter ? sigFilter.value : 'all';
+  var sigMode = sigFilterMode;
   var off = offTreatments();
-  if (sigFilter) sigFilter.disabled = contextView;
+  var extrasOff = metricsMode === 'core';
+  // Per-workflow rows carry no FDR verdict, so the filter is inert there
+  // unless the raw-p test is selected.
+  var sigDisabled = contextView && !sigNaive();
+  sigButtons.forEach(function (b) { b.disabled = sigDisabled; });
   $('.wfBadge').forEach(function (el) { el.hidden = !contextView; });
   $('.fgroup, .fvgroup').forEach(function (group) {
     group.hidden = group.getAttribute('data-scope') !== scope;
@@ -1256,7 +1621,8 @@ function refresh() {
   });
   $('.frow').forEach(function (row) {
     var group = $('.fgroup', row).filter(function (g) { return !g.hidden; })[0];
-    row.hidden = !group || !anyVisible($('.fmark', group));
+    row.hidden =
+      (extrasOff && isExtra(row)) || !group || !anyVisible($('.fmark', group));
   });
   $('.family').forEach(function (section) {
     section.hidden = !anyVisible($('.frow', section));
@@ -1265,6 +1631,7 @@ function refresh() {
   if (effectsEmpty) effectsEmpty.hidden = anyVisible($('.family'));
   $('#verdictTable tbody tr').forEach(function (tr) {
     tr.hidden =
+      (extrasOff && isExtra(tr)) ||
       tr.getAttribute('data-scope') !== scope ||
       off[tr.getAttribute('data-t')] === true ||
       !sigMatch(tr, sigMode, contextView);
@@ -1277,8 +1644,11 @@ function refresh() {
     tr.hidden = !wfOk || (t !== null && off[t] === true);
   });
   $('.curve').forEach(function (curve) {
-    curve.hidden = contextView && curve.getAttribute('data-workflow') !== scope;
+    curve.hidden =
+      (extrasOff && isExtra(curve)) ||
+      (contextView && curve.getAttribute('data-workflow') !== scope);
   });
+  syncUrl();
 }
 chips.forEach(function (chip) {
   chip.addEventListener('click', function (event) {
@@ -1297,8 +1667,50 @@ chips.forEach(function (chip) {
     refresh();
   });
 });
-if (sigFilter) sigFilter.addEventListener('change', refresh);
 if (wfFilter) wfFilter.addEventListener('change', refresh);
+
+var sigModeButtons = $('#sigMode button');
+function setSigMode(sigmode) {
+  document.body.setAttribute('data-sigmode', sigmode);
+  sigModeButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-sigmode') === sigmode));
+  });
+  refresh();
+}
+sigModeButtons.forEach(function (b) {
+  b.addEventListener('click', function () { setSigMode(b.getAttribute('data-sigmode')); });
+});
+
+var metricsButtons = $('#metricsMode button');
+var metricsMode = 'core';
+function setMetricsMode(mode) {
+  metricsMode = mode;
+  metricsButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-metrics') === mode));
+  });
+  refresh();
+}
+metricsButtons.forEach(function (b) {
+  b.addEventListener('click', function () { setMetricsMode(b.getAttribute('data-metrics')); });
+});
+
+// Section hop from the fixed corner control: the current section is the last
+// one whose top sits at or above the jump line; up and down go one section
+// from there, landing each title at the same viewport spot (scroll-margin),
+// so repeated clicks walk the whole tab.
+document.addEventListener('click', function (e) {
+  var btn = e.target && e.target.closest ? e.target.closest('.secbtn') : null;
+  if (!btn) return;
+  var sections = $('.family').filter(function (s) { return !s.hidden; });
+  if (sections.length === 0) return;
+  var current = -1;
+  sections.forEach(function (s, i) {
+    if (s.getBoundingClientRect().top <= 90) current = i;
+  });
+  var index = current + Number(btn.getAttribute('data-dir'));
+  if (index < 0 || index >= sections.length) return;
+  sections[index].scrollIntoView({ block: 'start' });
+});
 
 var statButtons = $('.stat-toggle button');
 var statKind = 'mean';
@@ -1310,6 +1722,11 @@ function setStat(kind) {
   $('.fctrl').forEach(function (el) {
     el.textContent = el.getAttribute('data-' + kind) || '';
   });
+  $('.fdot').forEach(function (el) {
+    var left = el.getAttribute('data-left-' + kind);
+    if (left) el.style.left = left;
+  });
+  syncUrl();
 }
 statButtons.forEach(function (b) {
   b.addEventListener('click', function () { setStat(b.getAttribute('data-stat')); });
@@ -1318,11 +1735,57 @@ statButtons.forEach(function (b) {
 var reset = byId('resetFilters');
 if (reset) reset.addEventListener('click', function () {
   chips.forEach(function (chip) { chip.setAttribute('aria-pressed', 'true'); });
-  if (sigFilter) sigFilter.value = 'all';
+  setSigFilter('all');
   if (wfFilter) wfFilter.value = 'pooled';
   setStat('mean');
-  refresh();
+  setMetricsMode('core');
+  setSigMode('fdr');
 });
+
+// Every control writes its non-default state to the query string, so a
+// filtered view can be shared by copying the URL. Some browsers refuse
+// replaceState on file:// pages; the hash carries the same state there.
+function syncUrl() {
+  var p = new URLSearchParams();
+  var active = tabs.filter(function (t) { return t.getAttribute('aria-selected') === 'true'; })[0];
+  var tabId = active ? active.id.slice(4) : 'summary';
+  if (tabId !== 'summary') p.set('tab', tabId);
+  var off = Object.keys(offTreatments());
+  if (off.length > 0) p.set('hide', off.join(','));
+  if (sigFilterMode !== 'all') p.set('sig', sigFilterMode);
+  if (sigNaive()) p.set('test', 'raw');
+  if (wfFilter && wfFilter.value !== 'pooled') p.set('wf', wfFilter.value);
+  if (statKind !== 'mean') p.set('stat', statKind);
+  if (metricsMode !== 'core') p.set('metrics', metricsMode);
+  var qs = p.toString();
+  try {
+    history.replaceState(null, '', location.pathname + (qs === '' ? '' : '?' + qs));
+  } catch (err) {
+    location.hash = qs;
+  }
+}
+
+function applyUrlState() {
+  var qs = location.search.slice(1) || location.hash.slice(1);
+  var p;
+  try { p = new URLSearchParams(qs); } catch (err) { p = new URLSearchParams(); }
+  var index = tabs.map(function (t) { return t.id; }).indexOf('tab-' + p.get('tab'));
+  if (index > 0) selectTab(index, false);
+  var hide = (p.get('hide') || '').split(',');
+  chips.forEach(function (chip) {
+    chip.setAttribute('aria-pressed', String(hide.indexOf(chip.getAttribute('data-t')) < 0));
+  });
+  if (p.get('sig') === 'sig' || p.get('sig') === 'nonsig') setSigFilter(p.get('sig'));
+  if (wfFilter && p.get('wf')) {
+    var wf = p.get('wf');
+    if ([].slice.call(wfFilter.options).some(function (o) { return o.value === wf; })) {
+      wfFilter.value = wf;
+    }
+  }
+  setStat(p.get('stat') === 'median' ? 'median' : 'mean');
+  setMetricsMode(p.get('metrics') === 'all' ? 'all' : 'core');
+  setSigMode(p.get('test') === 'raw' ? 'naive' : 'fdr');
+}
 
 var tip = byId('tip');
 var tipParts = $('#tip div');
@@ -1332,7 +1795,10 @@ function showTip(el) {
   var treatment = el.getAttribute('data-tip-treatment' + (median ? '-median' : '')) || '';
   tipParts[0].textContent = el.getAttribute('data-tip-title') || '';
   tipParts[1].textContent = el.getAttribute('data-tip-effect') || '';
-  tipParts[2].textContent = el.getAttribute('data-tip-q') || '';
+  // Marks carry a per-test-mode call line in data-tip-qn/-q; metric and case
+  // definitions carry a single data-tip-q line that shows in both modes.
+  tipParts[2].textContent =
+    (sigNaive() && el.getAttribute('data-tip-qn')) || el.getAttribute('data-tip-q') || '';
   tipParts[3].textContent =
     control && treatment ? statKind + ': control ' + control + ' \\u2192 ' + treatment : '';
   tip.hidden = false;
@@ -1359,7 +1825,7 @@ document.addEventListener('focusin', function (e) {
 });
 document.addEventListener('scroll', function () { tip.hidden = true; }, true);
 
-setStat('mean');
+applyUrlState();
 refresh();`;
 }
 
@@ -1375,6 +1841,7 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 			label: 'Summary',
 			body:
 				buildSummary(estimates, styles) +
+				buildCases(manifest, styles) +
 				buildSample(manifest, styles) +
 				buildStatsBox(estimates, manifest),
 		},
@@ -1402,8 +1869,8 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>${buildStyle(styles)}</style>
 <body data-mode="${escapeHtml(manifest.spec.mode)}" data-default-scope="${escapeHtml(
-		defaultScopeOf(manifest)
-	)}">
+		defaultScopeOf(manifest),
+	)}" data-sigmode="fdr">
 <main>
 ${buildHeader(manifest)}
 ${buildFilterBar(manifest, styles)}
@@ -1433,10 +1900,10 @@ function parseDatasetCsv(csv: string): DatasetRow[] {
 
 export function writeHtmlReport(stagingDir: string): void {
 	const estimates: EstimateRow[] = JSON.parse(
-		readFileSync(join(stagingDir, 'estimates.json'), 'utf8')
+		readFileSync(join(stagingDir, 'estimates.json'), 'utf8'),
 	);
 	const manifest: ManifestJson = JSON.parse(
-		readFileSync(join(stagingDir, 'manifest.json'), 'utf8')
+		readFileSync(join(stagingDir, 'manifest.json'), 'utf8'),
 	);
 	const dataset = parseDatasetCsv(readFileSync(join(stagingDir, 'dataset.csv'), 'utf8'));
 	const curvesDir = join(stagingDir, 'curves');
@@ -1452,6 +1919,6 @@ export function writeHtmlReport(stagingDir: string): void {
 		});
 	writeFileSync(
 		join(stagingDir, 'report.html'),
-		renderHtmlReport({ estimates, manifest, curves, dataset })
+		renderHtmlReport({ estimates, manifest, curves, dataset }),
 	);
 }

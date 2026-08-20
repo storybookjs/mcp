@@ -28,7 +28,7 @@ const SPEC: ComparisonSpec = {
 function cell(
 	resolvedCase: ResolvedCase,
 	values: number[],
-	workflow: string = '703-fix-bug-flow'
+	workflow: string = '703-fix-bug-flow',
 ): Cell {
 	return {
 		case: resolvedCase,
@@ -63,10 +63,10 @@ describe('datasetCsv', () => {
 		const csv = datasetCsv([cell(TREATMENT, [5]), cell(CONTROL, [7])], COMPARISON_METRICS, SPEC);
 		const lines = csv.split('\n');
 		expect(lines[0]).toBe(
-			`case,workflow,batch,run,${COMPARISON_METRICS.map((m) => m.key).join(',')}`
+			`case,workflow,batch,run,${COMPARISON_METRICS.map((m) => m.key).join(',')}`,
 		);
 		expect(lines[1]!.startsWith('control-none,703-fix-bug-flow,2026-08-05T00-00-00.000Z,1,7')).toBe(
-			true
+			true,
 		);
 		expect(lines[2]!.startsWith('do-dont,')).toBe(true);
 		expect(csv.endsWith('\n')).toBe(true);
@@ -85,7 +85,7 @@ describe('datasetCsv', () => {
 		const csv = datasetCsv(
 			[cell(CONTROL, [7], '1701-wide-flow'), cell(CONTROL, [8], '703-fix-bug-flow')],
 			COMPARISON_METRICS,
-			spec
+			spec,
 		);
 		const lines = csv.split('\n').filter((line) => line !== '');
 		// Numeric order: 703 < 1701, so 703-fix-bug-flow rows should come before 1701-wide-flow

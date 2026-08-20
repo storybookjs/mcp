@@ -25,6 +25,7 @@ describe('resolveCase', () => {
 			caseName: 'cc-do-dont-opus-high',
 			experiment: 'agentic-ref-cc-do-dont-opus-high',
 			shortName: 'do-dont',
+			description: expect.stringContaining('Do-and-don’t guidance'),
 		};
 		expect(resolveCase('do-dont')).toEqual(expected);
 		expect(resolveCase('cc-do-dont-opus-high')).toEqual(expected);

@@ -480,9 +480,7 @@ async function main(): Promise<void> {
 		}
 
 		if (batch.index < batches.length) {
-			console.log(
-				outStyle.dim(`  pausing ${INTER_BATCH_WAIT_MS / 1000}s before the next batch`),
-			);
+			console.log(outStyle.dim(`  pausing ${INTER_BATCH_WAIT_MS / 1000}s before the next batch`));
 			await interruptibleSleep(INTER_BATCH_WAIT_MS);
 			if (interrupted) {
 				stoppedAt = batch.index;

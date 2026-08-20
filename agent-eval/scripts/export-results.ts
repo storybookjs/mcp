@@ -45,9 +45,15 @@ function parseArgs(): { since: string; out: string; projects: boolean } {
 		}
 	}
 	if (since === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(since)) {
-		fail('--since <YYYY-MM-DD> is required; it bounds the archive to runs collected on or after it.');
+		fail(
+			'--since <YYYY-MM-DD> is required; it bounds the archive to runs collected on or after it.',
+		);
 	}
-	return { since, out: out ?? `results-export-${since}${projects ? '' : '-no-projects'}.zip`, projects };
+	return {
+		since,
+		out: out ?? `results-export-${since}${projects ? '' : '-no-projects'}.zip`,
+		projects,
+	};
 }
 
 function main(): void {
@@ -74,21 +80,16 @@ function main(): void {
 	// implements --no-projects.
 	execFileSync(
 		'zip',
-		[
-			'-r',
-			'-X',
-			'-q',
-			outPath,
-			...resultDirs,
-			...(projects ? [] : ['-x', '*/project/*']),
-		],
+		['-r', '-X', '-q', outPath, ...resultDirs, ...(projects ? [] : ['-x', '*/project/*'])],
 		{ cwd: AGENT_EVAL_ROOT, stdio: ['ignore', 'inherit', 'inherit'] },
 	);
 
 	const size = statSync(outPath).size;
 	const mb = (size / 1024 / 1024).toFixed(size > 1024 * 1024 * 10 ? 0 : 1);
 	console.log(`Wrote ${relative(process.cwd(), outPath)} — ${mb} MB`);
-	console.log(`  ${resultDirs.length} result director${resultDirs.length === 1 ? 'y' : 'ies'}, ${runs} collected run(s), since ${since}${projects ? '' : ', without project trees'}`);
+	console.log(
+		`  ${resultDirs.length} result director${resultDirs.length === 1 ? 'y' : 'ies'}, ${runs} collected run(s), since ${since}${projects ? '' : ', without project trees'}`,
+	);
 	console.log(`  Receiving side: unzip ${out} -d <repo>/agent-eval`);
 }
 

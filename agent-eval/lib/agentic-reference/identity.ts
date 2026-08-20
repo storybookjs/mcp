@@ -91,7 +91,14 @@ export interface MeasurementDifference {
 	now: string;
 }
 
-const COMPARED: Array<keyof Measurement> = ['pin', 'mcp', 'model', 'editedPrompt', 'provider', 'task'];
+const COMPARED: Array<keyof Measurement> = [
+	'pin',
+	'mcp',
+	'model',
+	'editedPrompt',
+	'provider',
+	'task',
+];
 
 /** Which components moved between two measurements. */
 export function measurementDifferences(

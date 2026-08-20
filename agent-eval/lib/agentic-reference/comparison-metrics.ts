@@ -1,6 +1,4 @@
-// The curated metric registry for results:compare. Only these enter the test
-// grid; the spec fixes the list and each transform
-// (docs/superpowers/specs/2026-08-10-agentic-ref-analysis-pipeline-design.md).
+// The curated metric registry for results:compare.
 export type MetricTransform = 'log' | 'log0' | 'none';
 export type MetricDirection = 'lower-better' | 'higher-better' | 'neutral';
 
@@ -114,6 +112,22 @@ export const COMPARISON_METRICS: ComparisonMetric[] = [
 		direction: 'lower-better',
 	},
 	{
+		key: 'meanEditsPerFile',
+		label: 'Mean edits per file',
+		path: 'churn.meanEditsPerFile',
+		family: 'churn',
+		transform: 'none',
+		direction: 'lower-better',
+	},
+	{
+		key: 'maxEditsPerFile',
+		label: 'Max edits per file',
+		path: 'churn.maxEditsPerFile',
+		family: 'churn',
+		transform: 'none',
+		direction: 'lower-better',
+	},
+	{
 		key: 'dsShareOfAllNodes',
 		label: 'DS share of all nodes',
 		path: 'dsCoverage.dsShareOfAllNodes',
@@ -125,6 +139,22 @@ export const COMPARISON_METRICS: ComparisonMetric[] = [
 		key: 'dsShareOfComponentNodes',
 		label: 'DS share of component nodes',
 		path: 'dsCoverage.dsShareOfComponentNodes',
+		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsShareOfAllNodesDelta',
+		label: 'DS share of all nodes Δ',
+		path: 'deltaToBaseline.coverageDelta.dsShareOfAllNodes.delta',
+		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsShareOfComponentNodesDelta',
+		label: 'DS share of component nodes Δ',
+		path: 'deltaToBaseline.coverageDelta.dsShareOfComponentNodes.delta',
 		family: 'dsCoverage',
 		transform: 'none',
 		direction: 'higher-better',
@@ -154,17 +184,17 @@ export const COMPARISON_METRICS: ComparisonMetric[] = [
 		direction: 'lower-better',
 	},
 	{
-		key: 'slocAdded',
-		label: 'SLOC added',
-		path: 'deltaToBaseline.diff.sloc.added',
-		family: 'diff',
-		transform: 'log0',
-		direction: 'neutral',
-	},
-	{
 		key: 'slocNet',
 		label: 'SLOC net',
 		path: 'deltaToBaseline.diff.sloc.net',
+		family: 'diff',
+		transform: 'none',
+		direction: 'neutral',
+	},
+	{
+		key: 'slocAdded',
+		label: 'SLOC added',
+		path: 'deltaToBaseline.diff.sloc.added',
 		family: 'diff',
 		transform: 'none',
 		direction: 'neutral',

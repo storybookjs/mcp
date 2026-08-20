@@ -15,17 +15,29 @@ const CONTROL = {
 	caseName: 'cc-control',
 	experiment: 'agentic-ref-cc-control',
 	shortName: 'control-none',
+	description: 'No design-system support at all.',
 };
 const TREATMENT_A = {
 	caseName: 'cc-a',
 	experiment: 'agentic-ref-cc-a',
 	shortName: 'full',
+	description: 'The complete corpus.',
 };
 const TREATMENT_B = {
 	caseName: 'cc-b',
 	experiment: 'agentic-ref-cc-b',
 	shortName: 'empty',
+	description: 'A stripped corpus.',
 };
+
+/** The same case without its definition, as manifests from before them. */
+function withoutDefinition(c: { caseName: string; experiment: string; shortName: string }): {
+	caseName: string;
+	experiment: string;
+	shortName: string;
+} {
+	return { caseName: c.caseName, experiment: c.experiment, shortName: c.shortName };
+}
 
 function manifest(overrides: Partial<ManifestJson> = {}): ManifestJson {
 	return {
@@ -51,7 +63,7 @@ function manifest(overrides: Partial<ManifestJson> = {}): ManifestJson {
 				label: 'SLOC added',
 				path: 'diff.slocAdded',
 				family: 'diff',
-				transform: 'log0',
+				transform: 'log',
 				direction: 'neutral',
 			},
 			{
@@ -264,7 +276,7 @@ describe('renderHtmlReport structure', () => {
 			render({
 				manifest: aggregateManifest(),
 				estimates: [row({ scope: 'pooled' })],
-			})
+			}),
 		).toContain('every workflow equally');
 		expect(render({})).not.toContain('every workflow equally');
 	});
@@ -309,6 +321,28 @@ describe('renderHtmlReport structure', () => {
 		// Geometric mean of 900 and 1600 = 1200s = 20m 0s; median = 1250s.
 		expect(html).toContain('data-mean="20m 00s"');
 		expect(html).toContain('data-median="20m 50s"');
+	});
+
+	it('positions the dot by the selected statistic, defaulting to the mean', () => {
+		const html = render({
+			dataset: [
+				datasetRow({ values: { durationSeconds: 900 } }),
+				datasetRow({ values: { durationSeconds: 1600 } }),
+				datasetRow({ case: 'full', values: { durationSeconds: 800 } }),
+			],
+		});
+		// Mean shift 800/1200−1 = −33.3%, median shift 800/1250−1 = −36% (the
+		// widest value, so it pins the span at the 6% edge of the plot).
+		expect(html).toContain('data-left-mean="9.3%"');
+		expect(html).toContain('data-left-median="6.0%"');
+		expect(html).toMatch(/class="fdot tipsrc"[^>]*style="left:9\.3%/);
+	});
+
+	it('falls back to the model estimate when a statistic is missing', () => {
+		// No treatment rows in the dataset: both positions sit at the model effect.
+		const html = render({ dataset: [datasetRow()] });
+		const positions = html.match(/data-left-mean="([\d.]+)%" data-left-median="([\d.]+)%"/);
+		expect(positions?.[1]).toBe(positions?.[2]);
 	});
 
 	it('attaches popover data to forest marks', () => {
@@ -369,6 +403,133 @@ describe('renderHtmlReport structure', () => {
 	});
 });
 
+describe('renderHtmlReport definitions', () => {
+	it('attaches a two-part hover definition to metric names', () => {
+		const html = render({});
+		// Effects rows and the full-report table both carry the tooltip.
+		expect(html).toContain('class="fname mname tipsrc"');
+		expect(html).toMatch(
+			/<span class="mname tipsrc"[^>]*data-tip-title="Time to finish"[^>]*data-tip-effect="Wall-clock time/,
+		);
+	});
+
+	it('renders case definitions as a Cases section and chip tooltips', () => {
+		const html = render({});
+		expect(html).toContain('>Cases</h2>');
+		expect(html).toContain('No design-system support at all.');
+		expect(html).toMatch(/class="chip-toggle tipsrc"[^>]*data-tip-effect="The complete corpus\."/);
+	});
+
+	it('omits the Cases section for manifests without definitions', () => {
+		const base = manifest();
+		const html = render({
+			manifest: {
+				...base,
+				spec: {
+					...base.spec,
+					control: withoutDefinition(CONTROL),
+					treatments: [withoutDefinition(TREATMENT_A), withoutDefinition(TREATMENT_B)],
+				},
+			},
+		});
+		expect(html).not.toContain('>Cases</h2>');
+	});
+});
+
+describe('renderHtmlReport parked metrics, section nav, and URL state', () => {
+	it('formats the new churn and coverage-delta metrics', () => {
+		expect(formatMetricValue('meanEditsPerFile', 2.512)).toBe('2.5');
+		expect(formatMetricValue('dsShareOfAllNodesDelta', 0.0053)).toBe('0.5%');
+	});
+
+	it('tags parked metrics for the Metrics toggle to hide', () => {
+		const base = manifest();
+		const html = render({
+			manifest: {
+				...base,
+				metrics: [
+					...base.metrics,
+					{
+						key: 'cyclomaticDelta',
+						label: 'Cyclomatic complexity Δ',
+						path: 'deltaToBaseline.complexity.cyclomatic.delta',
+						family: 'complexity',
+						transform: 'none',
+						direction: 'lower-better',
+					},
+				],
+			},
+			estimates: [
+				row({}),
+				row({
+					metric: 'cyclomaticDelta',
+					direction: 'lower-better',
+					transform: 'none',
+					beta: -1.2,
+					pctChange: null,
+				}),
+			],
+		});
+		expect(html).toContain('id="metricsMode"');
+		expect(html).toMatch(/<div class="frow" data-extra="1">/);
+		expect(html).toMatch(/<tr[^>]*data-extra="1"/);
+	});
+
+	it('renders one fixed section-jump control in the effects tab', () => {
+		const html = render({});
+		expect(html.match(/class="secjump"/g)).toHaveLength(1);
+		expect(html).toMatch(/class="secjump"[^>]*>\s*<button[^>]*data-dir="-1"/);
+		expect(html).not.toContain('secnav');
+	});
+
+	it('renders the significance filter as pills, not a select', () => {
+		const html = render({});
+		expect(html).toMatch(/<span class="seg" id="sigFilter"/);
+		expect(html).toMatch(/data-sig="all" aria-pressed="true"/);
+		expect(html).not.toContain('<select id="sigFilter">');
+	});
+
+	it('reads and writes filter state through the URL', () => {
+		const html = render({});
+		expect(html).toContain('URLSearchParams');
+		expect(html).toContain('history.replaceState');
+		expect(html).toContain('applyUrlState()');
+	});
+});
+
+describe('renderHtmlReport significance-test toggle', () => {
+	it('renders the FDR/raw-p toggle defaulting to FDR', () => {
+		const html = render({});
+		expect(html).toContain('id="sigMode"');
+		expect(html).toContain('data-sigmode="fdr"');
+		expect(html).toContain('data-sigmode="naive"');
+		expect(html).toMatch(/<body[^>]*data-sigmode="fdr"/);
+	});
+
+	it('encodes raw-p verdicts alongside FDR verdicts', () => {
+		const html = render({
+			estimates: [row({ verdict: 'not-significant', q: 0.2, p: 0.01 })],
+		});
+		// FDR says no, raw p says yes: both encoded on the same row.
+		expect(html).toMatch(/data-sig="0" data-sig-p="1"/);
+		// Dual verdict icons: FDR '?' plus a raw-p arrow.
+		expect(html).toMatch(/<span class="m-fdr"><span class="vicon na tipsrc"/);
+		expect(html).toMatch(/<span class="m-naive"><span class="vicon (good|bad) tipsrc"/);
+	});
+
+	it('summarizes both calls per treatment', () => {
+		const html = render({
+			estimates: [row({ verdict: 'not-significant', q: 0.2, p: 0.01 })],
+		});
+		expect(html).toContain(
+			'<span class="m-fdr">0 better, 0 worse, 0 changed, 1 not significant (of 1 metrics)</span>',
+		);
+		expect(html).toContain(
+			'<span class="m-naive">1 better, 0 worse, 0 changed, 0 not significant (of 1 metrics)</span>',
+		);
+	});
+});
+
 describe('renderHtmlReport full report table', () => {
 	it('drops the n and Verdict columns', () => {
 		const html = render({});
@@ -402,7 +563,7 @@ describe('renderHtmlReport full report table', () => {
 		expect(html).toMatch(/class="vicon good tipsrc"[^>]*data-tip-title="[^"]*better[^"]*"[^>]*>↓</);
 		// Not significant: gray question mark.
 		expect(html).toMatch(
-			/class="vicon na tipsrc"[^>]*data-tip-title="[^"]*not significant[^"]*"[^>]*>\?</
+			/class="vicon na tipsrc"[^>]*data-tip-title="[^"]*not significant[^"]*"[^>]*>\?</,
 		);
 	});
 
@@ -421,7 +582,7 @@ describe('renderHtmlReport full report table', () => {
 			],
 		});
 		expect(html).toMatch(
-			/class="vicon shift tipsrc"[^>]*data-tip-title="[^"]*changed[^"]*"[^>]*>±</
+			/class="vicon shift tipsrc"[^>]*data-tip-title="[^"]*changed[^"]*"[^>]*>±</,
 		);
 	});
 
@@ -432,7 +593,7 @@ describe('renderHtmlReport full report table', () => {
 				row({
 					metric: 'slocAdded',
 					direction: 'neutral',
-					transform: 'log0',
+					transform: 'log',
 					nControl: 9,
 					pctChange: -0.1,
 				}),

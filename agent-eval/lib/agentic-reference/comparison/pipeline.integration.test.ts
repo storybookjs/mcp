@@ -29,13 +29,13 @@ function plantRun(
 	run: number,
 	durationSeconds: number,
 	cacheHitRate: number,
-	workflow = WF
+	workflow = WF,
 ) {
 	const dir = join(resultsDir, experiment, TS, workflow, `run-${run}`);
 	copyTaskFixture(workflow, join(dir, 'project'));
 	writeFileSync(
 		join(dir, 'result.json'),
-		JSON.stringify(measuredResultJson(experiment, workflow)) + '\n'
+		JSON.stringify(measuredResultJson(experiment, workflow)) + '\n',
 	);
 	const analysis = { speed: { durationSeconds }, cost: { cacheHitRate } };
 	writeFileSync(join(dir, 'analysis.json'), JSON.stringify(analysis, null, 2) + '\n');
@@ -44,8 +44,8 @@ function plantRun(
 		JSON.stringify(
 			{ analyzedAt: 'fixture', metricsVersion: postAnalysis.metricsVersion, output: analysis },
 			null,
-			2
-		) + '\n'
+			2,
+		) + '\n',
 	);
 }
 
@@ -62,7 +62,7 @@ function runCompare(outDir: string, selection: string[] = ['--cases=do-dont', '-
 	execFileSync(
 		process.execPath,
 		[join(AGENT_EVAL_ROOT, 'scripts', 'compare-results.ts'), ...selection, `--out=${outDir}`],
-		{ env: { ...process.env, AGENT_EVAL_RESULTS_DIR: resultsDir }, stdio: 'pipe' }
+		{ env: { ...process.env, AGENT_EVAL_RESULTS_DIR: resultsDir }, stdio: 'pipe' },
 	);
 }
 
@@ -73,7 +73,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		const estimates = JSON.parse(readFileSync(join(outDir, 'estimates.json'), 'utf8'));
 		const duration = estimates.find(
 			(row: { metric: string; context: boolean }) =>
-				row.metric === 'durationSeconds' && !row.context
+				row.metric === 'durationSeconds' && !row.context,
 		);
 		// Exactly doubled values: the log-scale effect is exactly log(2).
 		expect(duration.beta).toBeCloseTo(Math.log(2), 6);
@@ -85,7 +85,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		// from the manifest.
 		const curveSvg = readFileSync(
 			join(outDir, 'curves', `durationSeconds@${WF}.svg`),
-			'utf8'
+			'utf8',
 		).toLowerCase();
 		expect(curveSvg).toContain(CASE_COLORS['do-dont']!.light.slice(1).toLowerCase());
 		expect(curveSvg).toContain(CASE_COLORS['control-none']!.light.slice(1).toLowerCase());
@@ -121,7 +121,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 				"\tevals: ['703'],\n" +
 				'\truns: 10,\n' +
 				'\tparallelMax: 10,\n' +
-				'};\n'
+				'};\n',
 		);
 		const outDir = join(root, 'comparisons', 'plan');
 		runCompare(outDir, [`--plan=${planPath}`]);
@@ -136,7 +136,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		const estimates = JSON.parse(readFileSync(join(outDir, 'estimates.json'), 'utf8'));
 		const duration = estimates.find(
 			(row: { metric: string; context: boolean }) =>
-				row.metric === 'durationSeconds' && !row.context
+				row.metric === 'durationSeconds' && !row.context,
 		);
 		expect(duration.beta).toBeCloseTo(Math.log(2), 6);
 	}, 300_000);
@@ -156,12 +156,12 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 		const estimates = JSON.parse(readFileSync(join(outDir, 'estimates.json'), 'utf8'));
 		const duration = estimates.find(
 			(row: { metric: string; context: boolean }) =>
-				row.metric === 'durationSeconds' && !row.context
+				row.metric === 'durationSeconds' && !row.context,
 		);
 		expect(duration.scope).toBe('pooled');
 		expect(duration.beta).toBeCloseTo(1.5 * Math.log(2), 6);
 		expect(readFileSync(join(outDir, 'report.md'), 'utf8')).toContain(
-			'weight every workflow equally'
+			'weight every workflow equally',
 		);
 	}, 300_000);
 
@@ -182,7 +182,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 			expect(output).toContain('10/10');
 			expect(output).toContain('complete');
 			expect(output).toContain(
-				`AGENTIC_REF_FLOW=${WF} AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref ${TREATMENT_EXP}`
+				`AGENTIC_REF_FLOW=${WF} AGENTIC_REF_RUNS=10 pnpm eval:agentic-ref ${TREATMENT_EXP}`,
 			);
 		} finally {
 			// Restore for any later test ordering, even if an assertion above failed.

@@ -94,7 +94,6 @@ describe('measurementDifferences', () => {
 		]);
 	});
 
-
 	it('reads as a sentence', () => {
 		expect(
 			describeDifferences(
