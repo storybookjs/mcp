@@ -37,7 +37,9 @@ import { diffTrees } from './tree/tree-diff.ts';
 
 import type { FileComplexity } from './metrics/complexity.ts';
 import type { CoverageDelta, DsCoverage } from './metrics/coverage.ts';
-import type { DsMisuseSummary } from './metrics/ds-misuse/types.ts';
+import type { DsMisuseSummary, JudgedNode } from './metrics/ds-misuse/types.ts';
+
+type JudgedQuestion = keyof typeof MISUSE_QUESTION_LABELS;
 import type {
 	Analysis,
 	DeltaToBaselineContext,
@@ -46,7 +48,7 @@ import type {
 	SummarizeOptions,
 } from '../post-analysis/types.ts';
 import { finiteNumbers, mean, round, sum } from '../utils/math.ts';
-import { green, red } from '../utils/colors.ts';
+import { bold, dim, green, red, yellow } from '../utils/colors.ts';
 import { printTable } from '../utils/table.ts';
 import { isRecord } from '../utils/type.ts';
 
@@ -279,6 +281,50 @@ function misuseOf(row: Record<string, unknown>): DsMisuseSummary | null {
 	return isRecord(report) && isRecord(report.summary)
 		? (report.summary as unknown as DsMisuseSummary)
 		: null;
+}
+
+/** The judged nodes behind a run's misuse scores, empty when unjudged. */
+function misuseNodesOf(row: Record<string, unknown>): JudgedNode[] {
+	const report = row.dsMisuse;
+	return isRecord(report) && Array.isArray(report.nodes) ? (report.nodes as JudgedNode[]) : [];
+}
+
+const MISUSE_QUESTION_LABELS = {
+	correctDsDecision: 'right component',
+	correctDsUsage: 'used per docs',
+	correctLocalDecision: 'rightly local',
+} as const;
+
+/**
+ * Print every below-perfect verdict with its reason.
+ *
+ * The tables above collapse the judgement to means; the reasons are the part a
+ * reader can act on, and until here they only existed inside ds-misuse.json.
+ * Perfect runs get one explicit line, because silence after a findings header
+ * reads as a broken analysis rather than a clean one.
+ */
+function printMisuseFindings(rows: Array<Record<string, unknown>>): void {
+	let printed = 0;
+	for (const row of rows) {
+		for (const node of misuseNodesOf(row)) {
+			for (const question of Object.keys(MISUSE_QUESTION_LABELS) as JudgedQuestion[]) {
+				const answer = node[question];
+				if (answer === undefined || answer.score === 1) continue;
+				if (printed === 0) console.log(bold('\nFindings (every score below 1, with reason):'));
+				printed += 1;
+				const score = answer.score === 0 ? red('0  ') : yellow('0.5');
+				const where = `${shortExperiment(row.experiment)}/run-${row.run as number}`;
+				console.log(
+					`${score} ${bold(`<${node.tag}>`)} ${MISUSE_QUESTION_LABELS[question]} ` +
+						dim(`${node.file}:${node.line} · ${where}`),
+				);
+				console.log(dim(`    ${answer.reason}`));
+			}
+		}
+	}
+	if (printed === 0) {
+		console.log(dim('No findings: every judged node scored 1 on every question it received.'));
+	}
 }
 
 /** A run status colored by outcome, so failures stand out in a long table. */
@@ -638,6 +684,8 @@ export function summarize(
 				localMean: (group.misuseLocalDecision as { mean: number | null }).mean,
 			})),
 		);
+
+		printMisuseFindings(withMisuse);
 	}
 
 	// A selected family this eval has no data for prints nothing at all, leaving

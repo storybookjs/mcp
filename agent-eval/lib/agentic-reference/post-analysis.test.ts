@@ -1036,3 +1036,80 @@ describe('misuse summary', () => {
 		expect(summarize([row()], SILENT)[0]).toMatchObject({ misuseLocalDecision: { mean: null } });
 	});
 });
+
+describe('misuse findings', () => {
+	function misuseRow(nodes: Array<Record<string, unknown>>): Record<string, unknown> {
+		return {
+			experiment: 'agentic-ref-cc-x-opus-high',
+			eval: 'e',
+			run: 1,
+			timestamp: '2026-08-15T13-20-41.492Z',
+			status: 'passed',
+			fixtureRef: 'r@1',
+			cost: { estimatedCostUsd: 1 },
+			speed: { durationSeconds: 10 },
+			toolUse: { buckets: { docs: 0, exploration: 0 } },
+			dsMisuse: {
+				summary: {
+					correctDsDecision: 0.5,
+					correctDsUsage: 1,
+					correctLocalDecision: null,
+					evaluated: { ds: nodes.length, local: 0 },
+				},
+				nodes,
+			},
+		};
+	}
+
+	function loggedLines(rows: Array<Record<string, unknown>>): string {
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		try {
+			summarize(rows, { general: false, complexity: false, coverage: false, misuse: true });
+			return spy.mock.calls.map((call) => String(call[0])).join('\n');
+		} finally {
+			spy.mockRestore();
+		}
+	}
+
+	it('prints every below-perfect verdict with its file, question, and reason', () => {
+		const output = loggedLines([
+			misuseRow([
+				{
+					path: 'App/Badge[0]',
+					file: 'src/OrderStatus.tsx',
+					line: 12,
+					tag: 'Badge',
+					kind: 'ds',
+					correctDsDecision: {
+						score: 0,
+						reason: 'Badge.mdx rules out Badge for a live status; use status text.',
+					},
+					correctDsUsage: { score: 1, reason: 'No violation.' },
+				},
+			]),
+		]);
+		expect(output).toContain('Findings (every score below 1, with reason)');
+		expect(output).toContain('<Badge>');
+		expect(output).toContain('right component');
+		expect(output).toContain('src/OrderStatus.tsx:12');
+		expect(output).toContain('Badge.mdx rules out Badge for a live status');
+		// The perfect answer on the same node prints nothing.
+		expect(output).not.toContain('No violation.');
+	});
+
+	it('says so explicitly when every judged node scored 1', () => {
+		const output = loggedLines([
+			misuseRow([
+				{
+					path: 'App/Card[0]',
+					file: 'src/App.tsx',
+					line: 3,
+					tag: 'Card',
+					kind: 'ds',
+					correctDsDecision: { score: 1, reason: 'Right fit.' },
+				},
+			]),
+		]);
+		expect(output).toContain('No findings: every judged node scored 1');
+	});
+});
