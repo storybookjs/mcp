@@ -2,8 +2,18 @@
 // estimates.json/manifest.json/dataset.csv/curves that the statistics stage
 // emits and renders them as one static tabbed page: no server, no build step,
 // no external requests beyond the Google Fonts stylesheet.
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { MISUSE_QUESTIONS } from './misuse.ts';
+
+import type {
+	MisuseCellSummary,
+	MisuseFinding,
+	MisusePanel,
+	MisuseQuestion,
+	ScoreDistribution,
+} from './misuse.ts';
 
 export type EstimateVerdict = 'significant' | 'not-significant';
 export type EstimateTransform = 'log' | 'log0' | 'none';
@@ -97,6 +107,8 @@ export interface HtmlReportInput {
 	manifest: ManifestJson;
 	curves: CurveInput[];
 	dataset: DatasetRow[];
+	/** Absent in bundles staged before the misuse panel existed. */
+	misuse?: MisusePanel;
 }
 
 // Plain-English copy per metric. `description` is the one-liner under the
@@ -1529,6 +1541,182 @@ ground.</p>
 ${details}${empty}`;
 }
 
+// The misuse questions, worded for a reader who has not seen the judge's
+// prompt. Order matches MISUSE_QUESTIONS so summary columns and finding
+// groups line up.
+const MISUSE_QUESTION_META: Record<MisuseQuestion, { label: string; description: string }> = {
+	correctDsDecision: {
+		label: 'Right component?',
+		description: 'The right design-system component for the job, or a better DS alternative existed.',
+	},
+	correctDsUsage: {
+		label: 'Used per the docs?',
+		description: 'Whether the usage violates a documented guideline.',
+	},
+	correctLocalDecision: {
+		label: 'Rightly local?',
+		description: 'Whether a local component was justified, or a DS component covered the need.',
+	},
+};
+
+function distributionCell(distribution: ScoreDistribution | null): string {
+	if (distribution === null) {
+		return '<td class="dist-cell none" title="No node received this question">—</td>';
+	}
+	const total = distribution.ones + distribution.halves + distribution.zeros;
+	const width = (n: number) => ((n / total) * 100).toFixed(1);
+	const seg = (kind: string, n: number) =>
+		n === 0 ? '' : `<span class="seg ${kind}" style="width:${width(n)}%"></span>`;
+	const counts = [
+		`<b class="s1">${distribution.ones}</b>`,
+		`<b class="s05">${distribution.halves}</b>`,
+		`<b class="s0">${distribution.zeros}</b>`,
+	].join('<span class="sep">·</span>');
+	return (
+		`<td class="dist-cell" title="${total} node(s): ${distribution.ones} scored 1, ` +
+		`${distribution.halves} scored 0.5, ${distribution.zeros} scored 0">` +
+		`<div class="dist">${seg('good', distribution.ones)}${seg('half', distribution.halves)}${seg(
+			'zero',
+			distribution.zeros,
+		)}</div><span class="num">${counts}</span></td>`
+	);
+}
+
+function misuseSummaryTable(cells: MisuseCellSummary[], workflow: string | null): string {
+	const rows = cells
+		.map((cell) => {
+			const coverage =
+				cell.judged === cell.usable
+					? `${cell.judged}/${cell.usable}`
+					: `<b class="partial">${cell.judged}/${cell.usable}</b>`;
+			return (
+				`<tr><th scope="row">${escapeHtml(cell.case)}</th>` +
+				`<td class="num">${coverage}</td>` +
+				`<td class="num">${cell.evaluated.ds} · ${cell.evaluated.local}</td>` +
+				MISUSE_QUESTIONS.map((question) => distributionCell(cell.questions[question])).join('') +
+				'</tr>'
+			);
+		})
+		.join('\n');
+	const heading = workflow === null ? '' : `<h3>${escapeHtml(workflow)}</h3>`;
+	return `${heading}
+<div class="tablewrap"><table class="misuse-summary">
+<thead><tr><th scope="col">Case</th><th scope="col" title="Runs judged / usable runs">Judged</th>
+<th scope="col" title="Nodes evaluated: design-system · local">DS · local</th>
+${MISUSE_QUESTIONS.map(
+	(question) =>
+		`<th scope="col" title="${escapeHtml(MISUSE_QUESTION_META[question].description)}">${escapeHtml(
+			MISUSE_QUESTION_META[question].label,
+		)}</th>`,
+).join('')}
+</tr></thead>
+<tbody>${rows}</tbody>
+</table></div>`;
+}
+
+function misuseFinding(finding: MisuseFinding): string {
+	const score = finding.score === 0 ? '<b class="score zero">0</b>' : '<b class="score half">½</b>';
+	return `<article class="finding">
+<div class="finding-head">${score}
+<span class="mono tag">&lt;${escapeHtml(finding.tag)}&gt;</span>
+<span class="q">${escapeHtml(MISUSE_QUESTION_META[finding.question].label)}</span>
+<span class="mono where">${escapeHtml(finding.file)}:${finding.line}</span>
+<span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span>
+</div>
+<p class="reason">${escapeHtml(finding.reason)}</p>
+</article>`;
+}
+
+function misuseFindings(panel: MisusePanel): string {
+	if (panel.findings.length === 0) {
+		return `<h2>What the judge flagged</h2>
+<p class="lede">Nothing. Every judged node scored 1 on every question it received.</p>`;
+	}
+	const byCase = new Map<string, MisuseFinding[]>();
+	for (const finding of panel.findings) {
+		const list = byCase.get(finding.case) ?? [];
+		list.push(finding);
+		byCase.set(finding.case, list);
+	}
+	const groups = [...byCase.entries()]
+		.map(([caseName, findings]) => {
+			const zeros = findings.filter((f) => f.score === 0).length;
+			return `<details class="finding-group" open>
+<summary><b>${escapeHtml(caseName)}</b> — ${findings.length} finding(s), ${zeros} scored 0</summary>
+${findings.map(misuseFinding).join('\n')}
+</details>`;
+		})
+		.join('\n');
+	return `<h2>What the judge flagged</h2>
+<p class="lede">Every verdict below 1, verbatim from the judge, worst first. A finding names the
+guideline it rests on; one that does not is a judge bug worth filing.</p>
+${groups}`;
+}
+
+function buildMisuse(panel: MisusePanel | undefined, manifest: ManifestJson): string {
+	const intro = `<p class="lede">DS coverage measures how much of a run's UI came from the design
+system; this panel measures whether it was used well. An LLM judge scores every JSX node a run
+introduced against the design system's own documentation — 1 sound, 0.5 debatable, 0 wrong —
+and gives a reason for each verdict.</p>`;
+
+	if (panel === undefined || panel.judgedRuns === 0) {
+		return `<h2>DS misuse</h2>${intro}
+<div class="empty-state">
+<p><b>No run in this comparison has been judged yet.</b> Judging is a separate, paid step
+(one model call per run) and its verdicts are cached per run, so a bundle regenerated after
+judging picks them up automatically.</p>
+<p class="mono">pnpm judge:ds-misuse --dry &nbsp;# plan first, spend nothing<br>
+pnpm judge:ds-misuse ${manifest.spec.plan === null ? '' : `--plan ${escapeHtml(manifest.spec.plan)} `}&nbsp;# then judge, and re-run results:compare</p>
+</div>`;
+	}
+
+	const coverage =
+		panel.judgedRuns === panel.usableRuns
+			? `<p class="lede">All ${panel.usableRuns} usable runs are judged.</p>`
+			: `<p class="lede"><b class="partial">${panel.judgedRuns} of ${panel.usableRuns}</b> usable runs
+are judged; unjudged runs contribute nothing below. <span class="mono">pnpm judge:ds-misuse</span>
+judges the rest and a fresh <span class="mono">results:compare</span> picks them up.</p>`;
+
+	const pinWarning =
+		panel.guidelinesRefs.length > 1
+			? `<div class="warn"><b>Mixed guideline pins.</b> Judgements in this bundle were scored against
+${panel.guidelinesRefs.length} different guideline versions (${panel.guidelinesRefs
+					.map((ref) => `<span class="mono">${escapeHtml(ref)}</span>`)
+					.join(', ')}), so their scores are not comparable. Re-judge with
+<span class="mono">pnpm judge:ds-misuse --recompute</span>.</div>`
+			: '';
+
+	const workflows = [...new Set(panel.cells.map((cell) => cell.workflow))];
+	const tables =
+		workflows.length === 1
+			? misuseSummaryTable(panel.cells, null)
+			: workflows
+					.map((workflow) =>
+						misuseSummaryTable(
+							panel.cells.filter((cell) => cell.workflow === workflow),
+							workflow,
+						),
+					)
+					.join('\n');
+
+	const ref = panel.guidelinesRefs[0];
+	const judgedAgainst =
+		panel.guidelinesRefs.length === 1 && ref !== undefined
+			? `<p class="fineprint">Every arm is judged against the complete pinned guidelines
+(<span class="mono">${escapeHtml(ref)}</span>) — deliberately not the docs variant it was served,
+so a degraded arm is scored against the same bar as the rest.</p>`
+			: '';
+
+	return `<h2>DS misuse</h2>${intro}${coverage}${pinWarning}
+<h3 class="sr-only">Scores</h3>
+${tables}
+<p class="fineprint">Counts are pooled nodes across a cell's judged runs, shown as
+<b class="s1">1</b><span class="sep">·</span><b class="s05">0.5</b><span class="sep">·</span><b class="s0">0</b>.
+An em dash means no node received that question — absence of evidence, not a zero.</p>
+${judgedAgainst}
+${misuseFindings(panel)}`;
+}
+
 function buildTabs(panels: { id: string; label: string; body: string }[]): string {
 	const tabs = panels
 		.map(
@@ -1563,19 +1751,19 @@ function buildStyle(styles: TreatmentStyle[]): string {
 :root {
   --surface:#FAF9F7; --ink:#1B1E22; --ink-2:#4A5058; --ink-3:#8A9098;
   --line:#E4E1DB; --card:#FFFFFF; --wash:#F1EFEA;
-  --good:#0B7A45; --bad:#B4232A;
+  --good:#0B7A45; --bad:#B4232A; --half:#B7791F;
   ${lightVars}
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --surface:#16181C; --ink:#E8E6E1; --ink-2:#AFB4BB; --ink-3:#767C85;
   --line:#2C2F35; --card:#1D2025; --wash:#22252B;
-  --good:#3AA46F; --bad:#D96B70;
+  --good:#3AA46F; --bad:#D96B70; --half:#D9A441;
   ${darkVars}
 } }
 :root[data-theme="dark"] {
   --surface:#16181C; --ink:#E8E6E1; --ink-2:#AFB4BB; --ink-3:#767C85;
   --line:#2C2F35; --card:#1D2025; --wash:#22252B;
-  --good:#3AA46F; --bad:#D96B70;
+  --good:#3AA46F; --bad:#D96B70; --half:#D9A441;
   ${darkVars}
 }
 * { box-sizing:border-box; }
@@ -1724,6 +1912,33 @@ body[data-sigmode="naive"] tr[data-sig-p="0"] td { opacity:.55; }
 thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-offset:3px; }
 .tablewrap { overflow-x:auto; }
 .tablewrap.tall { max-height:74vh; overflow:auto; margin-top:14px; }
+.s1 { color:var(--good); } .s05 { color:var(--half); } .s0 { color:var(--bad); }
+.sep { color:var(--ink-3); margin:0 3px; }
+.partial { color:var(--half); }
+.dist-cell { min-width:130px; }
+.dist-cell.none { color:var(--ink-3); }
+.dist { display:flex; height:6px; border-radius:3px; overflow:hidden; background:var(--wash);
+  margin-bottom:4px; min-width:110px; }
+.dist .seg.good { background:var(--good); }
+.dist .seg.half { background:var(--half); }
+.dist .seg.zero { background:var(--bad); }
+.empty-state, .warn { background:var(--wash); border:1px solid var(--line); border-radius:12px;
+  padding:16px 18px; margin:18px 0; font-size:.92rem; }
+.warn { border-color:var(--half); }
+.fineprint { font-size:.8rem; color:var(--ink-3); max-width:70ch; }
+.finding-group { border-top:1px solid var(--line); padding:10px 0 4px; }
+.finding-group summary { cursor:pointer; font-size:.92rem; color:var(--ink-2); padding:4px 0; }
+.finding { padding:10px 0 6px 14px; border-left:2px solid var(--line); margin:10px 0; }
+.finding-head { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:baseline; }
+.finding .score { font-family:"IBM Plex Mono",monospace; font-size:.82rem; border-radius:6px;
+  padding:1px 7px; color:#fff; }
+.finding .score.zero { background:var(--bad); }
+.finding .score.half { background:var(--half); }
+.finding .tag { font-weight:600; }
+.finding .q { font-size:.8rem; font-weight:600; color:var(--ink-2); }
+.finding .where, .finding .run { font-size:.76rem; color:var(--ink-3); }
+.finding .reason { margin:6px 0 0; font-size:.9rem; color:var(--ink-2); max-width:75ch; }
+.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 .untested { font-size:.85rem; color:var(--ink-2); margin:6px 0; padding-left:18px; }
 .untested li { margin:3px 0; }
 .empty-note { font-size:.85rem; color:var(--ink-3); font-style:italic; margin:18px 0; }
@@ -2104,6 +2319,11 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 			body: buildFullReport(estimates, manifest, styles),
 		},
 		{
+			id: 'misuse',
+			label: 'DS misuse',
+			body: buildMisuse(input.misuse, manifest),
+		},
+		{
 			id: 'curves',
 			label: 'ECDF curves',
 			body: buildCurves(curves, manifest),
@@ -2165,8 +2385,12 @@ export function writeHtmlReport(stagingDir: string): void {
 				svg: readFileSync(join(curvesDir, file), 'utf8'),
 			};
 		});
+	const misusePath = join(stagingDir, 'misuse.json');
+	const misuse: MisusePanel | undefined = existsSync(misusePath)
+		? JSON.parse(readFileSync(misusePath, 'utf8'))
+		: undefined;
 	writeFileSync(
 		join(stagingDir, 'report.html'),
-		renderHtmlReport({ estimates, manifest, curves, dataset }),
+		renderHtmlReport({ estimates, manifest, curves, dataset, misuse }),
 	);
 }

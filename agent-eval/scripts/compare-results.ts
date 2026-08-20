@@ -26,6 +26,7 @@ import {
 	type ComparisonSpec,
 } from '#lib/agentic-reference/comparison/emit';
 import { writeHtmlReport } from '#lib/agentic-reference/comparison/html-report';
+import { collectMisusePanel } from '#lib/agentic-reference/comparison/misuse';
 import { parseCompareArgs } from '#lib/agentic-reference/comparison/options';
 import {
 	comparisonSlug,
@@ -165,6 +166,11 @@ async function main() {
 		// Not fatal: provenance only.
 	}
 	writeFileSync(join(stagingDir, 'dataset.csv'), datasetCsv(cells, COMPARISON_METRICS, spec));
+	// Cached judge artifacts only — free, and simply sparse when judging hasn't run.
+	writeFileSync(
+		join(stagingDir, 'misuse.json'),
+		JSON.stringify(collectMisusePanel(cells, spec), null, 2) + '\n',
+	);
 	writeFileSync(
 		join(stagingDir, 'manifest.json'),
 		manifestJson({
