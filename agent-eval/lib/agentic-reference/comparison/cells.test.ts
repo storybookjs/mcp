@@ -8,6 +8,7 @@ import { findRuns } from '../../post-analysis/discovery.ts';
 import type { ResolvedCase } from './resolve.ts';
 import { autoSelectWorkflows, buildCells } from './cells.ts';
 import { copyTaskFixture, measuredResultJson } from './test-fixtures.ts';
+import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
 
 const CONTROL: ResolvedCase = {
 	caseName: 'cc-control-none-opus-high',
@@ -213,5 +214,98 @@ describe('autoSelectWorkflows', () => {
 		expect(selected).toEqual([WF]);
 		expect(skipped).toHaveLength(1);
 		expect(skipped[0]!.workflow).toBe('701-new-ui-flow');
+	});
+});
+
+describe('misuse graft', () => {
+	function writeMisuse(
+		experiment: string,
+		run: number,
+		nodes: Array<Record<string, unknown>>,
+		overrides: Record<string, unknown> = {},
+	) {
+		const dir = join(results, experiment, TS1, WF, `run-${run}`);
+		writeFileSync(
+			join(dir, 'ds-misuse.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				metricsVersion: 6,
+				judgedAt: 'x',
+				model: 'test',
+				dsGuidelinesRef: dsDocsRefLabel(),
+				fixtureRef: 'r@1',
+				diffTruncated: false,
+				summary: {
+					correctDsDecision: null,
+					correctDsUsage: null,
+					correctLocalDecision: null,
+					evaluated: { ds: 0, local: 0 },
+				},
+				nodes,
+				...overrides,
+			}),
+		);
+	}
+
+	function dsMisuseOf(cells: ReturnType<typeof build>['cells']) {
+		const usable = cells.find((c) => c.runs.length > 0)!.runs[0]!;
+		return (usable.analysis as { dsMisuse?: Record<string, number | null> }).dsMisuse;
+	}
+
+	it('grafts the per-answer aggregate and the three sub-scores onto the analysis', () => {
+		mkRun(CONTROL.experiment, TS1, 1, 'usable');
+		writeMisuse(
+			CONTROL.experiment,
+			1,
+			[
+				{
+					path: 'App/A[0]',
+					file: 'a.tsx',
+					line: 1,
+					tag: 'A',
+					kind: 'ds',
+					correctDsDecision: { score: 1, reason: 'r' },
+					correctDsUsage: { score: 0, reason: 'r' },
+				},
+				{
+					path: 'App/B[0]',
+					file: 'b.tsx',
+					line: 2,
+					tag: 'B',
+					kind: 'local',
+					correctLocalDecision: { score: 0.5, reason: 'r' },
+				},
+			],
+			{
+				summary: {
+					correctDsDecision: 0.5,
+					correctDsUsage: 0,
+					correctLocalDecision: 0.5,
+					evaluated: { ds: 1, local: 1 },
+				},
+			},
+		);
+		const { cells } = build({ minRuns: 1, cases: [CONTROL], workflows: [WF] });
+		// Aggregate is normalised over the three answers (1 + 0 + 0.5) / 3, so a
+		// run with a big diff and a run with a small one land on the same scale.
+		expect(dsMisuseOf(cells)).toEqual({
+			score: 0.5,
+			correctDsDecision: 0.5,
+			correctDsUsage: 0,
+			correctLocalDecision: 0.5,
+		});
+	});
+
+	it('leaves a stale judgement off rather than mixing standards', () => {
+		mkRun(CONTROL.experiment, TS1, 1, 'usable');
+		writeMisuse(CONTROL.experiment, 1, [], { dsGuidelinesRef: 'someone/else@old' });
+		const { cells } = build({ minRuns: 1, cases: [CONTROL], workflows: [WF] });
+		expect(dsMisuseOf(cells)).toBeUndefined();
+	});
+
+	it('grafts nothing on an unjudged run', () => {
+		mkRun(CONTROL.experiment, TS1, 1, 'usable');
+		const { cells } = build({ minRuns: 1, cases: [CONTROL], workflows: [WF] });
+		expect(dsMisuseOf(cells)).toBeUndefined();
 	});
 });

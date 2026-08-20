@@ -2,6 +2,10 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { isCurrentRun } from '../comparability.ts';
+import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
+import { isStale, readMisuseReport } from '../metrics/ds-misuse/index.ts';
+
+import type { DsMisuseReport } from '../metrics/ds-misuse/types.ts';
 import type { Run } from '../../post-analysis/discovery.ts';
 import { isCurrentCacheEntry, readCacheEntry } from '../../post-analysis/run-cache.ts';
 import { readJson } from '../../utils/files.ts';
@@ -81,7 +85,52 @@ function classify(run: Run, metricsVersion: number | undefined, cell: Cell) {
 		cell.unanalyzed += 1;
 		return;
 	}
+	attachMisuse(analysis, run.runDir, metricsVersion);
 	cell.runs.push({ run, analysis });
+}
+
+/**
+ * Per-node score means pooled over one run's judgement, plus the aggregate:
+ * every answered question's score over the number of answers, so a run is
+ * normalised by how much it was judged on rather than rewarded or punished
+ * for the size of its diff.
+ */
+function misuseValues(report: DsMisuseReport) {
+	let sum = 0;
+	let answers = 0;
+	for (const node of report.nodes) {
+		for (const answer of [node.correctDsDecision, node.correctDsUsage, node.correctLocalDecision]) {
+			if (answer === undefined) continue;
+			sum += answer.score;
+			answers += 1;
+		}
+	}
+	return {
+		score: answers === 0 ? null : sum / answers,
+		correctDsDecision: report.summary.correctDsDecision,
+		correctDsUsage: report.summary.correctDsUsage,
+		correctLocalDecision: report.summary.correctLocalDecision,
+	};
+}
+
+/**
+ * Judgements live beside the analysis, not inside it: analysis.json is a pure
+ * function of the run, while ds-misuse.json appears whenever the paid judge
+ * pass happens to run. Grafting at cell-build time keeps the dataset current
+ * with the artifacts on disk — and a stale judgement (moved guideline pin or
+ * metrics version) is left off entirely, because a number scored against a
+ * different standard is worse in a table than a blank.
+ */
+function attachMisuse(
+	analysis: Record<string, unknown>,
+	runDir: string,
+	metricsVersion: number | undefined,
+): void {
+	const report = readMisuseReport(runDir);
+	if (report === null || isStale(report, { dsGuidelinesRef: dsDocsRefLabel(), metricsVersion })) {
+		return;
+	}
+	analysis.dsMisuse = misuseValues(report);
 }
 
 export function buildCells(options: BuildOptions): { cells: Cell[]; gaps: CellGap[] } {

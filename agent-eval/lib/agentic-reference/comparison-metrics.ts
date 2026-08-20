@@ -8,7 +8,15 @@ export interface ComparisonMetric {
 	label: string;
 	/** Dot-path into a run's analysis.json. */
 	path: string;
-	family: 'speed' | 'cost' | 'toolUse' | 'churn' | 'dsCoverage' | 'complexity' | 'diff';
+	family:
+		| 'speed'
+		| 'cost'
+		| 'toolUse'
+		| 'churn'
+		| 'dsCoverage'
+		| 'dsMisuse'
+		| 'complexity'
+		| 'diff';
 	/** log requires y > 0 (violations become reported missing values); log0 maps log(0) to 0. */
 	transform: MetricTransform;
 	direction: MetricDirection;
@@ -156,6 +164,42 @@ export const COMPARISON_METRICS: ComparisonMetric[] = [
 		label: 'DS share of component nodes Δ',
 		path: 'deltaToBaseline.coverageDelta.dsShareOfComponentNodes.delta',
 		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		// The four ds-misuse metrics read per-run means over judged nodes, so
+		// every value is already normalised to [0, 1] regardless of how many
+		// nodes a diff introduced. They are null on unjudged runs (judging is a
+		// separate paid step) — the stats stage drops those rows per metric.
+		key: 'dsMisuseScore',
+		label: 'DS misuse score',
+		path: 'dsMisuse.score',
+		family: 'dsMisuse',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsMisuseDecision',
+		label: 'Right DS component',
+		path: 'dsMisuse.correctDsDecision',
+		family: 'dsMisuse',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsMisuseUsage',
+		label: 'DS usage per docs',
+		path: 'dsMisuse.correctDsUsage',
+		family: 'dsMisuse',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsMisuseLocalDecision',
+		label: 'Justified local components',
+		path: 'dsMisuse.correctLocalDecision',
+		family: 'dsMisuse',
 		transform: 'none',
 		direction: 'higher-better',
 	},

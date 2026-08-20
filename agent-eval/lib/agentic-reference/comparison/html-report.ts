@@ -312,6 +312,47 @@ const METRICS: Record<string, MetricCopy> = {
 		relevance:
 			'Did the components this run added come from the design system, net of what it removed?',
 	},
+	dsMisuseScore: {
+		name: 'DS misuse score',
+		description: 'Judge score over all introduced usages',
+		computes:
+			'An LLM judge scores every component usage the run introduced against the design ' +
+			"system's own documentation (1 sound, 0.5 debatable, 0 wrong); this is the mean over " +
+			'every answer, so runs are comparable whatever the size of their diff.',
+		relevance:
+			'Coverage says how much of the UI came from the design system; this says whether it ' +
+			'was used well. The DS misuse tab holds each verdict with its reason.',
+	},
+	dsMisuseDecision: {
+		name: 'Right DS component',
+		description: 'Was each DS usage the right component',
+		computes:
+			'Per introduced design-system usage: was this the right component for the job, or did ' +
+			'a better DS alternative exist? Mean over judged DS usages.',
+		relevance:
+			'Picking a plausible-but-wrong component is the misuse that survives review; docs and ' +
+			'stories exist to prevent exactly this.',
+	},
+	dsMisuseUsage: {
+		name: 'DS usage per docs',
+		description: 'DS usages free of documented violations',
+		computes:
+			'Per introduced design-system usage: does it violate a documented guideline — ' +
+			'composition rules, required props, tokens, compound parts? Mean over judged DS usages.',
+		relevance:
+			'Measures whether the served documentation actually transferred its rules into the code ' +
+			'the agent wrote.',
+	},
+	dsMisuseLocalDecision: {
+		name: 'Justified local components',
+		description: 'Local only where no DS component fit',
+		computes:
+			'Per introduced local component: should it be local, or did a design-system component ' +
+			'with a relevant API exist? Mean over judged local components.',
+		relevance:
+			'Hand-rolling what the system already ships is how design systems erode; a low score ' +
+			'here is reinvention the docs failed to prevent.',
+	},
 	cyclomaticDelta: {
 		name: 'Cyclomatic complexity added',
 		description: 'Branching complexity the change adds',
@@ -362,6 +403,13 @@ const FAMILIES: Record<string, { name: string; intro: string }> = {
 	dsCoverage: {
 		name: 'DS coverage',
 		intro: 'How much of the produced UI uses the design system, and how far the run moved it.',
+	},
+	dsMisuse: {
+		name: 'DS misuse',
+		intro:
+			'Whether the design system was used well, judged per introduced usage against its own ' +
+			'documentation and averaged per run — 1 is clean, 0 is misuse. Judged runs only; the ' +
+			'DS misuse tab holds the per-node reasons.',
 	},
 	complexity: {
 		name: 'Complexity',
@@ -1583,15 +1631,23 @@ function distributionCell(distribution: ScoreDistribution | null): string {
 	);
 }
 
-function misuseSummaryTable(cells: MisuseCellSummary[], workflow: string | null): string {
+function misuseSummaryTable(
+	cells: MisuseCellSummary[],
+	workflow: string | null,
+	controlShortName: string,
+): string {
 	const rows = cells
 		.map((cell) => {
 			const coverage =
 				cell.judged === cell.usable
 					? `${cell.judged}/${cell.usable}`
 					: `<b class="partial">${cell.judged}/${cell.usable}</b>`;
+			const caseAttr =
+				cell.case === controlShortName
+					? ' class="m-case"'
+					: ` class="m-case" data-t="${slug(cell.case)}"`;
 			return (
-				`<tr><th scope="row">${escapeHtml(cell.case)}</th>` +
+				`<tr${caseAttr}><th scope="row">${escapeHtml(cell.case)}</th>` +
 				`<td class="num">${coverage}</td>` +
 				`<td class="num">${cell.evaluated.ds} · ${cell.evaluated.local}</td>` +
 				MISUSE_QUESTIONS.map((question) => distributionCell(cell.questions[question])).join('') +
@@ -1600,7 +1656,8 @@ function misuseSummaryTable(cells: MisuseCellSummary[], workflow: string | null)
 		})
 		.join('\n');
 	const heading = workflow === null ? '' : `<h3>${escapeHtml(workflow)}</h3>`;
-	return `${heading}
+	const wfAttr = workflow === null ? '' : ` data-workflow="${escapeHtml(workflow)}"`;
+	return `<div class="m-wf"${wfAttr}>${heading}
 <div class="tablewrap"><table class="misuse-summary">
 <thead><tr><th scope="col">Case</th><th scope="col" title="Runs judged / usable runs">Judged</th>
 <th scope="col" title="Nodes evaluated: design-system · local">DS · local</th>
@@ -1612,12 +1669,12 @@ ${MISUSE_QUESTIONS.map(
 ).join('')}
 </tr></thead>
 <tbody>${rows}</tbody>
-</table></div>`;
+</table></div></div>`;
 }
 
 function misuseFinding(finding: MisuseFinding): string {
 	const score = finding.score === 0 ? '<b class="score zero">0</b>' : '<b class="score half">½</b>';
-	return `<article class="finding">
+	return `<article class="finding m-wf" data-workflow="${escapeHtml(finding.workflow)}">
 <div class="finding-head">${score}
 <span class="mono tag">&lt;${escapeHtml(finding.tag)}&gt;</span>
 <span class="q">${escapeHtml(MISUSE_QUESTION_META[finding.question].label)}</span>
@@ -1628,7 +1685,7 @@ function misuseFinding(finding: MisuseFinding): string {
 </article>`;
 }
 
-function misuseFindings(panel: MisusePanel): string {
+function misuseFindings(panel: MisusePanel, controlShortName: string): string {
 	if (panel.findings.length === 0) {
 		return `<h2>What the judge flagged</h2>
 <p class="lede">Nothing. Every judged node scored 1 on every question it received.</p>`;
@@ -1642,7 +1699,8 @@ function misuseFindings(panel: MisusePanel): string {
 	const groups = [...byCase.entries()]
 		.map(([caseName, findings]) => {
 			const zeros = findings.filter((f) => f.score === 0).length;
-			return `<details class="finding-group" open>
+			const caseAttr = caseName === controlShortName ? '' : ` data-t="${slug(caseName)}"`;
+			return `<details class="finding-group m-case"${caseAttr} open>
 <summary><b>${escapeHtml(caseName)}</b> — ${findings.length} finding(s), ${zeros} scored 0</summary>
 ${findings.map(misuseFinding).join('\n')}
 </details>`;
@@ -1687,15 +1745,17 @@ ${panel.guidelinesRefs.length} different guideline versions (${panel.guidelinesR
 <span class="mono">pnpm judge:ds-misuse --recompute</span>.</div>`
 			: '';
 
+	const controlShortName = manifest.spec.control.shortName;
 	const workflows = [...new Set(panel.cells.map((cell) => cell.workflow))];
 	const tables =
 		workflows.length === 1
-			? misuseSummaryTable(panel.cells, null)
+			? misuseSummaryTable(panel.cells, null, controlShortName)
 			: workflows
 					.map((workflow) =>
 						misuseSummaryTable(
 							panel.cells.filter((cell) => cell.workflow === workflow),
 							workflow,
+							controlShortName,
 						),
 					)
 					.join('\n');
@@ -1715,7 +1775,7 @@ ${tables}
 <b class="s1">1</b><span class="sep">·</span><b class="s05">0.5</b><span class="sep">·</span><b class="s0">0</b>.
 An em dash means no node received that question — absence of evidence, not a zero.</p>
 ${judgedAgainst}
-${misuseFindings(panel)}`;
+${misuseFindings(panel, controlShortName)}`;
 }
 
 function buildTabs(panels: { id: string; label: string; body: string }[]): string {
@@ -2073,6 +2133,21 @@ function refresh() {
     var wfOk = !contextView || tr.getAttribute('data-workflow') === scope;
     var t = tr.getAttribute('data-t');
     tr.hidden = !wfOk || (t !== null && off[t] === true);
+  });
+  // DS misuse tab: workflow scope hides per-workflow tables and findings,
+  // treatment chips hide case rows and finding groups. Significance does not
+  // apply — per-node verdicts carry no q; the four dsMisuse* estimate rows in
+  // the other tabs react to it instead.
+  $('#panel-misuse .m-wf').forEach(function (el) {
+    var wf = el.getAttribute('data-workflow');
+    el.hidden = contextView && wf !== null && wf !== scope;
+  });
+  $('#panel-misuse .m-case').forEach(function (el) {
+    var t = el.getAttribute('data-t');
+    el.hidden = t !== null && off[t] === true;
+  });
+  $('#panel-misuse .finding-group').forEach(function (group) {
+    if (!group.hidden) group.hidden = !anyVisible($('.finding', group));
   });
   // Re-span each workflow group's cell around the rows the filters left.
   var sampleGroups = {};
