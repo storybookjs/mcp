@@ -50,7 +50,34 @@ import { selectionFlags } from '#lib/agentic-reference/selection';
 import { readJson } from '#lib/utils/files';
 import { isRecord } from '#lib/utils/type';
 
+import type { JudgeUsage } from '#lib/agentic-reference/metrics/ds-misuse/judge';
 import type { NodeRecord } from '#lib/agentic-reference/metrics/ds-coverage/types';
+
+// claude-opus-4-8 list prices per million tokens. The judge caches the doc
+// corpus with a 1h TTL, so the write rate is the 1h one. A moved judge model
+// means these need moving with it.
+const USD_PER_MTOK = { input: 5, cacheRead: 0.5, cacheWrite: 10, output: 25 };
+
+function usdOf(usage: JudgeUsage): number {
+	return (
+		(usage.inputTokens * USD_PER_MTOK.input +
+			usage.cacheReadTokens * USD_PER_MTOK.cacheRead +
+			usage.cacheWriteTokens * USD_PER_MTOK.cacheWrite +
+			usage.outputTokens * USD_PER_MTOK.output) /
+		1_000_000
+	);
+}
+
+function addUsage(total: JudgeUsage, usage: JudgeUsage): void {
+	total.inputTokens += usage.inputTokens;
+	total.cacheReadTokens += usage.cacheReadTokens;
+	total.cacheWriteTokens += usage.cacheWriteTokens;
+	total.outputTokens += usage.outputTokens;
+}
+
+function tokens(n: number): string {
+	return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RESULTS_DIR = join(ROOT, 'results');
@@ -211,7 +238,11 @@ function planRun(run: Run, options: Options): Plan {
 }
 
 /** Judge one run, or explain why it cannot be judged. */
-async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused' | 'skipped'> {
+async function judgeOne(
+	run: Run,
+	options: Options,
+	spent: JudgeUsage,
+): Promise<'judged' | 'reused' | 'skipped'> {
 	const plan = planRun(run, options);
 	if (plan.action !== 'judge') {
 		return plan.action;
@@ -223,7 +254,7 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 
 	const label = labelOf(run);
 	console.log(`Judging ${label} against ${dsDocsRefLabel()}`);
-	const report = await judgeRun({
+	const { report, usage } = await judgeRun({
 		runDir: run.runDir,
 		projectDir: run.projectDir,
 		baselineDir: prepareRef(REF_CACHE_DIR, plan.pin.repo, plan.pin.ref),
@@ -234,12 +265,18 @@ async function judgeOne(run: Run, options: Options): Promise<'judged' | 'reused'
 		refCacheDir: REF_CACHE_DIR,
 	});
 	writeMisuseReport(run.runDir, report);
+	addUsage(spent, usage);
 
 	const { correctDsDecision, correctDsUsage, correctLocalDecision, evaluated } = report.summary;
 	console.log(
 		`  ${evaluated.ds} DS / ${evaluated.local} local nodes — ` +
 			`decision ${correctDsDecision ?? '-'}, usage ${correctDsUsage ?? '-'}, ` +
 			`local ${correctLocalDecision ?? '-'}`,
+	);
+	console.log(
+		`  ~$${usdOf(usage).toFixed(2)} — in ${tokens(usage.inputTokens)} · ` +
+			`cache read ${tokens(usage.cacheReadTokens)} · cache write ${tokens(usage.cacheWriteTokens)} · ` +
+			`out ${tokens(usage.outputTokens)}`,
 	);
 	return 'judged';
 }
@@ -293,9 +330,15 @@ async function main() {
 	}
 
 	const counts = { judged: 0, reused: 0, skipped: 0, failed: 0 };
+	const spent: JudgeUsage = {
+		inputTokens: 0,
+		cacheReadTokens: 0,
+		cacheWriteTokens: 0,
+		outputTokens: 0,
+	};
 	for (const run of runs) {
 		try {
-			counts[await judgeOne(run, options)] += 1;
+			counts[await judgeOne(run, options, spent)] += 1;
 		} catch (error) {
 			// One broken run must not cost us the others — but an absent API key
 			// will fail every remaining run identically, so stop on it.
@@ -309,6 +352,13 @@ async function main() {
 	console.log(
 		`\nJudged ${counts.judged}, reused ${counts.reused}, skipped ${counts.skipped}, failed ${counts.failed}.`,
 	);
+	if (counts.judged > 0) {
+		console.log(
+			`Spent ~$${usdOf(spent).toFixed(2)} ` +
+				`(${tokens(spent.inputTokens)} in · ${tokens(spent.cacheReadTokens)} cache read · ` +
+				`${tokens(spent.cacheWriteTokens)} cache write · ${tokens(spent.outputTokens)} out).`,
+		);
+	}
 	if (counts.reused > 0) console.log('Pass --recompute to re-judge cached runs.');
 }
 

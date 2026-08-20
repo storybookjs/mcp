@@ -70,8 +70,12 @@ export function isStale(report: DsMisuseReport, current: StalenessCheck): boolea
 	);
 }
 
+import type { JudgeUsage } from './judge.ts';
+
 /** Judge one run and return its report. Makes exactly one model call. */
-export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
+export async function judgeRun(
+	input: JudgeRunInput,
+): Promise<{ report: DsMisuseReport; usage: JudgeUsage }> {
 	const patch = treePatch(input.baselineDir, input.projectDir);
 
 	// Targeted: the graph is still whole so imports resolve, but only the files
@@ -83,7 +87,7 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 		censusInclude: patch.files,
 	});
 
-	const judged = await runJudge(
+	const { judged, usage } = await runJudge(
 		buildJudgeRequest({
 			docs: collectDsDocs(input.refCacheDir),
 			baselineNodes: input.baselineNodes,
@@ -93,7 +97,7 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 		}),
 	);
 
-	return {
+	const report: DsMisuseReport = {
 		schemaVersion: DS_MISUSE_SCHEMA_VERSION,
 		metricsVersion: input.metricsVersion,
 		judgedAt: new Date().toISOString(),
@@ -106,4 +110,5 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 		// number has to be traceable to what it actually counted.
 		nodes: judged.nodes,
 	};
+	return { report, usage };
 }
