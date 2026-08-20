@@ -123,22 +123,21 @@ const EXPERIMENT_BRANCHES = [
 // alone in a tooltip.
 const VARIANT_DEFINITIONS: Record<string, string> = {
 	empty:
-		'Storybook MCP with no docs or custom stories. Isolates the added value of Storybook\'s automatic docgen.',
+		"Storybook MCP with no docs or custom stories. Isolates the added value of Storybook's automatic docgen.",
 	'docs-full':
 		'Storybook MCP with general and per-component documentation, but virtually no stories. Isolates the added value of docs content.',
-	'stories-full': 'A Storybook MCP with all kinds of stories, but no documentation. Isolates the added value of stories.',
-	full:
-		'Storybook MCP with complete documentation and stories. Isolates the effects of providing too much context to agentic workflows.',
+	'stories-full':
+		'A Storybook MCP with all kinds of stories, but no documentation. Isolates the added value of stories.',
+	full: 'Storybook MCP with complete documentation and stories. Isolates the effects of providing too much context to agentic workflows.',
 	'basic-docs':
-		'Storybook MCP with general usage and behavior pages plus showcase and highlight stories. Close in spirit to Base UI\'s documentation style.',
+		"Storybook MCP with general usage and behavior pages plus showcase and highlight stories. Close in spirit to Base UI's documentation style.",
 	'do-dont':
-		'Storybook MCP with the basic-docs content plus general and per-component documentation on do\'s and don\'ts. Isolates the impact of explaining how to use components properly.',
+		"Storybook MCP with the basic-docs content plus general and per-component documentation on do's and don'ts. Isolates the impact of explaining how to use components properly.",
 	'when-to-use':
 		'Storybook MCP with the basic-docs content plus documentation on how to select the right component based on task needs. Isolates the impact of steering how component usage decisions should be made.',
 	'history-issues':
 		'Storybook MCP with the basic-docs content plus per-component decision histories and open issue lists. Isolates the impact of historical decision records on agent understanding of component behavior.',
-	a11y:
-		'Storybook MCP with the basic-docs content plus general and per-component accessibility guidelines. Isolates the impact of a11y-related context.',
+	a11y: 'Storybook MCP with the basic-docs content plus general and per-component accessibility guidelines. Isolates the impact of a11y-related context.',
 	'brand-animation':
 		'Storybook MCP with the basic-docs content plus brand guidelines and animation stories. Isolates the impact on brand-related context on agentic workflows.',
 	'api-ref':
@@ -192,7 +191,8 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 
 	{
 		name: 'cc-control-none-opus-high',
-		description: 'Control case with no agent support at all (no MCP, skills or documentation resource).',
+		description:
+			'Control case with no agent support at all (no MCP, skills or documentation resource).',
 	},
 ];
 

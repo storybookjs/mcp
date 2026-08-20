@@ -389,13 +389,20 @@ const COUNT_METRICS = new Set([
 // the Metrics toggle is set to "all" — the grid stays intact while the default
 // view shows the story that matters. Move keys in and out freely; nothing
 // statistical depends on this set.
-const EXTRA_METRICS = new Set(['cyclomaticDelta', 'inputTokens', 'slocAdded', 'totalToolCalls']);
+const EXTRA_METRICS = new Set([
+	'cyclomaticDelta',
+	'inputTokens',
+	'slocAdded',
+	'totalToolCalls',
+	'dsShareOfAllNodesDelta',
+	'dsShareOfComponentNodesDelta',
+]);
 
 // Line counts: whole numbers with thousands separators.
 const SLOC_METRICS = new Set(['slocAdded', 'slocNet']);
 
-const LIGHT_TREATMENT_COLORS = ['#C05621', '#0D8A78', '#6D5BD0'];
-const DARK_TREATMENT_COLORS = ['#D4732A', '#12A38E', '#8B79E8'];
+const LIGHT_TREATMENT_COLORS = ['#E8590C', '#099268', '#6741D9'];
+const DARK_TREATMENT_COLORS = ['#FF7E33', '#20C997', '#9775FA'];
 const NEUTRAL_GRAY_LIGHT = '#6B7280';
 const NEUTRAL_GRAY_DARK = '#9CA3AF';
 
@@ -652,6 +659,104 @@ function caseStat(
 	return kind === 'median' ? combined : backTransform(combined, metric.transform);
 }
 
+/**
+ * Sample standard deviation of a case's values on the transformed scale,
+ * per-workflow SDs combined with equal weight (matching caseStat). Null when
+ * no workflow has two usable values.
+ */
+function caseSpread(
+	dataset: DatasetRow[],
+	caseName: string,
+	metric: ManifestMetric,
+	scope: string,
+	workflows: string[],
+): number | null {
+	const scoped = scope === 'pooled' ? workflows : [scope];
+	const perWorkflow: number[] = [];
+	for (const workflow of scoped) {
+		const values = usableValues(dataset, caseName, workflow, metric).map((v) =>
+			transformValue(v, metric.transform),
+		);
+		if (values.length < 2) continue;
+		const m = mean(values);
+		perWorkflow.push(
+			Math.sqrt(values.reduce((sum, v) => sum + (v - m) ** 2, 0) / (values.length - 1)),
+		);
+	}
+	return perWorkflow.length === 0 ? null : mean(perWorkflow);
+}
+
+/**
+ * A symmetric transformed-scale half-width (±1 SD, or a CI's t·se) around the
+ * control, on the effect display scale.
+ */
+function spreadExtents(half: number, transform: EstimateTransform): { lo: number; hi: number } {
+	if (transform === 'log' || transform === 'log0') {
+		return { lo: Math.exp(-half) - 1, hi: Math.exp(half) - 1 };
+	}
+	return { lo: -half, hi: half };
+}
+
+// Two-sided 95% t critical values by degrees of freedom; 1.96 past 30.
+const T95 = [
+	12.71, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228, 2.201, 2.179, 2.16, 2.145,
+	2.131, 2.12, 2.11, 2.101, 2.093, 2.086, 2.08, 2.074, 2.069, 2.064, 2.06, 2.056, 2.052, 2.048,
+	2.045, 2.042,
+];
+function t95(df: number): number {
+	return df >= 1 && df <= 30 ? T95[df - 1]! : 1.96;
+}
+
+/**
+ * Half-width of a plain-t 95% CI for the case's mean on the transformed scale,
+ * per-workflow standard errors combined with equal weight (matching caseStat's
+ * pooling). A visual companion to the model's effect CIs, not a test.
+ */
+function caseMeanCiHalfWidth(
+	dataset: DatasetRow[],
+	caseName: string,
+	metric: ManifestMetric,
+	scope: string,
+	workflows: string[],
+): number | null {
+	const scoped = scope === 'pooled' ? workflows : [scope];
+	let seSquares = 0;
+	let df = 0;
+	let count = 0;
+	for (const workflow of scoped) {
+		const values = usableValues(dataset, caseName, workflow, metric).map((v) =>
+			transformValue(v, metric.transform),
+		);
+		if (values.length < 2) continue;
+		const m = mean(values);
+		const sd = Math.sqrt(values.reduce((sum, v) => sum + (v - m) ** 2, 0) / (values.length - 1));
+		seSquares += (sd * sd) / values.length;
+		df += values.length - 1;
+		count++;
+	}
+	if (count === 0) return null;
+	return t95(df) * (Math.sqrt(seSquares) / count);
+}
+
+/**
+ * A treatment's own ±half band around its mean shift, on the effect display
+ * scale. Null when a statistic is missing or a ratio is undefined.
+ */
+function shiftBand(
+	transform: EstimateTransform,
+	control: number | null,
+	treatment: number | null,
+	half: number | null,
+): { lo: number; hi: number } | null {
+	if (control === null || treatment === null || half === null) return null;
+	if (transform === 'log' || transform === 'log0') {
+		if (control <= 0 || treatment <= 0) return null;
+		const m = Math.log(treatment / control);
+		return { lo: Math.exp(m - half) - 1, hi: Math.exp(m + half) - 1 };
+	}
+	return { lo: treatment - control - half, hi: treatment - control + half };
+}
+
 // The shift of a case statistic against the control's, on the effect display
 // scale: a ratio for log-scaled metrics (they display as percent changes), a
 // difference otherwise. Null when a statistic is missing or a ratio is
@@ -758,7 +863,14 @@ function isNaiveSignificant(row: EstimateRow): boolean {
 	return row.p < 0.05;
 }
 
-function summaryCounts(rows: EstimateRow[], isSig: (row: EstimateRow) => boolean): string {
+// One treatment's verdict tally as markup: better/worse carry color when they
+// have anything to say; the grid size is stated once by the caller, so a
+// count only appends its total when some pairs went untested.
+function countsHtml(
+	rows: EstimateRow[],
+	isSig: (row: EstimateRow) => boolean,
+	gridSize: number,
+): string {
 	let better = 0;
 	let worse = 0;
 	let changed = 0;
@@ -774,38 +886,25 @@ function summaryCounts(rows: EstimateRow[], isSig: (row: EstimateRow) => boolean
 			worse++;
 		}
 	}
+	const mark = (count: number, cls: string, word: string) =>
+		count > 0 ? `<span class="${cls}">${count} ${word}</span>` : `${count} ${word}`;
+	const suffix = rows.length === gridSize ? '' : ` (${rows.length} tested)`;
 	return (
-		`${better} better, ${worse} worse, ${changed} changed, ` +
-		`${inconclusive} not significant (of ${rows.length} metrics)`
+		`${mark(better, 'cgood', 'better')} · ${mark(worse, 'cbad', 'worse')} · ` +
+		`${changed} changed · ${inconclusive} not significant${suffix}`
 	);
 }
 
-function buildSummary(estimates: EstimateRow[], styles: TreatmentStyle[]): string {
+// One merged list per arm: the verdict tally (for treatments) and the case
+// registry's definition, in the same aligned definition list.
+function buildCases(
+	estimates: EstimateRow[],
+	manifest: ManifestJson,
+	styles: TreatmentStyle[],
+): string {
 	const rows = headlineRows(estimates);
-	const items = styles
-		.map((t) => {
-			const forTreatment = rows.filter((r) => r.treatment === t.shortName);
-			return (
-				`<li class="t-${t.slug}" data-t="${t.slug}"><span class="dot" style="background:var(--c-${t.slug})"></span>` +
-				`<b>${escapeHtml(t.shortName)}</b>: ` +
-				`<span class="m-fdr">${summaryCounts(
-					forTreatment,
-					(r) => r.verdict === 'significant',
-				)}</span>` +
-				`<span class="m-naive">${summaryCounts(forTreatment, isNaiveSignificant)}</span></li>`
-			);
-		})
-		.join('\n');
-	return `
-<h2>Summary</h2>
-<ul class="summary">${items}</ul>`;
-}
-
-// What each arm is, from the case registry's definitions. Omitted entirely
-// for manifests that predate definitions.
-function buildCases(manifest: ManifestJson, styles: TreatmentStyle[]): string {
+	const gridSize = manifest.metrics.length;
 	const { control, treatments } = manifest.spec;
-	if ([control, ...treatments].every((c) => !c.description)) return '';
 	const bySlug = new Map(styles.map((t) => [t.shortName, t.slug]));
 	const item = (c: ManifestCase, isControl: boolean) => {
 		const slug = bySlug.get(c.shortName);
@@ -813,14 +912,30 @@ function buildCases(manifest: ManifestJson, styles: TreatmentStyle[]): string {
 			? '<span class="dot" style="background:var(--ink-3)"></span>'
 			: `<span class="dot" style="background:var(--c-${slug ?? ''})"></span>`;
 		const badge = isControl ? ' <span class="chip control">control</span>' : '';
-		const definition = c.description ? ` — ${escapeHtml(c.description)}` : '';
-		return `<li>${dot}<b>${escapeHtml(c.shortName)}</b>${badge}${definition}</li>`;
+		const forTreatment = isControl ? [] : rows.filter((r) => r.treatment === c.shortName);
+		const verdicts =
+			forTreatment.length === 0
+				? ''
+				: `<span class="caseverdicts"><span class="m-fdr">${countsHtml(
+						forTreatment,
+						(r) => r.verdict === 'significant',
+						gridSize,
+					)}</span><span class="m-naive">${countsHtml(
+						forTreatment,
+						isNaiveSignificant,
+						gridSize,
+					)}</span></span>`;
+		const definition = c.description
+			? `<span class="casedef">${escapeHtml(c.description)}</span>`
+			: '';
+		return `<dt>${dot}<b>${escapeHtml(c.shortName)}</b>${badge}</dt><dd>${verdicts}${definition}</dd>`;
 	};
 	return `
 <h2>Cases</h2>
-<ul class="cases">
+<p class="note">Verdict counts span the ${gridSize}-metric test grid.</p>
+<dl class="deflist cases">
 ${[item(control, true), ...treatments.map((t) => item(t, false))].join('\n')}
-</ul>`;
+</dl>`;
 }
 
 function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string {
@@ -866,7 +981,7 @@ function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string
 		)} OLS (Python); full provenance in manifest.json.</li>`,
 	);
 	return `
-<details class="statsbox">
+<details class="statsbox" open>
 <summary>How the statistics work</summary>
 <ul>
 ${lines.join('\n')}
@@ -874,27 +989,41 @@ ${lines.join('\n')}
 </details>`;
 }
 
+// Rows grouped by workflow, the workflow cell spanning its group. Every row
+// carries a (mostly hidden) workflow cell so the refresh script can re-span
+// groups around whatever rows the case filters leave visible.
 function buildSample(manifest: ManifestJson, styles: TreatmentStyle[]): string {
 	const controlShortName = manifest.spec.control.shortName;
 	const bySlug = new Map(styles.map((t) => [t.shortName, t.slug]));
-	const rows = manifest.cells
-		.map((c) => {
-			const isControl = c.case === controlShortName;
-			const t = bySlug.get(c.case);
-			const attrs = isControl ? 'class="control-row"' : `class="t-${t ?? ''}" data-t="${t ?? ''}"`;
-			const badge = isControl ? ' <span class="chip control">control</span>' : '';
-			return (
-				`<tr ${attrs} data-workflow="${escapeHtml(c.workflow)}"><td>${escapeHtml(
-					c.case,
-				)}${badge}</td>` +
-				`<td>${escapeHtml(c.workflow)}</td><td class="num">${c.usableRuns}</td></tr>`
-			);
-		})
+	const groups = manifest.spec.workflows
+		.map((workflow) => ({
+			workflow,
+			cells: manifest.cells.filter((c) => c.workflow === workflow),
+		}))
+		.filter((g) => g.cells.length > 0);
+	const rows = groups
+		.flatMap(({ workflow, cells }) =>
+			cells.map((c, i) => {
+				const isControl = c.case === controlShortName;
+				const t = bySlug.get(c.case);
+				const attrs = isControl
+					? 'class="control-row"'
+					: `class="t-${t ?? ''}" data-t="${t ?? ''}"`;
+				const badge = isControl ? ' <span class="chip control">control</span>' : '';
+				const wfCell = `<td class="wfcell"${
+					i === 0 ? ` rowspan="${cells.length}"` : ' hidden'
+				}>${escapeHtml(workflow)}</td>`;
+				return (
+					`<tr ${attrs} data-workflow="${escapeHtml(c.workflow)}">${wfCell}` +
+					`<td>${escapeHtml(c.case)}${badge}</td><td class="num">${c.usableRuns}</td></tr>`
+				);
+			}),
+		)
 		.join('\n');
 	return `
 <h2>Sample</h2>
 <div class="tablewrap"><table id="sampleTable">
-<thead><tr><th>Case</th><th>Workflow</th><th>Runs used</th></tr></thead>
+<thead><tr><th>Workflow</th><th>Case</th><th>Runs used</th></tr></thead>
 <tbody>
 ${rows}
 </tbody>
@@ -959,9 +1088,11 @@ function tipAttributes(
 		`p=${formatPQ(row.p)} · ${
 			isNaiveSignificant(row) ? 'significant' : 'not significant'
 		} (raw, no FDR)` + ` · n=${row.nControl}/${row.nTreatment}`;
+	// The metric is visible beside the plot, so the title names the arm and its
+	// effect; the CI gets a line of its own.
 	return (
-		`data-tip-title="${escapeHtml(`${metricName(row.metric)} — ${row.treatment}`)}" ` +
-		`data-tip-effect="${escapeHtml(`${effect.label} (95% CI ${effect.ciLabel})`)}" ` +
+		`data-tip-title="${escapeHtml(`${row.treatment}: ${effect.label}`)}" ` +
+		`data-tip-effect="${escapeHtml(`95% CI ${effect.ciLabel}`)}" ` +
 		`data-tip-q="${escapeHtml(call)}" ` +
 		`data-tip-qn="${escapeHtml(naiveCall)}" ` +
 		`data-tip-control="${escapeHtml(stats.control)}" ` +
@@ -995,6 +1126,11 @@ function buildEffects(
 			for (const { scope, context, rows } of scopes) {
 				const controlMean = caseStat(dataset, controlName, metric, scope, workflows, 'mean');
 				const controlMedian = caseStat(dataset, controlName, metric, scope, workflows, 'median');
+				const controlSd = caseSpread(dataset, controlName, metric, scope, workflows);
+				const sdExtents = controlSd === null ? null : spreadExtents(controlSd, metric.transform);
+				const controlCiHw = caseMeanCiHalfWidth(dataset, controlName, metric, scope, workflows);
+				const ciExtents =
+					controlCiHw === null ? null : spreadExtents(controlCiHw, metric.transform);
 				const marks = rows
 					.filter((row) => byShortName.has(row.treatment))
 					.map((row) => {
@@ -1007,9 +1143,17 @@ function buildEffects(
 							tMedian,
 							meanEff: descriptiveEffect(metric.transform, controlMean, tMean),
 							medianEff: descriptiveEffect(metric.transform, controlMedian, tMedian),
+							sdBand: shiftBand(
+								metric.transform,
+								controlMean,
+								tMean,
+								caseSpread(dataset, row.treatment, metric, scope, workflows),
+							),
 						};
 					});
 				if (marks.length === 0) continue;
+				// The scale fits the effects; SD/CI bands are context and get clamped
+				// to the plot edges rather than allowed to squash the dots.
 				const span = Math.max(
 					...marks.flatMap(({ effect, meanEff, medianEff }) => [
 						Math.abs(effect.value),
@@ -1021,6 +1165,7 @@ function buildEffects(
 					1e-9,
 				);
 				const x = (v: number) => 50 + (v / span) * 44;
+				const bx = (v: number) => Math.min(94, Math.max(6, x(v)));
 				const controlLabel =
 					controlMean === null
 						? ''
@@ -1035,9 +1180,38 @@ function buildEffects(
 				// column width (preserveAspectRatio="none") scales circles into ovals.
 				const plotParts = ['<span class="fzero"></span>', controlLabel];
 				const labelParts: string[] = [];
-				marks.forEach(({ row, effect, tMean, tMedian, meanEff, medianEff }, i) => {
+				// The control's own uncertainty leads the group as a grey band — a 95%
+				// CI of its mean to match the treatments' CI bars, or its ±1 SD run
+				// spread when the Range toggle asks for spreads.
+				const laneOffset = sdExtents === null && ciExtents === null ? 0 : 1;
+				const fmtBand = (v: number) =>
+					metric.transform === 'none' ? formatDelta(metric.key, v) : fmtPct(v);
+				const controlBand = (
+					extents: { lo: number; hi: number },
+					mode: string,
+					title: string,
+					label: string,
+				) => {
+					const tip =
+						`data-tip-title="${escapeHtml(`${controlName}: ${title}`)}" ` +
+						`data-tip-effect="${escapeHtml(
+							`${fmtBand(extents.lo)} to ${fmtBand(extents.hi)} around the control value`,
+						)}"`;
+					const lo = bx(extents.lo);
+					plotParts.push(
+						`<span class="fsd ${mode} tipsrc" tabindex="0" ${tip} style="left:${lo.toFixed(
+							1,
+						)}%;width:${(bx(extents.hi) - lo).toFixed(1)}%;top:${18 + 0.5 * 16}px"></span>`,
+					);
+					labelParts.push(
+						`<span class="flab fsdlab tipsrc ${mode}" tabindex="0" ${tip}>${label}</span>`,
+					);
+				};
+				if (ciExtents !== null) controlBand(ciExtents, 'r-ci', '95% CI of the mean', '95% CI');
+				if (sdExtents !== null) controlBand(sdExtents, 'r-sd', '±1 SD', '±1 SD');
+				marks.forEach(({ row, effect, tMean, tMedian, meanEff, medianEff, sdBand }, i) => {
 					const t = byShortName.get(row.treatment)!;
-					const lane = 18 + (i + 0.5) * 16;
+					const lane = 18 + (i + laneOffset + 0.5) * 16;
 					const sig = row.verdict === 'significant';
 					const sigP = isNaiveSignificant(row);
 					const stats = {
@@ -1058,11 +1232,20 @@ function buildEffects(
 					// model's and stays put, so the mean dot can sit off its center.
 					const xMean = x(meanEff ?? effect.value).toFixed(1);
 					const xMedian = x(medianEff ?? effect.value).toFixed(1);
+					// One bar per range mode: the model CI, and the treatment's own ±1 SD
+					// run spread when it can be computed.
+					const sdBar =
+						sdBand === null
+							? ''
+							: `<span class="fci r-sd" style="left:${bx(sdBand.lo).toFixed(1)}%;width:${(
+									bx(sdBand.hi) - bx(sdBand.lo)
+								).toFixed(1)}%;top:${lane}px"></span>`;
 					plotParts.push(
 						`<span class="fmark" data-t="${t.slug}"${sigAttrs} style="--tc:var(--c-${t.slug})">` +
-							`<span class="fci" style="left:${lo.toFixed(1)}%;width:${(x(effect.hi) - lo).toFixed(
-								1,
-							)}%;top:${lane}px"></span>` +
+							`<span class="fci r-ci" style="left:${lo.toFixed(1)}%;width:${(
+								x(effect.hi) - lo
+							).toFixed(1)}%;top:${lane}px"></span>` +
+							sdBar +
 							`<span class="fdot tipsrc" tabindex="0" ${tip} data-left-mean="${xMean}%" ` +
 							`data-left-median="${xMedian}%" style="left:${xMean}%;top:${lane}px"></span>` +
 							'</span>',
@@ -1073,7 +1256,7 @@ function buildEffects(
 							`${escapeHtml(effect.label)}</span>`,
 					);
 				});
-				const height = 18 + marks.length * 16 + 6;
+				const height = 18 + (marks.length + laneOffset) * 16 + 6;
 				const hidden = scope === defaultScope ? '' : ' hidden';
 				groups.push(
 					`<div class="fgroup" data-scope="${escapeHtml(
@@ -1117,7 +1300,7 @@ function buildEffects(
 <div class="glyphs">
 <span class="glyph"><span class="g-dot solid"></span>significant (<span class="m-fdr">q &le; 0.05</span><span class="m-naive">p &lt; 0.05, raw</span>)</span>
 <span class="glyph"><span class="g-dot hollow"></span>not significant</span>
-<span class="glyph"><span class="g-ci"></span>95% CI</span>
+<span class="glyph"><span class="g-ci"></span><span class="r-ci">95% CI</span><span class="r-sd">±1 SD spread</span></span>
 <span class="glyph"><span class="g-line"></span>center line = control value</span>
 <span class="glyph">dot = shift of the selected statistic; CI from the model</span>
 <span class="glyph">% for log-scaled metrics, absolute &Delta; otherwise</span>
@@ -1127,6 +1310,10 @@ function buildEffects(
 <span class="select">Statistic
 <span class="seg stat-toggle">
 <button type="button" data-stat="mean" aria-pressed="true">mean</button><button type="button" data-stat="median" aria-pressed="false">median</button>
+</span></span>
+<span class="select">Range
+<span class="seg range-toggle">
+<button type="button" data-range="ci" aria-pressed="true">95% CI</button><button type="button" data-range="sd" aria-pressed="false">±1 SD</button>
 </span></span>
 ${badge}
 </div>
@@ -1404,12 +1591,15 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .lede { color:var(--ink-2); max-width:62ch; }
 .mono, .num { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:.86em; }
 .filterbar { display:flex; flex-direction:column; gap:10px; margin:22px 0 0;
-  padding:12px 14px; background:var(--wash); border:1px solid var(--line); border-radius:12px; }
+  padding:12px 14px; background:var(--wash); border:1px solid var(--line); border-radius:12px;
+  position:sticky; top:0; z-index:30; box-shadow:0 6px 18px rgba(0,0,0,.10); }
 .fbrow { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
 .fbopts { border-top:1px solid var(--line); padding-top:10px; }
 .legend { display:flex; gap:8px; flex-wrap:wrap; font-size:.85rem; margin-right:auto; }
 body[data-sigmode="fdr"] .m-naive { display:none; }
 body[data-sigmode="naive"] .m-fdr { display:none; }
+body[data-range="ci"] .r-sd { display:none; }
+body[data-range="sd"] .r-ci { display:none; }
 .chip-toggle { display:inline-flex; align-items:center; gap:7px; font:inherit; font-weight:600;
   color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:99px;
   padding:4px 12px; cursor:pointer; }
@@ -1423,18 +1613,26 @@ body[data-sigmode="naive"] .m-fdr { display:none; }
 #resetFilters { font:600 .8rem/1.4 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink-2);
   background:none; border:1px solid var(--line); border-radius:8px; padding:5px 10px; cursor:pointer; }
 #resetFilters:hover { background:var(--card); }
-.tabs { display:flex; gap:2px; border-bottom:1px solid var(--line); margin:26px 0 0; overflow-x:auto; }
+.tabs { display:flex; gap:2px; border-bottom:1px solid var(--line); margin:26px 0 0; overflow-x:auto;
+  position:sticky; top:var(--tabstop, 150px); z-index:29; background:var(--surface); }
 .tab { font:600 .92rem/1.4 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink-2); background:none;
   border:none; border-bottom:2px solid transparent; padding:9px 14px; cursor:pointer; white-space:nowrap; }
 .tab[aria-selected="true"] { color:var(--ink); border-bottom-color:var(--ink); }
 .panel { padding-top:8px; }
 .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; vertical-align:baseline; }
-.summary { list-style:none; padding:0; margin:12px 0; font-size:.92rem; color:var(--ink-2); }
-.summary li { margin:6px 0; }
-.summary b { color:var(--ink); }
-.cases { list-style:none; padding:0; margin:12px 0; font-size:.9rem; color:var(--ink-2); }
-.cases li { margin:7px 0; max-width:82ch; }
-.cases b { color:var(--ink); }
+.deflist { display:grid; grid-template-columns:minmax(160px, max-content) 1fr; gap:9px 24px;
+  margin:12px 0; font-size:.92rem; color:var(--ink-2); align-items:baseline; }
+.deflist dt { white-space:nowrap; }
+.deflist dd { margin:0; max-width:72ch; }
+.deflist b { color:var(--ink); }
+.cases { font-size:.9rem; }
+.caseverdicts { display:block; }
+.casedef { display:block; font-size:.85rem; color:var(--ink-3); margin-top:2px; }
+.cgood { color:var(--good); font-weight:600; }
+.cbad { color:var(--bad); font-weight:600; }
+td.wfcell { vertical-align:top; color:var(--ink-2); }
+#sampleTable { width:auto; }
+#sampleTable th, #sampleTable td { padding-right:36px; }
 .mname.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-offset:3px;
   text-decoration-color:var(--ink-3); }
 .statsbox { background:var(--wash); border:1px solid var(--line); border-radius:12px;
@@ -1464,7 +1662,7 @@ body[data-sigmode="naive"] .m-fdr { display:none; }
 .seg button:disabled { opacity:.45; cursor:default; }
 .wfBadge { font-size:.74rem; font-weight:600; color:var(--ink-2); background:var(--wash);
   border:1px solid var(--line); border-radius:99px; padding:3px 11px; }
-.family { scroll-margin-top:12px; }
+.family { scroll-margin-top:var(--fbh, 190px); }
 .family h3 { margin:34px 0 2px; font-size:1.3rem; }
 .secjump { position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column;
   gap:4px; z-index:20; }
@@ -1496,6 +1694,9 @@ body[data-sigmode="naive"] .fmark:not([data-sig-p="1"]) .fci { opacity:.45; }
 .flab { font-family:"IBM Plex Mono",monospace; font-size:.8rem; cursor:default; }
 body[data-sigmode="fdr"] .flab:not([data-sig="1"]) { opacity:.55; }
 body[data-sigmode="naive"] .flab:not([data-sig-p="1"]) { opacity:.55; }
+.fsd { position:absolute; height:3px; border-radius:2px; background:var(--ink-3); opacity:.55;
+  transform:translateY(-50%); cursor:default; }
+.fsdlab { color:var(--ink-3); font-size:.72rem; }
 #tip { position:fixed; z-index:50; max-width:320px; background:var(--ink); color:var(--surface);
   padding:9px 12px; border-radius:8px; font-size:.78rem; line-height:1.5; pointer-events:none; }
 #tip .tip-title { font-weight:600; }
@@ -1509,7 +1710,7 @@ td { padding:7px 10px; border-bottom:1px solid var(--line); }
 td.num { text-align:right; white-space:nowrap; }
 body[data-sigmode="fdr"] tr[data-sig="0"] td { opacity:.55; }
 body[data-sigmode="naive"] tr[data-sig-p="0"] td { opacity:.55; }
-.control-row td { background:color-mix(in srgb, var(--good) 7%, transparent); }
+.control-row td:not(.wfcell) { background:color-mix(in srgb, var(--good) 7%, transparent); }
 .chip { font-size:.72rem; font-weight:600; padding:2px 9px; border-radius:99px; white-space:nowrap; }
 .chip.control { background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good);
   margin-left:6px; }
@@ -1541,6 +1742,19 @@ function buildScript(): string {
 	return `
 var $ = function (sel, root) { return [].slice.call((root || document).querySelectorAll(sel)); };
 var byId = function (id) { return document.getElementById(id); };
+
+// The sticky filter bar and tab strip overlap scrolled-to content, so section
+// jumps aim below them: their measured heights feed the .family scroll-margin
+// and the tab strip's own sticky offset.
+var filterbar = document.querySelector('.filterbar');
+var tabStrip = document.querySelector('.tabs');
+function fbHeight() { return filterbar ? filterbar.offsetHeight : 0; }
+function stickyHeight() { return fbHeight() + (tabStrip ? tabStrip.offsetHeight : 0); }
+function syncScrollMargin() {
+  document.documentElement.style.setProperty('--fbh', (stickyHeight() + 14) + 'px');
+  document.documentElement.style.setProperty('--tabstop', fbHeight() + 'px');
+}
+window.addEventListener('resize', syncScrollMargin);
 
 var tabs = $('.tab');
 function selectTab(index, focus) {
@@ -1638,10 +1852,27 @@ function refresh() {
   });
   var fullEmpty = byId('fullEmpty');
   if (fullEmpty) fullEmpty.hidden = anyVisible($('#verdictTable tbody tr'));
-  $('#sampleTable tbody tr').forEach(function (tr) {
+  var sampleRows = $('#sampleTable tbody tr');
+  sampleRows.forEach(function (tr) {
     var wfOk = !contextView || tr.getAttribute('data-workflow') === scope;
     var t = tr.getAttribute('data-t');
     tr.hidden = !wfOk || (t !== null && off[t] === true);
+  });
+  // Re-span each workflow group's cell around the rows the filters left.
+  var sampleGroups = {};
+  sampleRows.forEach(function (tr) {
+    var wf = tr.getAttribute('data-workflow');
+    (sampleGroups[wf] || (sampleGroups[wf] = [])).push(tr);
+  });
+  Object.keys(sampleGroups).forEach(function (wf) {
+    var visible = sampleGroups[wf].filter(function (tr) { return !tr.hidden; });
+    sampleGroups[wf].forEach(function (tr) {
+      var cell = tr.querySelector('.wfcell');
+      if (!cell) return;
+      var first = visible.length > 0 && visible[0] === tr;
+      cell.hidden = !first;
+      if (first) cell.rowSpan = visible.length;
+    });
   });
   $('.curve').forEach(function (curve) {
     curve.hidden =
@@ -1703,13 +1934,26 @@ document.addEventListener('click', function (e) {
   if (!btn) return;
   var sections = $('.family').filter(function (s) { return !s.hidden; });
   if (sections.length === 0) return;
+  var line = stickyHeight() + 100;
   var current = -1;
   sections.forEach(function (s, i) {
-    if (s.getBoundingClientRect().top <= 90) current = i;
+    if (s.getBoundingClientRect().top <= line) current = i;
   });
   var index = current + Number(btn.getAttribute('data-dir'));
   if (index < 0 || index >= sections.length) return;
   sections[index].scrollIntoView({ block: 'start' });
+});
+
+var rangeButtons = $('.range-toggle button');
+function setRange(kind) {
+  document.body.setAttribute('data-range', kind);
+  rangeButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-range') === kind));
+  });
+  syncUrl();
+}
+rangeButtons.forEach(function (b) {
+  b.addEventListener('click', function () { setRange(b.getAttribute('data-range')); });
 });
 
 var statButtons = $('.stat-toggle button');
@@ -1738,6 +1982,7 @@ if (reset) reset.addEventListener('click', function () {
   setSigFilter('all');
   if (wfFilter) wfFilter.value = 'pooled';
   setStat('mean');
+  setRange('ci');
   setMetricsMode('core');
   setSigMode('fdr');
 });
@@ -1747,15 +1992,17 @@ if (reset) reset.addEventListener('click', function () {
 // replaceState on file:// pages; the hash carries the same state there.
 function syncUrl() {
   var p = new URLSearchParams();
+  var defaultTabId = tabs.length > 0 ? tabs[0].id.slice(4) : '';
   var active = tabs.filter(function (t) { return t.getAttribute('aria-selected') === 'true'; })[0];
-  var tabId = active ? active.id.slice(4) : 'summary';
-  if (tabId !== 'summary') p.set('tab', tabId);
+  var tabId = active ? active.id.slice(4) : defaultTabId;
+  if (tabId !== defaultTabId) p.set('tab', tabId);
   var off = Object.keys(offTreatments());
   if (off.length > 0) p.set('hide', off.join(','));
   if (sigFilterMode !== 'all') p.set('sig', sigFilterMode);
   if (sigNaive()) p.set('test', 'raw');
   if (wfFilter && wfFilter.value !== 'pooled') p.set('wf', wfFilter.value);
   if (statKind !== 'mean') p.set('stat', statKind);
+  if (document.body.getAttribute('data-range') === 'sd') p.set('range', 'sd');
   if (metricsMode !== 'core') p.set('metrics', metricsMode);
   var qs = p.toString();
   try {
@@ -1783,6 +2030,7 @@ function applyUrlState() {
     }
   }
   setStat(p.get('stat') === 'median' ? 'median' : 'mean');
+  setRange(p.get('range') === 'sd' ? 'sd' : 'ci');
   setMetricsMode(p.get('metrics') === 'all' ? 'all' : 'core');
   setSigMode(p.get('test') === 'raw' ? 'naive' : 'fdr');
 }
@@ -1825,6 +2073,7 @@ document.addEventListener('focusin', function (e) {
 });
 document.addEventListener('scroll', function () { tip.hidden = true; }, true);
 
+syncScrollMargin();
 applyUrlState();
 refresh();`;
 }
@@ -1837,18 +2086,17 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 		.join(' + ')}`;
 	const panels = [
 		{
+			id: 'effects',
+			label: 'Findings',
+			body: buildEffects(estimates, manifest, styles, dataset),
+		},
+		{
 			id: 'summary',
 			label: 'Summary',
 			body:
-				buildSummary(estimates, styles) +
-				buildCases(manifest, styles) +
+				buildCases(estimates, manifest, styles) +
 				buildSample(manifest, styles) +
 				buildStatsBox(estimates, manifest),
-		},
-		{
-			id: 'effects',
-			label: 'Effects at a glance',
-			body: buildEffects(estimates, manifest, styles, dataset),
 		},
 		{
 			id: 'full',
@@ -1870,7 +2118,7 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 <style>${buildStyle(styles)}</style>
 <body data-mode="${escapeHtml(manifest.spec.mode)}" data-default-scope="${escapeHtml(
 		defaultScopeOf(manifest),
-	)}" data-sigmode="fdr">
+	)}" data-sigmode="fdr" data-range="ci">
 <main>
 ${buildHeader(manifest)}
 ${buildFilterBar(manifest, styles)}

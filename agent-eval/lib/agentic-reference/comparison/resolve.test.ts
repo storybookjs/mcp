@@ -25,7 +25,9 @@ describe('resolveCase', () => {
 			caseName: 'cc-do-dont-opus-high',
 			experiment: 'agentic-ref-cc-do-dont-opus-high',
 			shortName: 'do-dont',
-			description: expect.stringContaining('Do-and-don’t guidance'),
+			// The registry's user-facing definition rides along into manifests;
+			// its wording lives in cases.ts and is not pinned here.
+			description: expect.any(String),
 		};
 		expect(resolveCase('do-dont')).toEqual(expected);
 		expect(resolveCase('cc-do-dont-opus-high')).toEqual(expected);

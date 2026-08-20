@@ -209,19 +209,24 @@ describe('formatBeta / formatPQ', () => {
 });
 
 describe('renderHtmlReport structure', () => {
-	it('renders four tabs: Summary, Effects, Full report, ECDF curves', () => {
+	it('renders four tabs with Findings first', () => {
 		const html = render({});
 		const tabs = html.match(/role="tab"/g) ?? [];
 		expect(tabs).toHaveLength(4);
-		expect(html).toContain('Effects at a glance');
+		expect(html).toContain('>Findings<');
 		expect(html).toContain('Full report');
 		expect(html).toContain('ECDF curves');
+		expect(html.indexOf('id="tab-effects"')).toBeLessThan(html.indexOf('id="tab-summary"'));
+		// The first panel is the visible one.
+		expect(html).toMatch(/id="panel-effects" role="tabpanel" aria-labelledby="tab-effects">/);
+		expect(html).toMatch(/id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" hidden/);
 	});
 
-	it('places Summary before Sample in the summary tab', () => {
+	it('places the merged Cases list before Sample in the summary tab', () => {
 		const html = render({});
-		expect(html.indexOf('>Summary</h2>')).toBeGreaterThan(-1);
-		expect(html.indexOf('>Summary</h2>')).toBeLessThan(html.indexOf('>Sample</h2>'));
+		expect(html.indexOf('>Cases</h2>')).toBeGreaterThan(-1);
+		expect(html.indexOf('>Cases</h2>')).toBeLessThan(html.indexOf('>Sample</h2>'));
+		expect(html).not.toContain('>Summary</h2>');
 	});
 
 	it('slims the sample table to runs used and highlights the control row', () => {
@@ -244,11 +249,37 @@ describe('renderHtmlReport structure', () => {
 		expect(html).toContain('q &le; 0.05');
 	});
 
-	it('renders the statistics explainer as a collapsible section below Sample', () => {
+	it('renders the statistics explainer below Sample, expanded by default', () => {
 		const html = render({});
-		expect(html).toContain('<details class="statsbox"');
+		expect(html).toContain('<details class="statsbox" open>');
 		expect(html).toContain('<summary>How the statistics work</summary>');
 		expect(html.indexOf('>Sample</h2>')).toBeLessThan(html.indexOf('<details class="statsbox"'));
+	});
+
+	it('renders one merged Cases definition list with verdicts and definitions', () => {
+		const html = render({});
+		expect(html).toContain('<dl class="deflist cases">');
+		expect(html).not.toContain('deflist summary');
+		// A treatment entry pairs its verdict tally with its definition.
+		expect(html).toMatch(/class="caseverdicts"[\s\S]*?class="casedef"/);
+	});
+
+	it('groups the sample table by workflow with a spanning cell', () => {
+		const html = render({});
+		expect(html).toMatch(/<thead><tr><th>Workflow<\/th><th>Case<\/th><th>Runs used<\/th>/);
+		// Two cases under the single workflow: one spanning cell, one hidden.
+		expect(html).toContain('<td class="wfcell" rowspan="2">701-new-ui-flow</td>');
+		expect(html).toContain('<td class="wfcell" hidden>701-new-ui-flow</td>');
+		// Content-hugging, not justified across the page.
+		expect(html).toMatch(/#sampleTable \{ width:auto/);
+	});
+
+	it('keeps the filter bar and tab strip sticky', () => {
+		const html = render({});
+		expect(html).toMatch(/\.filterbar \{[^}]*position:sticky/);
+		expect(html).toMatch(/\.tabs \{[^}]*position:sticky/);
+		// The tab strip sticks below the measured filter bar.
+		expect(html).toContain('top:var(--tabstop');
 	});
 
 	it('uses manifest case colors when present', () => {
@@ -332,10 +363,43 @@ describe('renderHtmlReport structure', () => {
 			],
 		});
 		// Mean shift 800/1200−1 = −33.3%, median shift 800/1250−1 = −36% (the
-		// widest value, so it pins the span at the 6% edge of the plot).
+		// widest effect, so it pins the span; range bands are clamped, not fit).
 		expect(html).toContain('data-left-mean="9.3%"');
 		expect(html).toContain('data-left-median="6.0%"');
 		expect(html).toMatch(/class="fdot tipsrc"[^>]*style="left:9\.3%/);
+	});
+
+	it('draws the control band in both range flavors, CI first', () => {
+		const html = render({
+			dataset: [
+				datasetRow({ values: { durationSeconds: 900 } }),
+				datasetRow({ values: { durationSeconds: 1600 } }),
+			],
+		});
+		expect(html).toMatch(
+			/class="fsd r-ci tipsrc"[^>]*data-tip-title="control-none: 95% CI of the mean"/,
+		);
+		expect(html).toMatch(/class="fsd r-sd tipsrc"[^>]*data-tip-title="control-none: ±1 SD"/);
+		expect(html).toContain('>95% CI</span>');
+		expect(html).toContain('>±1 SD</span>');
+		// A single usable control value can produce neither band.
+		expect(render({ dataset: [datasetRow()] })).not.toContain('class="fsd');
+	});
+
+	it('offers a Range toggle and gives treatments their own spread bars', () => {
+		const html = render({
+			dataset: [
+				datasetRow({ values: { durationSeconds: 900 } }),
+				datasetRow({ values: { durationSeconds: 1600 } }),
+				datasetRow({ case: 'full', values: { durationSeconds: 800 } }),
+				datasetRow({ case: 'full', values: { durationSeconds: 1000 } }),
+			],
+		});
+		expect(html).toContain('class="seg range-toggle"');
+		expect(html).toMatch(/<body[^>]*data-range="ci"/);
+		// The model CI bar and the treatment's ±1 SD run-spread bar coexist.
+		expect(html).toContain('class="fci r-ci"');
+		expect(html).toContain('class="fci r-sd"');
 	});
 
 	it('falls back to the model estimate when a statistic is missing', () => {
@@ -345,9 +409,10 @@ describe('renderHtmlReport structure', () => {
 		expect(positions?.[1]).toBe(positions?.[2]);
 	});
 
-	it('attaches popover data to forest marks', () => {
+	it('attaches popover data to forest marks: arm and value in the title, CI alone', () => {
 		const html = render({});
-		expect(html).toContain('data-tip-effect=');
+		expect(html).toContain('data-tip-title="full: −18.0%"');
+		expect(html).toContain('data-tip-effect="95% CI −25.9% to −9.5%"');
 		expect(html).toContain('data-tip-control=');
 		expect(html).toContain('data-tip-treatment=');
 		expect(html).toContain('id="tip"');
@@ -420,7 +485,7 @@ describe('renderHtmlReport definitions', () => {
 		expect(html).toMatch(/class="chip-toggle tipsrc"[^>]*data-tip-effect="The complete corpus\."/);
 	});
 
-	it('omits the Cases section for manifests without definitions', () => {
+	it('keeps the Cases list, minus definitions, for manifests without them', () => {
 		const base = manifest();
 		const html = render({
 			manifest: {
@@ -432,7 +497,9 @@ describe('renderHtmlReport definitions', () => {
 				},
 			},
 		});
-		expect(html).not.toContain('>Cases</h2>');
+		expect(html).toContain('>Cases</h2>');
+		expect(html).toContain('class="caseverdicts"');
+		expect(html).not.toContain('class="casedef"');
 	});
 });
 
@@ -517,15 +584,17 @@ describe('renderHtmlReport significance-test toggle', () => {
 		expect(html).toMatch(/<span class="m-naive"><span class="vicon (good|bad) tipsrc"/);
 	});
 
-	it('summarizes both calls per treatment', () => {
+	it('summarizes both calls per treatment, coloring non-zero better/worse', () => {
 		const html = render({
 			estimates: [row({ verdict: 'not-significant', q: 0.2, p: 0.01 })],
 		});
+		// Four-metric grid, one pair tested: the count carries its own total.
 		expect(html).toContain(
-			'<span class="m-fdr">0 better, 0 worse, 0 changed, 1 not significant (of 1 metrics)</span>',
+			'<span class="m-fdr">0 better · 0 worse · 0 changed · 1 not significant (1 tested)</span>',
 		);
 		expect(html).toContain(
-			'<span class="m-naive">1 better, 0 worse, 0 changed, 0 not significant (of 1 metrics)</span>',
+			'<span class="m-naive"><span class="cgood">1 better</span> · 0 worse · 0 changed · ' +
+				'0 not significant (1 tested)</span>',
 		);
 	});
 });

@@ -11,23 +11,26 @@ export interface CaseColor {
 	dark: string;
 }
 
+// Vivid and hue-spread over legibility-for-everyone: distinctness within each
+// collection-plan group comes first (those arms share a chart), then across
+// the whole registry.
 export const CASE_COLORS: Record<string, CaseColor> = {
 	'control-none': { light: '#52606D', dark: '#9AA5B1' }, // slate
-	empty: { light: '#C05621', dark: '#D4732A' }, // orange
-	full: { light: '#6D5BD0', dark: '#8B79E8' }, // violet
-	'basic-docs': { light: '#2B6CB0', dark: '#5B9BD9' }, // blue
-	'do-dont': { light: '#B7791F', dark: '#D9A441' }, // amber
-	'when-to-use': { light: '#2F855A', dark: '#52BB84' }, // green
-	'history-issues': { light: '#8C5E2A', dark: '#BC8A50' }, // brown
-	a11y: { light: '#0B7285', dark: '#3BC9DB' }, // cyan
-	'brand-animation': { light: '#B83280', dark: '#E67AB0' }, // magenta
-	'api-ref': { light: '#6B7A16', dark: '#A3B633' }, // olive
-	'docs-full': { light: '#9E3B25', dark: '#C96A52' }, // rust
-	'stories-api-ref': { light: '#0D8A78', dark: '#12A38E' }, // teal
-	'stories-showcase': { light: '#4C63B6', dark: '#7D93E0' }, // indigo
-	'stories-highlight': { light: '#CC5A71', dark: '#E88CA0' }, // rosewood
-	'stories-examples': { light: '#3B7A2A', dark: '#6FBF5C' }, // forest
-	'stories-full': { light: '#7A3E9D', dark: '#B07CD6' }, // plum
+	empty: { light: '#E8590C', dark: '#FF7E33' }, // orange
+	full: { light: '#6741D9', dark: '#9775FA' }, // violet
+	'basic-docs': { light: '#1C7ED6', dark: '#4DABF7' }, // blue
+	'do-dont': { light: '#B38600', dark: '#FFD43B' }, // gold
+	'when-to-use': { light: '#2F9E44', dark: '#51CF66' }, // green
+	'history-issues': { light: '#9A5B12', dark: '#CE9247' }, // brown
+	a11y: { light: '#0C8599', dark: '#26C6DA' }, // cyan
+	'brand-animation': { light: '#AE3EC9', dark: '#DA77F2' }, // fuchsia
+	'api-ref': { light: '#66A80F', dark: '#A9E34B' }, // lime
+	'docs-full': { light: '#E03131', dark: '#FF6B6B' }, // red
+	'stories-api-ref': { light: '#099268', dark: '#20C997' }, // teal
+	'stories-showcase': { light: '#4263EB', dark: '#748FFC' }, // indigo
+	'stories-highlight': { light: '#C2255C', dark: '#F06595' }, // raspberry
+	'stories-examples': { light: '#F76707', dark: '#FFA94D' }, // tangerine
+	'stories-full': { light: '#862E9C', dark: '#BE4BDB' }, // grape
 	'purge-jsdoc': { light: '#8B5E83', dark: '#BD8CB3' }, // mauve
 };
 
