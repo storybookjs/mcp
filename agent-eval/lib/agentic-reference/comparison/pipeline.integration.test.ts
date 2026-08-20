@@ -120,7 +120,7 @@ describe.skipIf(uv === null)('results:compare end to end', () => {
 				`\texperiments: ['${CONTROL_EXP}', '${TREATMENT_EXP}'],\n` +
 				"\tevals: ['703'],\n" +
 				'\truns: 10,\n' +
-				'\tparallelMax: 5,\n' +
+				'\tparallelMax: 10,\n' +
 				'};\n'
 		);
 		const outDir = join(root, 'comparisons', 'plan');

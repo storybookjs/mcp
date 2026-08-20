@@ -16,14 +16,14 @@ import type { RunPlan } from '../lib/agentic-reference/run-plan.ts';
 
 export default {
 	experiments: [
-		// 'agentic-ref-cc-control-none-opus-high',
-		// 'agentic-ref-cc-empty-opus-high',
-		// 'agentic-ref-cc-stories-api-ref-opus-high',
-		// 'agentic-ref-cc-full-opus-high',
+		'agentic-ref-cc-control-none-opus-high',
+		'agentic-ref-cc-empty-opus-high',
+		'agentic-ref-cc-stories-api-ref-opus-high',
+		'agentic-ref-cc-full-opus-high',
 	],
 	evals: ['701', '706'],
 	runs: 10,
-	parallelMax: 5,
+	parallelMax: 10,
 	// Off, so an interrupted plan resumes and repeated arms are collected once.
 	force: false,
 	// Off, so infra and timeout runs are dropped rather than mixed into the

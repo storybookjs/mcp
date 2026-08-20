@@ -15,7 +15,7 @@ import type { RunPlan } from '../lib/agentic-reference/run-plan.ts';
 
 export default {
 	experiments: [
-		// 'agentic-ref-cc-control-none-opus-high',
+		'agentic-ref-cc-control-none-opus-high',
 		'agentic-ref-cc-docs-full-opus-high',
 		'agentic-ref-cc-stories-full-opus-high',
 	],
