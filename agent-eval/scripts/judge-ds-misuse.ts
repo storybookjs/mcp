@@ -26,11 +26,14 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { AGENTIC_REF_EVAL_REGISTRY, knownExperimentNames } from '#lib/agentic-reference/cases';
 import {
 	type ExternalRepoPin,
 	prepareRef,
 	typecheckExternalRepo,
 } from '#lib/agentic-reference/external-repo';
+import { loadPlanConfig, resolvePlanPath } from '#lib/agentic-reference/plan-config';
+import { resolveRunPlan } from '#lib/agentic-reference/run-plan';
 import { dsPackagesForPin } from '#lib/agentic-reference/metrics/coverage';
 import { dsDocsRefLabel } from '#lib/agentic-reference/metrics/ds-misuse/ds-docs';
 import {
@@ -60,6 +63,7 @@ const REF_CACHE_DIR = join(ROOT, '.eval-cache/refs');
 // that scope a paid run read differently from the ones that scope the free
 // analysis pass over the same directories.
 interface Options extends RunSelection {
+	plan: string | undefined;
 	recompute: boolean;
 	dry: boolean;
 }
@@ -76,6 +80,7 @@ function parseOptions(argv: string[]): Options {
 			{
 				experiments: flags.experiments,
 				evals: flags.evals,
+				plan: flags.text('plan', "Judge a collection plan's cells (plans/<name>.plan.ts)"),
 				since: flags.text('since', 'Only runs stamped on or after this ISO date'),
 				latest: flags.switch('latest', 'Only the newest result directory per experiment'),
 				dry: flags.switch('dry', 'Print the plan and spend nothing'),
@@ -90,10 +95,40 @@ function parseOptions(argv: string[]): Options {
 	return {
 		experiments: parsed.experiments,
 		evals: parsed.evals,
+		plan: parsed.plan,
 		since: parsed.since ?? null,
 		latest: parsed.latest,
 		dry: parsed.dry,
 		recompute: parsed.recompute,
+	};
+}
+
+/**
+ * Scope the selection to one collection plan's cells, exactly as
+ * results:compare reads the same flag — so the runs a plan's comparison
+ * tables stand on are the runs this command judges, and a bundle never mixes
+ * judged and unjudged cells because the two commands were scoped by hand
+ * twice. The plan's own `since` applies unless --since narrows further.
+ */
+async function applyPlanScope(options: Options): Promise<Options> {
+	if (options.plan === undefined) {
+		return options;
+	}
+	if (options.experiments.length > 0 || options.evals.length > 0) {
+		throw new Error(
+			'--plan already names the cases and workflows; drop --experiments/--evals ' +
+				'(or unset AGENTIC_REF_EXPERIMENTS/AGENTIC_REF_EVALS).',
+		);
+	}
+	const resolved = resolveRunPlan(await loadPlanConfig(resolvePlanPath(options.plan)), {
+		experiments: knownExperimentNames(),
+		evals: AGENTIC_REF_EVAL_REGISTRY,
+	});
+	return {
+		...options,
+		experiments: [...resolved.experiments],
+		evals: [...resolved.evals],
+		since: options.since ?? resolved.plan.since?.toISOString() ?? null,
 	};
 }
 
@@ -228,7 +263,7 @@ function dryRun(runs: Run[], options: Options): void {
 }
 
 async function main() {
-	const options = parseOptions(process.argv.slice(2));
+	const options = await applyPlanScope(parseOptions(process.argv.slice(2)));
 
 	if (!existsSync(RESULTS_DIR)) {
 		console.log('No results/ directory; nothing to judge.');
