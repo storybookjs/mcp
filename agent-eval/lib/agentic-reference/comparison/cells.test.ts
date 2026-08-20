@@ -8,6 +8,7 @@ import { findRuns } from '../../post-analysis/discovery.ts';
 import type { ResolvedCase } from './resolve.ts';
 import { autoSelectWorkflows, buildCells } from './cells.ts';
 import { copyTaskFixture, measuredResultJson } from './test-fixtures.ts';
+import { JUDGE_MODEL } from '../metrics/ds-misuse/context.ts';
 import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
 
 const CONTROL: ResolvedCase = {
@@ -231,7 +232,7 @@ describe('misuse graft', () => {
 				schemaVersion: 1,
 				metricsVersion: 6,
 				judgedAt: 'x',
-				model: 'test',
+				model: JUDGE_MODEL,
 				dsGuidelinesRef: dsDocsRefLabel(),
 				fixtureRef: 'r@1',
 				diffTruncated: false,

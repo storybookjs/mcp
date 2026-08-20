@@ -85,4 +85,15 @@ describe('isStale', () => {
 			}),
 		).toBe(true);
 	});
+
+	// An LLM judge is its model: a different model applied the rubric with a
+	// different standard, so its scores must not share a table with fresh ones.
+	it('is true for a report judged by a different model', () => {
+		expect(
+			isStale(report({ model: 'claude-opus-4-7' }), {
+				dsGuidelinesRef: 'yannbf/droppy-ds@abc',
+				metricsVersion: 7,
+			}),
+		).toBe(true);
+	});
 });

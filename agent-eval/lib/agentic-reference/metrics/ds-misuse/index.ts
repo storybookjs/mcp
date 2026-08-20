@@ -11,6 +11,8 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { readJson } from '../../../utils/files.ts';
+
+import type { JudgeUsage } from './judge.ts';
 import { analyzeDsCoverage } from '../ds-coverage/index.ts';
 import { buildJudgeRequest, JUDGE_MODEL } from './context.ts';
 import { collectDsDocs, dsDocsRefLabel } from './ds-docs.ts';
@@ -59,18 +61,19 @@ export function writeMisuseReport(runDir: string, report: DsMisuseReport): void 
  * Whether a stored judgement can still be trusted.
  *
  * A moved guidelines pin means the run was scored against a different standard;
- * a moved metricsVersion means its node paths were built by different rules.
- * Either way the number is not comparable with a fresh one, so it is re-spent.
+ * a moved metricsVersion means its node paths were built by different rules;
+ * a moved judge model means a different judge applied the rubric — an LLM
+ * judge is its model, and two models' scores in one table are two standards.
+ * Any way, the number is not comparable with a fresh one, so it is re-spent.
  */
 export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
 	return (
 		report.schemaVersion !== DS_MISUSE_SCHEMA_VERSION ||
 		report.dsGuidelinesRef !== current.dsGuidelinesRef ||
-		report.metricsVersion !== current.metricsVersion
+		report.metricsVersion !== current.metricsVersion ||
+		report.model !== JUDGE_MODEL
 	);
 }
-
-import type { JudgeUsage } from './judge.ts';
 
 /** Judge one run and return its report. Makes exactly one model call. */
 export async function judgeRun(
