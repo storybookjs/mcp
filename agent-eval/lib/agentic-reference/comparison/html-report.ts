@@ -1547,7 +1547,8 @@ ${details}${empty}`;
 const MISUSE_QUESTION_META: Record<MisuseQuestion, { label: string; description: string }> = {
 	correctDsDecision: {
 		label: 'Right component?',
-		description: 'The right design-system component for the job, or a better DS alternative existed.',
+		description:
+			'The right design-system component for the job, or a better DS alternative existed.',
 	},
 	correctDsUsage: {
 		label: 'Used per the docs?',
