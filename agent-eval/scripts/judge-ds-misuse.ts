@@ -47,6 +47,8 @@ import { postAnalysis } from '#lib/agentic-reference/post-analysis';
 import { readNodeSidecar } from '#lib/post-analysis/baseline';
 import { findRuns, selectRuns, type Run, type RunSelection } from '#lib/post-analysis/discovery';
 import { selectionFlags } from '#lib/agentic-reference/selection';
+import { shortExperiment } from '#lib/agentic-reference/utils';
+import { bold, dim, red, yellow } from '#lib/utils/colors';
 import { readJson } from '#lib/utils/files';
 import { isRecord } from '#lib/utils/type';
 
@@ -77,6 +79,22 @@ function addUsage(total: JudgeUsage, usage: JudgeUsage): void {
 
 function tokens(n: number): string {
 	return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
+
+/** A mean score at terminal width: bare when clean, colored as it degrades. */
+function score(value: number | null): string {
+	if (value === null) return dim('   —');
+	const text = value.toFixed(3);
+	if (value < 0.75) return red(text);
+	if (value < 0.9) return yellow(text);
+	return text;
+}
+
+function duration(ms: number): string {
+	const seconds = Math.round(ms / 1000);
+	return seconds < 60
+		? `${seconds}s`
+		: `${Math.floor(seconds / 60)}m${String(seconds % 60).padStart(2, '0')}s`;
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -242,6 +260,8 @@ async function judgeOne(
 	run: Run,
 	options: Options,
 	spent: JudgeUsage,
+	progress: { done: number; total: number },
+	beforeLine: () => void,
 ): Promise<'judged' | 'reused' | 'skipped'> {
 	const plan = planRun(run, options);
 	if (plan.action !== 'judge') {
@@ -252,8 +272,7 @@ async function judgeOne(
 	// misconfigured environment surfaces every other problem in the same pass.
 	assertApiKey();
 
-	const label = labelOf(run);
-	console.log(`Judging ${label} against ${dsDocsRefLabel()}`);
+	const startedAt = Date.now();
 	const { report, usage } = await judgeRun({
 		runDir: run.runDir,
 		projectDir: run.projectDir,
@@ -268,15 +287,13 @@ async function judgeOne(
 	addUsage(spent, usage);
 
 	const { correctDsDecision, correctDsUsage, correctLocalDecision, evaluated } = report.summary;
+	beforeLine();
+	const counter = `[${String(progress.done + 1).padStart(String(progress.total).length)}/${progress.total}]`;
 	console.log(
-		`  ${evaluated.ds} DS / ${evaluated.local} local nodes — ` +
-			`decision ${correctDsDecision ?? '-'}, usage ${correctDsUsage ?? '-'}, ` +
-			`local ${correctLocalDecision ?? '-'}`,
-	);
-	console.log(
-		`  ~$${usdOf(usage).toFixed(2)} — in ${tokens(usage.inputTokens)} · ` +
-			`cache read ${tokens(usage.cacheReadTokens)} · cache write ${tokens(usage.cacheWriteTokens)} · ` +
-			`out ${tokens(usage.outputTokens)}`,
+		`  ${dim(counter)} run-${String(run.run).padEnd(2)} ` +
+			`${String(evaluated.ds).padStart(2)} DS · ${String(evaluated.local).padStart(2)} local   ` +
+			`decision ${score(correctDsDecision)}  usage ${score(correctDsUsage)}  local ${score(correctLocalDecision)}` +
+			dim(`   $${usdOf(usage).toFixed(2)} · ${duration(Date.now() - startedAt)}`),
 	);
 	return 'judged';
 }
@@ -329,6 +346,8 @@ async function main() {
 		return;
 	}
 
+	console.log(`Judging up to ${runs.length} run(s) against ${bold(dsDocsRefLabel())}\n`);
+
 	const counts = { judged: 0, reused: 0, skipped: 0, failed: 0 };
 	const spent: JudgeUsage = {
 		inputTokens: 0,
@@ -336,30 +355,52 @@ async function main() {
 		cacheWriteTokens: 0,
 		outputTokens: 0,
 	};
+	const startedAt = Date.now();
+	const progress = { done: 0, total: runs.length };
+	// The pin prints once above and each run once below, so the only thing a
+	// cell contributes per run is its number — the arm and workflow become a
+	// group heading instead of repeating on every line. Lazy, so a group whose
+	// runs are all cached prints nothing at all.
+	let printed = '';
 	for (const run of runs) {
+		const heading = `${shortExperiment(run.experiment)} · ${run.evalName} · ${run.timestamp}`;
+		const beforeLine = () => {
+			if (heading !== printed) {
+				printed = heading;
+				console.log(bold(heading));
+			}
+		};
 		try {
-			counts[await judgeOne(run, options, spent)] += 1;
+			counts[await judgeOne(run, options, spent, progress, beforeLine)] += 1;
 		} catch (error) {
 			// One broken run must not cost us the others — but an absent API key
 			// will fail every remaining run identically, so stop on it.
 			counts.failed += 1;
+			beforeLine();
 			const message = messageOf(error);
-			console.error(`${labelOf(run)}: ${message}`);
+			console.error(`  ${red('failed')} run-${run.run}: ${message}`);
 			if (message.includes('ANTHROPIC_API_KEY')) throw error;
 		}
+		progress.done += 1;
 	}
 
-	console.log(
-		`\nJudged ${counts.judged}, reused ${counts.reused}, skipped ${counts.skipped}, failed ${counts.failed}.`,
-	);
+	const parts = [`${bold(String(counts.judged))} judged`];
+	if (counts.reused > 0) parts.push(`${counts.reused} reused`);
+	if (counts.skipped > 0) parts.push(`${counts.skipped} skipped`);
+	if (counts.failed > 0) parts.push(red(`${counts.failed} failed`));
+	console.log(`\n${parts.join(', ')} in ${duration(Date.now() - startedAt)}.`);
 	if (counts.judged > 0) {
 		console.log(
-			`Spent ~$${usdOf(spent).toFixed(2)} ` +
-				`(${tokens(spent.inputTokens)} in · ${tokens(spent.cacheReadTokens)} cache read · ` +
-				`${tokens(spent.cacheWriteTokens)} cache write · ${tokens(spent.outputTokens)} out).`,
+			`Spent ~$${usdOf(spent).toFixed(2)} — ` +
+				`${tokens(spent.inputTokens)} in · ${tokens(spent.cacheReadTokens)} cache read · ` +
+				`${tokens(spent.cacheWriteTokens)} cache write · ${tokens(spent.outputTokens)} out` +
+				(counts.judged > 1 ? ` (~$${(usdOf(spent) / counts.judged).toFixed(2)}/run)` : '') +
+				'.',
 		);
 	}
-	if (counts.reused > 0) console.log('Pass --recompute to re-judge cached runs.');
+	if (counts.reused > 0) {
+		console.log(dim('Cached judgements were reused free; --recompute re-judges them.'));
+	}
 }
 
 main().catch((error) => {
