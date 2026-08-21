@@ -42,15 +42,19 @@ Before scoring, walk the documentation systematically — do not stop at the fir
 relevant passage:
 
 1. **The component's own MDX.** Its sections are delimited by
-   `{/* BEGIN: <facet> */} … {/* END: <facet> */}` comments whose names match
-   the `mdx.*` ids in the facet catalogue at the end of these instructions.
-   Check every section that could bear on this usage.
+   `{/* BEGIN: <facet> */} … {/* END: <facet> */}` comments whose names are the
+   leaf half of the `mdx.*` ids in the facet catalogue at the end of these
+   instructions (a `{/* BEGIN: when-to-use */}` section is facet
+   `mdx.when-to-use`). Check every section that could bear on this usage.
 2. **The repo-wide guideline documents** under `src/docs` (brand, tokens,
    accessibility, component selection, general usage, setup). Each corresponds
    to a `general.*` facet id.
+3. **When judging `correctDsDecision`:** the component-selection guidance
+   (`general.general-when-to-use`) and the `when-to-use` sections of any
+   plausible design system alternative.
 
-For a local node, walk the `when-to-use` facets and the component MDX of every
-plausible design system alternative.
+For a local node, apply step 3 the same way: walk the `when-to-use` facets and
+the component MDX of every plausible design system alternative.
 
 **For each new DS usage:**
 
