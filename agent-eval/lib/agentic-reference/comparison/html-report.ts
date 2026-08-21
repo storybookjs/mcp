@@ -1707,7 +1707,9 @@ function misuseFinding(
 	)}" data-line="${finding.line}" title="Open in your editor (set the repo root via the ? button)">open</button>
 <button type="button" class="mopen mcmds" data-project="${escapeHtml(
 		finding.projectPath,
-	)}" data-file="${escapeHtml(finding.file)}" data-line="${finding.line}" title="Commands for digging into this finding">cmds</button>
+	)}" data-file="${escapeHtml(finding.file)}" data-line="${finding.line}"${
+		finding.inBaseline === false ? ' data-new-file="1"' : ''
+	} title="Commands for digging into this finding">cmds</button>
 </div>
 <div class="finding-meta"><span class="mono where">${escapeHtml(finding.file)}:${finding.line}</span>
 <span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span></div>
@@ -2460,9 +2462,11 @@ document.addEventListener('click', function (e) {
     var refsBase = root2 + '/agent-eval/.eval-cache/refs/' + baseDir;
     var entries = [
       ['Open at the flagged line', 'code -g ' + root2 + '/' + project + '/' + file + ':' + lineNo, ''],
-      ['Diff this file against the baseline',
-        'git diff --no-index ' + refsBase + '/' + file + ' ' + root2 + '/' + project + '/' + file,
-        'Fails when the run created the file — no baseline side exists. The whole-run diff below shows it.'],
+      cmds.getAttribute('data-new-file') === '1'
+        ? ['Diff this file (created by the run — no baseline side)',
+            'git diff --no-index /dev/null ' + root2 + '/' + project + '/' + file, '']
+        : ['Diff this file against the baseline',
+            'git diff --no-index ' + refsBase + '/' + file + ' ' + root2 + '/' + project + '/' + file, ''],
       ['Diff the whole run against the baseline',
         'git diff --no-index ' + refsBase + '/src ' + root2 + '/' + project + '/src', ''],
       ['Search the run transcript for this component',

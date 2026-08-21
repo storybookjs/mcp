@@ -10,7 +10,7 @@
 // Judging is a separate, paid step, so partial coverage is the normal state of
 // a bundle, not an error: the panel reports judged-vs-usable per cell and the
 // report renders what exists.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { readMisuseReport } from '../metrics/ds-misuse/index.ts';
@@ -60,6 +60,12 @@ export interface MisuseFinding {
 	reason: string;
 	/** The run's collected tree, relative to the repo root, posix-separated. */
 	projectPath: string;
+	/**
+	 * Whether the flagged file exists in the cached baseline tree; undefined
+	 * when the cache is not materialized, so absence of the cache never reads
+	 * as "the run created this file".
+	 */
+	inBaseline?: boolean;
 	/** The flagged source, read from the run's collected tree at build time. */
 	excerpt?: { start: number; lines: string[] };
 }
@@ -147,6 +153,13 @@ export function collectMisusePanel(
 	const refs = new Set<string>();
 	const fixtures = new Set<string>();
 	const toPosix = (value: string) => value.split(sep).join('/');
+	const refsRoot = join(options.repoRoot, 'agent-eval', '.eval-cache', 'refs');
+	const baselineDirOf = (fixtureRef: string) => {
+		const at = fixtureRef.lastIndexOf('@');
+		if (at === -1) return null;
+		const repo = fixtureRef.slice(0, at).replace('/', '__');
+		return `${repo}@${fixtureRef.slice(at + 1).replace(/\//g, '__')}`;
+	};
 	const summaries: MisuseCellSummary[] = [];
 	const findings: MisuseFinding[] = [];
 	let judgedRuns = 0;
@@ -186,6 +199,11 @@ export function collectMisusePanel(
 
 			const runLabel = `${usable.run.timestamp}/run-${usable.run.run}`;
 			const excerpts = new Map<string, string[] | null>();
+			const baselineName = baselineDirOf(report.fixtureRef);
+			const baselineRoot =
+				baselineName !== null && existsSync(join(refsRoot, baselineName))
+					? join(refsRoot, baselineName)
+					: null;
 			for (const node of report.nodes) {
 				poolNode(node, summary.questions, (question, score, reason) => {
 					cellFindings.push({
@@ -200,6 +218,9 @@ export function collectMisusePanel(
 						score,
 						reason,
 						projectPath: toPosix(relative(options.repoRoot, usable.run.projectDir)),
+						...(baselineRoot === null
+							? {}
+							: { inBaseline: existsSync(join(baselineRoot, node.file)) }),
 						excerpt: excerptOf(usable.run.projectDir, node.file, node.line, excerpts),
 					});
 				});
