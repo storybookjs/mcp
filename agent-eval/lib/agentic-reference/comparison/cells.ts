@@ -95,7 +95,10 @@ function classify(run: Run, metricsVersion: number | undefined, cell: Cell) {
  * Per-node score means pooled over one run's judgement, plus the aggregate:
  * every answered question's score over the number of answers, so a run is
  * normalised by how much it was judged on rather than rewarded or punished
- * for the size of its diff.
+ * for the size of its diff. Also keys a mean per cited documentation facet
+ * (see the returned `facets` field), pooling an answer into every distinct
+ * facet its reasons cite — and into 'uncategorised' too, when one of its
+ * reasons cites none.
  */
 function misuseValues(report: DsMisuseReport) {
 	let sum = 0;

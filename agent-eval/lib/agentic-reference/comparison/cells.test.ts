@@ -353,6 +353,66 @@ describe('misuse graft', () => {
 		expect(misuse.facets.mdx_history).toBeUndefined();
 	});
 
+	it('dedupes a facet cited twice within one answer, and splits a compound answer between its facet and uncategorised', () => {
+		mkRun(CONTROL.experiment, TS1, 1, 'usable');
+		writeMisuse(
+			CONTROL.experiment,
+			1,
+			[
+				{
+					path: 'App/A[0]',
+					file: 'a.tsx',
+					line: 1,
+					tag: 'A',
+					kind: 'ds',
+					// One answer citing the same facet in two reasons: counts once,
+					// not twice, toward that facet's denominator.
+					correctDsUsage: {
+						score: 1,
+						reasons: [
+							{ facet: 'mdx.do-dont', text: 'a' },
+							{ facet: 'mdx.do-dont', text: 'b' },
+						],
+					},
+					// A second, separate answer citing the same facet once. If the
+					// first answer's duplicate reason were not deduped, this facet's
+					// mean would be (1 + 1 + 0) / 3 = 0.667 instead of 0.5.
+					correctDsDecision: { score: 0, reasons: [{ facet: 'mdx.do-dont', text: 'c' }] },
+				},
+				{
+					path: 'App/B[0]',
+					file: 'b.tsx',
+					line: 2,
+					tag: 'B',
+					kind: 'local',
+					// A compound answer: one reason cites a facet, another cites
+					// none. The single answer's score feeds both buckets.
+					correctLocalDecision: {
+						score: 0.5,
+						reasons: [
+							{ facet: 'general.general-tokens', text: 'd' },
+							{ text: 'e' },
+						],
+					},
+				},
+			],
+			{
+				summary: {
+					correctDsDecision: 0,
+					correctDsUsage: 1,
+					correctLocalDecision: 0.5,
+					evaluated: { ds: 1, local: 1 },
+				},
+			},
+		);
+		const { cells } = build({ minRuns: 1, cases: [CONTROL], workflows: [WF] });
+		const usable = cells.find((c) => c.runs.length > 0)!.runs[0]!;
+		const misuse = (usable.analysis as { dsMisuse: { facets: Record<string, number> } }).dsMisuse;
+		expect(misuse.facets.mdx_do_dont).toBe(0.5);
+		expect(misuse.facets.general_general_tokens).toBe(0.5);
+		expect(misuse.facets.uncategorised).toBe(0.5);
+	});
+
 	it('leaves a stale judgement off rather than mixing standards', () => {
 		mkRun(CONTROL.experiment, TS1, 1, 'usable');
 		writeMisuse(CONTROL.experiment, 1, [], { dsGuidelinesRef: 'someone/else@old' });
