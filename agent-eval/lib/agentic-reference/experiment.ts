@@ -73,15 +73,16 @@ interface AgenticRefExperimentOptions {
 	overrides?: Partial<ExperimentConfig & PostAnalysisExperiment>;
 }
 
-// Codex runs direct (the AI Gateway Codex path mis-handles its Responses tool
-// shape) with effort folded into the model id; Claude Code runs gateway-routed
-// with a separate effort option.
+// Both agents run against their provider's API directly, not the AI Gateway:
+// the gateway's Codex path mis-handles its Responses tool shape, and its BYOK
+// failover silently retries failed Anthropic calls on Vercel's paid pool.
+// Codex folds effort into the model id; Claude Code takes a separate option.
 type AgentConfig = Pick<ExperimentConfig, 'agent' | 'model'> &
 	Partial<Pick<ExperimentConfig, 'agentOptions'>>;
 
 export const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	'claude-code': {
-		agent: 'vercel-ai-gateway/claude-code',
+		agent: 'claude-code',
 		model: 'opus',
 		agentOptions: { effort: 'high' },
 	},
@@ -91,13 +92,21 @@ export const AGENT_CONFIG: Record<EvalAgent, AgentConfig> = {
 	},
 };
 
-// Case-name segments for each AGENT_CONFIG entry, so generated case names
-// (`<prefix>-<variant>-<modelSuffix>`) spell out the model and effort the
-// entry pins.
-export const AGENT_NAME_PARTS: Record<EvalAgent, { prefix: string; modelSuffix: string }> = {
-	'claude-code': { prefix: 'cc', modelSuffix: 'opus-high' },
-	codex: { prefix: 'codex', modelSuffix: 'gpt-5.5-medium' },
-};
+/** How a run's LLM traffic was served: through the AI Gateway, or a direct API. */
+export type LlmProvider = 'ai-gateway' | 'anthropic' | 'openai';
+
+/**
+ * The provider a harness agent id resolves to. Gateway-served and direct-served
+ * runs are not cost-comparable — the gateway's BYOK failover silently re-bills
+ * retried calls and breaks prompt-cache reuse — so every run records which one
+ * served it.
+ */
+export function providerOf(agentId: string): LlmProvider {
+	if (agentId.startsWith('vercel-ai-gateway/')) {
+		return 'ai-gateway';
+	}
+	return agentId === 'codex' ? 'openai' : 'anthropic';
+}
 
 /** Research sample size, from --runs (AGENTIC_REF_RUNS). */
 function resolveRuns(): number {
@@ -138,7 +147,7 @@ interface AgenticRefCaseRecord {
 // Compose the shared usage hook with the case record so neither clobbers the
 // other (a bare override would drop token usage). Heavy metrics, including MCP
 // tool usage, are computed offline — see scripts/analyze-results.ts.
-function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
+function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord, provider: LlmProvider) {
 	return function attachAgenticRefMetrics(context: RunCompleteContext) {
 		const withUsage = DEFAULT_EXPERIMENT_CONFIG.onRunComplete?.(context) ?? context.runData;
 		return {
@@ -147,6 +156,7 @@ function makeAgenticRefMetricsHook(agenticRefCase: AgenticRefCaseRecord) {
 				...withUsage.result,
 				analysis: {
 					...withUsage.result.analysis,
+					provider,
 					externalRepo: readExternalRepoPin(context.fixture.path),
 					case: agenticRefCase,
 				},
@@ -183,6 +193,12 @@ export function agenticRefExperiment(
 	async function setup(sandbox: Sandbox): Promise<void> {
 		await setupSandbox(sandbox, { agent, integration });
 		await setupExternalRepo(sandbox);
+		// External repos can ship their own MCP client config (MealDrop's .mcp.json
+		// points at its Storybook dev server). A bare arm must offer no MCP at all,
+		// not a dormant one an agent could bring up mid-run.
+		if (integration === 'none') {
+			await sandbox.runCommand('rm', ['-f', '.mcp.json']);
+		}
 		if (storybookMcpUrl) {
 			await registerExternalStorybookMcp(sandbox, storybookMcpUrl, agent);
 		}
@@ -210,7 +226,10 @@ export function agenticRefExperiment(
 		...(editPrompt !== undefined && { editPrompt: true }),
 	};
 
-	const metricsHook = makeAgenticRefMetricsHook(caseRecord);
+	// From the agent id that actually runs, so an override changing the agent
+	// keeps the recorded provider truthful.
+	const agentId = overrides?.agent ?? AGENT_CONFIG[agent].agent;
+	const metricsHook = makeAgenticRefMetricsHook(caseRecord, providerOf(agentId));
 	// An override may add its own hook, but the case record must always land in
 	// the result — compose instead of letting the override replace the hook.
 	const onRunComplete: RunCompleteHook =

@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 import { AGENTIC_REF_CASES } from './cases.ts';
 import { EVALS_DIR, EXPERIMENT_NAME_PREFIX } from './constants.ts';
-import { AGENT_CONFIG } from './experiment.ts';
+import { AGENT_CONFIG, providerOf } from './experiment.ts';
 import { parseExternalRepoFromManifest } from './external-repo.ts';
 import { readJson } from '../utils/files.ts';
 import { isRecord } from '../utils/type.ts';
@@ -28,6 +28,12 @@ export interface Measurement {
 	mcp: string;
 	/** Whether the experiment rewrote the fixture's prompt. */
 	editedPrompt: boolean;
+	/**
+	 * How the run's LLM traffic was served (`ai-gateway`, `anthropic`,
+	 * `openai`), from `result.analysis.provider`; `unknown` on historical runs
+	 * which were all ai-gateway.
+	 */
+	provider: string;
 	/** Digest of the task: the fixture's PROMPT.md and EVAL.ts. */
 	task: string;
 }
@@ -74,6 +80,7 @@ export function measurementKey(measurement: Measurement): string {
 		measurement.pin,
 		measurement.mcp,
 		String(measurement.editedPrompt),
+		measurement.provider,
 		measurement.task,
 	].join('\0');
 }
@@ -84,7 +91,14 @@ export interface MeasurementDifference {
 	now: string;
 }
 
-const COMPARED: Array<keyof Measurement> = ['pin', 'mcp', 'model', 'editedPrompt', 'task'];
+const COMPARED: Array<keyof Measurement> = [
+	'pin',
+	'mcp',
+	'model',
+	'editedPrompt',
+	'provider',
+	'task',
+];
 
 /** Which components moved between two measurements. */
 export function measurementDifferences(
@@ -172,6 +186,7 @@ export function readRunMeasurement(
 		pin: canonicalPin(pin),
 		mcp: mcpOf(storedCase.storybookMcpPackage, storedCase.storybookMcpUrl, storedCase.integration),
 		editedPrompt: storedCase.editPrompt === true,
+		provider: typeof analysis.provider === 'string' ? analysis.provider : 'unknown',
 		task: taskDigest(join(runDir, 'project')),
 	};
 }
@@ -195,10 +210,12 @@ export function currentMeasurement(experiment: string, evalName: string): Measur
 		pin = null;
 	}
 
+	const agentConfig = AGENT_CONFIG[agenticRefCase.agent ?? 'claude-code'];
+
 	return {
 		experiment,
 		evalName,
-		model: modelOf(AGENT_CONFIG[agenticRefCase.agent ?? 'claude-code'].model),
+		model: modelOf(agentConfig.model),
 		pin: canonicalPin(pin),
 		mcp: mcpOf(
 			agenticRefCase.storybookMcpPackage,
@@ -207,6 +224,7 @@ export function currentMeasurement(experiment: string, evalName: string): Measur
 				((agenticRefCase.storybookMcpPackage ?? agenticRefCase.storybookMcpUrl) ? 'mcp' : 'none'),
 		),
 		editedPrompt: agenticRefCase.editPrompt !== undefined,
+		provider: providerOf(agenticRefCase.overrides?.agent ?? agentConfig.agent),
 		task: taskDigest(fixture),
 	};
 }

@@ -16,7 +16,11 @@
 import type { RunPlan } from '../lib/agentic-reference/run-plan.ts';
 
 export default {
-	experiments: ['agentic-ref-cc-purge-jsdoc-opus-high', 'agentic-ref-cc-full-opus-high'],
+	experiments: [
+		'agentic-ref-cc-control-none-opus-high',
+		'agentic-ref-cc-purge-jsdoc-opus-high',
+		'agentic-ref-cc-full-opus-high',
+	],
 	evals: ['701', '706'],
 	runs: 10,
 	parallelMax: 10,

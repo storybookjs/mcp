@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { PLAIN_STYLE, type OutputStyle } from './style.ts';
 import {
 	type CellPlan,
 	type PlanCell,
@@ -96,11 +97,6 @@ describe('resolveRunPlan', () => {
 		]);
 	});
 
-	// A deficit never exceeds the target, so this bound covers every batch.
-	it('refuses a plan whose sample cannot fit in one batch', () => {
-		expect(() => resolveRunPlan(plan({ runs: 30 }), KNOWN)).toThrow(/exceeds parallelMax/);
-	});
-
 	it('rejects non-positive-integer knobs', () => {
 		expect(() => resolveRunPlan(plan({ runs: 0 }), KNOWN)).toThrow(/runs must be a positive/);
 		expect(() => resolveRunPlan(plan({ parallelMax: 2.5 }), KNOWN)).toThrow(
@@ -189,9 +185,9 @@ describe('planCell', () => {
 		expect(planned).toMatchObject({ qualifying: 10, deficit: 0 });
 	});
 
-	it('never reports a negative deficit for an over-collected cell', () => {
+	it('shows the full qualifying count of an over-collected cell, never a negative deficit', () => {
 		expect(planCell(CELL, [sample({ runs: 14 })], options)).toMatchObject({
-			qualifying: 10,
+			qualifying: 14,
 			deficit: 0,
 		});
 	});
@@ -220,6 +216,19 @@ describe('planCell', () => {
 		expect(explainDeficit(planCell(CELL, [], options))).toBe('no qualifying runs');
 		expect(explainDeficit(planCell(CELL, [sample({ current: false })], options))).toBe(
 			'no qualifying runs (discounting 10 superseded)',
+		);
+	});
+
+	it('dims only the discounting note when a style is given', () => {
+		const dimMarked: OutputStyle = {
+			...PLAIN_STYLE,
+			dim: (s) => `[D]${s}[/D]`,
+		};
+		expect(explainDeficit(planCell(CELL, [sample({ current: false })], options), dimMarked)).toBe(
+			'no qualifying runs[D] (discounting 10 superseded)[/D]',
+		);
+		expect(explainDeficit(planCell(CELL, [sample({ runs: 6 })], options), dimMarked)).toBe(
+			'6/10 runs already collected',
 		);
 	});
 });
@@ -270,6 +279,26 @@ describe('planBatches', () => {
 
 	it('skips cells that already have their full sample', () => {
 		expect(planBatches([cell('a', '701', 0), cell('b', '701', 0)], ['701'], 20)).toEqual([]);
+	});
+
+	it('collects a deficit deeper than parallelMax in sequential waves', () => {
+		const batches = planBatches([cell('a', '701', 10), cell('b', '701', 10)], ['701'], 5);
+
+		expect(batches.map((batch) => [batch.experiments, batch.runs, batch.parallel])).toEqual([
+			[['a'], 5, 5],
+			[['a'], 5, 5],
+			[['b'], 5, 5],
+			[['b'], 5, 5],
+		]);
+	});
+
+	it('sizes a deficit remainder wave to what is left, not parallelMax', () => {
+		const batches = planBatches([cell('a', '701', 7)], ['701'], 5);
+
+		expect(batches.map((batch) => [batch.runs, batch.parallel])).toEqual([
+			[5, 5],
+			[2, 2],
+		]);
 	});
 
 	it('keeps batches one eval wide, in registry order', () => {

@@ -155,7 +155,14 @@ async function runOrThrow(
 	const result = await sandbox.runCommand(command, args);
 	if (result.exitCode !== 0) {
 		const tail = (result.stderr || result.stdout).trim().split('\n').slice(-15).join('\n');
-		throw new Error(`setupExternalRepo: ${label} failed:\n${tail}`);
+		// 128+signal means the process was killed rather than failing on its own;
+		// 137 (SIGKILL) is almost always the container hitting its memory limit,
+		// which leaves no error text — the output just stops mid-step.
+		const killed =
+			result.exitCode === 137 ? ' (exit 137: killed, likely sandbox out of memory)' : '';
+		throw new Error(
+			`setupExternalRepo: ${label} failed with exit ${result.exitCode}${killed}:\n${tail}`,
+		);
 	}
 }
 

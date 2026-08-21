@@ -9,6 +9,7 @@
 // experiment. Slicing the matrix into batches of at most `parallelMax`
 // sandboxes each, with their own saveResults, caps that loss to one batch.
 import { matchesAnySelector, resolveEvalSelection } from './selection.ts';
+import { PLAIN_STYLE, type OutputStyle } from './style.ts';
 
 /**
  * A data-collection plan: which cells to sample, how deeply, and how much of
@@ -126,16 +127,6 @@ export function resolveRunPlan(
 	const runs = assertPositiveInteger('runs', plan.runs);
 	const parallelMax = assertPositiveInteger('parallelMax', plan.parallelMax);
 
-	// A pair's repetitions all start in one invocation, so a pair is
-	// indivisible here. A deficit never exceeds the target, so this bound
-	// covers every batch.
-	if (runs > parallelMax) {
-		throw new Error(
-			`runs (${runs}) exceeds parallelMax (${parallelMax}): one cell's repetitions all start ` +
-				'at once and cannot be split across invocations. Lower runs or raise parallelMax.',
-		);
-	}
-
 	const experiments = resolveExperimentSelection(plan.experiments, known.experiments);
 	const evals = resolveEvalSelection(plan.evals, known.evals);
 
@@ -213,7 +204,7 @@ export function judgeSample(sample: StoredSample, since: Date | null): SampleVer
 export interface CellPlan extends PlanCell {
 	/** The plan's target sample size. */
 	target: number;
-	/** Runs already on disk that count towards the target. */
+	/** Runs already on disk that count towards the target; can exceed it. */
 	qualifying: number;
 	/** Runs still to collect. */
 	deficit: number;
@@ -224,8 +215,9 @@ export interface CellPlan extends PlanCell {
 /**
  * Works out how much of a pair is still missing.
  *
- * Qualifying runs are capped at the target: a pair over-collected by an
- * earlier round has a deficit of zero, never a negative one.
+ * The deficit is clamped at zero: a pair over-collected by an earlier round
+ * has nothing left to collect, and its qualifying count stays the real one
+ * so over-collection is visible.
  */
 export function planCell(
 	cell: PlanCell,
@@ -246,22 +238,22 @@ export function planCell(
 		}
 	}
 
-	qualifying = Math.min(qualifying, options.target);
 	return {
 		...cell,
 		target: options.target,
 		qualifying,
-		deficit: options.target - qualifying,
+		deficit: Math.max(0, options.target - qualifying),
 		discounted,
 	};
 }
 
 /** Why a pair has to be collected, in one phrase, for the plan output. */
-export function explainDeficit(cell: CellPlan): string {
+export function explainDeficit(cell: CellPlan, style: OutputStyle = PLAIN_STYLE): string {
 	const discounted = Object.entries(cell.discounted)
 		.filter(([, runs]) => runs > 0)
 		.map(([reason, runs]) => `${runs} ${reason.replace('-', ' ')}`);
-	const discardedNote = discounted.length === 0 ? '' : ` (discounting ${discounted.join(', ')})`;
+	const discardedNote =
+		discounted.length === 0 ? '' : style.dim(` (discounting ${discounted.join(', ')})`);
 
 	if (cell.qualifying === 0) {
 		return `no qualifying runs${discardedNote}`;
@@ -288,6 +280,11 @@ export interface PlanBatch {
  * carries a single `--runs`, so pairs share a batch only when their deficits
  * match; within an eval they're grouped by deficit, deepest first, so batches
  * stay one eval wide and keep the eval-major order intact.
+ *
+ * A deficit larger than parallelMax is collected in waves: sequential
+ * invocations of at most parallelMax repetitions each. Every invocation runs
+ * with --force and saves its own result directory, and a pair's sample is
+ * counted across all of its directories, so the waves add up to one sample.
  */
 export function planBatches(
 	cells: readonly CellPlan[],
@@ -301,9 +298,16 @@ export function planBatches(
 
 		const byDeficit = new Map<number, string[]>();
 		for (const cell of outstanding) {
-			const group = byDeficit.get(cell.deficit) ?? [];
-			group.push(cell.experiment);
-			byDeficit.set(cell.deficit, group);
+			// Wave slices of parallelMax fill a batch on their own (perBatch
+			// below is 1), so one pair's waves can never share an invocation.
+			let remaining = cell.deficit;
+			while (remaining > 0) {
+				const slice = Math.min(remaining, parallelMax);
+				const group = byDeficit.get(slice) ?? [];
+				group.push(cell.experiment);
+				byDeficit.set(slice, group);
+				remaining -= slice;
+			}
 		}
 
 		for (const deficit of [...byDeficit.keys()].sort((a, b) => b - a)) {

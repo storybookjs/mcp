@@ -11,8 +11,11 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { readJson } from '../../../utils/files.ts';
+import { isRecord } from '../../../utils/type.ts';
+
+import type { JudgeUsage } from './judge.ts';
 import { analyzeDsCoverage } from '../ds-coverage/index.ts';
-import { buildJudgeRequest, JUDGE_MODEL } from './context.ts';
+import { buildJudgeRequest, DS_MISUSE_JUDGE_VERSION, JUDGE_MODEL } from './context.ts';
 import { collectDsDocs, dsDocsRefLabel } from './ds-docs.ts';
 import { runJudge } from './judge.ts';
 import { summariseJudgement } from './score.ts';
@@ -44,11 +47,35 @@ export interface JudgeRunInput {
 
 export interface StalenessCheck {
 	dsGuidelinesRef: string;
-	metricsVersion: number | undefined;
 }
 
+function isScoredAnswer(value: unknown): boolean {
+	return isRecord(value) && typeof value.score === 'number';
+}
+
+/**
+ * True when the parsed JSON has the shape a reader downstream (isStale,
+ * misuseValues) can walk without crashing: nodes is an array of records, each
+ * present per-kind answer is a scored object, and summary is a record. This
+ * is not a full schema check — it only guards the fields those readers touch.
+ */
+function isWellFormedReport(value: unknown): value is DsMisuseReport {
+	if (!isRecord(value) || !Array.isArray(value.nodes) || !isRecord(value.summary)) {
+		return false;
+	}
+	return value.nodes.every((node) => {
+		if (!isRecord(node)) return false;
+		for (const key of ['correctDsDecision', 'correctDsUsage', 'correctLocalDecision']) {
+			if (node[key] !== undefined && !isScoredAnswer(node[key])) return false;
+		}
+		return true;
+	});
+}
+
+/** A malformed artifact is treated exactly like an unjudged run: null, never a throw. */
 export function readMisuseReport(runDir: string): DsMisuseReport | null {
-	return readJson<DsMisuseReport>(join(runDir, DS_MISUSE_FILENAME));
+	const parsed = readJson<unknown>(join(runDir, DS_MISUSE_FILENAME));
+	return isWellFormedReport(parsed) ? parsed : null;
 }
 
 export function writeMisuseReport(runDir: string, report: DsMisuseReport): void {
@@ -59,19 +86,27 @@ export function writeMisuseReport(runDir: string, report: DsMisuseReport): void 
  * Whether a stored judgement can still be trusted.
  *
  * A moved guidelines pin means the run was scored against a different standard;
- * a moved metricsVersion means its node paths were built by different rules.
- * Either way the number is not comparable with a fresh one, so it is re-spent.
+ * a moved judge version means the prompt, reference content, model, or judging
+ * internals changed under it; a moved model is checked directly too, as a
+ * safety net for a model swap that missed a version bump — an LLM judge is its
+ * model, and two models' scores in one table are two standards. The
+ * deterministic metricsVersion plays no part here: it records which census
+ * rules built the node paths, not whether the judgement is still valid, so a
+ * metrics-only recompute must not spend the paid judge again.
  */
 export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
 	return (
 		report.schemaVersion !== DS_MISUSE_SCHEMA_VERSION ||
 		report.dsGuidelinesRef !== current.dsGuidelinesRef ||
-		report.metricsVersion !== current.metricsVersion
+		(report.judgeVersion ?? 1) !== DS_MISUSE_JUDGE_VERSION ||
+		report.model !== JUDGE_MODEL
 	);
 }
 
 /** Judge one run and return its report. Makes exactly one model call. */
-export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
+export async function judgeRun(
+	input: JudgeRunInput,
+): Promise<{ report: DsMisuseReport; usage: JudgeUsage }> {
 	const patch = treePatch(input.baselineDir, input.projectDir);
 
 	// Targeted: the graph is still whole so imports resolve, but only the files
@@ -85,7 +120,7 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 		censusInclude: patch.files,
 	});
 
-	const judged = await runJudge(
+	const { judged, usage } = await runJudge(
 		buildJudgeRequest({
 			docs: collectDsDocs(input.refCacheDir),
 			baselineNodes: input.baselineNodes,
@@ -95,9 +130,10 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 		}),
 	);
 
-	return {
+	const report: DsMisuseReport = {
 		schemaVersion: DS_MISUSE_SCHEMA_VERSION,
 		metricsVersion: input.metricsVersion,
+		judgeVersion: DS_MISUSE_JUDGE_VERSION,
 		judgedAt: new Date().toISOString(),
 		model: JUDGE_MODEL,
 		dsGuidelinesRef: dsDocsRefLabel(),
@@ -108,4 +144,5 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 		// number has to be traceable to what it actually counted.
 		nodes: judged.nodes,
 	};
+	return { report, usage };
 }

@@ -225,7 +225,7 @@ index 94bfe8d341e445070b2891ed04ff7cf9a6ab9a6a..103c1166dc3c39ae92618cfb40fd57cd
       * Check if a file exists in the container.
       */
 diff --git a/dist/lib/docker-sandbox.js b/dist/lib/docker-sandbox.js
-index 99df8fb3ab72003144926f19243baf6b2102f050..5e9d1aaa34cb8c8644ca185888a3906d2a884418 100644
+index 99df8fb3ab72003144926f19243baf6b2102f050..e781197d41c75ac0e7d18d6dea32b78fce31ee59 100644
 --- a/dist/lib/docker-sandbox.js
 +++ b/dist/lib/docker-sandbox.js
 @@ -3,6 +3,7 @@
@@ -354,6 +354,25 @@ index 862743f11186e3ce0684b2f51fc4e75a20b03382..13255ef0b58ef6b7bfcf9fd330c625e2
      }
      return contents;
  }
+diff --git a/dist/lib/housekeeping.js b/dist/lib/housekeeping.js
+index 424bc5ad236150dcfcb87a1c34cb888787cd6161..26a014ac91579c5a32a1e15f8c05eecc03d8f5e0 100644
+--- a/dist/lib/housekeeping.js
++++ b/dist/lib/housekeeping.js
+@@ -66,7 +66,13 @@ export function housekeep(resultsDir, experimentName, options) {
+             const fingerprint = readFingerprint(evalResultDir);
+             const dedupeKey = fingerprint ? `${evalDir}:${fingerprint}` : evalDir;
+             if (seenEvals.has(dedupeKey)) {
+-                // Older duplicate with same fingerprint — remove
++                // Older result with same fingerprint. A complete one is kept:
++                // a sample can be collected across several invocations, so
++                // sibling result directories are partial samples, not
++                // duplicates. Incomplete leftovers are still removed below.
++                if (isComplete(evalResultDir) && !isSmoke(evalResultDir)) {
++                    continue;
++                }
+                 if (!options?.dry) {
+                     rmSync(evalResultDir, { recursive: true });
+                 }
 diff --git a/dist/lib/sandbox.d.ts b/dist/lib/sandbox.d.ts
 index 5f2b571e95a3c71bf40d7651496f7a11e4be5ed9..0d937ce61fcc558ff6e7463bd14c938ad060d684 100644
 --- a/dist/lib/sandbox.d.ts
@@ -374,7 +393,7 @@ index 5f2b571e95a3c71bf40d7651496f7a11e4be5ed9..0d937ce61fcc558ff6e7463bd14c938a
       * Check if a file exists in the sandbox.
       */
 diff --git a/dist/lib/sandbox.js b/dist/lib/sandbox.js
-index 4c5aeaaeae890c8a062e9d80638dddb87e25b666..415b184d2082e24aa67a0a7cfdc4872f84f4e155 100644
+index 4c5aeaaeae890c8a062e9d80638dddb87e25b666..52279755ebc76dc1fc9c58c1ac1dc46d4523a517 100644
 --- a/dist/lib/sandbox.js
 +++ b/dist/lib/sandbox.js
 @@ -26,6 +26,14 @@ export const IGNORED_PATTERNS = [

@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url';
 
 import type { ExperimentConfig } from '@vercel/agent-eval';
 import type { EvalAgent, EvalIntegration, McpServerSpec } from '../templates.ts';
-import { AGENT_NAME_PARTS, agenticRefExperiment } from './experiment.ts';
+import { EXPERIMENT_NAME_PREFIX } from './constants.ts';
+import { agenticRefExperiment } from './experiment.ts';
 import type { StorybookMcpPackageSpec } from './local-mcp.ts';
 import { resolveEvalSelection } from './selection.ts';
+import { AGENT_NAME_PARTS, shortNameOf } from './utils.ts';
 
 /** The active eval list; every case runs all of them unless it specifies its own `evals`. */
 
@@ -34,6 +36,11 @@ const DS_APP_WORKFLOWS = AGENTIC_REF_EVAL_REGISTRY.filter(
 export interface AgenticRefCase {
 	/** Kebab-case; becomes the experiment name and results dir (`agentic-ref-<name>`). */
 	name: string;
+	/**
+	 * What this experiment arm is, for someone with no project context. Flows
+	 * into results:compare manifests and the HTML report's case tooltips, so
+	 * write it as user-facing copy.
+	 */
 	description: string;
 	/** Present = run with this URL registered as an external design-system Storybook MCP. */
 	storybookMcpUrl?: string;
@@ -108,6 +115,45 @@ const EXPERIMENT_BRANCHES = [
 	'experiment/purge-jsdoc',
 ] as const;
 
+// What each content variant serves, for readers with no project context.
+// Grounded in the design-system repo's experiments.config.ts (the source of
+// truth for facet lists); update both together. Most variants build on the
+// basics every variant keeps — inline JSDoc, component anatomy, and the setup
+// and brand pages — and the copy spells that out so each definition stands
+// alone in a tooltip.
+const VARIANT_DEFINITIONS: Record<string, string> = {
+	empty:
+		"Storybook MCP with no docs or custom stories. Isolates the added value of Storybook's automatic docgen.",
+	'docs-full':
+		'Storybook MCP with general and per-component documentation, but virtually no stories. Isolates the added value of docs content.',
+	'stories-full':
+		'A Storybook MCP with all kinds of stories, but no documentation. Isolates the added value of stories.',
+	full: 'Storybook MCP with complete documentation and stories. Isolates the effects of providing too much context to agentic workflows.',
+	'basic-docs':
+		"Storybook MCP with general usage and behavior pages plus showcase and highlight stories. Close in spirit to Base UI's documentation style.",
+	'do-dont':
+		"Storybook MCP with the basic-docs content plus general and per-component documentation on do's and don'ts. Isolates the impact of explaining how to use components properly.",
+	'when-to-use':
+		'Storybook MCP with the basic-docs content plus documentation on how to select the right component based on task needs. Isolates the impact of steering how component usage decisions should be made.',
+	'history-issues':
+		'Storybook MCP with the basic-docs content plus per-component decision histories and open issue lists. Isolates the impact of historical decision records on agent understanding of component behavior.',
+	a11y: 'Storybook MCP with the basic-docs content plus general and per-component accessibility guidelines. Isolates the impact of a11y-related context.',
+	'brand-animation':
+		'Storybook MCP with the basic-docs content plus brand guidelines and animation stories. Isolates the impact on brand-related context on agentic workflows.',
+	'api-ref':
+		'Storybook MCP with the basic-docs content plus API-reference stories, stories highlighting key component behaviors and props tables in MDX docs. Isolates the value of providing deeper API documentation than docgen to agents.',
+	'stories-api-ref':
+		'Storybook MCP with the basic-docs content plus simple API-reference stories. Closest match to Base UI documentation.',
+	'stories-showcase':
+		'Storybook MCP with the basic-docs content plus showcase stories which are designed for interactive human use with well-defined args and arg types.',
+	'stories-highlight':
+		'Storybook MCP with the basic-docs content plus highlight stories which present key component behaviors rather than every single prop value.',
+	'stories-examples':
+		'Storybook MCP with the basic-docs content plus example stories taken from MealDrop or DropBoard, demonstrating typical usage patterns.',
+	'purge-jsdoc':
+		'Storybook MCP with full documentation and stories, but stripped JSDoc. Isolates how well Storybook MCP performs without docgen annotations.',
+};
+
 const VARIANT_AGENTS: EvalAgent[] = ['claude-code'];
 
 function storybookVariantCases(): AgenticRefCase[] {
@@ -117,7 +163,9 @@ function storybookVariantCases(): AgenticRefCase[] {
 			const { prefix, modelSuffix } = AGENT_NAME_PARTS[agent];
 			return {
 				name: `${prefix}-${variant}-${modelSuffix}`,
-				description: `Design-system Storybook MCP served in-sandbox, content variant "${variant}".`,
+				description:
+					VARIANT_DEFINITIONS[variant] ??
+					`Design-system Storybook MCP served in-sandbox, content variant "${variant}".`,
 				storybookMcpPackage: droppyMcpPackage(branchName),
 				agent,
 				evals: DS_APP_WORKFLOWS,
@@ -141,13 +189,22 @@ export const AGENTIC_REF_CASES: AgenticRefCase[] = [
 	// 	evals: ['705-migrate-to-ds-flow'],
 	// },
 
-	// The controls run every workflow by default: they are the baseline each
-	// treatment is compared against, so they must span the same eval set.
 	{
 		name: 'cc-control-none-opus-high',
-		description: 'Zero agent support: no MCP, no skills, no docs pointer.',
+		description:
+			'Control case with no agent support at all (no MCP, skills or documentation resource).',
 	},
 ];
+
+/** The single control every comparison runs against unless --control overrides it. */
+export const DEFAULT_CONTROL_CASE = 'cc-control-none-opus-high';
+
+/** Experiment names the generated stubs (and results directories) carry. */
+export function knownExperimentNames(): string[] {
+	return AGENTIC_REF_CASES.map(
+		(agenticRefCase) => `${EXPERIMENT_NAME_PREFIX}${agenticRefCase.name}`,
+	);
+}
 
 // Duplicate names would make agenticRefCaseExperiment always pick the first
 // match and collide generated stubs, results directories, and fingerprints.
@@ -155,6 +212,20 @@ const caseNames = AGENTIC_REF_CASES.map((agenticRefCase) => agenticRefCase.name)
 const duplicateNames = [...new Set(caseNames.filter((name, i) => caseNames.indexOf(name) !== i))];
 if (duplicateNames.length > 0) {
 	throw new Error(`AGENTIC_REF_CASES: duplicate case names: ${duplicateNames.join(', ')}`);
+}
+
+// Two cases sharing a derived shortName would be indistinguishable in
+// results:compare's CSV/manifest output — commands.ts, cells.ts, and the
+// stats stage all key on shortName, so a collision would silently conflate
+// two different experiments under one label.
+const shortNamesByCase = new Map(caseNames.map((name) => [name, shortNameOf(name)]));
+const shortNameCollisions = [...new Set(shortNamesByCase.values())]
+	.map((shortName) => caseNames.filter((name) => shortNamesByCase.get(name) === shortName))
+	.filter((group) => group.length > 1);
+if (shortNameCollisions.length > 0) {
+	throw new Error(
+		`AGENTIC_REF_CASES: cases share a derived short name: ${shortNameCollisions.map((group) => group.join(', ')).join('; ')}`,
+	);
 }
 
 // AGENTIC_REF_EVALS=<eval>[,<eval>] narrows every case's supported workflow evals

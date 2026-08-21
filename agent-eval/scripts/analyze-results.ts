@@ -50,23 +50,23 @@
 // The three table flags select what is printed; everything is measured and
 // written either way. Passing any of them prints exactly that set; passing
 // none falls back to DEFAULT_TABLES below.
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { groupComparableRuns } from '#lib/agentic-reference/comparability';
+import { describeStoredRun, groupComparableRuns } from '#lib/agentic-reference/comparability';
+import { bold, cyan, dim, red, yellow } from '#lib/utils/colors';
 import {
 	currentMeasurement,
 	describeDifferences,
 	measurementDifferences,
-	measurementKey,
-	readRunMeasurement,
 } from '#lib/agentic-reference/identity';
 import { typecheckExternalRepo } from '#lib/agentic-reference/external-repo';
 import { readMisuseReport } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { loadOrBuildBaselineAnalysis } from '#lib/post-analysis/baseline';
 import { findRuns, selectRuns, type Run } from '#lib/post-analysis/discovery';
 import { postAnalysisFrom } from '#lib/post-analysis/hooks';
+import { isCurrentCacheEntry, readCacheEntry, writeCacheEntry } from '#lib/post-analysis/run-cache';
 import { mergeIntoEvalSummary } from '#lib/post-analysis/summary';
 import { isRecord } from '#lib/utils/type';
 import { readJson } from '#lib/utils/files';
@@ -184,24 +184,6 @@ async function loadPostAnalysis(
 
 	byExperiment.set(experiment, postAnalysis);
 	return postAnalysis;
-}
-
-// --- post-analysis cache ---
-// One entry per run, stored next to other artifacts; --recompute ignores it.
-const CACHE_FILENAME = 'post-analysis-meta.json';
-
-function readCacheEntry(
-	runDir: string,
-): { analyzedAt: string; output: Record<string, unknown> | null } | null {
-	return readJson(join(runDir, CACHE_FILENAME));
-}
-
-function writeCacheEntry(runDir: string, output: Record<string, unknown> | null) {
-	console.log(`Writing ${CACHE_FILENAME} for ${runDir}`);
-	writeFileSync(
-		join(runDir, CACHE_FILENAME),
-		JSON.stringify({ analyzedAt: new Date().toISOString(), output }, null, 2) + '\n',
-	);
 }
 
 // --- per-run analysis ---
@@ -331,10 +313,18 @@ async function main() {
 			continue;
 		}
 
-		const cached = options.recompute ? null : readCacheEntry(run.runDir);
+		// Fetch cached post analysis output unless --recompute was passed. A stale
+		// or unstamped entry (older metrics code) counts as a miss.
+		const entry = options.recompute ? null : readCacheEntry(run.runDir);
+		const cached = isCurrentCacheEntry(entry, postAnalysis.metricsVersion) ? entry : null;
 		if (cached) {
 			reused += 1;
 			if (cached.output) {
+				// Cache and artifact must not diverge: a hit re-emits a missing analysis.json.
+				const analysisPath = join(run.runDir, 'analysis.json');
+				if (!existsSync(analysisPath)) {
+					writeFileSync(analysisPath, JSON.stringify(cached.output, null, 2) + '\n');
+				}
 				successfulAnalyses.push({
 					...cached.output,
 					__run: run,
@@ -352,7 +342,7 @@ async function main() {
 					JSON.stringify(analysisOutput, null, 2) + '\n',
 				);
 			}
-			writeCacheEntry(run.runDir, analysisOutput ?? null);
+			writeCacheEntry(run.runDir, analysisOutput ?? null, postAnalysis.metricsVersion);
 			if (analysisOutput) {
 				successfulAnalyses.push({
 					...analysisOutput,
@@ -367,9 +357,11 @@ async function main() {
 
 	if (incomplete > 0) {
 		console.log(
-			`Skipped ${incomplete} run director${incomplete === 1 ? 'y' : 'ies'} holding no project ` +
-				'tree: those runs stopped on billing, a timeout or another infra failure. ' +
-				'Run `pnpm results:prune` to see and clear them.',
+			yellow(
+				`Skipped ${incomplete} run director${incomplete === 1 ? 'y' : 'ies'} holding no project ` +
+					'tree: those runs stopped on billing, a timeout or another infra failure. ' +
+					'Run `pnpm results:prune` to see and clear them.',
+			),
 		);
 	}
 	if (withoutHook > 0) {
@@ -402,10 +394,8 @@ async function main() {
 		(row) => readMisuseReport(row.__run.runDir) === null,
 	).length;
 	if (unjudged > 0) {
-		const bold = '\x1b[1;31m';
-		const reset = '\x1b[0m';
 		console.error(
-			`\n${bold}No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).${reset}\n` +
+			`\n${bold(red(`No ds-misuse judgement for ${unjudged} of ${successfulAnalyses.length} run(s).`))}\n` +
 				'  Run: pnpm judge:ds-misuse' +
 				(options.experiments.length ? ` --experiments=${options.experiments.join(',')}` : '') +
 				(options.latest ? ' --latest' : ''),
@@ -432,18 +422,7 @@ async function main() {
 
 	const groups = groupComparableRuns(successfulAnalyses, (row) => {
 		const { experiment, evalName, model, runDir } = row.__run;
-		const measurement = readRunMeasurement(runDir, { experiment, evalName });
-		const current = currentMeasurement(experiment, evalName);
-		return {
-			experiment,
-			model,
-			evalName,
-			measurement,
-			current:
-				measurement !== null &&
-				current !== null &&
-				measurementKey(measurement) === measurementKey(current),
-		};
+		return { experiment, model, evalName, ...describeStoredRun(runDir, { experiment, evalName }) };
 	});
 
 	// Superseded groups are the measurement a pair used to make, kept apart so
@@ -455,7 +434,7 @@ async function main() {
 	for (const group of groups) {
 		const show = options.superseded || group.current;
 		if (show) {
-			console.log(`\n===  ${heading(group)}  ===\n`);
+			console.log(`\n${dim('===')}  ${bold(cyan(heading(group)))}  ${dim('===')}\n`);
 			if (!group.current) {
 				console.log(`  superseded — ${supersessionNote(group)}\n`);
 			}

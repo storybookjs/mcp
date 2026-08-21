@@ -4,10 +4,11 @@
 // failure can discard every completed run with it; batching caps that loss
 // at one batch.
 //
-//   pnpm eval:plan --config plans/<name>.plan.ts [--dry]
+//   pnpm eval:plan --plan <name-or-path> [--dry]
 //
-//   --config <path>  the plan config (default AGENTIC_REF_CONFIG, then plans/default.plan.ts)
-//   --dry            print what would be collected and spend nothing
+//   --plan, --config  the plan config, by bare name (1-levels-create) or path
+//                     (default AGENTIC_REF_CONFIG, then plans/default.plan.ts)
+//   --dry             print what would be collected and spend nothing
 //
 // A plan config is a TS module default-exporting a RunPlan — experiments,
 // evals, runs, parallelMax — see lib/agentic-reference/run-plan.ts and
@@ -20,19 +21,15 @@
 // Nothing is retried. A batch that fails is recorded and the plan moves on,
 // so an unattended run ends with a complete account of what it collected.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { basename, isAbsolute, join, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { basename, join, relative } from 'node:path';
 
-import { AGENTIC_REF_CASES, AGENTIC_REF_EVAL_REGISTRY } from '../lib/agentic-reference/cases.ts';
+import { AGENTIC_REF_EVAL_REGISTRY, knownExperimentNames } from '../lib/agentic-reference/cases.ts';
 import { countCollectedRuns } from '../lib/agentic-reference/collected-runs.ts';
-import {
-	AGENT_EVAL_ROOT,
-	EXPERIMENT_NAME_PREFIX,
-	RESULTS_DIR,
-	RUNNER,
-} from '../lib/agentic-reference/constants.ts';
+import { AGENT_EVAL_ROOT, RESULTS_DIR, RUNNER } from '../lib/agentic-reference/constants.ts';
+import { ansiStyle } from '../lib/agentic-reference/style.ts';
 import { isCurrentSample, parseResultTimestamp } from '../lib/agentic-reference/comparability.ts';
+import { loadPlanConfig, resolvePlanPath } from '../lib/agentic-reference/plan-config.ts';
 import { findResultDirs } from '../lib/agentic-reference/results-tree.ts';
 import { selectionFlags } from '../lib/agentic-reference/selection.ts';
 import {
@@ -41,7 +38,6 @@ import {
 	type PlanBatch,
 	type ResolvedRunPlan,
 	type ResourceSignal,
-	type RunPlan,
 	type StoredSample,
 	explainDeficit,
 	isPlanStoppingSignal,
@@ -54,6 +50,8 @@ import {
 } from '../lib/agentic-reference/run-plan.ts';
 
 const DEFAULT_CONFIG = join('plans', 'default.plan.ts');
+const outStyle = ansiStyle(process.stdout);
+const errStyle = ansiStyle(process.stderr);
 
 function fail(message: string): never {
 	console.error(`run-plan: ${message}`);
@@ -226,13 +224,16 @@ function printPlan(resolved: ResolvedRunPlan, cells: CellPlan[], batches: PlanBa
 
 	console.log('');
 	for (const evalName of resolved.evals) {
-		console.log(`  ${evalName}`);
+		console.log(`  ${outStyle.bold(evalName)}`);
 		for (const cell of cells.filter((candidate) => candidate.evalName === evalName)) {
+			// results:compare's palette: green when nothing is left to do, red
+			// when collection is needed. Padded before styling, so ANSI escapes
+			// never skew the column.
 			const state =
 				cell.deficit === 0
-					? `complete (${cell.qualifying}/${cell.target})`
-					: `collect ${cell.deficit} — ${explainDeficit(cell)}`;
-			console.log(`    ${cell.experiment.padEnd(42)} ${state}`);
+					? outStyle.tone('good', `complete (${cell.qualifying}/${cell.target})`)
+					: outStyle.tone('action', `collect ${cell.deficit} — ${explainDeficit(cell, outStyle)}`);
+			console.log(`    ${outStyle.caseName(cell.experiment.padEnd(42))} ${state}`);
 		}
 	}
 
@@ -266,17 +267,22 @@ interface PlanReport {
 function printReport(report: PlanReport, totalBatches: number): void {
 	const { batches, gaps } = report;
 	console.log('\n' + '─'.repeat(72));
-	console.log('run-plan summary\n');
+	console.log(outStyle.bold('run-plan summary') + '\n');
 
 	for (const outcome of batches) {
 		const label = `[${outcome.batch.index}/${totalBatches}] ${outcome.batch.evalName}`;
 		if (outcome.error !== undefined) {
-			console.log(`  ${label}  ERROR — ${outcome.error.split('\n')[0]}`);
+			console.log(
+				`  ${label}  ${outStyle.tone('action', `ERROR — ${outcome.error.split('\n')[0]}`)}`,
+			);
 			continue;
 		}
 		const collected = collectedRuns(outcome);
 		const expected = expectedRuns(outcome);
-		const state = collected === expected ? 'ok' : `GAP ${expected - collected} run(s)`;
+		const state =
+			collected === expected
+				? outStyle.tone('good', 'ok')
+				: outStyle.tone('action', `GAP ${expected - collected} run(s)`);
 		console.log(
 			`  ${label}  ${collected}/${expected} runs  ${formatDuration(outcome.durationMs)}  ${state}`,
 		);
@@ -291,10 +297,10 @@ function printReport(report: PlanReport, totalBatches: number): void {
 	);
 
 	if (gaps.length > 0) {
-		console.log(`\n  Gaps (${gaps.length} cell(s) short of what was requested):`);
+		console.log(outStyle.bold(`\n  Gaps (${gaps.length} cell(s) short of what was requested):`));
 		for (const cell of gaps) {
 			console.log(
-				`    ${cell.evalName} × ${cell.experiment}  ${cell.collected}/${cell.expected} runs`,
+				`    ${cell.evalName} × ${outStyle.caseName(cell.experiment)}  ${cell.collected}/${cell.expected} runs`,
 			);
 			console.log(`      ${topUpCommand(cell)}`);
 		}
@@ -309,9 +315,11 @@ function printReport(report: PlanReport, totalBatches: number): void {
 		outcome.signals.map((signal) => ({ batch: outcome.batch.index, signal })),
 	);
 	if (signals.length > 0) {
-		console.log('\n  Resource signals:');
+		console.log(outStyle.bold('\n  Resource signals:'));
 		for (const { batch, signal } of signals) {
-			console.log(`    batch ${batch}  ${signal.kind}: ${signal.evidence}`);
+			console.log(
+				`    batch ${batch}  ${outStyle.tone('caution', signal.kind)}: ${signal.evidence}`,
+			);
 		}
 	}
 
@@ -349,23 +357,19 @@ function writeReport(report: PlanReport): string {
 	return path;
 }
 
-/** Experiment names the generated stubs (and results directories) carry. */
-function knownExperiments(): string[] {
-	return AGENTIC_REF_CASES.map(
-		(agenticRefCase) => `${EXPERIMENT_NAME_PREFIX}${agenticRefCase.name}`,
-	);
-}
+// A batch that starts the moment its account balance crosses the reload
+// floor can fail on calls the reload would have covered seconds later, so
+// consecutive batches are spaced apart.
+const INTER_BATCH_WAIT_MS = 90_000;
 
-async function loadPlanConfig(configPath: string): Promise<RunPlan> {
-	if (!existsSync(configPath)) {
-		fail(`no plan config at ${relative(AGENT_EVAL_ROOT, configPath)}.`);
+// Sliced so Ctrl-C during the pause is honored within a few seconds.
+async function interruptibleSleep(totalMs: number): Promise<void> {
+	const SLICE_MS = 5_000;
+	for (let waited = 0; waited < totalMs && !interrupted; waited += SLICE_MS) {
+		await new Promise((resolvePromise) =>
+			setTimeout(resolvePromise, Math.min(SLICE_MS, totalMs - waited)),
+		);
 	}
-	const module: unknown = await import(pathToFileURL(configPath).href);
-	const plan = (module as { default?: unknown }).default;
-	if (plan === undefined || typeof plan !== 'object') {
-		fail(`${relative(AGENT_EVAL_ROOT, configPath)} must default-export a RunPlan object.`);
-	}
-	return plan as RunPlan;
 }
 
 // Ctrl-C stops the plan between batches so collected batches still get
@@ -390,21 +394,24 @@ async function main(): Promise<void> {
 			process.argv.slice(2),
 			{
 				scriptName: 'eval:plan',
-				usage: 'Usage: pnpm eval:plan --config <path> [--dry]',
+				usage: 'Usage: pnpm eval:plan --plan <name-or-path> [--dry]',
 			},
 			{
-				config: flags.text('config', 'Plan config module (default plans/default.plan.ts)'),
+				config: {
+					...flags.text('config', 'Plan config, by name or path (default plans/default.plan.ts)'),
+					alias: ['plan'],
+				},
 				dry: flags.switch('dry', 'Print what would be collected and spend nothing'),
 			},
 		)
 		.parseSync();
 
 	const configArg = argv.config ?? DEFAULT_CONFIG;
-	const configPath = isAbsolute(configArg) ? configArg : resolve(AGENT_EVAL_ROOT, configArg);
+	const configPath = resolvePlanPath(configArg);
 	const plan = await loadPlanConfig(configPath);
 
 	const resolved = resolveRunPlan(plan, {
-		experiments: knownExperiments(),
+		experiments: knownExperimentNames(),
 		evals: AGENTIC_REF_EVAL_REGISTRY,
 	});
 
@@ -418,7 +425,9 @@ async function main(): Promise<void> {
 		return;
 	}
 	if (batches.length === 0) {
-		console.log('Nothing to collect: every cell already has its full sample.');
+		console.log(
+			outStyle.tone('good', 'Nothing to collect: every cell already has its full sample.'),
+		);
 		return;
 	}
 
@@ -430,7 +439,7 @@ async function main(): Promise<void> {
 	let stoppedBy: StopReason | null = null;
 
 	for (const batch of batches) {
-		console.log(`\n${describeBatch(batch, batches.length)}`);
+		console.log(`\n${outStyle.bold(describeBatch(batch, batches.length))}`);
 
 		let outcome: BatchOutcome;
 		try {
@@ -448,12 +457,17 @@ async function main(): Promise<void> {
 		outcomes.push(outcome);
 
 		if (outcome.error !== undefined) {
-			console.error(`  batch failed to run: ${outcome.error}`);
+			console.error(errStyle.tone('action', `  batch failed to run: ${outcome.error}`));
 		}
 
 		const stopping = outcome.signals.find(isPlanStoppingSignal);
 		if (stopping !== undefined) {
-			console.error(`\n  ${stopping.kind} exhaustion — stopping the plan: ${stopping.evidence}`);
+			console.error(
+				errStyle.tone(
+					'action',
+					`\n  ${stopping.kind} exhaustion — stopping the plan: ${stopping.evidence}`,
+				),
+			);
 			stoppedAt = batch.index;
 			stoppedBy = 'resource';
 			break;
@@ -463,6 +477,16 @@ async function main(): Promise<void> {
 			stoppedAt = batch.index;
 			stoppedBy = 'interrupt';
 			break;
+		}
+
+		if (batch.index < batches.length) {
+			console.log(outStyle.dim(`  pausing ${INTER_BATCH_WAIT_MS / 1000}s before the next batch`));
+			await interruptibleSleep(INTER_BATCH_WAIT_MS);
+			if (interrupted) {
+				stoppedAt = batch.index;
+				stoppedBy = 'interrupt';
+				break;
+			}
 		}
 	}
 

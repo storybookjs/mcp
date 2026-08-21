@@ -6,6 +6,12 @@
 //
 // Columns are the union of the rows' keys, in the order first seen, so the
 // caller controls column order by the order it builds its rows in.
+//
+// Cells may carry ANSI styling: widths are measured on the visible text, and
+// the frame and header carry their own styling only when the output is a
+// terminal (see colors.ts).
+
+import { bold, dim, visibleLength } from './colors.ts';
 
 /** A value as it should read in a cell, and whether it aligns as a number. */
 function render(value: unknown): { text: string; numeric: boolean } {
@@ -41,14 +47,17 @@ function columnsOf(rows: ReadonlyArray<Record<string, unknown>>): string[] {
 }
 
 function rule(widths: number[], left: string, middle: string, right: string): string {
-	return left + widths.map((width) => '─'.repeat(width + 2)).join(middle) + right;
+	return dim(left + widths.map((width) => '─'.repeat(width + 2)).join(middle) + right);
 }
 
 function line(cells: string[], widths: number[], numeric: boolean[]): string {
-	const padded = cells.map((cell, index) =>
-		numeric[index] ? cell.padStart(widths[index]!) : cell.padEnd(widths[index]!),
-	);
-	return `│ ${padded.join(' │ ')} │`;
+	// Padding is computed from the visible length so styled cells still align.
+	const padded = cells.map((cell, index) => {
+		const pad = ' '.repeat(Math.max(0, widths[index]! - visibleLength(cell)));
+		return numeric[index] ? pad + cell : cell + pad;
+	});
+	const bar = dim('│');
+	return `${bar} ${padded.join(` ${bar} `)} ${bar}`;
 }
 
 /**
@@ -67,13 +76,13 @@ export function formatTable(rows: ReadonlyArray<Record<string, unknown>>): strin
 		cells.every((row) => row[index]!.numeric || row[index]!.text === ''),
 	);
 	const widths = columns.map((column, index) =>
-		Math.max(column.length, ...cells.map((row) => row[index]!.text.length)),
+		Math.max(column.length, ...cells.map((row) => visibleLength(row[index]!.text))),
 	);
 
 	return [
 		rule(widths, '┌', '┬', '┐'),
 		line(
-			columns,
+			columns.map((column) => bold(column)),
 			widths,
 			columns.map(() => false),
 		),
