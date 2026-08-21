@@ -15,11 +15,21 @@ function usage(overrides: Partial<JudgeUsage> = {}): JudgeUsage {
 }
 
 describe('usdOf', () => {
-	it('prices a usage record against the default judge model', () => {
+	it('prices a usage record against the default judge model (claude-opus-5)', () => {
 		const cost = usdOf(
 			usage({ inputTokens: 1_000_000, cacheReadTokens: 1_000_000, outputTokens: 1_000_000 }),
 		);
 		expect(cost).toBeCloseTo(5 + 0.5 + 25, 6);
+	});
+
+	it('prices a usage record explicitly against claude-opus-5', () => {
+		const cost = usdOf(usage({ inputTokens: 1_000_000 }), 'claude-opus-5');
+		expect(cost).toBeCloseTo(5, 6);
+	});
+
+	it('still prices the retired claude-opus-4-8 model', () => {
+		const cost = usdOf(usage({ inputTokens: 1_000_000 }), 'claude-opus-4-8');
+		expect(cost).toBeCloseTo(5, 6);
 	});
 
 	it('rejects a model with no declared pricing', () => {

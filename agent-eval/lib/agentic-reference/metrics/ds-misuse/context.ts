@@ -16,7 +16,7 @@ import type { DsDoc } from './ds-docs.ts';
 import type { TreePatch } from './tree-patch.ts';
 import type { NodeRecord } from '../ds-coverage/types.ts';
 
-export const JUDGE_MODEL = 'claude-opus-4-8'; // switched to claude-opus-5 in Task 7
+export const JUDGE_MODEL = 'claude-opus-5';
 
 /**
  * The single version of this LLM judge: prompt (incl. the rendered facet
@@ -42,8 +42,8 @@ export const DS_MISUSE_JUDGE_VERSION = 2;
  */
 const CACHE_CONTROL = { type: 'ephemeral', ttl: '1h' } as const;
 
-/** Room for a reason per score across a large change set. */
-const MAX_TOKENS = 32_000;
+/** Room for xhigh-effort thinking plus a reason per score across a large change set. */
+const MAX_TOKENS = 64_000;
 
 const PROMPT_PATH = new URL('./prompt.md', import.meta.url);
 
@@ -92,7 +92,7 @@ function userText(input: JudgeRequestInput): string {
 		`FIXTURE: ${input.fixtureRef}`,
 		truncation.trim(),
 		'',
-		'BEFORE NODES (the pinned tree, before the agent worked)',
+		'BEFORE NODES (the changed files as they were before the agent worked)',
 		'Format: path<TAB>file:line<TAB>category<TAB>module#name<TAB>props',
 		nodeLines(input.baselineNodes),
 		'',
@@ -113,7 +113,7 @@ export function buildJudgeRequest(input: JudgeRequestInput) {
 		max_tokens: MAX_TOKENS,
 		thinking: { type: 'adaptive' as const },
 		output_config: {
-			effort: 'high' as const,
+			effort: 'xhigh' as const,
 			format: { type: 'json_schema' as const, schema: JUDGE_OUTPUT_SCHEMA },
 		},
 		// Stable, and in this order: the breakpoint on the last block caches both.

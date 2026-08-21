@@ -39,6 +39,13 @@ function build(overrides: Partial<Parameters<typeof buildJudgeRequest>[0]> = {})
 }
 
 describe('buildJudgeRequest', () => {
+	it('targets claude-opus-5 at xhigh effort with room for a large reasoning budget', () => {
+		const request = build();
+		expect(request.model).toBe('claude-opus-5');
+		expect(request.max_tokens).toBe(64_000);
+		expect(request.output_config.effort).toBe('xhigh');
+	});
+
 	// Caching is a prefix match: anything volatile placed before the breakpoint
 	// invalidates the ~95k-token corpus on every single request.
 	it('puts the stable prompt and docs in system, volatile content in messages', () => {
@@ -76,7 +83,7 @@ describe('buildJudgeRequest', () => {
 
 	it('carries both node lists and the diff in the user turn', () => {
 		const text = String((build().messages[0]!.content as Array<{ text: string }>)[0]!.text);
-		expect(text).toContain('BEFORE NODES');
+		expect(text).toContain('BEFORE NODES (the changed files as they were before the agent worked)');
 		expect(text).toContain('AFTER NODES');
 		expect(text).toContain('diff --git a/src/App.tsx');
 		expect(text).toContain('App/Button[0]');
@@ -89,7 +96,11 @@ describe('buildJudgeRequest', () => {
 	// back in beside it.
 	it('renders BEFORE NODES from exactly the baseline nodes it is given', () => {
 		const inScope: NodeRecord = { ...NODE, path: 'App/Button[1]', file: 'src/App.tsx' };
-		const excludedByFilter: NodeRecord = { ...NODE, path: 'Other/Button[0]', file: 'src/Other.tsx' };
+		const excludedByFilter: NodeRecord = {
+			...NODE,
+			path: 'Other/Button[0]',
+			file: 'src/Other.tsx',
+		};
 		const text = String(
 			(
 				build({ baselineNodes: [inScope] }).messages[0]!.content as Array<{

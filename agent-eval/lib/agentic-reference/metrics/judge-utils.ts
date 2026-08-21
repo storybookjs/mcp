@@ -16,6 +16,7 @@ interface TokenPrices {
 // TTL, so the cache-write rate quoted here is the 1h one.
 const USD_PER_MTOK: Record<string, TokenPrices> = {
 	'claude-opus-4-8': { input: 5, cacheRead: 0.5, cacheWrite: 10, output: 25 },
+	'claude-opus-5': { input: 5, cacheRead: 0.5, cacheWrite: 10, output: 25 },
 };
 
 function pricesFor(model: string): TokenPrices {
