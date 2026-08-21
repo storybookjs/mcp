@@ -8,12 +8,12 @@ and to score the design system decisions behind them.
 
 ## Step 1 — decide what is new
 
-You receive two lists of JSX component usages: `BEFORE NODES` (the pinned tree
-before the agent worked) and `AFTER NODES` (after, restricted to files the
-agent touched). Each node is addressed by an AST path of the form
-`Declaration/Tag[i]/Tag[i]`, where `i` indexes element siblings only. Line
-numbers are excluded from paths to keep them resilient to unrelated code
-changes: a node that merely moved down its file keeps the same path.
+You receive two lists of JSX component usages: `BEFORE NODES` (the changed
+files as they were before the agent worked) and `AFTER NODES` (after,
+restricted to files the agent touched). Each node is addressed by an AST path
+of the form `Declaration/Tag[i]/Tag[i]`, where `i` indexes element siblings
+only. Line numbers are excluded from paths to keep them resilient to unrelated
+code changes: a node that merely moved down its file keeps the same path.
 
 Using both lists and the diff, sort the after nodes into:
 
@@ -25,7 +25,9 @@ Be conservative. A node whose path, tag and surrounding markup all match a
 before node is not new, even if its line moved. A node the diff shows only as
 context (an unchanged line) is not new. Renames and extractions are not new
 usages: if the diff shows a block moved from one file into another, the usages
-inside it moved with it.
+inside it moved with it. A node counts as moved only when the diff shows both
+sides — the removal from its old file and the addition in its new one. Code
+whose origin the diff does not show was copied or written fresh; both are new.
 
 Then split the new nodes by `category`:
 

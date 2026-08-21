@@ -30,7 +30,13 @@ describe('treePatch', () => {
 	it('reports no change between identical trees', () => {
 		const files = { 'src/App.tsx': 'export const App = () => <div />\n' };
 		const patch = treePatch(tree('before', files), tree('after', files));
-		expect(patch).toEqual({ text: '', files: [], truncated: false, droppedFiles: 0 });
+		expect(patch).toEqual({
+			text: '',
+			files: [],
+			beforePaths: [],
+			truncated: false,
+			droppedFiles: 0,
+		});
 	});
 
 	// Without rewriting, every header names two absolute cache directories and
@@ -48,6 +54,70 @@ describe('treePatch', () => {
 		// git prints the roots with their leading slash stripped, so the raw path
 		// has to be gone under that spelling too, not just the absolute one.
 		expect(patch.text).not.toContain(root.replace(/^\/+/, ''));
+	});
+
+	// The before-census filter (index.ts) keys off beforePaths, so a modified
+	// file — the ordinary case — has to show up on both lists.
+	it('puts a modified file in both files and beforePaths', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n' }),
+			tree('after', { 'src/App.tsx': 'const a = 2\n' }),
+		);
+		expect(patch.files).toEqual(['src/App.tsx']);
+		expect(patch.beforePaths).toEqual(['src/App.tsx']);
+	});
+
+	// git diff --no-index has no index entry to say "this file is gone" — a
+	// deletion is a block whose "after" name is only ever /dev/null in the body,
+	// but whose header still needs a b/ path to pair with a/, so git reuses the
+	// a/ name for both header slots. beforePaths must still pick it up: a
+	// deleted file is exactly the kind of before-only evidence move-matching
+	// needs to see.
+	it('puts a deleted file in beforePaths (and, per the header git writes, in files too)', () => {
+		const patch = treePatch(
+			tree('before', { 'src/App.tsx': 'const a = 1\n', 'src/Deleted.tsx': 'export const gone = 1\n' }),
+			tree('after', { 'src/App.tsx': 'const a = 1\n' }),
+		);
+		expect(patch.text).toContain('deleted file mode');
+		expect(patch.beforePaths).toEqual(['src/Deleted.tsx']);
+		expect(patch.files).toEqual(['src/Deleted.tsx']);
+	});
+
+	// git diff --no-index pairs a deletion with a similar-enough-content addition
+	// into one rename block by default (no --no-renames or --find-renames is
+	// passed, so the built-in 50% threshold applies) rather than emitting them
+	// as separate delete/add blocks. That single block's header names both
+	// images, so this is the case beforePaths and files genuinely diverge on:
+	// the old path is the move's evidence, the new path is where the treatment
+	// census must look.
+	it('splits a renamed file into its pre- and post-image paths', () => {
+		const patch = treePatch(
+			tree('before', {
+				'src/Old.tsx': [
+					'export const Old = () => <div>',
+					'  <p>hello</p>',
+					'  <p>world</p>',
+					'  <p>more filler text to pad it out</p>',
+					'</div>\n',
+				].join('\n'),
+			}),
+			tree('after', {
+				'src/moved/New.tsx': [
+					'export const Old = () => <div>',
+					'  <p>hello</p>',
+					'  <p>world</p>',
+					'  <p>more filler text CHANGED to pad it out</p>',
+					'</div>\n',
+				].join('\n'),
+			}),
+		);
+		// The `diff --git a/x b/y` header is what pathsOfBlock actually reads,
+		// and it strips cleanly because both sides carry the a/ or b/ prefix.
+		expect(patch.text).toContain('diff --git a/src/Old.tsx b/src/moved/New.tsx');
+		expect(patch.text).toContain('--- a/src/Old.tsx');
+		expect(patch.text).toContain('+++ b/src/moved/New.tsx');
+		expect(patch.files).toEqual(['src/moved/New.tsx']);
+		expect(patch.beforePaths).toEqual(['src/Old.tsx']);
 	});
 
 	it('includes files added by the run', () => {

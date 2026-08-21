@@ -29,6 +29,7 @@ function build(overrides: Partial<Parameters<typeof buildJudgeRequest>[0]> = {})
 		patch: {
 			text: 'diff --git a/src/App.tsx b/src/App.tsx\n',
 			files: ['src/App.tsx'],
+			beforePaths: ['src/App.tsx'],
 			truncated: false,
 			droppedFiles: 0,
 		},
@@ -81,6 +82,25 @@ describe('buildJudgeRequest', () => {
 		expect(text).toContain('App/Button[0]');
 	});
 
+	// judgeRun (index.ts) narrows baselineNodes to patch.beforePaths before
+	// calling here, on the reasoning that a file the diff never touches has no
+	// move to show. That narrowing only does its job if this function renders
+	// exactly the nodes it is handed — no wider, whole-tree fallback sneaking
+	// back in beside it.
+	it('renders BEFORE NODES from exactly the baseline nodes it is given', () => {
+		const inScope: NodeRecord = { ...NODE, path: 'App/Button[1]', file: 'src/App.tsx' };
+		const excludedByFilter: NodeRecord = { ...NODE, path: 'Other/Button[0]', file: 'src/Other.tsx' };
+		const text = String(
+			(
+				build({ baselineNodes: [inScope] }).messages[0]!.content as Array<{
+					text: string;
+				}>
+			)[0]!.text,
+		);
+		expect(text).toContain('App/Button[1]');
+		expect(text).not.toContain(excludedByFilter.path);
+	});
+
 	// The prompt tells the judge to omit what it cannot see; it has to be told.
 	it('announces truncation to the judge', () => {
 		const text = String(
@@ -89,6 +109,7 @@ describe('buildJudgeRequest', () => {
 					patch: {
 						text: 'diff --git a/src/A.tsx b/src/A.tsx\n',
 						files: ['src/A.tsx'],
+						beforePaths: ['src/A.tsx'],
 						truncated: true,
 						droppedFiles: 4,
 					},

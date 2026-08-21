@@ -22,8 +22,20 @@ const DIFF_TIMEOUT_SECONDS = 120;
 export interface TreePatch {
 	/** The unified diff, workspace-relative and filtered. */
 	text: string;
-	/** Workspace-relative paths present in `text`, in order. */
+	/**
+	 * Workspace-relative post-image paths present in `text`, in block order.
+	 * Feeds the treatment census include-list — what the run's tree looks like
+	 * now, at these paths.
+	 */
 	files: string[];
+	/**
+	 * Deduped workspace-relative pre-image paths of kept blocks, in block
+	 * order. Scopes the before-census to the files the diff actually touches,
+	 * so move-matching only ever sees the origin the diff itself can show.
+	 * Equal to `files` block-for-block except where a block is a rename, where
+	 * the pre- and post-image paths differ.
+	 */
+	beforePaths: string[];
 	/** Whether the byte cap dropped anything. */
 	truncated: boolean;
 	/** How many whole file blocks the cap dropped. */
@@ -34,12 +46,23 @@ export interface TreePatchOptions {
 	maxBytes?: number;
 }
 
-/** The path a `diff --git a/<x> b/<y>` header names, or null if unparseable. */
-function pathOfBlock(block: string): string | null {
+interface BlockPaths {
+	before: string;
+	after: string;
+}
+
+/**
+ * The pre- and post-image paths a `diff --git a/<x> b/<y>` header names, or
+ * null if unparseable. Equal for every block but a rename, where the agent
+ * left a file under a different path than it started at.
+ */
+function pathsOfBlock(block: string): BlockPaths | null {
 	const header = /^diff --git a\/(\S+) b\/(\S+)/.exec(block);
 	if (header === null) return null;
-	// A rename would differ; take the post-image, which is what the run produced.
-	return header[2] ?? header[1] ?? null;
+	const before = header[1];
+	const after = header[2];
+	if (before === undefined || after === undefined) return null;
+	return { before, after };
 }
 
 function isJudgeable(path: string): boolean {
@@ -110,12 +133,16 @@ export function treePatch(
 
 	const kept: string[] = [];
 	const files: string[] = [];
+	const beforePaths: string[] = [];
+	const seenBeforePaths = new Set<string>();
 	let bytes = 0;
 	let droppedFiles = 0;
 
 	for (const block of blocks) {
-		const path = pathOfBlock(block);
-		if (path === null || !isJudgeable(path)) continue;
+		const paths = pathsOfBlock(block);
+		// Judgeability is decided on the post-image path, same as before: it is
+		// what the run actually produced at that location.
+		if (paths === null || !isJudgeable(paths.after)) continue;
 
 		const size = Buffer.byteLength(block, 'utf8') + 1;
 		if (bytes + size > maxBytes) {
@@ -124,12 +151,17 @@ export function treePatch(
 		}
 		bytes += size;
 		kept.push(block);
-		files.push(path);
+		files.push(paths.after);
+		if (!seenBeforePaths.has(paths.before)) {
+			seenBeforePaths.add(paths.before);
+			beforePaths.push(paths.before);
+		}
 	}
 
 	return {
 		text: kept.join('\n'),
 		files,
+		beforePaths,
 		truncated: droppedFiles > 0,
 		droppedFiles,
 	};

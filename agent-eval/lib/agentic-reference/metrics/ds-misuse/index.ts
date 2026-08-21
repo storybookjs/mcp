@@ -120,10 +120,16 @@ export async function judgeRun(
 		censusInclude: patch.files,
 	});
 
+	// The before-census is evidence for move-matching only: a real move shows
+	// its origin in the diff, so a file the diff never touches has nothing to
+	// contribute — feeding it in anyway lets a copied block match a before row
+	// it was never actually moved from, and Step 1 waves the copy through as
+	// unjudged "moved" code.
+	const beforeScope = new Set(patch.beforePaths);
 	const { judged, usage } = await runJudge(
 		buildJudgeRequest({
 			docs: collectDsDocs(input.refCacheDir),
-			baselineNodes: input.baselineNodes,
+			baselineNodes: input.baselineNodes.filter((node) => beforeScope.has(node.file)),
 			treatmentNodes: treatment.nodeList ?? [],
 			patch,
 			fixtureRef: input.fixtureRef,
