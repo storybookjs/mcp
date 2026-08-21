@@ -20,7 +20,7 @@ function report(overrides: Partial<DsMisuseReport> = {}): DsMisuseReport {
 		judgeVersion: 2,
 		metricsVersion: 7,
 		judgedAt: '2026-08-21T00:00:00.000Z',
-		model: 'claude-opus-4-8',
+		model: 'claude-opus-5',
 		dsGuidelinesRef: 'yannbf/droppy-ds@abc',
 		fixtureRef: 'yannbf/mealdrop@ref',
 		diffTruncated: false,
@@ -150,7 +150,7 @@ describe('isStale', () => {
 	// Checked directly as a safety net for a model swap that missed a version bump.
 	it('is true for a report judged by a different model', () => {
 		expect(
-			isStale(report({ model: 'claude-opus-4-7' }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
+			isStale(report({ model: 'claude-opus-4-8' }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
 		).toBe(true);
 	});
 
