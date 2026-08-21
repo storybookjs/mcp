@@ -1983,6 +1983,7 @@ function buildStyle(styles: TreatmentStyle[]): string {
   ${darkVars}
 }
 * { box-sizing:border-box; }
+::selection { background:var(--ink); color:var(--surface); }
 [hidden] { display:none !important; }
 body { background:var(--surface); color:var(--ink); margin:0;
   font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif; }
