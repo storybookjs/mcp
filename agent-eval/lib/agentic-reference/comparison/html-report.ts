@@ -1830,17 +1830,19 @@ relative to the repo root; the <i>open</i> buttons resolve them against
 <span class="mono" id="misuseRootShown"></span>
 <button type="button" class="modal-close" id="misuseRootChange">Change</button></p>
 <h3>Read the code</h3>
-<p class="mono mcmd">code ${escapeHtml(examplePath)}</p>
+<p class="mono mcmd" data-cmd="code $ROOT/${escapeHtml(examplePath)}"></p>
 <h3>Diff the run against its pinned baseline</h3>
-<p class="mono mcmd">git diff --no-index agent-eval/.eval-cache/refs/${escapeHtml(baselineDir)} ${escapeHtml(exampleProject)}</p>
+<p class="mono mcmd" data-cmd="git diff --no-index $ROOT/agent-eval/.eval-cache/refs/${escapeHtml(
+		baselineDir,
+	)} $ROOT/${escapeHtml(exampleProject)}"></p>
 <p class="fineprint">The baseline cache appears after any analyze/judge pass; the pin is ${escapeHtml(fixture)}.</p>
 <h3>Read the agent's reasoning</h3>
-<p class="mono mcmd">less ${escapeHtml(exampleProject.replace(/\/project$/, ''))}/transcript.txt</p>
+<p class="mono mcmd" data-cmd="less $ROOT/${escapeHtml(exampleProject.replace(/\/project$/, ''))}/transcript.txt"></p>
 <p class="fineprint">The transcript shows why the agent chose the flagged component — often the real answer.</p>
 <h3>Run the app</h3>
-<p class="mono mcmd">cd ${escapeHtml(exampleProject)} && pnpm install && pnpm dev</p>
+<p class="mono mcmd" data-cmd="cd $ROOT/${escapeHtml(exampleProject)} &amp;&amp; pnpm install &amp;&amp; pnpm dev"></p>
 <h3>Re-judge after changing the rubric</h3>
-<p class="mono mcmd">pnpm judge:ds-misuse --dry</p>
+<p class="mono mcmd" data-cmd="pnpm --dir $ROOT/agent-eval judge:ds-misuse --dry"></p>
 <p class="fineprint">Reading artifacts is always free; only judging spends. Paths above name this
 bundle's first finding — swap in any finding's run directory.</p>
 </div>
@@ -2348,6 +2350,10 @@ function misuseRoot() {
 function showMisuseRoot() {
   var el = byId('misuseRootShown');
   if (el) el.textContent = misuseRoot() || '(repo root not set)';
+  var root = misuseRoot() || '<repo-root>';
+  $('.mcmd[data-cmd]').forEach(function (cmd) {
+    cmd.textContent = cmd.getAttribute('data-cmd').split('$ROOT').join(root);
+  });
 }
 showMisuseRoot();
 document.addEventListener('click', function (e) {
