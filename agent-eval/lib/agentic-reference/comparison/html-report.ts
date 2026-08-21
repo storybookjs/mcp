@@ -1608,7 +1608,11 @@ const MISUSE_QUESTION_META: Record<MisuseQuestion, { label: string; description:
 	},
 };
 
-function distributionCell(distribution: ScoreDistribution | null): string {
+function distributionCell(
+	distribution: ScoreDistribution | null,
+	cell: MisuseCellSummary,
+	question: MisuseQuestion,
+): string {
 	if (distribution === null) {
 		return '<td class="dist-cell none" title="No node received this question">—</td>';
 	}
@@ -1616,10 +1620,21 @@ function distributionCell(distribution: ScoreDistribution | null): string {
 	const width = (n: number) => ((n / total) * 100).toFixed(1);
 	const seg = (kind: string, n: number) =>
 		n === 0 ? '' : `<span class="seg ${kind}" style="width:${width(n)}%"></span>`;
+	// Below-perfect counts link to the verdicts they count: each becomes a jump
+	// button targeting the findings that share its cell, question, and score.
+	const jump = (kind: 's05' | 's0', n: number) => {
+		if (n === 0) return `<b class="${kind}">0</b>`;
+		return (
+			`<button type="button" class="mjump ${kind}" data-case="${slug(cell.case)}" ` +
+			`data-workflow="${escapeHtml(cell.workflow)}" data-q="${question}" ` +
+			`data-score="${kind === 's0' ? '0' : '05'}" ` +
+			`title="Jump to the ${n} finding(s) behind this count">${n}</button>`
+		);
+	};
 	const counts = [
 		`<b class="s1">${distribution.ones}</b>`,
-		`<b class="s05">${distribution.halves}</b>`,
-		`<b class="s0">${distribution.zeros}</b>`,
+		jump('s05', distribution.halves),
+		jump('s0', distribution.zeros),
 	].join('<span class="sep">·</span>');
 	return (
 		`<td class="dist-cell" title="${total} node(s): ${distribution.ones} scored 1, ` +
@@ -1650,7 +1665,9 @@ function misuseSummaryTable(
 				`<tr${caseAttr}><th scope="row">${escapeHtml(cell.case)}</th>` +
 				`<td class="num">${coverage}</td>` +
 				`<td class="num">${cell.evaluated.ds} · ${cell.evaluated.local}</td>` +
-				MISUSE_QUESTIONS.map((question) => distributionCell(cell.questions[question])).join('') +
+				MISUSE_QUESTIONS.map((question) =>
+					distributionCell(cell.questions[question], cell, question),
+				).join('') +
 				'</tr>'
 			);
 		})
@@ -1674,7 +1691,9 @@ ${MISUSE_QUESTIONS.map(
 
 function misuseFinding(finding: MisuseFinding): string {
 	const score = finding.score === 0 ? '<b class="score zero">0</b>' : '<b class="score half">½</b>';
-	return `<article class="finding m-wf" data-workflow="${escapeHtml(finding.workflow)}">
+	return `<article class="finding m-wf" data-workflow="${escapeHtml(finding.workflow)}" data-case="${slug(
+		finding.case,
+	)}" data-q="${finding.question}" data-score="${finding.score === 0 ? '0' : '05'}">
 <div class="finding-head">${score}
 <span class="mono tag">&lt;${escapeHtml(finding.tag)}&gt;</span>
 <span class="q">${escapeHtml(MISUSE_QUESTION_META[finding.question].label)}</span>
@@ -2000,6 +2019,12 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
 .finding .where, .finding .run { font-size:.76rem; color:var(--ink-3); }
 .finding .reason { margin:6px 0 0; font-size:.9rem; color:var(--ink-2); max-width:75ch; }
 .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+.mjump { font:inherit; font-weight:700; background:none; border:none; padding:0; cursor:pointer;
+  text-decoration:underline dotted; text-underline-offset:3px; }
+.mjump.s05 { color:var(--half); } .mjump.s0 { color:var(--bad); }
+.finding.flash { animation:misuse-flash 2s ease-out; }
+@keyframes misuse-flash { 0%, 55% { background:color-mix(in srgb, var(--half) 22%, transparent); }
+  100% { background:transparent; } }
 .untested { font-size:.85rem; color:var(--ink-2); margin:6px 0; padding-left:18px; }
 .untested li { margin:3px 0; }
 .empty-note { font-size:.85rem; color:var(--ink-3); font-style:italic; margin:18px 0; }
@@ -2201,6 +2226,27 @@ function setSigMode(sigmode) {
 }
 sigModeButtons.forEach(function (b) {
   b.addEventListener('click', function () { setSigMode(b.getAttribute('data-sigmode')); });
+});
+
+// Below-perfect counts in the misuse summary jump to the verdicts they count.
+document.addEventListener('click', function (e) {
+  var btn = e.target && e.target.closest ? e.target.closest('.mjump') : null;
+  if (!btn) return;
+  var sel = '#panel-misuse .finding' +
+    '[data-case="' + btn.getAttribute('data-case') + '"]' +
+    '[data-workflow="' + btn.getAttribute('data-workflow') + '"]' +
+    '[data-q="' + btn.getAttribute('data-q') + '"]' +
+    '[data-score="' + btn.getAttribute('data-score') + '"]';
+  var matches = $(sel);
+  if (matches.length === 0) return;
+  var group = matches[0].closest('details');
+  if (group) group.open = true;
+  matches[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+  matches.forEach(function (el) {
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  });
 });
 
 var metricsButtons = $('#metricsMode button');

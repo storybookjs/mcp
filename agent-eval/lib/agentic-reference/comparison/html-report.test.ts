@@ -917,6 +917,20 @@ describe('DS misuse panel', () => {
 		expect(html).toContain('Every judged node scored 1');
 	});
 
+	it('links below-perfect counts to the findings they count', () => {
+		const html = render({ misuse: misusePanel() });
+		// The control-none decision cell has 1 half and 1 zero: both become jump
+		// buttons carrying the finding's full identity.
+		expect(html).toContain(
+			'class="mjump s0" data-case="control-none" data-workflow="701-new-ui-flow" ' +
+				'data-q="correctDsDecision" data-score="0"',
+		);
+		// The finding carries the matching identity so the click can land.
+		expect(html).toContain('data-case="control-none" data-q="correctDsDecision" data-score="0"');
+		// A zero count stays plain text — there is nothing to jump to.
+		expect(html).toContain('<b class="s0">0</b>');
+	});
+
 	it('warns when artifacts were judged against different guideline pins', () => {
 		const html = render({
 			misuse: misusePanel({ guidelinesRefs: ['org/ds@new', 'org/ds@old'] }),
