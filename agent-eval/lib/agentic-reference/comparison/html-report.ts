@@ -1834,13 +1834,18 @@ relative to the repo root; the <i>open</i> buttons resolve them against
 <h3>Diff the run against its pinned baseline</h3>
 <p class="mono mcmd" data-cmd="git diff --no-index $ROOT/agent-eval/.eval-cache/refs/${escapeHtml(
 		baselineDir,
-	)} $ROOT/${escapeHtml(exampleProject)}"></p>
-<p class="fineprint">The baseline cache appears after any analyze/judge pass; the pin is ${escapeHtml(fixture)}.</p>
+	)}/src $ROOT/${escapeHtml(exampleProject)}/src"></p>
+<p class="fineprint">Comparing the src trees keeps the harness's __agent_eval__ directory and the
+lockfiles out of the diff. The baseline cache appears after any analyze/judge pass; the pin is
+${escapeHtml(fixture)}.</p>
 <h3>Read the agent's reasoning</h3>
-<p class="mono mcmd" data-cmd="less $ROOT/${escapeHtml(exampleProject.replace(/\/project$/, ''))}/transcript.txt"></p>
+<p class="mono mcmd" data-cmd="less $ROOT/${escapeHtml(exampleProject)}/__agent_eval__/transcript.txt"></p>
 <p class="fineprint">The transcript shows why the agent chose the flagged component — often the real answer.</p>
 <h3>Run the app</h3>
-<p class="mono mcmd" data-cmd="cd $ROOT/${escapeHtml(exampleProject)} &amp;&amp; pnpm install &amp;&amp; pnpm dev"></p>
+<p class="mono mcmd" data-cmd="cd $ROOT/${escapeHtml(exampleProject)}"></p>
+<p class="fineprint">Then install and start it the way its own package.json scripts say — fixtures
+differ. The tree sits inside this repo's pnpm workspace, so pnpm resolves against the workspace and
+fails; use npm here, or copy the tree outside the repo first.</p>
 <h3>Re-judge after changing the rubric</h3>
 <p class="mono mcmd" data-cmd="pnpm --dir $ROOT/agent-eval judge:ds-misuse --dry"></p>
 <p class="fineprint">Reading artifacts is always free; only judging spends. Paths above name this
