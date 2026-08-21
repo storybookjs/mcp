@@ -75,8 +75,8 @@ describe('buildJudgeRequest', () => {
 
 	it('carries both node lists and the diff in the user turn', () => {
 		const text = String((build().messages[0]!.content as Array<{ text: string }>)[0]!.text);
-		expect(text).toContain('BASELINE NODES');
-		expect(text).toContain('TREATMENT NODES');
+		expect(text).toContain('BEFORE NODES');
+		expect(text).toContain('AFTER NODES');
 		expect(text).toContain('diff --git a/src/App.tsx');
 		expect(text).toContain('App/Button[0]');
 	});
