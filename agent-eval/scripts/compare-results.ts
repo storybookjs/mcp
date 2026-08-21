@@ -221,11 +221,9 @@ async function main() {
 
 	rmSync(outDir, { recursive: true, force: true });
 	renameSync(stagingDir, outDir);
-	const bundle = relative(process.cwd(), outDir);
-	console.log(`\nBundle: ${outStyle.bold(bundle)}`);
-	console.log(
-		`Open:   ${join(bundle, 'report.html')} ${outStyle.dim('(report.md and estimates.csv sit beside it)')}`,
-	);
+	console.log(`\nComparison written to ${outDir}`);
+	console.log(`Report: ${join(outDir, 'report.md')}`);
+	console.log(`HTML report: ${outStyle.bold(join(outDir, 'report.html'))}`);
 }
 
 /**
