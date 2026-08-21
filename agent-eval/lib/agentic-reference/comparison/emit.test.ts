@@ -114,7 +114,11 @@ describe('manifestJson', () => {
 			'excludedRuns',
 			'provenance',
 		]);
-		expect(parsed.family[0]).toEqual({ metric: 'durationSeconds', treatment: 'do-dont' });
+		expect(parsed.family[0]).toEqual({
+			metric: 'durationSeconds',
+			treatment: 'do-dont',
+			correctionGroup: 'confirmatory',
+		});
 		expect(parsed.family).toHaveLength(COMPARISON_METRICS.length);
 		expect(parsed.spec.plan).toBeNull();
 		expect(parsed.spec.allBatches).toBeUndefined();
@@ -124,6 +128,29 @@ describe('manifestJson', () => {
 		expect(parsed.excludedRuns[0].path.startsWith('results/')).toBe(true);
 		expect(json.endsWith('\n')).toBe(true);
 		expect(JSON.stringify(parsed, null, 2) + '\n').toBe(json);
+	});
+
+	it('tags each family pair with its metric correctionGroup', () => {
+		const json = manifestJson({
+			spec: SPEC,
+			metrics: COMPARISON_METRICS,
+			cells: [cell(CONTROL, [7]), cell(TREATMENT, [5])],
+			agentEvalRoot: '/root',
+			provenance: {},
+		});
+		const family = JSON.parse(json).family as Array<{
+			metric: string;
+			treatment: string;
+			correctionGroup: string;
+		}>;
+		for (const pair of family) {
+			const metric = COMPARISON_METRICS.find((m) => m.key === pair.metric);
+			expect(pair.correctionGroup).toBe(metric?.correctionGroup);
+		}
+		// At least one pair from each correction group is present, so the split
+		// isn't accidentally collapsed to a single family.
+		expect(family.some((pair) => pair.correctionGroup === 'confirmatory')).toBe(true);
+		expect(family.some((pair) => pair.correctionGroup === 'exploratory-misuse-facets')).toBe(true);
 	});
 
 	it('embeds the stable color of the control and every treatment', () => {

@@ -166,6 +166,7 @@ def analyze(manifest, data):
                     ),
                     "q": None,
                     "verdict": None,
+                    "correctionGroup": None,
                     "direction": metric["direction"],
                     "transform": metric["transform"],
                     "anomalies": int(anomalies[data["case"].isin([control, treatment])].sum()),
@@ -207,6 +208,7 @@ def analyze(manifest, data):
                             ),
                             "q": None,
                             "verdict": None,
+                            "correctionGroup": None,
                             "direction": metric["direction"],
                             "transform": metric["transform"],
                             "anomalies": None,
@@ -214,11 +216,22 @@ def analyze(manifest, data):
                     )
 
     headline = [row for row in rows if not row["context"]]
-    if headline:
+    # BH within each correction group: the confirmatory group is the pre-facet
+    # family, so its q-values are identical to the old single-family run.
+    # Metrics without a declared group (older manifests) default to
+    # 'confirmatory', which reproduces the old behaviour exactly.
+    group_of = {
+        m["key"]: m.get("correctionGroup", "confirmatory") for m in manifest["metrics"]
+    }
+    by_group = {}
+    for row in headline:
+        row["correctionGroup"] = group_of.get(row["metric"], "confirmatory")
+        by_group.setdefault(row["correctionGroup"], []).append(row)
+    for group_rows in by_group.values():
         _, q_values, _, _ = multipletests(
-            [row["p"] for row in headline], alpha=ALPHA, method="fdr_bh"
+            [row["p"] for row in group_rows], alpha=ALPHA, method="fdr_bh"
         )
-        for row, q in zip(headline, q_values):
+        for row, q in zip(group_rows, q_values):
             row["q"] = float(q)
             row["verdict"] = "significant" if q <= ALPHA else "not-significant"
     return rows, skipped, anomaly_lines
@@ -227,7 +240,7 @@ def analyze(manifest, data):
 ESTIMATE_FIELDS = [
     "metric", "treatment", "scope", "context", "nControl", "nTreatment",
     "beta", "se", "ciLow", "ciHigh", "pctChange", "p", "q", "verdict",
-    "direction", "transform", "anomalies",
+    "direction", "transform", "anomalies", "correctionGroup",
 ]
 
 
@@ -361,7 +374,9 @@ def main():
     # corrected against: pairs skipped (too few values, degenerate fit) never
     # entered the BH correction, so the manifest must not claim they did.
     manifest["family"] = [
-        {"metric": r["metric"], "treatment": r["treatment"]} for r in rows if not r["context"]
+        {"metric": r["metric"], "treatment": r["treatment"], "correctionGroup": r["correctionGroup"]}
+        for r in rows
+        if not r["context"]
     ]
     manifest["provenance"] = {
         **manifest.get("provenance", {}),

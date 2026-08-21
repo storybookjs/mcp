@@ -81,9 +81,14 @@ export function manifestJson(args: {
 			plan: spec.plan ?? null,
 		},
 		metrics,
-		// The BH family: every headline test of this invocation, in test order.
+		// The BH families: every headline test of this invocation, in test
+		// order, tagged with the correction group it is corrected within.
 		family: metrics.flatMap((metric) =>
-			spec.treatments.map((treatment) => ({ metric: metric.key, treatment: treatment.shortName })),
+			spec.treatments.map((treatment) => ({
+				metric: metric.key,
+				treatment: treatment.shortName,
+				correctionGroup: metric.correctionGroup,
+			})),
 		),
 		// Stable per-case colors, shared by report.html and the ECDF curves.
 		colors: caseColors([spec.control, ...spec.treatments].map((c) => c.shortName)),
