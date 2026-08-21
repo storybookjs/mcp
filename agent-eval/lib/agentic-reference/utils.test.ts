@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { shortCase, shortExperiment, shortNameOf } from './utils.ts';
+import { formatCompactCount, shortCase, shortExperiment, shortNameOf } from './utils.ts';
 
 describe('shortNameOf', () => {
 	it('strips any agent prefix/suffix pair from a case name', () => {
@@ -29,5 +29,20 @@ describe('shortCase', () => {
 	it('shortens an eval name to its number', () => {
 		expect(shortCase('703-fix-bug-flow')).toBe('703');
 		expect(shortCase('703')).toBe('703');
+	});
+});
+
+describe('formatCompactCount', () => {
+	it('formats millions with one decimal', () => {
+		expect(formatCompactCount(1_234_000)).toBe('1.2M');
+	});
+
+	it('formats thousands with one decimal', () => {
+		expect(formatCompactCount(1234)).toBe('1.2k');
+	});
+
+	it('formats values below 1000 as a rounded integer', () => {
+		expect(formatCompactCount(42)).toBe('42');
+		expect(formatCompactCount(42.6)).toBe('43');
 	});
 });

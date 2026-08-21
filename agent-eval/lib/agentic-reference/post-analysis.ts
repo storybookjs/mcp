@@ -37,7 +37,9 @@ import { diffTrees } from './tree/tree-diff.ts';
 
 import type { FileComplexity } from './metrics/complexity.ts';
 import type { CoverageDelta, DsCoverage } from './metrics/coverage.ts';
-import type { DsMisuseSummary } from './metrics/ds-misuse/types.ts';
+import type { DsMisuseSummary, JudgedNode } from './metrics/ds-misuse/types.ts';
+
+type JudgedQuestion = keyof typeof MISUSE_QUESTION_LABELS;
 import type {
 	Analysis,
 	DeltaToBaselineContext,
@@ -46,7 +48,7 @@ import type {
 	SummarizeOptions,
 } from '../post-analysis/types.ts';
 import { finiteNumbers, mean, round, sum } from '../utils/math.ts';
-import { green, red } from '../utils/colors.ts';
+import { bold, dim, green, red, yellow } from '../utils/colors.ts';
 import { printTable } from '../utils/table.ts';
 import { isRecord } from '../utils/type.ts';
 
@@ -281,6 +283,60 @@ function misuseOf(row: Record<string, unknown>): DsMisuseSummary | null {
 		: null;
 }
 
+/** The judged nodes behind a run's misuse scores, empty when unjudged. */
+function misuseNodesOf(row: Record<string, unknown>): JudgedNode[] {
+	const report = row.dsMisuse;
+	return isRecord(report) && Array.isArray(report.nodes) ? (report.nodes as JudgedNode[]) : [];
+}
+
+const MISUSE_QUESTION_LABELS = {
+	correctDsDecision: 'right component',
+	correctDsUsage: 'used per docs',
+	correctLocalDecision: 'rightly local',
+} as const;
+
+/**
+ * Print every judged verdict with its reason, perfect scores included.
+ *
+ * The tables above collapse the judgement to means; the reasons are the part a
+ * reader can act on, and until here they only existed inside ds-misuse.json.
+ * A row can carry a dsMisuse summary with no nodes array — the judge ran but
+ * stored no per-node detail — and that is reported distinctly from a row whose
+ * nodes were all inspected and scored perfectly, since the two mean different
+ * things to a reader deciding whether to trust the summary numbers above.
+ */
+function printMisuseFindings(rows: Array<Record<string, unknown>>): void {
+	let printed = 0;
+	let anyNodeInspected = false;
+	for (const row of rows) {
+		const nodes = misuseNodesOf(row);
+		if (nodes.length > 0) anyNodeInspected = true;
+		for (const node of nodes) {
+			for (const question of Object.keys(MISUSE_QUESTION_LABELS) as JudgedQuestion[]) {
+				const answer = node[question];
+				if (answer === undefined) continue;
+				if (printed === 0) console.log(bold('\nJudged nodes (every verdict, with reason):'));
+				printed += 1;
+				const score =
+					answer.score === 1 ? green('1  ') : answer.score === 0 ? red('0  ') : yellow('0.5');
+				const where = `${shortExperiment(row.experiment)}/run-${row.run as number}`;
+				console.log(
+					`${score} ${bold(`<${node.tag}>`)} ${MISUSE_QUESTION_LABELS[question]} ` +
+						dim(`${node.file}:${node.line} · ${where}`),
+				);
+				console.log(dim(`    ${answer.reason}`));
+			}
+		}
+	}
+	if (printed === 0) {
+		console.log(
+			anyNodeInspected
+				? dim('No findings: every judged node scored 1 on every question it received.')
+				: dim('No per-node verdicts: these runs carry summary scores but no judged node detail.'),
+		);
+	}
+}
+
 /** A run status colored by outcome, so failures stand out in a long table. */
 function statusLabel(status: unknown): string | null {
 	if (typeof status !== 'string') {
@@ -479,6 +535,19 @@ export function summarize(
 		return summary;
 	}
 
+	// Told on every pass, independent of which thematic tables are selected:
+	// the misuse tables and per-node verdicts below only print with
+	// options.misuse, but whether the judge has run at all is worth knowing
+	// regardless, and this is the only line that always reaches the reader.
+	const judgedRuns = analyses.filter((row) => misuseOf(row) !== null).length;
+	const totalRuns = analyses.length;
+	const misuseHintPrinted = judgedRuns < totalRuns;
+	if (misuseHintPrinted) {
+		console.log(
+			dim(`DS misuse: ${judgedRuns}/${totalRuns} runs judged — run: pnpm judge:ds-misuse`),
+		);
+	}
+
 	if (options.general) {
 		printTable(
 			analyses.map((row) => ({
@@ -638,23 +707,24 @@ export function summarize(
 				localMean: (group.misuseLocalDecision as { mean: number | null }).mean,
 			})),
 		);
+
+		printMisuseFindings(withMisuse);
 	}
 
 	// A selected family this eval has no data for prints nothing at all, leaving
 	// a bare header that reads as a broken analysis. Coverage gets a pointer
 	// rather than a shrug: the one thing that stops a run being measured is a
-	// pin nobody has mapped, and the fix is a one-line edit.
+	// pin nobody has mapped, and the fix is a one-line edit. The misuse case is
+	// already covered by the judged-runs line above, so it is not repeated here.
 	if (!options.general && !printedComplexity && !printedCoverage && !printedMisuse) {
-		if (options.misuse && withMisuse.length === 0) {
-			console.log('No DS misuse judgement for these runs. Run: pnpm judge:ds-misuse');
-		} else if (options.coverage && withCoverage.length === 0) {
+		if (options.coverage && withCoverage.length === 0) {
 			console.log(
 				'No DS coverage for these runs: their external-repo pin declares no DS packages. ' +
 					'Add it to DS_PACKAGES_BY_PIN in lib/agentic-reference/metrics/coverage.ts.',
 			);
 		} else if (options.complexity) {
 			console.log('Nothing to show: these runs carry no baseline delta.');
-		} else {
+		} else if (!misuseHintPrinted) {
 			console.log('No table families selected.');
 		}
 	}

@@ -47,8 +47,14 @@ export interface DsMisuseSummary {
 
 export interface DsMisuseReport {
 	schemaVersion: number;
-	/** The metricsVersion the node census was built under. */
+	/** The metricsVersion the node census was built under. Provenance only: it plays no part in staleness. */
 	metricsVersion: number | undefined;
+	/**
+	 * DS_MISUSE_JUDGE_VERSION at judging time. Drives staleness alongside
+	 * dsGuidelinesRef and model. Absent on artifacts written before the field
+	 * existed; those were produced by judge version 1 and read as such.
+	 */
+	judgeVersion?: number;
 	judgedAt: string;
 	model: string;
 	/** `repo@sha` of the guidelines. A moved pin invalidates this artifact. */

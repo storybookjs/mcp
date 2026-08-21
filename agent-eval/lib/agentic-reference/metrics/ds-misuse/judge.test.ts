@@ -34,9 +34,11 @@ describe('runJudge', () => {
 					text: '{"nodes":[{"path":"App/A[0]","file":"a.tsx","line":1,"tag":"A","kind":"ds"}]}',
 				},
 			],
+			usage: { input_tokens: 100, cache_read_input_tokens: 200, output_tokens: 50 },
 		});
 		await expect(runJudge(REQUEST)).resolves.toEqual({
-			nodes: [{ path: 'App/A[0]', file: 'a.tsx', line: 1, tag: 'A', kind: 'ds' }],
+			judged: { nodes: [{ path: 'App/A[0]', file: 'a.tsx', line: 1, tag: 'A', kind: 'ds' }] },
+			usage: { inputTokens: 100, cacheReadTokens: 200, cacheWriteTokens: 0, outputTokens: 50 },
 		});
 	});
 

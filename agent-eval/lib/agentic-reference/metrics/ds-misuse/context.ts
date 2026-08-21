@@ -17,6 +17,14 @@ import type { NodeRecord } from '../ds-coverage/types.ts';
 export const JUDGE_MODEL = 'claude-opus-4-8';
 
 /**
+ * Version of the judge itself, independent of the deterministic metrics that
+ * feed it. Bump when the prompt, the DS guidelines content baked into a run,
+ * the model, or any judging internals change — anything that would make a
+ * stored score not comparable with a freshly judged one.
+ */
+export const DS_MISUSE_JUDGE_VERSION = 1;
+
+/**
  * 1h is the longest TTL the API offers (the only values are `5m` and `1h`), and
  * it is enough for a sweep of any length because a cache read refreshes the
  * lifetime for free — what must stay under the TTL is the gap between two

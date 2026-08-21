@@ -27,42 +27,53 @@ export function cellStatuses(cells: Cell[], gaps: CellGap[], need: number): Cell
 	);
 }
 
-export function formatCellTable(
-	statuses: readonly CellStatus[],
+/**
+ * Padded, aligned table body shared by every cell-shaped status table: bold
+ * headers, plain-text width computation (so ANSI escapes from `styleCell`
+ * never skew alignment), and the last column never padded (nothing follows
+ * it on the line). `styleCell` styles one data cell given its row and column
+ * index; column 0 is left to the caller too, so each table can decide
+ * whether it holds a case name.
+ */
+export function formatStatusTable(
+	headers: readonly string[],
+	rows: readonly string[][],
+	styleCell: (rowIndex: number, col: number, value: string) => string,
 	style: OutputStyle = PLAIN_STYLE,
 ): string {
-	const rows = [
-		['case', 'workflow', 'runs', 'reason'],
-		...statuses.map((status) => [
-			status.case.shortName,
-			status.workflow,
-			`${status.have}/${status.need}`,
-			status.reason,
-		]),
-	];
-	const widths = rows[0]!.map((_, col) => Math.max(...rows.map((row) => row[col]!.length)));
-	// Column widths are computed from plain text above; styling is applied
-	// only after padding, so ANSI escapes never inflate `.length` and skew
-	// alignment. The last column is never padded (nothing follows it on the
-	// line), which is also what the original .trimEnd()-per-row behavior
-	// amounted to — so no separate trim step is needed here.
+	const all = [headers, ...rows];
+	const widths = headers.map((_, col) => Math.max(...all.map((row) => row[col]!.length)));
 	const lastCol = widths.length - 1;
-	return rows
+	return all
 		.map((row, rowIndex) => {
 			const padded = row.map((value, col) =>
 				col === lastCol ? value : value.padEnd(widths[col]!),
 			);
 			if (rowIndex === 0) return padded.map((cell) => style.bold(cell)).join('  ');
-			const status = statuses[rowIndex - 1]!;
-			return padded
-				.map((cell, col) => {
-					if (col === 0) return style.caseName(cell);
-					if (col === lastCol) return style.reason(status.reason, cell);
-					return cell;
-				})
-				.join('  ');
+			return padded.map((cell, col) => styleCell(rowIndex - 1, col, cell)).join('  ');
 		})
 		.join('\n');
+}
+
+export function formatCellTable(
+	statuses: readonly CellStatus[],
+	style: OutputStyle = PLAIN_STYLE,
+): string {
+	return formatStatusTable(
+		['case', 'workflow', 'runs', 'reason'],
+		statuses.map((status) => [
+			status.case.shortName,
+			status.workflow,
+			`${status.have}/${status.need}`,
+			status.reason,
+		]),
+		(rowIndex, col, cell) => {
+			if (col === 0) return style.caseName(cell);
+			if (col === 3) return style.reason(statuses[rowIndex]!.reason, cell);
+			return cell;
+		},
+		style,
+	);
 }
 
 export function remediationCommands(gaps: CellGap[]): string[] {

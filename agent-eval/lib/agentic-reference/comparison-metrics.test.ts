@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { COMPARISON_METRICS, metricValueAt } from './comparison-metrics.ts';
 
 describe('COMPARISON_METRICS', () => {
-	it('has 24 unique keys and unique paths', () => {
-		expect(COMPARISON_METRICS).toHaveLength(24);
-		expect(new Set(COMPARISON_METRICS.map((m) => m.key)).size).toBe(24);
-		expect(new Set(COMPARISON_METRICS.map((m) => m.path)).size).toBe(24);
+	it('has 28 unique keys and unique paths', () => {
+		expect(COMPARISON_METRICS).toHaveLength(28);
+		expect(new Set(COMPARISON_METRICS.map((m) => m.key)).size).toBe(28);
+		expect(new Set(COMPARISON_METRICS.map((m) => m.path)).size).toBe(28);
 	});
 
 	it('reads the 2026-08-20 additions from fields the analyzers always wrote', () => {

@@ -10,6 +10,7 @@ import {
 	type EstimateRow,
 	type ManifestJson,
 } from './html-report.ts';
+import type { MisusePanel } from './misuse.ts';
 
 const CONTROL = {
 	caseName: 'cc-control',
@@ -167,13 +168,67 @@ function render(overrides: {
 	manifest?: ManifestJson;
 	curves?: CurveInput[];
 	dataset?: DatasetRow[];
+	misuse?: MisusePanel;
 }): string {
 	return renderHtmlReport({
 		estimates: overrides.estimates ?? [row({})],
 		manifest: overrides.manifest ?? manifest(),
 		curves: overrides.curves ?? [],
 		dataset: overrides.dataset ?? [datasetRow()],
+		misuse: overrides.misuse,
 	});
+}
+
+function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
+	return {
+		guidelinesRefs: ['org/ds@abc'],
+		fixtureRefs: ['org/app@ref'],
+		builtFrom: '/builder/mcp',
+		judgedRuns: 2,
+		usableRuns: 2,
+		cells: [
+			{
+				case: 'control-none',
+				workflow: '701-new-ui-flow',
+				usable: 1,
+				judged: 1,
+				questions: {
+					correctDsDecision: { ones: 3, halves: 1, zeros: 1 },
+					correctDsUsage: { ones: 5, halves: 0, zeros: 0 },
+					correctLocalDecision: null,
+				},
+				evaluated: { ds: 5, local: 0 },
+			},
+			{
+				case: 'full',
+				workflow: '701-new-ui-flow',
+				usable: 1,
+				judged: 1,
+				questions: {
+					correctDsDecision: { ones: 4, halves: 0, zeros: 0 },
+					correctDsUsage: { ones: 4, halves: 0, zeros: 0 },
+					correctLocalDecision: { ones: 2, halves: 0, zeros: 0 },
+				},
+				evaluated: { ds: 4, local: 2 },
+			},
+		],
+		findings: [
+			{
+				case: 'control-none',
+				workflow: '701-new-ui-flow',
+				runLabel: '2026-08-01T00-00-00.000Z/run-1',
+				file: 'src/OrderStatus.tsx',
+				line: 12,
+				tag: 'Badge',
+				kind: 'ds',
+				question: 'correctDsDecision',
+				score: 0,
+				reason: 'Badge.mdx rules out Badge for a live status; status text was the fit.',
+				projectPath: 'agent-eval/results/x/b/701-new-ui-flow/run-1/project',
+			},
+		],
+		...overrides,
+	};
 }
 
 describe('formatMetricValue', () => {
@@ -209,12 +264,13 @@ describe('formatBeta / formatPQ', () => {
 });
 
 describe('renderHtmlReport structure', () => {
-	it('renders four tabs with Findings first', () => {
+	it('renders five tabs with Findings first', () => {
 		const html = render({});
 		const tabs = html.match(/role="tab"/g) ?? [];
-		expect(tabs).toHaveLength(4);
+		expect(tabs).toHaveLength(5);
 		expect(html).toContain('>Findings<');
 		expect(html).toContain('Full report');
+		expect(html).toContain('DS misuse');
 		expect(html).toContain('ECDF curves');
 		expect(html.indexOf('id="tab-effects"')).toBeLessThan(html.indexOf('id="tab-summary"'));
 		// The first panel is the visible one.
@@ -861,5 +917,94 @@ describe('renderHtmlReport curves and escaping', () => {
 		};
 		const html = render({ curves: [svg] });
 		expect(html).toContain('data-workflow="701-new-ui-flow"');
+	});
+});
+
+describe('DS misuse panel', () => {
+	it('renders an empty state naming the judge command when nothing is judged', () => {
+		const html = render({});
+		expect(html).toContain('DS misuse');
+		expect(html).toContain('No run in this comparison has been judged yet');
+		expect(html).toContain('pnpm judge:ds-misuse --dry');
+	});
+
+	it('names the plan in the empty state when the comparison was plan-scoped', () => {
+		const planned = manifest();
+		planned.spec.plan = 'plans/2-docs-vs-stories-create.plan.ts';
+		const html = render({ manifest: planned });
+		expect(html).toContain('--plan plans/2-docs-vs-stories-create.plan.ts');
+	});
+
+	it('renders pooled distributions per case with null as absence, not zero', () => {
+		const html = render({ misuse: misusePanel() });
+		expect(html).toContain('misuse-summary');
+		expect(html).toContain('Right component?');
+		// control-none evaluated no local components: an em dash, never a bar.
+		expect(html).toContain('No node received this question');
+	});
+
+	it("shows each finding with its score, location, and the judge's reason", () => {
+		const html = render({ misuse: misusePanel() });
+		expect(html).toContain('What the judge flagged');
+		expect(html).toContain('src/OrderStatus.tsx:12');
+		// The citation is linkified, so match around the anchor.
+		expect(html).toContain('rules out Badge for a live status');
+		expect(html).toContain('>Badge.mdx</a>');
+	});
+
+	it('celebrates a clean bundle instead of rendering an empty findings list', () => {
+		const html = render({ misuse: misusePanel({ findings: [] }) });
+		expect(html).toContain('Every judged node scored 1');
+	});
+
+	it('links below-perfect counts to the findings they count', () => {
+		const html = render({ misuse: misusePanel() });
+		// The control-none decision cell has 1 half and 1 zero: both become
+		// buttons carrying the finding's full identity for the modal.
+		expect(html).toContain(
+			'class="mjump s0" data-case="control-none" data-case-name="control-none" ' +
+				'data-workflow="701-new-ui-flow" data-q="correctDsDecision" ' +
+				'data-qlabel="Right component?" data-score="0"',
+		);
+		// The finding carries the matching identity so the click can collect it.
+		expect(html).toContain('data-case="control-none" data-q="correctDsDecision" data-score="0"');
+		// A zero count stays plain text — there is nothing to show.
+		expect(html).toContain('<b class="s0">0</b>');
+		// The dialog the counts open ships with the panel.
+		expect(html).toContain('<dialog class="misuse-modal" id="misuseModal">');
+	});
+
+	it('links reason citations to the pinned docs and the DS repo issues', () => {
+		const html = render({
+			misuse: misusePanel({
+				findings: [
+					{
+						...misusePanel().findings[0]!,
+						reason: 'Badge.mdx and BrandGuidelines rule this out; see #268.',
+					},
+				],
+			}),
+		});
+		expect(html).toContain('https://github.com/org/ds/issues/268');
+		expect(html).toContain('https://github.com/org/ds/blob/abc/src/components/Badge/Badge.mdx');
+		expect(html).toContain('https://github.com/org/ds/blob/abc/src/docs/BrandGuidelines.mdx');
+	});
+
+	it('gives each finding a commands button and ships the commands dialog', () => {
+		const html = render({ misuse: misusePanel() });
+		expect(html).toContain('class="mopen mcmds" data-project=');
+		expect(html).toContain('id="misuseCmdModal"');
+	});
+
+	it('warns when artifacts were judged against different guideline pins', () => {
+		const html = render({
+			misuse: misusePanel({ guidelinesRefs: ['org/ds@new', 'org/ds@old'] }),
+		});
+		expect(html).toContain('Mixed guideline pins');
+	});
+
+	it('flags partial judging coverage instead of passing it off as complete', () => {
+		const html = render({ misuse: misusePanel({ judgedRuns: 1, usableRuns: 2 }) });
+		expect(html).toContain('1 of 2');
 	});
 });

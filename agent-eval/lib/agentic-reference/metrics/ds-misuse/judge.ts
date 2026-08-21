@@ -24,13 +24,23 @@ export function assertApiKey(): void {
 	}
 }
 
+/** What one judge call consumed, for the CLI's spend report. */
+export interface JudgeUsage {
+	inputTokens: number;
+	cacheReadTokens: number;
+	cacheWriteTokens: number;
+	outputTokens: number;
+}
+
 /**
- * Call the judge and return its structured answer.
+ * Call the judge and return its structured answer plus what it consumed.
  *
  * The response is schema-constrained by output_config.format, so the only
  * failures worth naming are the ones that produce no usable content at all.
  */
-export async function runJudge(request: JudgeRequest): Promise<JudgeResponse> {
+export async function runJudge(
+	request: JudgeRequest,
+): Promise<{ judged: JudgeResponse; usage: JudgeUsage }> {
 	assertApiKey();
 	const client = new Anthropic();
 
@@ -60,5 +70,13 @@ export async function runJudge(request: JudgeRequest): Promise<JudgeResponse> {
 		);
 	}
 
-	return JSON.parse(text.text) as JudgeResponse;
+	return {
+		judged: JSON.parse(text.text) as JudgeResponse,
+		usage: {
+			inputTokens: message.usage.input_tokens,
+			cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
+			cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
+			outputTokens: message.usage.output_tokens,
+		},
+	};
 }
