@@ -2111,7 +2111,16 @@ body:has(.misuse-modal[open]) { overflow:hidden; }
   vertical-align:3px; }
 .mhelp:hover { background:var(--wash); }
 .mcmd { background:var(--wash); border:1px solid var(--line); border-radius:8px;
-  padding:8px 12px; font-size:.78rem; overflow-x:auto; white-space:pre; user-select:all; }
+  padding:8px 12px; font-size:.78rem; white-space:pre-wrap; word-break:break-all;
+  user-select:all; }
+.misuse-modal .modal-body, .finding .excerpt { scrollbar-width:thin;
+  scrollbar-color:var(--line) transparent; }
+.misuse-modal .modal-body::-webkit-scrollbar, .finding .excerpt::-webkit-scrollbar {
+  width:8px; height:8px; }
+.misuse-modal .modal-body::-webkit-scrollbar-thumb,
+.finding .excerpt::-webkit-scrollbar-thumb { background:var(--line); border-radius:4px; }
+.misuse-modal .modal-body::-webkit-scrollbar-track,
+.finding .excerpt::-webkit-scrollbar-track { background:transparent; }
 .finding .excerpt { margin:8px 0 2px; padding:8px 12px; background:var(--wash);
   border:1px solid var(--line); border-radius:8px; font-size:.78rem; line-height:1.55;
   overflow-x:auto; }
