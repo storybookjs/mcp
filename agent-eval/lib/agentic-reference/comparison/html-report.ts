@@ -1626,9 +1626,11 @@ function distributionCell(
 		if (n === 0) return `<b class="${kind}">0</b>`;
 		return (
 			`<button type="button" class="mjump ${kind}" data-case="${slug(cell.case)}" ` +
+			`data-case-name="${escapeHtml(cell.case)}" ` +
 			`data-workflow="${escapeHtml(cell.workflow)}" data-q="${question}" ` +
+			`data-qlabel="${escapeHtml(MISUSE_QUESTION_META[question].label)}" ` +
 			`data-score="${kind === 's0' ? '0' : '05'}" ` +
-			`title="Jump to the ${n} finding(s) behind this count">${n}</button>`
+			`title="Show the ${n} finding(s) behind this count">${n}</button>`
 		);
 	};
 	const counts = [
@@ -1794,7 +1796,12 @@ ${tables}
 <b class="s1">1</b><span class="sep">·</span><b class="s05">0.5</b><span class="sep">·</span><b class="s0">0</b>.
 An em dash means no node received that question — absence of evidence, not a zero.</p>
 ${judgedAgainst}
-${misuseFindings(panel, controlShortName)}`;
+${misuseFindings(panel, controlShortName)}
+<dialog class="misuse-modal" id="misuseModal">
+<div class="modal-head"><b id="misuseModalTitle"></b><span class="mono" id="misuseModalMeta"></span>
+<button type="button" class="modal-close" id="misuseModalClose">Close</button></div>
+<div class="modal-body" id="misuseModalBody"></div>
+</dialog>`;
 }
 
 function buildTabs(panels: { id: string; label: string; body: string }[]): string {
@@ -1861,6 +1868,8 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .filterbar { display:flex; flex-direction:column; gap:10px; margin:22px 0 0;
   padding:12px 14px; background:var(--wash); border:1px solid var(--line); border-radius:12px;
   position:sticky; top:0; z-index:30; box-shadow:0 6px 18px rgba(0,0,0,.10); }
+.filterbar::before { content:""; position:absolute; inset:-24px -24px 8px; background:var(--surface);
+  z-index:-1; }
 .fbrow { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
 .fbopts { border-top:1px solid var(--line); padding-top:10px; }
 .legend { display:flex; gap:8px; flex-wrap:wrap; font-size:.85rem; margin-right:auto; }
@@ -2008,8 +2017,8 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
 .fineprint { font-size:.8rem; color:var(--ink-3); max-width:70ch; }
 .finding-group { border-top:1px solid var(--line); padding:10px 0 4px; }
 .finding-group summary { cursor:pointer; font-size:.92rem; color:var(--ink-2); padding:6px 0;
-  position:sticky; top:calc(var(--fbh, 164px) - 14px); z-index:25; background:var(--surface);
-  border-bottom:1px solid var(--line); }
+  position:sticky; top:calc(var(--fbh, 164px) - 16px); z-index:25; background:var(--surface);
+  border-bottom:1px solid var(--line); box-shadow:0 -3px 0 var(--surface); }
 .finding { padding:10px 0 6px 14px; border-left:2px solid var(--line); margin:10px 0; }
 .finding-head { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:baseline; }
 .finding .score { font-family:"IBM Plex Mono",monospace; font-size:.82rem; border-radius:6px;
@@ -2024,9 +2033,17 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
 .mjump { font:inherit; font-weight:700; background:none; border:none; padding:0; cursor:pointer;
   text-decoration:underline dotted; text-underline-offset:3px; }
 .mjump.s05 { color:var(--half); } .mjump.s0 { color:var(--bad); }
-.finding.flash { animation:misuse-flash 15s ease-out; }
-@keyframes misuse-flash { 0%, 70% { background:color-mix(in srgb, var(--half) 22%, transparent); }
-  100% { background:transparent; } }
+.misuse-modal { border:1px solid var(--line); border-radius:14px; background:var(--card);
+  color:var(--ink); padding:0; max-width:min(820px, 92vw); max-height:82vh; }
+.misuse-modal::backdrop { background:rgba(0,0,0,.45); }
+.misuse-modal .modal-head { display:flex; align-items:baseline; gap:12px; padding:14px 18px;
+  border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); }
+.misuse-modal .modal-head b { font-size:1rem; }
+.misuse-modal .modal-head .mono { color:var(--ink-3); font-size:.8rem; }
+.misuse-modal .modal-close { margin-left:auto; font:600 .85rem/1 "IBM Plex Sans",system-ui,sans-serif;
+  color:var(--ink-2); background:none; border:1px solid var(--line); border-radius:8px;
+  padding:5px 10px; cursor:pointer; }
+.misuse-modal .modal-body { padding:6px 18px 16px; overflow:auto; max-height:calc(82vh - 58px); }
 .untested { font-size:.85rem; color:var(--ink-2); margin:6px 0; padding-left:18px; }
 .untested li { margin:3px 0; }
 .empty-note { font-size:.85rem; color:var(--ink-3); font-style:italic; margin:18px 0; }
@@ -2230,10 +2247,15 @@ sigModeButtons.forEach(function (b) {
   b.addEventListener('click', function () { setSigMode(b.getAttribute('data-sigmode')); });
 });
 
-// Below-perfect counts in the misuse summary jump to the verdicts they count.
+// Below-perfect counts in the misuse summary open a modal with the verdicts
+// they count, so reading them costs no scroll position.
 document.addEventListener('click', function (e) {
+  var modal = byId('misuseModal');
+  if (modal && e.target === modal) { modal.close(); return; }
+  var closeBtn = e.target && e.target.closest ? e.target.closest('#misuseModalClose') : null;
+  if (closeBtn) { modal.close(); return; }
   var btn = e.target && e.target.closest ? e.target.closest('.mjump') : null;
-  if (!btn) return;
+  if (!btn || !modal) return;
   var sel = '#panel-misuse .finding' +
     '[data-case="' + btn.getAttribute('data-case') + '"]' +
     '[data-workflow="' + btn.getAttribute('data-workflow') + '"]' +
@@ -2241,14 +2263,19 @@ document.addEventListener('click', function (e) {
     '[data-score="' + btn.getAttribute('data-score') + '"]';
   var matches = $(sel);
   if (matches.length === 0) return;
-  var group = matches[0].closest('details');
-  if (group) group.open = true;
-  matches[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+  byId('misuseModalTitle').textContent =
+    btn.getAttribute('data-case-name') + ' — ' + btn.getAttribute('data-qlabel') +
+    ' scored ' + (btn.getAttribute('data-score') === '0' ? '0' : '0.5');
+  byId('misuseModalMeta').textContent =
+    btn.getAttribute('data-workflow') + ' · ' + matches.length + ' finding(s)';
+  var body = byId('misuseModalBody');
+  body.textContent = '';
   matches.forEach(function (el) {
-    el.classList.remove('flash');
-    void el.offsetWidth;
-    el.classList.add('flash');
+    var clone = el.cloneNode(true);
+    clone.hidden = false;
+    body.appendChild(clone);
   });
+  modal.showModal();
 });
 
 var metricsButtons = $('#metricsMode button');

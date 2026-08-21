@@ -919,16 +919,19 @@ describe('DS misuse panel', () => {
 
 	it('links below-perfect counts to the findings they count', () => {
 		const html = render({ misuse: misusePanel() });
-		// The control-none decision cell has 1 half and 1 zero: both become jump
-		// buttons carrying the finding's full identity.
+		// The control-none decision cell has 1 half and 1 zero: both become
+		// buttons carrying the finding's full identity for the modal.
 		expect(html).toContain(
-			'class="mjump s0" data-case="control-none" data-workflow="701-new-ui-flow" ' +
-				'data-q="correctDsDecision" data-score="0"',
+			'class="mjump s0" data-case="control-none" data-case-name="control-none" ' +
+				'data-workflow="701-new-ui-flow" data-q="correctDsDecision" ' +
+				'data-qlabel="Right component?" data-score="0"',
 		);
-		// The finding carries the matching identity so the click can land.
+		// The finding carries the matching identity so the click can collect it.
 		expect(html).toContain('data-case="control-none" data-q="correctDsDecision" data-score="0"');
-		// A zero count stays plain text — there is nothing to jump to.
+		// A zero count stays plain text — there is nothing to show.
 		expect(html).toContain('<b class="s0">0</b>');
+		// The dialog the counts open ships with the panel.
+		expect(html).toContain('<dialog class="misuse-modal" id="misuseModal">');
 	});
 
 	it('warns when artifacts were judged against different guideline pins', () => {
