@@ -1,7 +1,7 @@
 {
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/base-ui-v1",
-	"metricsVersion": 7,
+	"metricsVersion": 8,
 	"nodes": [
 		{
 			"path": "App/Router[0]",

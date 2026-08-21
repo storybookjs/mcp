@@ -63,6 +63,7 @@ describe('census include and exclude', () => {
 		expect(report.components['packages/ui/src/Button.tsx#Button']).toEqual({
 			category: 'local',
 			count: 1,
+			instances: 1,
 		});
 		expect(report.censusExclude).toEqual(['packages/ui/**']);
 		expect(report.perFile['packages/ui/src/Button.tsx']).toBeUndefined();
@@ -101,6 +102,7 @@ describe('census include and exclude', () => {
 		expect(report.components['packages/ui/src/Button.tsx#Button']).toEqual({
 			category: 'local',
 			count: 1,
+			instances: 1,
 		});
 	});
 
@@ -137,7 +139,11 @@ describe('census include and exclude', () => {
 			['internal/**'],
 		);
 		expect(report.nodes).toMatchObject({ all: 1, ds: 1 });
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.dsShareOfComponentNodes).toBe(1);
 	});
 });
@@ -152,9 +158,21 @@ describe('identification through the module graph', () => {
 				'export const App = () => <main><Button /><Field /><Link to="/" /></main>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['@ds/forms#Input']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['react-router-dom#Link']).toEqual({ category: 'external', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/forms#Input']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['react-router-dom#Link']).toEqual({
+			category: 'external',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes).toMatchObject({ all: 4, host: 1, ds: 2, external: 1, unresolved: 0 });
 	});
 
@@ -166,7 +184,11 @@ describe('identification through the module graph', () => {
 				'export const App = () => <AppButton />',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('follows export * chains, into files and out to packages', () => {
@@ -179,8 +201,16 @@ describe('identification through the module graph', () => {
 				'export const App = () => <main><Button /><Card /></main>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/buttons#Button']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['src/ui/local.ts#Card']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['@ds/buttons#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['src/ui/local.ts#Card']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes.unresolved).toBe(0);
 	});
 
@@ -213,7 +243,11 @@ describe('identification through the module graph', () => {
 		});
 		for (const order of ['cycle-first', 'provider-first'] as const) {
 			const report = analyze(files(order));
-			expect(report.components['@ds/core#Button'], order).toEqual({ category: 'ds', count: 1 });
+			expect(report.components['@ds/core#Button'], order).toEqual({
+				category: 'ds',
+				count: 1,
+				instances: 1,
+			});
 			expect(report.nodes.unresolved, order).toBe(0);
 		}
 	});
@@ -232,8 +266,14 @@ describe('identification through the module graph', () => {
 				'export const App = () => <SmallButton />',
 			].join('\n'),
 		});
-		// The subsetting wrapper still reaches the DS through the cyclic barrel.
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 2 });
+		// The subsetting wrapper still reaches the DS through the cyclic barrel,
+		// statically. Weighted, only the wrapper's own body renders a real
+		// Button; the use site is now a `local` SmallButton node.
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 2,
+			instances: 1,
+		});
 	});
 
 	it('resolves tsconfig path aliases through the graph', () => {
@@ -246,7 +286,11 @@ describe('identification through the module graph', () => {
 				'\n',
 			),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes.unresolved).toBe(0);
 	});
 
@@ -258,7 +302,11 @@ describe('identification through the module graph', () => {
 				'\n',
 			),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes.unresolved).toBe(0);
 		expect(report.dsShareOfComponentNodes).toBe(1);
 	});
@@ -273,7 +321,11 @@ describe('identification through the module graph', () => {
 				'\n',
 			),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes.unresolved).toBe(0);
 	});
 
@@ -295,7 +347,11 @@ describe('identification through the module graph', () => {
 				'\n',
 			),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('reports a name star re-exported from packages that disagree on DS-ness as unresolved', () => {
@@ -320,8 +376,16 @@ describe('identification through the module graph', () => {
 				'export const App = () => <main><DS.Button /><Forms.Input /></main>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['@ds/forms#Input']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/forms#Input']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('keeps compound-component member tags on a DS import in the DS', () => {
@@ -331,8 +395,16 @@ describe('identification through the module graph', () => {
 				'export const App = () => <Dialog.Root><Dialog.Popup /></Dialog.Root>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core/dialog#Dialog.Root']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['@ds/core/dialog#Dialog.Popup']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core/dialog#Dialog.Root']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/core/dialog#Dialog.Popup']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('resolves local compound components via property assignment', () => {
@@ -347,7 +419,11 @@ describe('identification through the module graph', () => {
 				'export const App = () => <Card.Header />',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Header']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Header']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('resolves members of an exported object of components', () => {
@@ -361,7 +437,11 @@ describe('identification through the module graph', () => {
 				'export const App = () => <main><AppUI.Button /><AppUI.Plain /></main>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes.local).toBe(1);
 	});
 });
@@ -394,10 +474,12 @@ describe('destructured bindings', () => {
 		expect(report.components['@base-ui/react/checkbox#Checkbox.Root']).toEqual({
 			category: 'ds',
 			count: 1,
+			instances: 1,
 		});
 		expect(report.components['@base-ui/react/checkbox#Checkbox.Indicator']).toEqual({
 			category: 'ds',
 			count: 1,
+			instances: 1,
 		});
 		expect(report.nodes).toMatchObject({ ds: 2, host: 1, unresolved: 0 });
 	});
@@ -411,9 +493,21 @@ describe('destructured bindings', () => {
 				'export const App = () => <Root><Mark /><Label /></Root>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['@ds/core#Checkbox.Indicator']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['@ds/core#Menu.Item.Label']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/core#Checkbox.Indicator']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/core#Menu.Item.Label']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('resolves a destructured namespace import and object literal', () => {
@@ -430,9 +524,21 @@ describe('destructured bindings', () => {
 				'export const App = () => <main><Input /><Button /><Plain /></main>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/forms#Input']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
-		expect(report.components['src/app-ui.ts#Plain']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['@ds/forms#Input']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['src/app-ui.ts#Plain']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('follows a destructured re-export through a barrel', () => {
@@ -445,7 +551,11 @@ describe('destructured bindings', () => {
 				'\n',
 			),
 		});
-		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('lets a locally attached member win over the destructured base identity', () => {
@@ -461,7 +571,11 @@ describe('destructured bindings', () => {
 				'export const App = () => <Card.Header />',
 			].join('\n'),
 		});
-		expect(report.components['src/Card.tsx#Header']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Card.tsx#Header']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.components['@ds/core#DS.Card.Header']).toBeUndefined();
 	});
 
@@ -527,7 +641,11 @@ describe('destructured bindings', () => {
 				'}',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes).toMatchObject({ ds: 1, unresolved: 0 });
 	});
 
@@ -542,7 +660,11 @@ describe('destructured bindings', () => {
 				'}',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Checkbox.Root']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Checkbox.Root']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes).toMatchObject({ ds: 1, unresolved: 0 });
 	});
 
@@ -621,7 +743,7 @@ describe('wrapper and styled attribution', () => {
 			].join('\n'),
 		});
 		expect(report.nodes).toMatchObject({ all: 1, host: 1, component: 0 });
-		expect(report.components.div).toEqual({ category: 'host', count: 1 });
+		expect(report.components.div).toEqual({ category: 'host', count: 1, instances: 1 });
 	});
 
 	// `styled('div')` is the same construction as `styled.div`, and the only
@@ -638,8 +760,8 @@ describe('wrapper and styled attribution', () => {
 			].join('\n'),
 		});
 		expect(report.nodes).toMatchObject({ all: 3, host: 3, component: 0, unresolved: 0 });
-		expect(report.components.div).toEqual({ category: 'host', count: 1 });
-		expect(report.components['my-element']).toEqual({ category: 'host', count: 1 });
+		expect(report.components.div).toEqual({ category: 'host', count: 1, instances: 1 });
+		expect(report.components['my-element']).toEqual({ category: 'host', count: 1, instances: 1 });
 	});
 
 	it("counts styled('div') wrapped again as the same host element", () => {
@@ -651,7 +773,7 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Bigger />',
 			].join('\n'),
 		});
-		expect(report.components.span).toEqual({ category: 'host', count: 1 });
+		expect(report.components.span).toEqual({ category: 'host', count: 1, instances: 1 });
 		expect(report.nodes).toMatchObject({ host: 1, unresolved: 0 });
 	});
 
@@ -666,8 +788,16 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <main><S1 /><S2 /><S3 /></main>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 2 });
-		expect(report.components['@ds/core#Dialog.Popup']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 2,
+			instances: 2,
+		});
+		expect(report.components['@ds/core#Dialog.Popup']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes.ds).toBe(3);
 	});
 
@@ -681,7 +811,11 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Styled />',
 			].join('\n'),
 		});
-		expect(report.components['src/Heading.tsx#Heading']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Heading.tsx#Heading']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('counts a wrapper that merely subsets a DS component as that component', () => {
@@ -695,8 +829,15 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <SmallButton />',
 			].join('\n'),
 		});
-		// Both the wrapper's own render and the use site attribute to the DS.
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 2 });
+		// Both the wrapper's own render and the use site attribute to the DS,
+		// statically. Weighted, the use site is now the wrapper's own instance
+		// (a `local` node, credited to SmallButton's multiplier) rather than a
+		// second DS node: only the wrapper's own body renders a real Button.
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 2,
+			instances: 1,
+		});
 	});
 
 	it('reaches the DS through nested wrappers', () => {
@@ -711,7 +852,14 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <SmallDanger />',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 3 });
+		// Statically, each wrapper level and the use site all attribute to the
+		// DS. Weighted, only Small's own body renders a real Button — SmallDanger
+		// and its use site are both `local` nodes now.
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 3,
+			instances: 1,
+		});
 	});
 
 	it('keeps a DS-rooted component local when it does not forward props', () => {
@@ -734,8 +882,9 @@ describe('wrapper and styled attribution', () => {
 		expect(report.components['src/Dashboard.tsx#Dashboard']).toEqual({
 			category: 'local',
 			count: 1,
+			instances: 1,
 		});
-		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1, instances: 1 });
 	});
 
 	it('keeps a prop-forwarding wrapper local when it hard-codes its children', () => {
@@ -751,8 +900,12 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Banner />',
 			].join('\n'),
 		});
-		expect(report.components['src/Banner.tsx#Banner']).toEqual({ category: 'local', count: 1 });
-		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['src/Banner.tsx#Banner']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1, instances: 1 });
 	});
 
 	it('counts a prop-forwarding wrapper that passes children through as the DS component', () => {
@@ -768,7 +921,9 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Panel>hi</Panel>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2 });
+		// Weighted, only Panel's own body renders a real Card; the use site is
+		// now a `local` Panel node instead of a second DS node.
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2, instances: 1 });
 	});
 
 	it('counts a wrapper that forwards props.children through as the DS component', () => {
@@ -784,7 +939,7 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Panel>hi</Panel>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2 });
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 2, instances: 1 });
 	});
 
 	it('keeps a wrapper local when it decorates the forwarded children', () => {
@@ -800,7 +955,11 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Panel>hi</Panel>',
 			].join('\n'),
 		});
-		expect(report.components['src/Panel.tsx#Panel']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Panel.tsx#Panel']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('keeps a component with a bare-return guard local', () => {
@@ -820,6 +979,7 @@ describe('wrapper and styled attribution', () => {
 		expect(report.components['src/MaybeButton.tsx#MaybeButton']).toEqual({
 			category: 'local',
 			count: 1,
+			instances: 1,
 		});
 	});
 
@@ -839,7 +999,11 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Card.Header />',
 			].join('\n'),
 		});
-		expect(report.components['src/Card.tsx#Header']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Card.tsx#Header']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.components['@ds/core#Box.Header']).toBeUndefined();
 	});
 
@@ -858,7 +1022,11 @@ describe('wrapper and styled attribution', () => {
 		});
 		// The destructured Tooltip is unresolvable; the module-scope one is DS.
 		expect(report.nodes.unresolved).toBe(1);
-		expect(report.components['@ds/core#Tooltip']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Tooltip']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('resolves components declared inside a function scope', () => {
@@ -872,7 +1040,11 @@ describe('wrapper and styled attribution', () => {
 				'}',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('follows withComponent to the replacement target', () => {
@@ -885,8 +1057,8 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <main><AsAnchor /><AsText /></main>',
 			].join('\n'),
 		});
-		expect(report.components.a).toEqual({ category: 'host', count: 1 });
-		expect(report.components['@ds/core#Text']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components.a).toEqual({ category: 'host', count: 1, instances: 1 });
+		expect(report.components['@ds/core#Text']).toEqual({ category: 'ds', count: 1, instances: 1 });
 		expect(report.components['@ds/core#Button']).toBeUndefined();
 	});
 
@@ -898,7 +1070,11 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Fancy />',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('does not dissolve a page into its non-DS root', () => {
@@ -911,7 +1087,11 @@ describe('wrapper and styled attribution', () => {
 				'\n',
 			),
 		});
-		expect(report.components['src/Panel.tsx#Panel']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Panel.tsx#Panel']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes).toMatchObject({ ds: 1, local: 1, host: 1 });
 	});
 
@@ -929,7 +1109,11 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Maybe on />',
 			].join('\n'),
 		});
-		expect(report.components['src/Maybe.tsx#Maybe']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Maybe.tsx#Maybe']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('looks through memo and forwardRef', () => {
@@ -943,7 +1127,13 @@ describe('wrapper and styled attribution', () => {
 				'\n',
 			),
 		});
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 2 });
+		// Weighted, only Fancy's own body renders a real Button; the use site is
+		// now a `local` Fancy node.
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 2,
+			instances: 1,
+		});
 	});
 
 	it('resolves lazy(() => import(...)) to the target default export', () => {
@@ -955,7 +1145,11 @@ describe('wrapper and styled attribution', () => {
 				'export const App = () => <Home />',
 			].join('\n'),
 		});
-		expect(report.components['src/Home.tsx#Home']).toEqual({ category: 'local', count: 1 });
+		expect(report.components['src/Home.tsx#Home']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 1,
+		});
 	});
 
 	it('classifies createGlobalStyle in both forms as its package, not unresolved', () => {
@@ -970,6 +1164,7 @@ describe('wrapper and styled attribution', () => {
 		expect(report.components['styled-components#createGlobalStyle']).toEqual({
 			category: 'external',
 			count: 2,
+			instances: 2,
 		});
 		expect(report.nodes.unresolved).toBe(0);
 	});
@@ -1043,8 +1238,16 @@ describe('census weights and coverage', () => {
 			].join('\n'),
 		});
 		// 4 full-weight Buttons + one half-weight Button and half-weight Spinner.
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 4.5 });
-		expect(report.components['@ds/core#Spinner']).toEqual({ category: 'ds', count: 0.5 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 4.5,
+			instances: 4.5,
+		});
+		expect(report.components['@ds/core#Spinner']).toEqual({
+			category: 'ds',
+			count: 0.5,
+			instances: 0.5,
+		});
 		expect(report.nodes.all).toBe(6);
 	});
 
@@ -1057,9 +1260,17 @@ describe('census weights and coverage', () => {
 				')',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#A']).toEqual({ category: 'ds', count: 0.5 });
-		expect(report.components['@ds/core#B']).toEqual({ category: 'ds', count: 0.25 });
-		expect(report.components['@ds/core#C']).toEqual({ category: 'ds', count: 0.25 });
+		expect(report.components['@ds/core#A']).toEqual({ category: 'ds', count: 0.5, instances: 0.5 });
+		expect(report.components['@ds/core#B']).toEqual({
+			category: 'ds',
+			count: 0.25,
+			instances: 0.25,
+		});
+		expect(report.components['@ds/core#C']).toEqual({
+			category: 'ds',
+			count: 0.25,
+			instances: 0.25,
+		});
 	});
 
 	it('weights whole subtrees on each side of a conditional', () => {
@@ -1072,7 +1283,11 @@ describe('census weights and coverage', () => {
 			].join('\n'),
 		});
 		expect(report.nodes.all).toBe(2.5); // div + (section .5 + Button .5) + p .5
-		expect(report.components['@ds/core#Button']).toEqual({ category: 'ds', count: 0.5 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 0.5,
+			instances: 0.5,
+		});
 	});
 
 	it('counts JSX passed through props', () => {
@@ -1093,8 +1308,8 @@ describe('census weights and coverage', () => {
 				'export const App = ({ on }: { on: boolean }) => <div>{(on && <A />) || <B />}</div>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#A']).toEqual({ category: 'ds', count: 0.5 });
-		expect(report.components['@ds/core#B']).toEqual({ category: 'ds', count: 0.5 });
+		expect(report.components['@ds/core#A']).toEqual({ category: 'ds', count: 0.5, instances: 0.5 });
+		expect(report.components['@ds/core#B']).toEqual({ category: 'ds', count: 0.5, instances: 0.5 });
 	});
 
 	it('treats a named-Fragment alternative like its <> spelling', () => {
@@ -1112,8 +1327,8 @@ describe('census weights and coverage', () => {
 		});
 		// An empty Fragment renders nothing (full weight, like `: null`); one
 		// with an element inside is a real subtree (halved, like `: <B/>`).
-		expect(report.components['@ds/core#A']).toEqual({ category: 'ds', count: 1.5 });
-		expect(report.components['@ds/core#B']).toEqual({ category: 'ds', count: 0.5 });
+		expect(report.components['@ds/core#A']).toEqual({ category: 'ds', count: 1.5, instances: 1.5 });
+		expect(report.components['@ds/core#B']).toEqual({ category: 'ds', count: 0.5, instances: 0.5 });
 	});
 
 	it('ignores fragments in both syntaxes', () => {
@@ -1185,7 +1400,11 @@ describe('census weights and coverage', () => {
 				'export const App = () => <ThemeProvider><Button /></ThemeProvider>',
 			].join('\n'),
 		});
-		expect(report.components['@ds/core#ThemeProvider']).toEqual({ category: 'ds', count: 1 });
+		expect(report.components['@ds/core#ThemeProvider']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
 		expect(report.nodes).toMatchObject({ all: 2, ds: 2, unresolved: 0 });
 	});
 
@@ -1408,5 +1627,510 @@ describe('includeNodes', () => {
 			'App/Button[0]',
 			'App/Button[0]#2',
 		]);
+	});
+});
+
+describe('instance weighting', () => {
+	it('counts JSX inside a reused component once per instantiation', () => {
+		const report = analyze({
+			'src/Button.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const LocalButton = () => <div><DSButton /></div>',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { LocalButton } from './Button'",
+				'export const App = () => <main><LocalButton /><LocalButton /><LocalButton /></main>',
+			].join('\n'),
+		});
+		// Static counting is untouched: three usage sites, one body.
+		expect(report.nodes).toMatchObject({ all: 6, host: 2, ds: 1, local: 3 });
+		// Instances: LocalButton's body renders once per usage.
+		expect(report.instances.nodes).toEqual({
+			all: 10,
+			host: 4,
+			component: 6,
+			ds: 3,
+			external: 0,
+			local: 3,
+			unresolved: 0,
+		});
+		expect(report.instances.dsShareOfAllNodes).toBe(0.3);
+		expect(report.instances.multipliers).toEqual({ 'src/Button.tsx#LocalButton': 3 });
+		expect(report.components['@ds/button#DSButton']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 3,
+		});
+	});
+
+	it('collects usage edges from files the census filter excludes', () => {
+		vol.fromJSON(
+			{
+				'src/Button.tsx': [
+					"import { DSButton } from '@ds/button'",
+					'export const LocalButton = () => <div><DSButton /></div>',
+				].join('\n'),
+				'src/App.tsx': [
+					"import { LocalButton } from './Button'",
+					'export const App = () => <main><LocalButton /><LocalButton /><LocalButton /></main>',
+				].join('\n'),
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			censusInclude: ['src/Button.tsx'],
+		});
+		// Only Button.tsx is counted, but its multiplier is a whole-app fact.
+		expect(report.nodes).toMatchObject({ all: 2, host: 1, ds: 1 });
+		expect(report.instances.nodes).toMatchObject({ all: 6, host: 3, ds: 3 });
+	});
+
+	it('keeps the floor of 1 for components nothing uses', () => {
+		const report = analyze({
+			'src/Unused.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Unused = () => <DSButton />',
+			].join('\n'),
+		});
+		expect(report.instances.nodes).toEqual(report.nodes);
+		expect(report.instances.multipliers).toEqual({});
+	});
+
+	it('composes multipliers through a chain', () => {
+		const report = analyze({
+			'src/B.tsx': "import { DSButton } from '@ds/button'\nexport const B = () => <DSButton />",
+			'src/A.tsx': "import { B } from './B'\nexport const A = () => <section><B /><B /></section>",
+			'src/Page.tsx': "import { A } from './A'\nexport const Page = () => <><A /><A /></>",
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/B.tsx#B': 4, 'src/A.tsx#A': 2 });
+		expect(report.instances.nodes.ds).toBe(4);
+	});
+
+	it('sums usage from several owners', () => {
+		const report = analyze({
+			'src/Shared.tsx':
+				"import { DSButton } from '@ds/button'\nexport const Shared = () => <DSButton />",
+			'src/Widget.tsx':
+				"import { Shared } from './Shared'\nexport const Widget = () => <div><Shared /></div>",
+			'src/Page.tsx': [
+				"import { Shared } from './Shared'",
+				"import { Widget } from './Widget'",
+				'export const Page = () => <main><Shared /><Widget /></main>',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Shared.tsx#Shared': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+	});
+
+	it('keeps a self-recursive component finite, counted at its external usage', () => {
+		const report = analyze({
+			'src/Tree.tsx': 'export const Tree = () => <li><Tree /></li>',
+			'src/Page.tsx': [
+				"import { Tree } from './Tree'",
+				'export const Page = () => <ul><Tree /><Tree /><Tree /></ul>',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Tree.tsx#Tree': 3 });
+		// Three page sites ×1 plus the recursive site ×3.
+		expect(report.instances.nodes.local).toBe(6);
+		expect(report.instances.nodes.host).toBe(1 + 3);
+	});
+
+	it('shares the entering usage across mutual recursion', () => {
+		const report = analyze({
+			'src/AB.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const A = () => <div><B /></div>',
+				'export const B = () => <span><A /><DSButton /></span>',
+			].join('\n'),
+			'src/Page.tsx': "import { A } from './AB'\nexport const Page = () => <><A /><A /></>",
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/AB.tsx#A': 2, 'src/AB.tsx#B': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+	});
+
+	it('propagates conditional halving into multipliers', () => {
+		const report = analyze({
+			'src/Button.tsx':
+				"import { DSButton } from '@ds/button'\nexport const LocalButton = () => <DSButton />",
+			'src/App.tsx': [
+				"import { LocalButton } from './Button'",
+				'export const App = ({ x }) => x ? <LocalButton /> : <section />',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Button.tsx#LocalButton': 0.5 });
+		expect(report.instances.nodes.ds).toBe(0.5);
+	});
+
+	it('multiplies a compound component by its member usage', () => {
+		const report = analyze({
+			'src/Card.tsx': [
+				"import { DSBox } from '@ds/box'",
+				'export const Card = () => <div />',
+				'Card.Header = () => <DSBox />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Card } from './Card'",
+				'export const App = () => <main><Card.Header /><Card.Header /></main>',
+			].join('\n'),
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/Card.tsx#Header': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+		// Card itself is never rendered: its body keeps the floor of 1.
+		expect(report.components['div']).toEqual({ category: 'host', count: 1, instances: 1 });
+	});
+
+	it('projects a member access through a subsetting wrapper onto the DS member', () => {
+		const report = analyze({
+			'src/Branded.tsx': [
+				"import { Card } from '@ds/core'",
+				'export const Branded = (props) => <Card {...props} />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Branded } from './Branded'",
+				'export const App = () => <main><Branded.Header /></main>',
+			].join('\n'),
+		});
+		// No `Branded.Header = …` assignment sits beside the declaration, so this
+		// falls past the compound-component check into the wrapped-ds member
+		// case: it resolves onto the DS member it subsets, never `unresolved`.
+		expect(report.components['@ds/core#Card.Header']).toEqual({
+			category: 'ds',
+			count: 1,
+			instances: 1,
+		});
+		expect(report.nodes.unresolved).toBe(0);
+		// The member access resolves straight to `ds`, not `wrapped-ds`, so it
+		// behaves like any other ds member access: no edge into Branded's own
+		// bucket, and instances stay consistent with statics.
+		expect(report.instances.multipliers).toEqual({});
+	});
+
+	it('does not double-count children passed through a local component', () => {
+		const report = analyze({
+			'src/Card.tsx': 'export const Card = ({ children }) => <div>{children}</div>',
+			'src/App.tsx': [
+				"import { DSButton } from '@ds/button'",
+				"import { Card } from './Card'",
+				'export const App = () => <Card><DSButton /></Card>',
+			].join('\n'),
+		});
+		// The child is App's markup, counted once; only Card's own div multiplies.
+		expect(report.instances.nodes.ds).toBe(1);
+	});
+
+	it('multiplies a subsetting wrapper through its own usage sites, statics unchanged', () => {
+		const report = analyze({
+			'src/Branded.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Branded = (props) => <DSButton {...props} />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Branded } from './Branded'",
+				'export const App = () => <main><Branded /><Branded /></main>',
+			].join('\n'),
+		});
+		// Static: unchanged from a plain `ds` resolution — every usage of
+		// Branded is its own ds node (2), plus the wrapper's own DSButton (1).
+		expect(report.nodes).toEqual({
+			all: 4,
+			host: 1,
+			component: 3,
+			ds: 3,
+			external: 0,
+			local: 0,
+			unresolved: 0,
+		});
+		// Weighted: each `<Branded/>` usage now feeds Branded's own owner
+		// bucket as a `local` edge — the wrapper is used twice, so its
+		// multiplier is 2, not the floor of 1 a subsetting wrapper without
+		// this fix would keep. The two use sites themselves count as `local`
+		// nodes (2); only the wrapper's own DSButton, multiplied, counts `ds`.
+		expect(report.instances.multipliers).toEqual({ 'src/Branded.tsx#Branded': 2 });
+		expect(report.instances.nodes).toEqual({
+			all: 5,
+			host: 1,
+			component: 4,
+			ds: 2,
+			external: 0,
+			local: 2,
+			unresolved: 0,
+		});
+	});
+
+	it('gives a subsetting wrapper its usage-derived multiplier, and its local slot child inherits it', () => {
+		// The PageTemplate/Footer shape: a subsetting wrapper (forwards props to
+		// a single DS root) that also hardcodes a local component into one of
+		// that root's own props. Before this fix, PageTemplate collapsed
+		// straight to the DS identity, so no usage edge ever reached its own
+		// owner bucket — its multiplier floored at 1, and Footer floored with
+		// it despite PageTemplate being used 3 times.
+		const report = analyze({
+			'src/Footer.tsx': 'export const Footer = () => <footer>f</footer>',
+			'src/PageTemplate.tsx': [
+				"import { DSPage } from '@ds/page'",
+				"import { Footer } from './Footer'",
+				'export const PageTemplate = (props) => <DSPage {...props} footer={<Footer />} />',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { PageTemplate } from './PageTemplate'",
+				'export const App = () => (',
+				'	<main>',
+				'		<PageTemplate />',
+				'		<PageTemplate />',
+				'		<PageTemplate />',
+				'	</main>',
+				')',
+			].join('\n'),
+		});
+		// Static: PageTemplate collapses to the DS identity at each of its 3
+		// usages plus its own declaration (4); the footer slot resolves to the
+		// local Footer, counted once, exactly at its syntactic site.
+		expect(report.components['@ds/page#DSPage']).toEqual({
+			category: 'ds',
+			count: 4,
+			instances: 3,
+		});
+		expect(report.components['src/Footer.tsx#Footer']).toEqual({
+			category: 'local',
+			count: 1,
+			instances: 3,
+		});
+		// Weighted: PageTemplate's 3 usages now feed its own owner bucket, so
+		// its multiplier is usage-derived (3), not floored at 1 — and Footer,
+		// rooted in that same bucket, inherits the identical multiplier.
+		expect(report.instances.multipliers).toEqual({
+			'src/PageTemplate.tsx#PageTemplate': 3,
+			'src/Footer.tsx#Footer': 3,
+		});
+		// The wrapper's own inner DS node (DSPage, counted once statically at
+		// PageTemplate's declaration) carries the wrapper's multiplier: 1 × 3.
+		expect(report.instances.nodes.ds).toBe(3);
+		expect(report.instances.nodes).toEqual({
+			all: 13,
+			host: 4,
+			component: 9,
+			ds: 3,
+			external: 0,
+			local: 6,
+			unresolved: 0,
+		});
+	});
+
+	it('composes a wrapper multiplier through an already-multiplied caller', () => {
+		const report = analyze({
+			'src/Branded.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Branded = (props) => <DSButton {...props} />',
+			].join('\n'),
+			'src/Row.tsx': [
+				"import { Branded } from './Branded'",
+				'export const Row = () => <div><Branded /><Branded /></div>',
+			].join('\n'),
+			'src/App.tsx': [
+				"import { Row } from './Row'",
+				'export const App = () => <main><Row /><Row /><Row /></main>',
+			].join('\n'),
+		});
+		// Row (used 3x) multiplies Branded (used 2x per Row): the wrapper's
+		// multiplier composes the two chained usage counts, not just its own
+		// immediate call count.
+		expect(report.instances.multipliers).toEqual({
+			'src/Row.tsx#Row': 3,
+			'src/Branded.tsx#Branded': 6,
+		});
+		// Branded's own DSButton, counted once statically, carries the full
+		// composed multiplier.
+		expect(report.instances.nodes.ds).toBe(6);
+	});
+
+	it('roots an entry-point render call at multiplier 1', () => {
+		const report = analyze({
+			'src/App.tsx': "import { DSButton } from '@ds/button'\nexport const App = () => <DSButton />",
+			'src/main.tsx': "import { App } from './App'\nrender(<App />)",
+		});
+		// The loose <App /> sits in main.tsx's module bucket, itself a root.
+		expect(report.instances.multipliers).toEqual({});
+		expect(report.instances.nodes.ds).toBe(1);
+	});
+
+	it('multiplies through a default-exported component', () => {
+		const report = analyze({
+			'src/page.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export default function Page() { return <DSButton /> }',
+			].join('\n'),
+			'src/App.tsx': "import Page from './page'\nexport const App = () => <><Page /><Page /></>",
+		});
+		expect(report.instances.multipliers).toEqual({ 'src/page.tsx#Page': 2 });
+		expect(report.instances.nodes.ds).toBe(2);
+	});
+
+	it('attributes a function-scoped component to its enclosing declaration', () => {
+		const report = analyze({
+			'src/Page.tsx': [
+				"import { DSButton } from '@ds/button'",
+				'export const Page = () => { const Inner = () => <DSButton />; return <div><Inner /><Inner /></div> }',
+			].join('\n'),
+		});
+		// Inner is not a *top-level* declaration, so ownerName() cannot give it a
+		// bucket of its own: DSButton is attributed to Page and counts once, at
+		// Page's multiplier (the point of this scenario). The <Inner/> tags
+		// themselves still resolve normally to `local` — resolveScopedName
+		// analyzes function-scope declarations like any other, exactly as
+		// 'resolves components declared inside a function scope' above already
+		// pins — so they are not unresolved.
+		expect(report.instances.nodes.ds).toBe(1);
+		expect(report.instances.nodes.local).toBe(2);
+		expect(report.instances.nodes.unresolved).toBe(0);
+	});
+
+	it('weights the component share but keeps node records unweighted', () => {
+		vol.fromJSON(
+			{
+				'src/Button.tsx': [
+					"import { DSButton } from '@ds/button'",
+					'export const LocalButton = () => <div><DSButton /></div>',
+				].join('\n'),
+				'src/App.tsx': [
+					"import { LocalButton } from './Button'",
+					'export const App = () => <main><LocalButton /><LocalButton /><LocalButton /></main>',
+				].join('\n'),
+			},
+			ROOT,
+		);
+		const report = analyzeDsCoverage({
+			projectDir: ROOT,
+			dsPackages: ['@ds/*'],
+			includeNodes: true,
+		});
+		// ds instances = 3 of 6 component instances.
+		expect(report.instances.dsShareOfComponentNodes).toBe(0.5);
+		// The record stays one-per-source-element with no instance figure: the
+		// ds-misuse judge reads records, and weighting belongs to the aggregates.
+		const dsRecord = report.nodeList?.find((record) => record.name === 'DSButton');
+		expect(dsRecord).toMatchObject({ weight: 1 });
+		expect(dsRecord).not.toHaveProperty('instances');
+		expect(report.nodeList).toHaveLength(4);
+	});
+
+	it('weights unresolved elements by the owner multiplier', () => {
+		const report = analyze({
+			'src/Box.tsx': 'export const Box = ({ as: As }) => <As />',
+			'src/App.tsx': [
+				"import { Box } from './Box'",
+				'export const App = () => <main><Box /><Box /></main>',
+			].join('\n'),
+		});
+		const unresolved = report.unresolvedElements.find((element) => element.tag === 'As');
+		expect(unresolved).toMatchObject({ weight: 1, instances: 2 });
+	});
+});
+
+// One app, both metrics, side by side — the scenario that motivates instance
+// weighting. A DS-built card is reused across a listing page while a one-off
+// settings page is mostly hand-rolled markup; a subsetting wrapper sits in
+// between. The static census sees one copy of everything; the weighted census
+// multiplies each component's body by how often it is instantiated, so the
+// reused DS-heavy card pulls the weighted share up — and the wrapper's call
+// site, `ds` statically, counts as `local` weighted because the DS node inside
+// the wrapper's body already carries its multiplier.
+describe('weighted vs unweighted coverage (integration)', () => {
+	const APP = {
+		// DS-heavy and reused: 3 DS nodes, instantiated 4×.
+		'src/ProductCard.tsx': [
+			"import { Card, Badge, Button } from '@ds/core'",
+			'export const ProductCard = () => (',
+			'	<Card>',
+			'		<Badge />',
+			'		<Button />',
+			'	</Card>',
+			')',
+		].join('\n'),
+		// A subsetting wrapper: statically it IS the DS Button; weighted, its
+		// call sites are its own local nodes.
+		'src/SaveButton.tsx': [
+			"import { Button } from '@ds/core'",
+			'export const SaveButton = (props: object) => <Button tone="primary" {...props} />',
+		].join('\n'),
+		'src/Catalog.tsx': [
+			"import { ProductCard } from './ProductCard'",
+			'export const Catalog = () => (',
+			'	<main>',
+			'		<ProductCard />',
+			'		<ProductCard />',
+			'		<ProductCard />',
+			'		<ProductCard />',
+			'	</main>',
+			')',
+		].join('\n'),
+		// One-off and host-heavy: rendered once, so weighting cannot inflate it.
+		'src/Settings.tsx': [
+			"import { SaveButton } from './SaveButton'",
+			'export const Settings = () => (',
+			'	<form>',
+			'		<fieldset>',
+			'			<legend />',
+			'			<input />',
+			'			<input />',
+			'		</fieldset>',
+			'		<SaveButton />',
+			'	</form>',
+			')',
+		].join('\n'),
+	};
+
+	it('the same tree reads 5/9 DS statically and 13/18 weighted', () => {
+		const report = analyze(APP);
+
+		// Static: every source element once. ds 5 = ProductCard's body (3)
+		// + SaveButton's body (1) + SaveButton's call site (wrapped-ds → ds).
+		// local 4 = the <ProductCard /> call sites.
+		expect(report.nodes).toEqual({
+			all: 15,
+			host: 6,
+			component: 9,
+			ds: 5,
+			external: 0,
+			local: 4,
+			unresolved: 0,
+		});
+		expect(report.dsShareOfComponentNodes).toBe(0.5556); // 5/9, rounded
+
+		// Weighted: ProductCard's body counts once per instantiation (×4),
+		// so ds 13 = 3×4 + SaveButton's body (1); local 5 = the four
+		// <ProductCard /> call sites + the <SaveButton /> call site, which
+		// flipped from ds to local.
+		expect(report.instances.multipliers).toEqual({ 'src/ProductCard.tsx#ProductCard': 4 });
+		expect(report.instances.nodes).toEqual({
+			all: 24,
+			host: 6,
+			component: 18,
+			ds: 13,
+			external: 0,
+			local: 5,
+			unresolved: 0,
+		});
+		expect(report.instances.dsShareOfComponentNodes).toBe(0.7222); // 13/18, rounded
+
+		// The divergence is the point: reuse concentrated in DS-built
+		// components means true adoption is higher than the file-by-file read.
+		expect(report.instances.dsShareOfComponentNodes).toBeGreaterThan(
+			report.dsShareOfComponentNodes ?? 0,
+		);
+
+		// Per-identity view of the same split: Card appears once in source but
+		// renders 4×. Button is written 3× (ProductCard's body, SaveButton's
+		// body, the wrapper call site); weighted, the reused body carries ×4,
+		// the wrapper body ×1, and the call site moved to SaveButton's own
+		// local identity — 5, not 3 and not 8.
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1, instances: 4 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 3,
+			instances: 5,
+		});
 	});
 });

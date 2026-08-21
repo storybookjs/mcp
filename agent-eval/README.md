@@ -150,6 +150,19 @@ for re-enabling. See the gates in `evals/807-docs-request/EVAL.ts` and
 ## Design-system misuse judging
 
 `ds-coverage` measures how _much_ of a run's UI comes from the design system.
+
+Each report also carries an instance-weighted view (`instances`): JSX inside a
+reused local component counts once per estimated instantiation, so a
+`LocalButton` used 100 times contributes its internal `DSButton` 100 times.
+Multipliers come from a whole-graph usage census (recursion counted at depth
+1, unused components floored at 1); the grouped summary tables report the
+instance-weighted shares, the per-run tables show both. Static counts are
+unchanged and stay in every report. Known blind spots, by design: list
+multiplicity (`.map()`) and JSX-valued constants referenced as `{icon}` are
+counted at their syntactic site. DS usage reached only behind a conditional
+carries a fractional weight, so its instance share can legitimately read
+lower than the static share.
+
 `ds-misuse` measures whether the agent used it _well_, scoring the JSX nodes a
 run introduced against the Droppy design system's own documentation:
 

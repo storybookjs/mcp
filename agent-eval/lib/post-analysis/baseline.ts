@@ -28,14 +28,14 @@ interface CommittedBaseline {
 	/** The eval's metricsVersion at measuring time; absent for legacy files. */
 	metricsVersion?: number;
 	/**
-	 * Whether a node sidecar was written beside this file. Recorded rather than
-	 * inferred because the two legitimate reasons for a missing sidecar have to
+	 * Whether a node census file was written beside this file. Recorded rather than
+	 * inferred because the two legitimate reasons for a missing census file have to
 	 * be told apart: a module that measures no nodes (or a pin declaring no
 	 * design system) never writes one and must still hit the cache, while a
 	 * baseline that had one and lost it has to be rebuilt. Absent for legacy
 	 * files, which counts as "never had one".
 	 */
-	nodeSidecar?: boolean;
+	nodeCensus?: boolean;
 	analysis: Analysis;
 }
 
@@ -67,9 +67,9 @@ export function baselinePath(baselinesDir: string, pin: ExternalRepoPin): string
 }
 
 /** Where the whole-tree node census for a pin lives. */
-const NODE_SIDECAR_DIR = 'ds-nodes';
+const NODE_CENSUS_DIR = 'ds-nodes';
 
-interface CommittedNodeSidecar {
+interface CommittedNodeCensus {
 	repo: string;
 	ref: string;
 	metricsVersion?: number;
@@ -77,42 +77,42 @@ interface CommittedNodeSidecar {
 }
 
 /**
- * The sidecar for a pin, under its own directory so `ls baselines/` still shows
+ * The census file for a pin, under its own directory so `ls baselines/` still shows
  * one file per pin. Same slug as the baseline, so the pair is obvious on disk.
  */
-export function nodeSidecarPath(baselinesDir: string, pin: ExternalRepoPin): string {
-	return join(baselinesDir, NODE_SIDECAR_DIR, `${pinSlug(pin)}.json`);
+export function nodeCensusPath(baselinesDir: string, pin: ExternalRepoPin): string {
+	return join(baselinesDir, NODE_CENSUS_DIR, `${pinSlug(pin)}.json`);
 }
 
-/** Commit a pin's node census, overwriting any sidecar already there. */
-export function writeNodeSidecar(
+/** Commit a pin's node census, overwriting any census file already there. */
+export function writeNodeCensus(
 	baselinesDir: string,
 	pin: ExternalRepoPin,
 	metricsVersion: number | undefined,
 	nodes: NodeRecord[],
 ): void {
-	const path = nodeSidecarPath(baselinesDir, pin);
+	const path = nodeCensusPath(baselinesDir, pin);
 	mkdirSync(dirname(path), { recursive: true });
-	const payload: CommittedNodeSidecar = { repo: pin.repo, ref: pin.ref, metricsVersion, nodes };
+	const payload: CommittedNodeCensus = { repo: pin.repo, ref: pin.ref, metricsVersion, nodes };
 	// Tab-indented for the same reason the baseline is, and needing `pnpm format`
 	// afterwards for the same reason too — more urgently here: JSON.stringify puts
 	// every array element on its own line, oxfmt collapses short ones, and every
-	// NodeRecord carries a `props` array. Committing a generated sidecar without
+	// NodeRecord carries a `props` array. Committing a generated census file without
 	// formatting it first fails `format:check` on essentially every record.
 	writeFileSync(path, JSON.stringify(payload, null, '\t') + '\n');
 }
 
 /**
  * The pin's node census, or null when absent or measured under other rules.
- * A sidecar from another metricsVersion is worse than none: its records look
+ * A census file from another metricsVersion is worse than none: its records look
  * healthy and were built by a different path format.
  */
-export function readNodeSidecar(
+export function readNodeCensus(
 	baselinesDir: string,
 	pin: ExternalRepoPin,
 	metricsVersion: number | undefined,
 ): NodeRecord[] | null {
-	const stored = readJson<CommittedNodeSidecar>(nodeSidecarPath(baselinesDir, pin));
+	const stored = readJson<CommittedNodeCensus>(nodeCensusPath(baselinesDir, pin));
 	if (!stored || !Array.isArray(stored.nodes) || stored.metricsVersion !== metricsVersion) {
 		return null;
 	}
@@ -163,15 +163,15 @@ export async function loadOrBuildBaselineAnalysis(
 	const committed = recompute ? null : readJson<CommittedBaseline>(path);
 	const versionMatches =
 		committed?.analysis !== undefined && committed.metricsVersion === postAnalysis.metricsVersion;
-	// A baseline that recorded a sidecar and no longer has one beside it is a
+	// A baseline that recorded a census file and no longer has one beside it is a
 	// cache miss too. Nothing else would ever write the missing half: the pair is
 	// only produced by a rebuild, and a current-looking baseline suppresses one
 	// forever. Rebuilding is what makes "written together and only together" true
 	// of the files on disk rather than just of this function.
-	const sidecarIntact =
-		committed?.nodeSidecar !== true ||
-		readNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion) !== null;
-	if (versionMatches && sidecarIntact) {
+	const censusIntact =
+		committed?.nodeCensus !== true ||
+		readNodeCensus(baselinesDir, pin, postAnalysis.metricsVersion) !== null;
+	if (versionMatches && censusIntact) {
 		const loaded = { dir, analysis: committed.analysis };
 		memo.set(memoKey, loaded);
 		return loaded;
@@ -185,7 +185,7 @@ export async function loadOrBuildBaselineAnalysis(
 		: !committed?.analysis
 			? 'no committed baseline'
 			: versionMatches
-				? 'node sidecar missing'
+				? 'node census file missing'
 				: `metricsVersion ${committed.metricsVersion ?? 'none'} -> ${postAnalysis.metricsVersion ?? 'none'}`;
 	console.log(`Measuring baseline for ${pin.repo}@${pin.ref} (${reason})`);
 
@@ -201,13 +201,13 @@ export async function loadOrBuildBaselineAnalysis(
 	// stay readable in a diff, and thousands of records would end that. Guarded
 	// with Array.isArray rather than a presence check, because this is the one
 	// place the module looks inside an analysis it otherwise treats as opaque —
-	// the same guard readNodeSidecar applies at the other end.
+	// the same guard readNodeCensus applies at the other end.
 	const { nodeList, ...analysisWithoutNodes } = analysis as Analysis & {
 		nodeList?: unknown;
 	};
-	const hasNodeSidecar = Array.isArray(nodeList);
-	if (hasNodeSidecar) {
-		writeNodeSidecar(baselinesDir, pin, postAnalysis.metricsVersion, nodeList as NodeRecord[]);
+	const hasNodeCensus = Array.isArray(nodeList);
+	if (hasNodeCensus) {
+		writeNodeCensus(baselinesDir, pin, postAnalysis.metricsVersion, nodeList as NodeRecord[]);
 	}
 
 	mkdirSync(dirname(path), { recursive: true });
@@ -217,7 +217,7 @@ export async function loadOrBuildBaselineAnalysis(
 		repo: pin.repo,
 		ref: pin.ref,
 		metricsVersion: postAnalysis.metricsVersion,
-		nodeSidecar: hasNodeSidecar,
+		nodeCensus: hasNodeCensus,
 		analysis: analysisWithoutNodes,
 	};
 	// Tab-indented because the file is committed, and `pnpm format:check` would

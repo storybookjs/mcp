@@ -106,6 +106,16 @@ console.table({
 });
 console.log(`  DS share of all JSX nodes:        ${report.dsShareOfAllNodes}`);
 console.log(`  DS share of component elements:   ${report.dsShareOfComponentNodes}`);
+console.log(`  … of all, instance-weighted:        ${report.instances.dsShareOfAllNodes}`);
+console.log(`  … of components, instance-weighted: ${report.instances.dsShareOfComponentNodes}`);
+
+const multiplied = Object.entries(report.instances.multipliers);
+if (multiplied.length > 0) {
+	console.log(
+		`\nInstantiation multipliers ≠ 1 (top ${Math.min(top, multiplied.length)} of ${multiplied.length}):`,
+	);
+	console.table(Object.fromEntries(multiplied.slice(0, top)));
+}
 
 const nonHost = Object.entries(report.components).filter(([, entry]) => entry.category !== 'host');
 console.log(`\nTop components (of ${nonHost.length}):`);

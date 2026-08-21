@@ -1,7 +1,7 @@
 {
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/droppy-70pc-v4",
-	"metricsVersion": 7,
+	"metricsVersion": 8,
 	"nodes": [
 		{
 			"path": "App/Router[0]",

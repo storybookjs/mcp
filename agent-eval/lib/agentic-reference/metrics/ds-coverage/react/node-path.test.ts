@@ -80,7 +80,7 @@ describe('createNodePathBuilder', () => {
 
 // The four shapes the module header records as known limitations. They are
 // pinned because the format is a wire format: a change here silently invalidates
-// every committed baseline sidecar, which is horrible to diagnose after the fact.
+// every committed baseline census file, which is horrible to diagnose after the fact.
 describe('createNodePathBuilder documented limitations', () => {
 	it('starts a fresh chain for JSX reached through a non-JSX node', () => {
 		// The `ul` -> `li` link is lost, but `li` -> `A` below it still nests.

@@ -44,12 +44,23 @@ describe('findRuns', () => {
 		expect(findRuns(join(root, 'absent'))).toEqual([]);
 	});
 
-	// A run-N directory with no project tree is a failed run. It is still
-	// reported — pruning tools need to see it — but flagged, so analyses can
-	// skip what they cannot measure.
+	// A run-N directory with no collected project is still a run — the judge
+	// CLI reports it as unjudgeable rather than silently skipping it — but it
+	// is flagged, so consumers that need a tree can filter on `collected`.
 	it('flags a run directory with no project as uncollected', () => {
 		mkdirSync(join(root, 'arm-a/opus/2026-07-27T10-43-55.864Z/701/run-1'), { recursive: true });
-		expect(findRuns(root)).toEqual([expect.objectContaining({ collected: false })]);
+		expect(findRuns(root)).toEqual([
+			{
+				runDir: join(root, 'arm-a/opus/2026-07-27T10-43-55.864Z/701/run-1'),
+				projectDir: join(root, 'arm-a/opus/2026-07-27T10-43-55.864Z/701/run-1/project'),
+				experiment: 'arm-a',
+				model: 'opus',
+				timestamp: '2026-07-27T10-43-55.864Z',
+				evalName: '701',
+				run: 1,
+				collected: false,
+			},
+		]);
 	});
 });
 

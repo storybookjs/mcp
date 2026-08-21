@@ -1,8 +1,8 @@
 {
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/base-ui-v1",
-	"metricsVersion": 7,
-	"nodeSidecar": true,
+	"metricsVersion": 8,
+	"nodeCensus": true,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
@@ -1314,6 +1314,19 @@
 			},
 			"dsShareOfAllNodes": 0.0492,
 			"dsShareOfComponentNodes": 0.0845,
+			"instances": {
+				"nodes": {
+					"all": 4184,
+					"host": 2302.5,
+					"component": 1881.5,
+					"ds": 491,
+					"external": 144.5,
+					"local": 1246,
+					"unresolved": 0
+				},
+				"dsShareOfAllNodes": 0.1174,
+				"dsShareOfComponentNodes": 0.261
+			},
 			"parseFailures": [],
 			"readFailures": []
 		}

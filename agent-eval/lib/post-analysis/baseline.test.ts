@@ -14,9 +14,9 @@ import { prepareRef } from '../agentic-reference/external-repo.ts';
 import {
 	baselinePath,
 	loadOrBuildBaselineAnalysis,
-	nodeSidecarPath,
-	readNodeSidecar,
-	writeNodeSidecar,
+	nodeCensusPath,
+	readNodeCensus,
+	writeNodeCensus,
 } from './baseline.ts';
 
 import type { NodeRecord } from '../agentic-reference/metrics/ds-coverage/types.ts';
@@ -72,8 +72,8 @@ describe('loadOrBuildBaselineAnalysis', () => {
 		expect(written).toEqual({
 			repo: 'owner/name',
 			ref: 'deadbeef',
-			// This module measures no nodes, so there is no sidecar to demand back.
-			nodeSidecar: false,
+			// This module measures no nodes, so there is no census file to demand back.
+			nodeCensus: false,
 			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
@@ -148,7 +148,7 @@ describe('loadOrBuildBaselineAnalysis', () => {
 			repo: 'owner/name',
 			ref: 'deadbeef',
 			metricsVersion: 2,
-			nodeSidecar: false,
+			nodeCensus: false,
 			analysis: { files: { 'a.ts': 1 } },
 		});
 	});
@@ -268,15 +268,15 @@ function withNodes() {
 	} as unknown as PostAnalysis;
 }
 
-describe('node sidecar', () => {
+describe('node census file', () => {
 	it('writes the census beside the baseline, keyed on the pin', async () => {
 		const opts = options({ postAnalysis: withNodes() });
 		await loadOrBuildBaselineAnalysis(opts);
 
-		const sidecar = JSON.parse(
-			readFileSync(nodeSidecarPath(join(root, 'baselines'), PIN), 'utf8'),
+		const censusFile = JSON.parse(
+			readFileSync(nodeCensusPath(join(root, 'baselines'), PIN), 'utf8'),
 		) as Record<string, unknown>;
-		expect(sidecar).toMatchObject({
+		expect(censusFile).toMatchObject({
 			repo: PIN.repo,
 			ref: PIN.ref,
 			metricsVersion: 7,
@@ -284,7 +284,7 @@ describe('node sidecar', () => {
 		});
 	});
 
-	// The sidecar is the judge's baseline half; keeping it out of the committed
+	// The census file is the judge's baseline half; keeping it out of the committed
 	// baseline is what keeps that file reviewable.
 	it('keeps the node list out of the committed baseline', async () => {
 		const opts = options({ postAnalysis: withNodes() });
@@ -301,39 +301,39 @@ describe('node sidecar', () => {
 
 	it('reads back what it wrote', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, 7, PARTIAL_NODES);
-		expect(readNodeSidecar(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
+		writeNodeCensus(dir, PIN, 7, PARTIAL_NODES);
+		expect(readNodeCensus(dir, PIN, 7)).toEqual([{ path: 'App/A[0]' }]);
 	});
 
-	// A sidecar measured under other rules is worse than none: its numbers look
+	// A census file measured under other rules is worse than none: its numbers look
 	// healthy and mean something else.
 	it('treats a version mismatch as absent', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, 6, PARTIAL_NODES);
-		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+		writeNodeCensus(dir, PIN, 6, PARTIAL_NODES);
+		expect(readNodeCensus(dir, PIN, 7)).toBeNull();
 	});
 
-	it('treats an absent sidecar as null rather than throwing', () => {
-		expect(readNodeSidecar(join(root, 'baselines'), PIN, 7)).toBeNull();
+	it('treats an absent census file as null rather than throwing', () => {
+		expect(readNodeCensus(join(root, 'baselines'), PIN, 7)).toBeNull();
 	});
 
 	// Absent on both sides is a match, which is what keeps a module that never
 	// declares a version on the same terms as the committed baseline beside it.
-	it('matches a versionless sidecar against a versionless module', () => {
+	it('matches a versionless census file against a versionless module', () => {
 		const dir = join(root, 'baselines');
-		writeNodeSidecar(dir, PIN, undefined, PARTIAL_NODES);
-		expect(readNodeSidecar(dir, PIN, undefined)).toEqual([{ path: 'App/A[0]' }]);
+		writeNodeCensus(dir, PIN, undefined, PARTIAL_NODES);
+		expect(readNodeCensus(dir, PIN, undefined)).toEqual([{ path: 'App/A[0]' }]);
 		// And a versioned module still refuses it.
-		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+		expect(readNodeCensus(dir, PIN, 7)).toBeNull();
 	});
 
-	it('treats a sidecar whose nodes are not a list as absent', () => {
+	it('treats a census file whose nodes are not a list as absent', () => {
 		const dir = join(root, 'baselines');
-		const path = nodeSidecarPath(dir, PIN);
+		const path = nodeCensusPath(dir, PIN);
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, JSON.stringify({ ...PIN, metricsVersion: 7, nodes: 'lots' }));
 
-		expect(readNodeSidecar(dir, PIN, 7)).toBeNull();
+		expect(readNodeCensus(dir, PIN, 7)).toBeNull();
 	});
 
 	/** Commit a baseline by hand, as a checkout would arrive with one. */
@@ -346,21 +346,21 @@ describe('node sidecar', () => {
 	}
 
 	// Half a pair on disk is permanent without this: only a rebuild writes a
-	// sidecar, and a current-looking baseline is what suppresses the rebuild.
-	it('rebuilds a current baseline whose sidecar was never committed', async () => {
+	// census file, and a current-looking baseline is what suppresses the rebuild.
+	it('rebuilds a current baseline whose census file was never committed', async () => {
 		const opts = options({ postAnalysis: withNodes() });
-		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
+		commitBaseline(opts.baselinesDir, { nodeCensus: true });
 
 		const rebuilt = await loadOrBuildBaselineAnalysis(opts);
 
 		expect(rebuilt.analysis).toEqual({ files: {} });
-		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(true);
+		expect(existsSync(nodeCensusPath(opts.baselinesDir, PIN))).toBe(true);
 	});
 
 	it('leaves an intact pair alone', async () => {
 		const opts = options({ postAnalysis: withNodes() });
-		commitBaseline(opts.baselinesDir, { nodeSidecar: true });
-		writeNodeSidecar(opts.baselinesDir, PIN, 7, PARTIAL_NODES);
+		commitBaseline(opts.baselinesDir, { nodeCensus: true });
+		writeNodeCensus(opts.baselinesDir, PIN, 7, PARTIAL_NODES);
 
 		const loaded = await loadOrBuildBaselineAnalysis(opts);
 
@@ -368,13 +368,13 @@ describe('node sidecar', () => {
 		expect(opts.postAnalysis.analyzeRun).not.toHaveBeenCalled();
 	});
 
-	// The mirror case: a module measuring no nodes never wrote a sidecar, so
+	// The mirror case: a module measuring no nodes never wrote a census file, so
 	// demanding one back would re-measure the tree on every process and defeat
 	// the point of committing baselines at all.
-	it('still hits the cache for a baseline that never had a sidecar', async () => {
+	it('still hits the cache for a baseline that never had a census file', async () => {
 		const opts = options();
 		await loadOrBuildBaselineAnalysis(opts);
-		expect(existsSync(nodeSidecarPath(opts.baselinesDir, PIN))).toBe(false);
+		expect(existsSync(nodeCensusPath(opts.baselinesDir, PIN))).toBe(false);
 
 		const second = options({ baselinesDir: opts.baselinesDir });
 		await loadOrBuildBaselineAnalysis(second);

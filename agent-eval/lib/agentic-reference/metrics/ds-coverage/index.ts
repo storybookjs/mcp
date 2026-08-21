@@ -11,6 +11,7 @@ import { share } from '#lib/utils/math';
 
 import { createResolver } from './identify.ts';
 import { buildModuleGraph } from './module-graph.ts';
+import { solveMultipliers } from './multipliers.ts';
 import { createPackageMatcher } from './package-pattern.ts';
 import { createPathFilter } from './path-filter.ts';
 import { censusReactTree } from './react/census.ts';
@@ -20,6 +21,7 @@ import type {
 	DsCoverageOptions,
 	DsCoverageReport,
 	FrameworkImplementation,
+	NodeTotals,
 } from './types.ts';
 
 const FRAMEWORKS: Record<'react', FrameworkImplementation> = {
@@ -29,11 +31,33 @@ const FRAMEWORKS: Record<'react', FrameworkImplementation> = {
 	},
 };
 
-function sortedComponents(census: CensusResult): DsCoverageReport['components'] {
+const NODE_KEYS: Array<keyof NodeTotals> = [
+	'all',
+	'host',
+	'component',
+	'ds',
+	'external',
+	'local',
+	'unresolved',
+];
+
+function sortedComponents(
+	census: CensusResult,
+	componentInstances: Map<string, number>,
+): DsCoverageReport['components'] {
 	const entries = [...census.components.entries()].sort(
 		(a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]),
 	);
-	return Object.fromEntries(entries);
+	return Object.fromEntries(
+		entries.map(([key, entry]) => [
+			key,
+			// Every key in `components` is threaded through some owner's bucket
+			// (see react/census.ts), so the fold below always has an entry for
+			// it; the fallback only degrades a broken invariant to the static
+			// count instead of silently under-reporting 0 instances.
+			{ ...entry, instances: componentInstances.get(key) ?? entry.count },
+		]),
+	);
 }
 
 /**
@@ -63,6 +87,30 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 	const includeNodes = options.includeNodes ?? false;
 	const census = framework.createCensus()(graph, resolver, isCounted, includeNodes);
 
+	const multipliers = solveMultipliers(census.edges);
+	const multiplierOf = (owner: string): number => multipliers.get(owner) ?? 1;
+
+	const instanceNodes: NodeTotals = {
+		all: 0,
+		host: 0,
+		component: 0,
+		ds: 0,
+		external: 0,
+		local: 0,
+		unresolved: 0,
+	};
+	const componentInstances = new Map<string, number>();
+	for (const [owner, bucket] of census.owners) {
+		const factor = multiplierOf(owner);
+		for (const key of NODE_KEYS) instanceNodes[key] += bucket.totals[key] * factor;
+		for (const [component, entry] of bucket.components) {
+			componentInstances.set(
+				component,
+				(componentInstances.get(component) ?? 0) + entry.count * factor,
+			);
+		}
+	}
+
 	return {
 		framework: options.framework ?? 'react',
 		dsPackages: options.dsPackages,
@@ -74,9 +122,27 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 		nodes: census.totals,
 		dsShareOfAllNodes: share(census.totals.ds, census.totals.all),
 		dsShareOfComponentNodes: share(census.totals.ds, census.totals.component),
-		components: sortedComponents(census),
-		unresolvedElements: census.unresolved,
+		instances: {
+			nodes: instanceNodes,
+			dsShareOfAllNodes: share(instanceNodes.ds, instanceNodes.all),
+			dsShareOfComponentNodes: share(instanceNodes.ds, instanceNodes.component),
+			multipliers: Object.fromEntries(
+				[...multipliers]
+					.filter(([, value]) => value !== 1)
+					.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+			),
+		},
+		components: sortedComponents(census, componentInstances),
+		unresolvedElements: census.unresolved.map(({ owner, ...element }) => ({
+			...element,
+			instances: element.weight * multiplierOf(owner),
+		})),
 		perFile: Object.fromEntries(census.perFile),
-		...(includeNodes ? { nodeList: census.nodeList ?? [] } : {}),
+		// Unweighted by design: the ds-misuse judge reads these records, and it
+		// must see each source element exactly once, in its static identity.
+		// Instance weighting stays confined to the `instances` aggregates above.
+		...(includeNodes
+			? { nodeList: (census.nodeList ?? []).map(({ owner: _owner, ...record }) => record) }
+			: {}),
 	};
 }
