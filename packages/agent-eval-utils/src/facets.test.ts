@@ -8,6 +8,7 @@ import {
 	MISUSE_FACET_IDS,
 	MISUSE_FACETS,
 	parseFacetId,
+	qualify,
 	UNCATEGORISED,
 } from './facets.ts';
 
@@ -48,6 +49,11 @@ describe('helpers', () => {
 			leaf: 'general-brand',
 		});
 		expect(parseFacetId('junk')).toBeNull();
+	});
+
+	it('joins a category and leaf into a qualified id', () => {
+		expect(qualify('mdx', 'do-dont')).toBe('mdx.do-dont');
+		expect(qualify('general', 'general-tokens')).toBe('general.general-tokens');
 	});
 
 	it('sanitizes ids for dot-path metric keys', () => {

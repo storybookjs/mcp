@@ -60,6 +60,16 @@ export type FacetId = {
 	[C in FacetCategory]: `${C}.${keyof (typeof FACET_TAXONOMY)[C] & string}`;
 }[FacetCategory];
 
+/** Joins a category and leaf into a qualified id, e.g. `qualify('mdx', 'do-dont')` → `mdx.do-dont`. */
+export function qualify<C extends FacetCategory>(
+	category: C,
+	leaf: keyof (typeof FACET_TAXONOMY)[C] & string,
+): FacetId;
+export function qualify(category: string, leaf: string): string;
+export function qualify(category: string, leaf: string): string {
+	return `${category}.${leaf}`;
+}
+
 export function parseFacetId(id: string): { category: string; leaf: string } | null {
 	const dot = id.indexOf('.');
 	if (dot === -1) return null;

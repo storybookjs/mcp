@@ -75,7 +75,10 @@ describe('treePatch', () => {
 	// needs to see.
 	it('puts a deleted file in beforePaths (and, per the header git writes, in files too)', () => {
 		const patch = treePatch(
-			tree('before', { 'src/App.tsx': 'const a = 1\n', 'src/Deleted.tsx': 'export const gone = 1\n' }),
+			tree('before', {
+				'src/App.tsx': 'const a = 1\n',
+				'src/Deleted.tsx': 'export const gone = 1\n',
+			}),
 			tree('after', { 'src/App.tsx': 'const a = 1\n' }),
 		);
 		expect(patch.text).toContain('deleted file mode');

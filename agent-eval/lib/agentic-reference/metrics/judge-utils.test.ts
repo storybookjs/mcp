@@ -27,7 +27,7 @@ describe('usdOf', () => {
 		expect(cost).toBeCloseTo(5, 6);
 	});
 
-	it('still prices the retired claude-opus-4-8 model', () => {
+	it('still prices the superseded claude-opus-4-8 model', () => {
 		const cost = usdOf(usage({ inputTokens: 1_000_000 }), 'claude-opus-4-8');
 		expect(cost).toBeCloseTo(5, 6);
 	});
