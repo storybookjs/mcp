@@ -11,8 +11,8 @@ function dsNode(decision: 0 | 0.5 | 1, usage: 0 | 0.5 | 1): JudgedNode {
 		line: 1,
 		tag: 'Button',
 		kind: 'ds',
-		correctDsDecision: { score: decision, reason: 'r' },
-		correctDsUsage: { score: usage, reason: 'r' },
+		correctDsDecision: { score: decision, reasons: [{ text: 'r' }] },
+		correctDsUsage: { score: usage, reasons: [{ text: 'r' }] },
 	};
 }
 
@@ -23,7 +23,7 @@ function localNode(decision: 0 | 0.5 | 1): JudgedNode {
 		line: 2,
 		tag: 'Row',
 		kind: 'local',
-		correctLocalDecision: { score: decision, reason: 'r' },
+		correctLocalDecision: { score: decision, reasons: [{ text: 'r' }] },
 	};
 }
 

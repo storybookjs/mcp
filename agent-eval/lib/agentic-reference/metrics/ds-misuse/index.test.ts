@@ -4,22 +4,25 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { DS_MISUSE_JUDGE_VERSION } from './context.ts';
 import { DS_MISUSE_FILENAME, isStale, readMisuseReport, writeMisuseReport } from './index.ts';
 
 import type { DsMisuseReport } from './types.ts';
 
 let runDir: string;
 
+const answer = (score: 0 | 0.5 | 1) => ({
+	score,
+	reasons: [{ facet: 'mdx.do-dont' as const, text: 'DoDont.mdx forbids this composition' }],
+});
+
 function report(overrides: Partial<DsMisuseReport> = {}): DsMisuseReport {
 	return {
-		schemaVersion: 1,
+		judgeVersion: 2,
 		metricsVersion: 7,
-		judgeVersion: DS_MISUSE_JUDGE_VERSION,
-		judgedAt: '2026-08-14T00:00:00.000Z',
+		judgedAt: '2026-08-21T00:00:00.000Z',
 		model: 'claude-opus-4-8',
 		dsGuidelinesRef: 'yannbf/droppy-ds@abc',
-		fixtureRef: 'yannbf/mealdrop@def',
+		fixtureRef: 'yannbf/mealdrop@ref',
 		diffTruncated: false,
 		summary: {
 			correctDsDecision: 1,
@@ -27,7 +30,17 @@ function report(overrides: Partial<DsMisuseReport> = {}): DsMisuseReport {
 			correctLocalDecision: null,
 			evaluated: { ds: 1, local: 0 },
 		},
-		nodes: [],
+		nodes: [
+			{
+				path: 'App/Button[0]',
+				file: 'src/App.tsx',
+				line: 3,
+				tag: 'Button',
+				kind: 'ds',
+				correctDsDecision: answer(1),
+				correctDsUsage: answer(1),
+			},
+		],
 		...overrides,
 	};
 }
@@ -92,6 +105,32 @@ describe('artifact round-trip', () => {
 		writeFileSync(join(runDir, DS_MISUSE_FILENAME), JSON.stringify(withoutSummary));
 		expect(readMisuseReport(runDir)).toBeNull();
 	});
+
+	// A v1 artifact has a `reason` string per answer, not a `reasons` array, and
+	// no judgeVersion stamp: it must not be walked as if it were v2-shaped.
+	it('returns null for a v1-shaped artifact (reason string, no judgeVersion)', () => {
+		mkdirSync(runDir, { recursive: true });
+		const { judgeVersion: _judgeVersion, ...rest } = report();
+		writeFileSync(
+			join(runDir, DS_MISUSE_FILENAME),
+			JSON.stringify({
+				...rest,
+				schemaVersion: 1,
+				nodes: [
+					{
+						path: 'App/Button[0]',
+						file: 'src/App.tsx',
+						line: 3,
+						tag: 'Button',
+						kind: 'ds',
+						correctDsDecision: { score: 1, reason: 'looked right' },
+						correctDsUsage: { score: 1, reason: 'looked right' },
+					},
+				],
+			}),
+		);
+		expect(readMisuseReport(runDir)).toBeNull();
+	});
 });
 
 describe('isStale', () => {
@@ -100,40 +139,10 @@ describe('isStale', () => {
 		expect(isStale(report(), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(false);
 	});
 
-	// A moved guidelines pin means the run was judged against another standard.
-	it('is true when the guidelines pin moved', () => {
-		expect(isStale(report(), { dsGuidelinesRef: 'yannbf/droppy-ds@zzz' })).toBe(true);
-	});
-
-	// The deterministic metricsVersion only records which census rules built
-	// the node paths; it must not invalidate a paid judge artifact.
-	it('is NOT stale when only metricsVersion differs', () => {
-		expect(
-			isStale(report({ metricsVersion: 99 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
-		).toBe(false);
-	});
-
 	it('is true when the judge version moved', () => {
-		expect(isStale(report({ judgeVersion: 0 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(
-			true,
-		);
-	});
-
-	// An artifact predating the judgeVersion field was produced by judge
-	// version 1 and reads as such — never as automatically stale, so a paid
-	// judgement is not re-spent just because the stamp arrived after it did.
-	it('reads a report lacking judgeVersion as version 1', () => {
-		const { judgeVersion: _judgeVersion, ...legacy } = report();
-		const stampless = legacy as DsMisuseReport;
 		expect(
-			isStale({ ...stampless, judgeVersion: 1 }, { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
-		).toBe(isStale(stampless, { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }));
-	});
-
-	it('is true for a report from an older schema', () => {
-		expect(isStale(report({ schemaVersion: 0 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(
-			true,
-		);
+			isStale(report({ judgeVersion: 1 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
+		).toBe(true);
 	});
 
 	// An LLM judge is its model: a different model applied the rubric with a
@@ -143,5 +152,18 @@ describe('isStale', () => {
 		expect(
 			isStale(report({ model: 'claude-opus-4-7' }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
 		).toBe(true);
+	});
+
+	// A moved guidelines pin means the run was judged against another standard.
+	it('is true when the guidelines pin moved', () => {
+		expect(isStale(report(), { dsGuidelinesRef: 'yannbf/droppy-ds@moved' })).toBe(true);
+	});
+
+	// The deterministic metricsVersion only records which census rules built
+	// the node paths; it must not invalidate a paid judge artifact.
+	it('is NOT stale when only metricsVersion differs', () => {
+		expect(
+			isStale(report({ metricsVersion: 99 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
+		).toBe(false);
 	});
 });

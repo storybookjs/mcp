@@ -20,7 +20,6 @@ import { collectDsDocs, dsDocsRefLabel } from './ds-docs.ts';
 import { runJudge } from './judge.ts';
 import { summariseJudgement } from './score.ts';
 import { treePatch } from './tree-patch.ts';
-import { DS_MISUSE_SCHEMA_VERSION } from './types.ts';
 
 import type { NodeRecord } from '../ds-coverage/types.ts';
 import type { DsMisuseReport } from './types.ts';
@@ -50,19 +49,21 @@ export interface StalenessCheck {
 }
 
 function isScoredAnswer(value: unknown): boolean {
-	return isRecord(value) && typeof value.score === 'number';
+	return isRecord(value) && typeof value.score === 'number' && Array.isArray(value.reasons);
 }
 
 /**
  * True when the parsed JSON has the shape a reader downstream (isStale,
- * misuseValues) can walk without crashing: nodes is an array of records, each
- * present per-kind answer is a scored object, and summary is a record. This
- * is not a full schema check — it only guards the fields those readers touch.
+ * misuseValues) can walk without crashing: a numeric judgeVersion stamp is
+ * present, nodes is an array of records, each present per-kind answer is a
+ * scored object, and summary is a record. This is not a full schema check —
+ * it only guards the fields those readers touch. The judgeVersion check also
+ * keeps a v1 artifact (single `reason` string, no stamp) from reaching
+ * isStale with a shape it cannot walk.
  */
 function isWellFormedReport(value: unknown): value is DsMisuseReport {
-	if (!isRecord(value) || !Array.isArray(value.nodes) || !isRecord(value.summary)) {
-		return false;
-	}
+	if (!isRecord(value) || typeof value.judgeVersion !== 'number') return false;
+	if (!Array.isArray(value.nodes) || !isRecord(value.summary)) return false;
 	return value.nodes.every((node) => {
 		if (!isRecord(node)) return false;
 		for (const key of ['correctDsDecision', 'correctDsUsage', 'correctLocalDecision']) {
@@ -96,9 +97,8 @@ export function writeMisuseReport(runDir: string, report: DsMisuseReport): void 
  */
 export function isStale(report: DsMisuseReport, current: StalenessCheck): boolean {
 	return (
-		report.schemaVersion !== DS_MISUSE_SCHEMA_VERSION ||
+		report.judgeVersion !== DS_MISUSE_JUDGE_VERSION ||
 		report.dsGuidelinesRef !== current.dsGuidelinesRef ||
-		(report.judgeVersion ?? 1) !== DS_MISUSE_JUDGE_VERSION ||
 		report.model !== JUDGE_MODEL
 	);
 }
@@ -131,7 +131,6 @@ export async function judgeRun(
 	);
 
 	const report: DsMisuseReport = {
-		schemaVersion: DS_MISUSE_SCHEMA_VERSION,
 		metricsVersion: input.metricsVersion,
 		judgeVersion: DS_MISUSE_JUDGE_VERSION,
 		judgedAt: new Date().toISOString(),

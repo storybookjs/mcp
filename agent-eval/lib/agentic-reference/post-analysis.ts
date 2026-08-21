@@ -766,11 +766,13 @@ export function summarize(
 }
 
 /**
- * What every agentic-reference experiment hands to the offline analyzer.
+ * Version of the *deterministic* analysis outputs: everything a plain
+ * results:analyze pass computes as a pure function of a run's artifacts.
+ * A bump invalidates committed baselines and stored analysis.json files.
+ * LLM judge metrics are a separate axis: each judge owns a colocated
+ * *_JUDGE_VERSION (e.g. DS_MISUSE_JUDGE_VERSION in
+ * metrics/ds-misuse/context.ts) and never bumps this constant.
  *
- * metricsVersion invalidates committed baselines when a metric definition or
- * its stored shape changes, so a baseline measured under old rules is rebuilt
- * rather than silently compared against runs measured under new ones.
  * History:
  * - 2 added the jsx complexity variants
  * - 3 split markup size into jsx-structure.ts (jsxLength/jsxBindings/jsxDepth)

@@ -14,15 +14,21 @@ import type { DsDoc } from './ds-docs.ts';
 import type { TreePatch } from './tree-patch.ts';
 import type { NodeRecord } from '../ds-coverage/types.ts';
 
-export const JUDGE_MODEL = 'claude-opus-4-8';
+export const JUDGE_MODEL = 'claude-opus-4-8'; // switched to claude-opus-5 in Task 7
 
 /**
- * Version of the judge itself, independent of the deterministic metrics that
- * feed it. Bump when the prompt, the DS guidelines content baked into a run,
- * the model, or any judging internals change — anything that would make a
- * stored score not comparable with a freshly judged one.
+ * The single version of this LLM judge: prompt (incl. the rendered facet
+ * catalogue), output schema, model, and judging internals all fold into it.
+ * Bump when any of those change — anything that would make a stored score or
+ * artifact not comparable with a freshly judged one. The deterministic
+ * pipeline's metricsVersion (post-analysis.ts) is a separate axis and never
+ * bumps for judge changes, nor vice versa.
+ *
+ * History:
+ * - 1 three-question judge, one reason string per answer, separate schemaVersion, Opus 4.8
+ * - 2 facet-categorised reasons[], facet catalogue in the prompt, schemaVersion merged in
  */
-export const DS_MISUSE_JUDGE_VERSION = 1;
+export const DS_MISUSE_JUDGE_VERSION = 2;
 
 /**
  * 1h is the longest TTL the API offers (the only values are `5m` and `1h`), and
