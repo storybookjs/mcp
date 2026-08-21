@@ -118,7 +118,10 @@ export function buildJudgeRequest(input: JudgeRequestInput) {
 		},
 		// Stable, and in this order: the breakpoint on the last block caches both.
 		system: [
-			{ type: 'text' as const, text: readFileSync(PROMPT_PATH, 'utf8') + '\n\n' + facetCatalogue() },
+			{
+				type: 'text' as const,
+				text: readFileSync(PROMPT_PATH, 'utf8') + '\n\n' + facetCatalogue(),
+			},
 			{ type: 'text' as const, text: docsBlock(input.docs), cache_control: CACHE_CONTROL },
 		],
 		messages: [

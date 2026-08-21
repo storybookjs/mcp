@@ -75,9 +75,7 @@ export function isFacetId(value: string): value is FacetId {
 
 export function describeFacet(id: FacetId): string {
 	const parsed = parseFacetId(id)!;
-	return (FACET_TAXONOMY as Record<string, Record<string, string>>)[parsed.category]![
-		parsed.leaf
-	]!;
+	return (FACET_TAXONOMY as Record<string, Record<string, string>>)[parsed.category]![parsed.leaf]!;
 }
 
 /**

@@ -389,10 +389,7 @@ describe('misuse graft', () => {
 					// none. The single answer's score feeds both buckets.
 					correctLocalDecision: {
 						score: 0.5,
-						reasons: [
-							{ facet: 'general.general-tokens', text: 'd' },
-							{ text: 'e' },
-						],
+						reasons: [{ facet: 'general.general-tokens', text: 'd' }, { text: 'e' }],
 					},
 				},
 			],

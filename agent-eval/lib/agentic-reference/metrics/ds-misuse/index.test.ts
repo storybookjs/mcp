@@ -140,9 +140,9 @@ describe('isStale', () => {
 	});
 
 	it('is true when the judge version moved', () => {
-		expect(
-			isStale(report({ judgeVersion: 1 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
-		).toBe(true);
+		expect(isStale(report({ judgeVersion: 1 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(
+			true,
+		);
 	});
 
 	// An LLM judge is its model: a different model applied the rubric with a

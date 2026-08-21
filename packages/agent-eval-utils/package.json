@@ -2,7 +2,11 @@
 	"name": "@storybook/agent-eval-utils",
 	"version": "0.0.1",
 	"description": "Shared utilities for Storybook agent evals: the documentation facet taxonomy",
-	"keywords": ["storybook", "eval", "facets"],
+	"keywords": [
+		"eval",
+		"facets",
+		"storybook"
+	],
 	"homepage": "https://github.com/storybookjs/mcp/blob/main/packages/agent-eval-utils/README.md",
 	"license": "MIT",
 	"author": "Storybook Core Team",
@@ -10,7 +14,9 @@
 		"url": "git+https://github.com/storybookjs/mcp.git",
 		"directory": "packages/agent-eval-utils"
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"type": "module",
 	"exports": {
 		".": {
