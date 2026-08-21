@@ -1701,6 +1701,9 @@ function misuseFinding(finding: MisuseFinding): string {
 <span class="q">${escapeHtml(MISUSE_QUESTION_META[finding.question].label)}</span>
 <span class="mono where">${escapeHtml(finding.file)}:${finding.line}</span>
 <span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span>
+<button type="button" class="mopen" data-path="${escapeHtml(finding.projectPath)}/${escapeHtml(
+		finding.file,
+	)}" data-line="${finding.line}" title="Open in your editor (set the repo root via the ? button)">open</button>
 </div>
 <p class="reason">${escapeHtml(finding.reason)}</p>
 ${findingExcerpt(finding)}
@@ -1804,7 +1807,47 @@ ${panel.guidelinesRefs.length} different guideline versions (${panel.guidelinesR
 so a degraded arm is scored against the same bar as the rest.</p>`
 			: '';
 
-	return `<h2>DS misuse</h2>${intro}${coverage}${pinWarning}
+	// Older staged bundles predate these fields; the help text degrades to
+	// placeholders instead of refusing to render them.
+	const fixture = (panel.fixtureRefs ?? [])[0] ?? '<repo>@<ref>';
+	const baselineDir = fixture
+		.replace('/', '__')
+		.replace('@', '@')
+		.replace(/@(.+)$/, (_, ref: string) => `@${ref.replace(/\//g, '__')}`);
+	const example = panel.findings[0];
+	const examplePath = example
+		? `${example.projectPath}/${example.file}`
+		: 'agent-eval/results/<experiment>/<batch>/<workflow>/run-N/project/src/File.tsx';
+	const exampleProject = example
+		? example.projectPath
+		: 'agent-eval/results/<experiment>/<batch>/<workflow>/run-N/project';
+	const help = `<dialog class="misuse-modal" id="misuseHelpModal">
+<div class="modal-head"><b>Digging into a finding</b>
+<button type="button" class="modal-close" data-close="misuseHelpModal">Close</button></div>
+<div class="modal-body">
+<p class="lede">Every finding lives in a run directory this repo already holds. Paths below are
+relative to the repo root; the <i>open</i> buttons resolve them against
+<span class="mono" id="misuseRootShown"></span>
+<button type="button" class="modal-close" id="misuseRootChange">Change</button></p>
+<h3>Read the code</h3>
+<p class="mono mcmd">code ${escapeHtml(examplePath)}</p>
+<h3>Diff the run against its pinned baseline</h3>
+<p class="mono mcmd">git diff --no-index agent-eval/.eval-cache/refs/${escapeHtml(baselineDir)} ${escapeHtml(exampleProject)}</p>
+<p class="fineprint">The baseline cache appears after any analyze/judge pass; the pin is ${escapeHtml(fixture)}.</p>
+<h3>Read the agent's reasoning</h3>
+<p class="mono mcmd">less ${escapeHtml(exampleProject.replace(/\/project$/, ''))}/transcript.txt</p>
+<p class="fineprint">The transcript shows why the agent chose the flagged component — often the real answer.</p>
+<h3>Run the app</h3>
+<p class="mono mcmd">cd ${escapeHtml(exampleProject)} && pnpm install && pnpm dev</p>
+<h3>Re-judge after changing the rubric</h3>
+<p class="mono mcmd">pnpm judge:ds-misuse --dry</p>
+<p class="fineprint">Reading artifacts is always free; only judging spends. Paths above name this
+bundle's first finding — swap in any finding's run directory.</p>
+</div>
+</dialog>`;
+	return `<h2>DS misuse <button type="button" class="mhelp" id="misuseHelpBtn" title="How to dig into a finding">?</button></h2>
+<div data-built-from="${escapeHtml(panel.builtFrom ?? '')}" id="misuseRootHint" hidden></div>
+${help}${intro}${coverage}${pinWarning}
 <h3 class="sr-only">Scores</h3>
 ${tables}
 <p class="fineprint">Counts are pooled nodes across a cell's judged runs, shown as
@@ -1883,8 +1926,7 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .filterbar { display:flex; flex-direction:column; gap:10px; margin:22px 0 0;
   padding:12px 14px; background:var(--wash); border:1px solid var(--line); border-radius:12px;
   position:sticky; top:0; z-index:30; box-shadow:0 6px 18px rgba(0,0,0,.10); }
-.filterbar::before { content:""; position:absolute; inset:-24px -24px 8px; background:var(--surface);
-  z-index:-1; }
+.filterbar.stuck { border-radius:0; }
 .fbrow { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
 .fbopts { border-top:1px solid var(--line); padding-top:10px; }
 .legend { display:flex; gap:8px; flex-wrap:wrap; font-size:.85rem; margin-right:auto; }
@@ -2060,6 +2102,16 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
   padding:5px 10px; cursor:pointer; }
 .misuse-modal .modal-body { padding:6px 18px 16px; overflow:auto; max-height:calc(82vh - 58px); }
 body:has(.misuse-modal[open]) { overflow:hidden; }
+.mopen { font:600 .72rem/1.3 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink-2);
+  background:none; border:1px solid var(--line); border-radius:6px; padding:2px 8px;
+  cursor:pointer; margin-left:auto; }
+.mopen:hover { background:var(--wash); }
+.mhelp { font:700 .8rem/1 "IBM Plex Mono",monospace; color:var(--ink-2); background:none;
+  border:1px solid var(--line); border-radius:50%; width:22px; height:22px; cursor:pointer;
+  vertical-align:3px; }
+.mhelp:hover { background:var(--wash); }
+.mcmd { background:var(--wash); border:1px solid var(--line); border-radius:8px;
+  padding:8px 12px; font-size:.78rem; overflow-x:auto; white-space:pre; user-select:all; }
 .finding .excerpt { margin:8px 0 2px; padding:8px 12px; background:var(--wash);
   border:1px solid var(--line); border-radius:8px; font-size:.78rem; line-height:1.55;
   overflow-x:auto; }
@@ -2266,6 +2318,50 @@ function setSigMode(sigmode) {
 }
 sigModeButtons.forEach(function (b) {
   b.addEventListener('click', function () { setSigMode(b.getAttribute('data-sigmode')); });
+});
+
+// Square the filter bar's corners while it is stuck to the viewport top, so
+// nothing scrolls visibly behind the rounding.
+function syncStuck() {
+  if (filterbar) filterbar.classList.toggle('stuck', filterbar.getBoundingClientRect().top <= 0);
+}
+window.addEventListener('scroll', syncStuck, { passive: true });
+window.addEventListener('resize', syncStuck);
+syncStuck();
+
+// Findings carry repo-relative paths so a bundle works on any machine; the
+// editor links resolve them against a root the reader can override.
+function misuseRoot() {
+  var hint = byId('misuseRootHint');
+  return localStorage.getItem('agenticRefRepoRoot') ||
+    (hint ? hint.getAttribute('data-built-from') : '') || '';
+}
+function showMisuseRoot() {
+  var el = byId('misuseRootShown');
+  if (el) el.textContent = misuseRoot() || '(repo root not set)';
+}
+showMisuseRoot();
+document.addEventListener('click', function (e) {
+  var open = e.target && e.target.closest ? e.target.closest('.mopen') : null;
+  if (open) {
+    window.location.href = 'vscode://file/' + misuseRoot() + '/' +
+      open.getAttribute('data-path') + ':' + open.getAttribute('data-line');
+    return;
+  }
+  if (e.target && e.target.id === 'misuseHelpBtn') { byId('misuseHelpModal').showModal(); return; }
+  if (e.target && e.target.id === 'misuseRootChange') {
+    var next = window.prompt('Absolute path of your storybookjs/mcp checkout:', misuseRoot());
+    if (next !== null) {
+      while (next.endsWith('/')) next = next.slice(0, -1);
+      localStorage.setItem('agenticRefRepoRoot', next);
+      showMisuseRoot();
+    }
+    return;
+  }
+  var anyClose = e.target && e.target.closest ? e.target.closest('[data-close]') : null;
+  if (anyClose) { byId(anyClose.getAttribute('data-close')).close(); return; }
+  var helpModal = byId('misuseHelpModal');
+  if (helpModal && e.target === helpModal) { helpModal.close(); return; }
 });
 
 // Below-perfect counts in the misuse summary open a modal with the verdicts

@@ -130,7 +130,9 @@ describe('collectMisusePanel', () => {
 				correctLocalDecision: { score: 0.5, reason: 'Badge exists but its API is debatable here.' },
 			}),
 		]);
-		const panel = collectMisusePanel([cell(TREATMENT, [usableRun(TREATMENT, 1, report)])], SPEC);
+		const panel = collectMisusePanel([cell(TREATMENT, [usableRun(TREATMENT, 1, report)])], SPEC, {
+			repoRoot: results,
+		});
 
 		expect(panel.judgedRuns).toBe(1);
 		expect(panel.usableRuns).toBe(1);
@@ -155,7 +157,9 @@ describe('collectMisusePanel', () => {
 	it('counts unjudged runs into coverage without inventing scores for them', () => {
 		const judged = usableRun(CONTROL, 1, misuseReport([]));
 		const unjudged = usableRun(CONTROL, 2, null);
-		const panel = collectMisusePanel([cell(CONTROL, [judged, unjudged])], SPEC);
+		const panel = collectMisusePanel([cell(CONTROL, [judged, unjudged])], SPEC, {
+			repoRoot: results,
+		});
 
 		expect(panel.judgedRuns).toBe(1);
 		expect(panel.usableRuns).toBe(2);
@@ -184,7 +188,7 @@ describe('collectMisusePanel', () => {
 			join(run.run.projectDir, 'src/App.tsx'),
 			['a', 'b', 'the flagged line', 'd', 'e'].join('\n'),
 		);
-		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC);
+		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC, { repoRoot: results });
 		expect(panel.findings[0]!.excerpt).toEqual({
 			start: 1,
 			lines: ['a', 'b', 'the flagged line', 'd', 'e'],
@@ -197,14 +201,16 @@ describe('collectMisusePanel', () => {
 			1,
 			misuseReport([judgedNode({ correctDsUsage: { score: 0, reason: 'r' } })]),
 		);
-		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC);
+		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC, { repoRoot: results });
 		expect(panel.findings[0]!.excerpt).toBeUndefined();
 	});
 
 	it('surfaces every distinct guideline pin so mixed-standard bundles are visible', () => {
 		const a = usableRun(CONTROL, 1, misuseReport([], 'org/ds@old'));
 		const b = usableRun(TREATMENT, 1, misuseReport([], 'org/ds@new'));
-		const panel = collectMisusePanel([cell(CONTROL, [a]), cell(TREATMENT, [b])], SPEC);
+		const panel = collectMisusePanel([cell(CONTROL, [a]), cell(TREATMENT, [b])], SPEC, {
+			repoRoot: results,
+		});
 		expect(panel.guidelinesRefs).toEqual(['org/ds@new', 'org/ds@old']);
 	});
 });

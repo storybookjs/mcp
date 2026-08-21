@@ -182,6 +182,8 @@ function render(overrides: {
 function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 	return {
 		guidelinesRefs: ['org/ds@abc'],
+		fixtureRefs: ['org/app@ref'],
+		builtFrom: '/builder/mcp',
 		judgedRuns: 2,
 		usableRuns: 2,
 		cells: [
@@ -222,6 +224,7 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 				question: 'correctDsDecision',
 				score: 0,
 				reason: 'Badge.mdx rules out Badge for a live status; status text was the fit.',
+				projectPath: 'agent-eval/results/x/b/701-new-ui-flow/run-1/project',
 			},
 		],
 		...overrides,

@@ -11,7 +11,7 @@
 // a bundle, not an error: the panel reports judged-vs-usable per cell and the
 // report renders what exists.
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 import { readMisuseReport } from '../metrics/ds-misuse/index.ts';
 
@@ -58,6 +58,8 @@ export interface MisuseFinding {
 	question: MisuseQuestion;
 	score: 0 | 0.5;
 	reason: string;
+	/** The run's collected tree, relative to the repo root, posix-separated. */
+	projectPath: string;
 	/** The flagged source, read from the run's collected tree at build time. */
 	excerpt?: { start: number; lines: string[] };
 }
@@ -92,6 +94,14 @@ function excerptOf(
 export interface MisusePanel {
 	/** Distinct guideline pins seen across artifacts; more than one taints comparison. */
 	guidelinesRefs: string[];
+	/** Distinct fixture pins, for reconstructing baselines in the help text. */
+	fixtureRefs: string[];
+	/**
+	 * The repo root on the machine that built this bundle. A hint, not a fact:
+	 * the report offers it as the default and lets a reader on another machine
+	 * override it, since paths in findings are repo-relative on purpose.
+	 */
+	builtFrom: string;
 	judgedRuns: number;
 	usableRuns: number;
 	cells: MisuseCellSummary[];
@@ -129,8 +139,14 @@ function poolNode(
  * comparison, judged or not. Cells keep the spec's own ordering upstream;
  * findings sort worst-first within a cell so the report needs no re-sort.
  */
-export function collectMisusePanel(cells: Cell[], spec: ComparisonSpec): MisusePanel {
+export function collectMisusePanel(
+	cells: Cell[],
+	spec: ComparisonSpec,
+	options: { repoRoot: string },
+): MisusePanel {
 	const refs = new Set<string>();
+	const fixtures = new Set<string>();
+	const toPosix = (value: string) => value.split(sep).join('/');
 	const summaries: MisuseCellSummary[] = [];
 	const findings: MisuseFinding[] = [];
 	let judgedRuns = 0;
@@ -164,6 +180,7 @@ export function collectMisusePanel(cells: Cell[], spec: ComparisonSpec): MisuseP
 			summary.judged += 1;
 			judgedRuns += 1;
 			refs.add(report.dsGuidelinesRef);
+			fixtures.add(report.fixtureRef);
 			summary.evaluated.ds += report.summary.evaluated.ds;
 			summary.evaluated.local += report.summary.evaluated.local;
 
@@ -182,6 +199,7 @@ export function collectMisusePanel(cells: Cell[], spec: ComparisonSpec): MisuseP
 						question,
 						score,
 						reason,
+						projectPath: toPosix(relative(options.repoRoot, usable.run.projectDir)),
 						excerpt: excerptOf(usable.run.projectDir, node.file, node.line, excerpts),
 					});
 				});
@@ -195,6 +213,8 @@ export function collectMisusePanel(cells: Cell[], spec: ComparisonSpec): MisuseP
 
 	return {
 		guidelinesRefs: [...refs].sort(),
+		fixtureRefs: [...fixtures].sort(),
+		builtFrom: toPosix(options.repoRoot),
 		judgedRuns,
 		usableRuns,
 		cells: summaries,
