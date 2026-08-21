@@ -8,7 +8,7 @@ import { findRuns } from '../../post-analysis/discovery.ts';
 import type { ResolvedCase } from './resolve.ts';
 import { autoSelectWorkflows, buildCells } from './cells.ts';
 import { copyTaskFixture, measuredResultJson } from './test-fixtures.ts';
-import { JUDGE_MODEL } from '../metrics/ds-misuse/context.ts';
+import { DS_MISUSE_JUDGE_VERSION, JUDGE_MODEL } from '../metrics/ds-misuse/context.ts';
 import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
 
 const CONTROL: ResolvedCase = {
@@ -231,6 +231,7 @@ describe('misuse graft', () => {
 			JSON.stringify({
 				schemaVersion: 1,
 				metricsVersion: 6,
+				judgeVersion: DS_MISUSE_JUDGE_VERSION,
 				judgedAt: 'x',
 				model: JUDGE_MODEL,
 				dsGuidelinesRef: dsDocsRefLabel(),
@@ -250,7 +251,7 @@ describe('misuse graft', () => {
 
 	function dsMisuseOf(cells: ReturnType<typeof build>['cells']) {
 		const usable = cells.find((c) => c.runs.length > 0)!.runs[0]!;
-		return (usable.analysis as { dsMisuse?: Record<string, number | null> }).dsMisuse;
+		return (usable.analysis as { dsMisuse?: Record<string, unknown> }).dsMisuse;
 	}
 
 	it('grafts the per-answer aggregate and the three sub-scores onto the analysis', () => {
@@ -294,6 +295,8 @@ describe('misuse graft', () => {
 			correctDsDecision: 0.5,
 			correctDsUsage: 0,
 			correctLocalDecision: 0.5,
+			evaluated: { ds: 1, local: 1 },
+			answers: 3,
 		});
 	});
 

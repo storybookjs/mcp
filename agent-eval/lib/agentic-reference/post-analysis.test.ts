@@ -903,7 +903,13 @@ describe('summarize', () => {
 					coverage: true,
 					misuse: false,
 				});
-				expect(log.mock.calls.map(String).filter((line) => !line.startsWith('┌'))).toEqual([]);
+				// coverageRows carries no DS misuse judgement, so the judged-runs hint
+				// is expected here too — it is covered separately in its own describe.
+				expect(
+					log.mock.calls
+						.map(String)
+						.filter((line) => !line.startsWith('┌') && !line.includes('DS misuse:')),
+				).toEqual([]);
 			} finally {
 				log.mockRestore();
 			}
@@ -1071,7 +1077,7 @@ describe('misuse findings', () => {
 		}
 	}
 
-	it('prints every below-perfect verdict with its file, question, and reason', () => {
+	it('prints every judged verdict, including a perfect one, with its file, question, and reason', () => {
 		const output = loggedLines([
 			misuseRow([
 				{
@@ -1088,16 +1094,16 @@ describe('misuse findings', () => {
 				},
 			]),
 		]);
-		expect(output).toContain('Findings (every score below 1, with reason)');
+		expect(output).toContain('Judged nodes (every verdict, with reason)');
 		expect(output).toContain('<Badge>');
 		expect(output).toContain('right component');
 		expect(output).toContain('src/OrderStatus.tsx:12');
 		expect(output).toContain('Badge.mdx rules out Badge for a live status');
-		// The perfect answer on the same node prints nothing.
-		expect(output).not.toContain('No violation.');
+		// The perfect answer on the same node prints too, not only the below-perfect one.
+		expect(output).toContain('No violation.');
 	});
 
-	it('says so explicitly when every judged node scored 1', () => {
+	it('prints a verdict line for every judged node, even when every score is 1', () => {
 		const output = loggedLines([
 			misuseRow([
 				{
@@ -1110,6 +1116,111 @@ describe('misuse findings', () => {
 				},
 			]),
 		]);
-		expect(output).toContain('No findings: every judged node scored 1');
+		expect(output).toContain('Judged nodes (every verdict, with reason)');
+		expect(output).toContain('<Card>');
+		expect(output).toContain('Right fit.');
+		expect(output).not.toContain('No findings');
+	});
+
+	it('reports a distinct message for a row with summary scores but no nodes array', () => {
+		const output = loggedLines([
+			{
+				experiment: 'agentic-ref-cc-x-opus-high',
+				eval: 'e',
+				run: 1,
+				status: 'passed',
+				fixtureRef: 'r@1',
+				cost: { estimatedCostUsd: 1 },
+				speed: { durationSeconds: 10 },
+				toolUse: { buckets: { docs: 0, exploration: 0 } },
+				dsMisuse: {
+					summary: {
+						correctDsDecision: 1,
+						correctDsUsage: 1,
+						correctLocalDecision: null,
+						evaluated: { ds: 2, local: 0 },
+					},
+				},
+			},
+		]);
+		expect(output).toContain('No per-node verdicts: these runs carry summary scores but no judged node detail.');
+		expect(output).not.toContain('No findings: every judged node scored 1');
+	});
+
+	it('reports the same distinct message for a row with an empty nodes array', () => {
+		const output = loggedLines([misuseRow([])]);
+		expect(output).toContain('No per-node verdicts: these runs carry summary scores but no judged node detail.');
+	});
+});
+
+describe('DS misuse judged hint', () => {
+	function plainRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+		return {
+			experiment: 'x',
+			eval: 'e',
+			run: 1,
+			status: 'passed',
+			fixtureRef: 'r@1',
+			cost: { estimatedCostUsd: 1 },
+			speed: { durationSeconds: 10 },
+			toolUse: null,
+			...overrides,
+		};
+	}
+
+	const judgedRow = plainRow({
+		dsMisuse: { summary: { correctDsDecision: 1, correctDsUsage: 1, correctLocalDecision: null, evaluated: { ds: 1, local: 0 } } },
+	});
+
+	function loggedLines(rows: Array<Record<string, unknown>>, options?: SummarizeOptions): string {
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		try {
+			summarize(rows, options);
+			return spy.mock.calls.map((call) => String(call[0])).join('\n');
+		} finally {
+			spy.mockRestore();
+		}
+	}
+
+	it('tells the reader how many runs are judged even when --misuse is off', () => {
+		const output = loggedLines([plainRow({ run: 1 }), plainRow({ run: 2 })], {
+			general: false,
+			complexity: false,
+			coverage: false,
+			misuse: false,
+		});
+		expect(output).toContain('DS misuse: 0/2 runs judged — run: pnpm judge:ds-misuse');
+	});
+
+	it('counts partially judged runs', () => {
+		const output = loggedLines([judgedRow, plainRow({ run: 2 })], {
+			general: false,
+			complexity: false,
+			coverage: false,
+			misuse: false,
+		});
+		expect(output).toContain('DS misuse: 1/2 runs judged — run: pnpm judge:ds-misuse');
+	});
+
+	it('prints nothing extra when every run is judged and --misuse is off', () => {
+		const output = loggedLines([judgedRow], {
+			general: false,
+			complexity: false,
+			coverage: false,
+			misuse: false,
+		});
+		expect(output).not.toContain('DS misuse:');
+		expect(output).not.toContain('judge:ds-misuse');
+	});
+
+	it('does not double up with the no-table-families fallback', () => {
+		const output = loggedLines([plainRow({ run: 1 })], {
+			general: false,
+			complexity: false,
+			coverage: false,
+			misuse: false,
+		});
+		expect(output).toContain('DS misuse: 0/1 runs judged — run: pnpm judge:ds-misuse');
+		expect(output).not.toContain('No table families selected.');
 	});
 });

@@ -85,7 +85,7 @@ function classify(run: Run, metricsVersion: number | undefined, cell: Cell) {
 		cell.unanalyzed += 1;
 		return;
 	}
-	attachMisuse(analysis, run.runDir, metricsVersion);
+	attachMisuse(analysis, run.runDir);
 	cell.runs.push({ run, analysis });
 }
 
@@ -110,6 +110,11 @@ function misuseValues(report: DsMisuseReport) {
 		correctDsDecision: report.summary.correctDsDecision,
 		correctDsUsage: report.summary.correctDsUsage,
 		correctLocalDecision: report.summary.correctLocalDecision,
+		// How much judgement stands behind the means above: nodes the judge
+		// actually scored, and the pooled answer count the aggregate was
+		// normalised over.
+		evaluated: report.summary.evaluated,
+		answers,
 	};
 }
 
@@ -121,13 +126,9 @@ function misuseValues(report: DsMisuseReport) {
  * metrics version) is left off entirely, because a number scored against a
  * different standard is worse in a table than a blank.
  */
-function attachMisuse(
-	analysis: Record<string, unknown>,
-	runDir: string,
-	metricsVersion: number | undefined,
-): void {
+function attachMisuse(analysis: Record<string, unknown>, runDir: string): void {
 	const report = readMisuseReport(runDir);
-	if (report === null || isStale(report, { dsGuidelinesRef: dsDocsRefLabel(), metricsVersion })) {
+	if (report === null || isStale(report, { dsGuidelinesRef: dsDocsRefLabel() })) {
 		return;
 	}
 	analysis.dsMisuse = misuseValues(report);

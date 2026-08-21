@@ -25,8 +25,12 @@ import {
 	manifestJson,
 	type ComparisonSpec,
 } from '#lib/agentic-reference/comparison/emit';
-import { writeHtmlReport } from '#lib/agentic-reference/comparison/html-report';
-import { collectMisusePanel } from '#lib/agentic-reference/comparison/misuse';
+import { writeHtmlReport, type EstimateRow } from '#lib/agentic-reference/comparison/html-report';
+import {
+	collectMisusePanel,
+	collectMisuseStatuses,
+	formatMisuseStatusTable,
+} from '#lib/agentic-reference/comparison/misuse';
 import { parseCompareArgs } from '#lib/agentic-reference/comparison/options';
 import {
 	comparisonSlug,
@@ -39,9 +43,9 @@ import {
 } from '#lib/agentic-reference/comparison/resolve';
 import { ansiStyle } from '#lib/agentic-reference/style';
 import { findUv } from '#lib/agentic-reference/comparison/uv';
-import { loadPlanConfig, resolvePlanPath } from '#lib/agentic-reference/plan-config';
+import { tallyVerdicts } from '#lib/agentic-reference/comparison/verdict-tally';
+import { resolvePlanFlag, resolvePlanPath } from '#lib/agentic-reference/plan-config';
 import { postAnalysis } from '#lib/agentic-reference/post-analysis';
-import { resolveRunPlan } from '#lib/agentic-reference/run-plan';
 import { findRuns } from '#lib/post-analysis/discovery';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -71,18 +75,13 @@ async function main() {
 
 	let plan: { treatments: ResolvedCase[]; workflows: string[]; runs: number; path: string } | null =
 		null;
-	if (options.plan !== undefined) {
-		if (options.cases.length > 0 || options.workflows.length > 0) {
-			fail(
-				'--plan already names the cases and workflows; drop --cases/--workflows ' +
-					'(or unset AGENTIC_REF_EXPERIMENTS/AGENTIC_REF_EVALS).',
-			);
-		}
-		const path = resolvePlanPath(options.plan);
-		const resolved = resolveRunPlan(await loadPlanConfig(path), {
-			experiments: knownExperimentNames(),
-			evals: AGENTIC_REF_EVAL_REGISTRY,
-		});
+	const resolved = await resolvePlanFlag(
+		{ plan: options.plan, experiments: options.cases, evals: options.workflows },
+		{ experiments: knownExperimentNames(), evals: AGENTIC_REF_EVAL_REGISTRY },
+		'--cases/--workflows',
+	);
+	if (resolved !== null) {
+		const path = resolvePlanPath(options.plan!);
 		const repoRelative = relative(ROOT, path);
 		plan = {
 			...resolvePlanScope(resolved, control),
@@ -174,13 +173,16 @@ async function main() {
 	// Cached judge artifacts only — free, and simply sparse when judging hasn't run.
 	const misusePanel = collectMisusePanel(cells, spec, { repoRoot: resolve(ROOT, '..') });
 	writeFileSync(join(stagingDir, 'misuse.json'), JSON.stringify(misusePanel, null, 2) + '\n');
-	console.log(
-		misusePanel.judgedRuns === misusePanel.usableRuns
-			? `DS misuse: all ${misusePanel.usableRuns} usable runs judged.`
-			: `DS misuse: ${misusePanel.judgedRuns}/${misusePanel.usableRuns} usable runs judged` +
-					(misusePanel.judgedRuns === 0 ? ' — the misuse metrics will be empty' : '') +
-					`; judge the rest: pnpm judge:ds-misuse${plan === null ? '' : ` --plan ${plan.path}`}`,
-	);
+	if (misusePanel.judgedRuns === misusePanel.usableRuns) {
+		console.log(`DS misuse: all ${misusePanel.usableRuns} usable runs judged.`);
+	} else {
+		console.log(outStyle.bold('DS misuse judge status:'));
+		console.log(formatMisuseStatusTable(collectMisuseStatuses(cells, spec), outStyle));
+		if (misusePanel.judgedRuns === 0) console.log('The misuse metrics will be empty.');
+		console.log(
+			`Judge the rest: pnpm judge:ds-misuse${plan === null ? '' : ` --plan ${plan.path}`}`,
+		);
+	}
 	console.log('');
 	writeFileSync(
 		join(stagingDir, 'manifest.json'),
@@ -227,21 +229,11 @@ async function main() {
 }
 
 /**
- * The one-screen answer after the stats stage: which arms moved, which way.
- *
- * The counts mirror the HTML summary's better/worse tally — direction-aware,
- * FDR-significant rows only — so the terminal says whether the report is worth
- * opening before anyone opens it.
+ * Quick preview of the HTML summary's better/worse tally so the
+ * terminal says whether the report is worth opening.
  */
 function printVerdictDigest(stagingDir: string): void {
-	let rows: Array<{
-		treatment: string;
-		metric: string;
-		beta: number;
-		context: boolean;
-		verdict: string | null;
-		direction: string;
-	}>;
+	let rows: EstimateRow[];
 	try {
 		rows = JSON.parse(readFileSync(join(stagingDir, 'estimates.json'), 'utf8'));
 	} catch {
@@ -249,19 +241,8 @@ function printVerdictDigest(stagingDir: string): void {
 	}
 	const metricLabel = new Map(COMPARISON_METRICS.map((m) => [m.key, m.label]));
 	for (const treatment of new Set(rows.map((row) => row.treatment))) {
-		const significant = rows.filter(
-			(row) => row.treatment === treatment && !row.context && row.verdict === 'significant',
-		);
-		const better = significant.filter(
-			(row) =>
-				(row.direction === 'lower-better' && row.beta < 0) ||
-				(row.direction === 'higher-better' && row.beta > 0),
-		);
-		const worse = significant.filter(
-			(row) =>
-				(row.direction === 'lower-better' && row.beta > 0) ||
-				(row.direction === 'higher-better' && row.beta < 0),
-		);
+		const treatmentRows = rows.filter((row) => row.treatment === treatment && !row.context);
+		const { better, worse } = tallyVerdicts(treatmentRows, (row) => row.verdict === 'significant');
 		const name = (row: { metric: string }) => metricLabel.get(row.metric) ?? row.metric;
 		const parts = [
 			better.length > 0

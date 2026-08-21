@@ -6,6 +6,8 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { MISUSE_QUESTIONS } from './misuse.ts';
+import { isBetter, tallyVerdicts } from './verdict-tally.ts';
+import { formatCompactCount } from '../utils.ts';
 
 import type {
 	MisuseCellSummary,
@@ -502,12 +504,6 @@ function formatDuration(seconds: number): string {
 	return `${hours}h ${String(minutes).padStart(2, '0')}m`;
 }
 
-function formatCompactCount(value: number): string {
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-	return String(Math.round(value));
-}
-
 function formatPlain(value: number): string {
 	const a = Math.abs(value);
 	if (a >= 1000) return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -595,12 +591,6 @@ function directionText(direction: EstimateDirection): string {
 	if (direction === 'lower-better') return 'lower is better';
 	if (direction === 'higher-better') return 'higher is better';
 	return 'descriptive';
-}
-
-// (a) is a directional metric win, per its own better/worse convention.
-// Never called for direction === 'neutral' — those metrics are "changed", not won.
-function isBetter(value: number, direction: EstimateDirection): boolean {
-	return value < 0 === (direction === 'lower-better');
 }
 
 interface TreatmentStyle {
@@ -931,27 +921,17 @@ function countsHtml(
 	isSig: (row: EstimateRow) => boolean,
 	gridSize: number,
 ): string {
-	let better = 0;
-	let worse = 0;
-	let changed = 0;
-	let inconclusive = 0;
-	for (const row of rows) {
-		if (!isSig(row)) {
-			inconclusive++;
-		} else if (row.direction === 'neutral') {
-			changed++;
-		} else if (isBetter(effectOf(row).value, row.direction)) {
-			better++;
-		} else {
-			worse++;
-		}
-	}
+	const { better, worse, changed, inconclusive } = tallyVerdicts(
+		rows,
+		isSig,
+		(row) => effectOf(row).value,
+	);
 	const mark = (count: number, cls: string, word: string) =>
 		count > 0 ? `<span class="${cls}">${count} ${word}</span>` : `${count} ${word}`;
 	const suffix = rows.length === gridSize ? '' : ` (${rows.length} tested)`;
 	return (
-		`${mark(better, 'cgood', 'better')} · ${mark(worse, 'cbad', 'worse')} · ` +
-		`${changed} changed · ${inconclusive} not significant${suffix}`
+		`${mark(better.length, 'cgood', 'better')} · ${mark(worse.length, 'cbad', 'worse')} · ` +
+		`${changed.length} changed · ${inconclusive.length} not significant${suffix}`
 	);
 }
 
@@ -2353,7 +2333,8 @@ function refresh() {
     el.hidden = t !== null && off[t] === true;
   });
   $('#panel-misuse .finding-group').forEach(function (group) {
-    if (!group.hidden) group.hidden = !anyVisible($('.finding', group));
+    var t = group.getAttribute('data-t');
+    group.hidden = (t !== null && off[t] === true) || !anyVisible($('.finding', group));
   });
   // Re-span each workflow group's cell around the rows the filters left.
   var sampleGroups = {};
@@ -2492,9 +2473,12 @@ document.addEventListener('click', function (e) {
     });
     var prime = document.createElement('p');
     prime.className = 'fineprint';
-    prime.textContent = 'Baseline missing entirely? Materialize the cache once: ' +
-      'pnpm --dir ' + root2 + '/agent-eval results:analyze --recompute';
+    prime.textContent = 'Baseline missing entirely? Materialize the cache once:';
     body2.appendChild(prime);
+    var primeCmd = document.createElement('p');
+    primeCmd.className = 'mono mcmd';
+    primeCmd.textContent = 'pnpm --dir ' + root2 + '/agent-eval results:analyze --recompute';
+    body2.appendChild(primeCmd);
     byId('misuseCmdModal').showModal();
     return;
   }

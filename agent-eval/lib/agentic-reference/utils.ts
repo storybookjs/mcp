@@ -39,3 +39,10 @@ export function shortExperiment(value: unknown): string {
 export function shortCase(value: unknown): string {
 	return String(value).replace(/(-[^\d]+)+$/, '');
 }
+
+/** A large count at report width: 1,234,000 -> "1.2M", 1,234 -> "1.2k". */
+export function formatCompactCount(value: number): string {
+	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+	if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+	return String(Math.round(value));
+}

@@ -13,11 +13,15 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { readMisuseReport } from '../metrics/ds-misuse/index.ts';
+import { formatStatusTable } from './commands.ts';
+import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
+import { isStale, readMisuseReport } from '../metrics/ds-misuse/index.ts';
+import { PLAIN_STYLE } from '../style.ts';
 
 import type { Cell } from './cells.ts';
 import type { ComparisonSpec } from './emit.ts';
 import type { JudgedNode } from '../metrics/ds-misuse/types.ts';
+import type { OutputStyle, Tone } from '../style.ts';
 
 export const MISUSE_QUESTIONS = [
 	'correctDsDecision',
@@ -114,6 +118,14 @@ export interface MisusePanel {
 	findings: MisuseFinding[];
 }
 
+/** A cell's case as the report shows it: the spec's shortName, not the raw case registry one. */
+function caseShortName(cell: Cell, spec: ComparisonSpec): string {
+	return cell.case.caseName === spec.control.caseName
+		? spec.control.shortName
+		: (spec.treatments.find((t) => t.caseName === cell.case.caseName)?.shortName ??
+				cell.case.shortName);
+}
+
 function emptyDistribution(): ScoreDistribution {
 	return { ones: 0, halves: 0, zeros: 0 };
 }
@@ -166,11 +178,7 @@ export function collectMisusePanel(
 	let usableRuns = 0;
 
 	for (const cell of cells) {
-		const shortName =
-			cell.case.caseName === spec.control.caseName
-				? spec.control.shortName
-				: (spec.treatments.find((t) => t.caseName === cell.case.caseName)?.shortName ??
-					cell.case.shortName);
+		const shortName = caseShortName(cell, spec);
 
 		const summary: MisuseCellSummary = {
 			case: shortName,
@@ -241,4 +249,91 @@ export function collectMisusePanel(
 		cells: summaries,
 		findings,
 	};
+}
+
+/** A cell's judge coverage, boiled down to one status word for the table. */
+export type MisuseJudgeStatus = 'complete' | 'partial' | 'unjudged' | 'stale';
+
+export interface MisuseCellStatus {
+	case: string;
+	workflow: string;
+	usable: number;
+	judged: number;
+	/**
+	 * Runs carrying a ds-misuse.json disqualified by isStale (moved guideline
+	 * pin, judge version, or model).
+	 */
+	stale: number;
+	status: MisuseJudgeStatus;
+	label: string;
+}
+
+const JUDGE_STATUS_TONE: Record<MisuseJudgeStatus, Tone> = {
+	complete: 'good',
+	partial: 'caution',
+	unjudged: 'action',
+	stale: 'action',
+};
+
+function judgeStatusOf(
+	usable: number,
+	judged: number,
+	stale: number,
+): { status: MisuseJudgeStatus; label: string } {
+	if (judged === usable) return { status: 'complete', label: 'complete' };
+	if (stale > 0) return { status: 'stale', label: `stale (${stale} stale)` };
+	if (judged === 0) return { status: 'unjudged', label: 'unjudged' };
+	return { status: 'partial', label: `partial (${judged}/${usable} judged)` };
+}
+
+/**
+ * Per-cell judge coverage: judged against the current guideline pin, stale
+ * (a ds-misuse.json present but disqualified — see isStale), or never
+ * judged. Unlike collectMisusePanel, which pools every report it finds
+ * regardless of standard, this checks each report against the current pin,
+ * because the status table's job is telling the reader what still needs
+ * `pnpm judge:ds-misuse`.
+ */
+export function collectMisuseStatuses(cells: Cell[], spec: ComparisonSpec): MisuseCellStatus[] {
+	const current = { dsGuidelinesRef: dsDocsRefLabel() };
+	return cells.map((cell) => {
+		let judged = 0;
+		let stale = 0;
+		for (const usable of cell.runs) {
+			const report = readMisuseReport(usable.run.runDir);
+			if (report === null) continue;
+			if (isStale(report, current)) stale += 1;
+			else judged += 1;
+		}
+		const usable = cell.runs.length;
+		return {
+			case: caseShortName(cell, spec),
+			workflow: cell.workflow,
+			usable,
+			judged,
+			stale,
+			...judgeStatusOf(usable, judged, stale),
+		};
+	});
+}
+
+export function formatMisuseStatusTable(
+	statuses: readonly MisuseCellStatus[],
+	style: OutputStyle = PLAIN_STYLE,
+): string {
+	return formatStatusTable(
+		['case', 'workflow', 'judged', 'status'],
+		statuses.map((status) => [
+			status.case,
+			status.workflow,
+			`${status.judged}/${status.usable}`,
+			status.label,
+		]),
+		(rowIndex, col, cell) => {
+			if (col === 0) return style.caseName(cell);
+			if (col === 3) return style.tone(JUDGE_STATUS_TONE[statuses[rowIndex]!.status], cell);
+			return cell;
+		},
+		style,
+	);
 }

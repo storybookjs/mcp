@@ -908,7 +908,7 @@ describe('DS misuse panel', () => {
 		expect(html).toContain('No node received this question');
 	});
 
-	it('shows each finding with its score, location, and the judge&#x27;s reason', () => {
+	it("shows each finding with its score, location, and the judge's reason", () => {
 		const html = render({ misuse: misusePanel() });
 		expect(html).toContain('What the judge flagged');
 		expect(html).toContain('src/OrderStatus.tsx:12');
@@ -972,4 +972,5 @@ describe('DS misuse panel', () => {
 		const html = render({ misuse: misusePanel({ judgedRuns: 1, usableRuns: 2 }) });
 		expect(html).toContain('1 of 2');
 	});
+
 });

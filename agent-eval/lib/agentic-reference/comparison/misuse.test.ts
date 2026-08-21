@@ -4,13 +4,27 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { collectMisusePanel } from './misuse.ts';
+import { collectMisusePanel, collectMisuseStatuses, formatMisuseStatusTable } from './misuse.ts';
+import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
+import { DS_MISUSE_JUDGE_VERSION, JUDGE_MODEL } from '../metrics/ds-misuse/context.ts';
+import { DS_MISUSE_SCHEMA_VERSION } from '../metrics/ds-misuse/types.ts';
+import { PLAIN_STYLE } from '../style.ts';
+import type { OutputStyle } from '../style.ts';
 
 import type { Run } from '../../post-analysis/discovery.ts';
 import type { Cell } from './cells.ts';
 import type { ComparisonSpec } from './emit.ts';
 import type { ResolvedCase } from './resolve.ts';
 import type { DsMisuseReport, JudgedNode } from '../metrics/ds-misuse/types.ts';
+
+/** Distinct, greppable markers (not ANSI) so alignment assertions are deterministic. */
+const MARKER_STYLE: OutputStyle = {
+	bold: (s) => `[B]${s}[/B]`,
+	caseName: (s) => `[C]${s}[/C]`,
+	tone: (t, s) => `[T:${t}]${s}[/T]`,
+	dim: (s) => `[D]${s}[/D]`,
+	reason: (r, s) => `[R:${r}]${s}[/R]`,
+};
 
 const CONTROL: ResolvedCase = {
 	caseName: 'cc-control-none-opus-high',
@@ -53,7 +67,11 @@ function judgedNode(overrides: Partial<JudgedNode>): JudgedNode {
 	};
 }
 
-function misuseReport(nodes: JudgedNode[], dsGuidelinesRef = 'org/ds@abc'): DsMisuseReport {
+function misuseReport(
+	nodes: JudgedNode[],
+	dsGuidelinesRef = 'org/ds@abc',
+	overrides: Partial<DsMisuseReport> = {},
+): DsMisuseReport {
 	const scored = (key: 'correctDsDecision' | 'correctDsUsage' | 'correctLocalDecision') =>
 		nodes.flatMap((node) => (node[key] ? [node[key].score] : []));
 	const meanOf = (scores: number[]) =>
@@ -61,6 +79,7 @@ function misuseReport(nodes: JudgedNode[], dsGuidelinesRef = 'org/ds@abc'): DsMi
 	return {
 		schemaVersion: 1,
 		metricsVersion: 1,
+		judgeVersion: 1,
 		judgedAt: '2026-08-01T00:00:00.000Z',
 		model: 'test-model',
 		dsGuidelinesRef,
@@ -76,6 +95,7 @@ function misuseReport(nodes: JudgedNode[], dsGuidelinesRef = 'org/ds@abc'): DsMi
 			},
 		},
 		nodes,
+		...overrides,
 	};
 }
 
@@ -212,5 +232,86 @@ describe('collectMisusePanel', () => {
 			repoRoot: results,
 		});
 		expect(panel.guidelinesRefs).toEqual(['org/ds@new', 'org/ds@old']);
+	});
+});
+
+/** A report that passes isStale's check against the current guideline pin, judge version, and model. */
+function currentReport(nodes: JudgedNode[] = []): DsMisuseReport {
+	return misuseReport(nodes, dsDocsRefLabel(), {
+		schemaVersion: DS_MISUSE_SCHEMA_VERSION,
+		judgeVersion: DS_MISUSE_JUDGE_VERSION,
+		model: JUDGE_MODEL,
+	});
+}
+
+describe('collectMisuseStatuses', () => {
+	it('reports complete when every usable run carries a current judgement', () => {
+		const run = usableRun(TREATMENT, 1, currentReport());
+		const [status] = collectMisuseStatuses([cell(TREATMENT, [run])], SPEC);
+		expect(status).toMatchObject({
+			case: 'docs-full',
+			workflow: WF,
+			usable: 1,
+			judged: 1,
+			stale: 0,
+			status: 'complete',
+			label: 'complete',
+		});
+	});
+
+	it('reports unjudged when no run carries a ds-misuse.json', () => {
+		const run = usableRun(TREATMENT, 1, null);
+		const [status] = collectMisuseStatuses([cell(TREATMENT, [run])], SPEC);
+		expect(status).toMatchObject({ judged: 0, stale: 0, status: 'unjudged', label: 'unjudged' });
+	});
+
+	it('reports partial with a j/n label when some but not all runs are judged', () => {
+		const judged = usableRun(TREATMENT, 1, currentReport());
+		const unjudged = usableRun(TREATMENT, 2, null);
+		const [status] = collectMisuseStatuses([cell(TREATMENT, [judged, unjudged])], SPEC);
+		expect(status).toMatchObject({
+			usable: 2,
+			judged: 1,
+			stale: 0,
+			status: 'partial',
+			label: 'partial (1/2 judged)',
+		});
+	});
+
+	it('reports stale when a ds-misuse.json is present but disqualified by isStale', () => {
+		// Judged against a guideline pin other than the current one.
+		const run = usableRun(TREATMENT, 1, misuseReport([], 'org/ds@old'));
+		const [status] = collectMisuseStatuses([cell(TREATMENT, [run])], SPEC);
+		expect(status).toMatchObject({
+			usable: 1,
+			judged: 0,
+			stale: 1,
+			status: 'stale',
+			label: 'stale (1 stale)',
+		});
+	});
+});
+
+describe('formatMisuseStatusTable', () => {
+	it('renders one aligned, styled row per cell', () => {
+		const statuses = collectMisuseStatuses(
+			[
+				cell(CONTROL, [usableRun(CONTROL, 1, currentReport())]),
+				cell(TREATMENT, [usableRun(TREATMENT, 1, null)]),
+			],
+			SPEC,
+		);
+		const table = formatMisuseStatusTable(statuses, MARKER_STYLE);
+		expect(table).toContain('[C]control-none[/C]');
+		expect(table).toContain('[T:good]complete[/T]');
+		expect(table).toContain('[C]docs-full   [/C]');
+		expect(table).toContain('[T:action]unjudged[/T]');
+	});
+
+	it('defaults to PLAIN_STYLE, so an unstyled call matches an explicit one', () => {
+		const statuses = collectMisuseStatuses([cell(TREATMENT, [usableRun(TREATMENT, 1, null)])], SPEC);
+		expect(formatMisuseStatusTable(statuses)).toBe(
+			formatMisuseStatusTable(statuses, PLAIN_STYLE),
+		);
 	});
 });
