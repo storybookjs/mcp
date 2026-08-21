@@ -55,6 +55,16 @@ describe('buildJudgeRequest', () => {
 		expect(system[1]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
 	});
 
+	it('appends the facet catalogue to the prompt block', () => {
+		const request = build();
+		const promptBlock = request.system[0]!.text;
+		expect(promptBlock).toContain('## Documentation facet catalogue');
+		expect(promptBlock).toContain('- `mdx.do-dont` —');
+		expect(promptBlock).toContain('- `general.general-when-to-use` —');
+		// The cacheable docs block stays last and untouched.
+		expect(request.system[1]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+	});
+
 	// Two runs of two different arms share the corpus byte for byte, which is the
 	// only reason the cache pays for itself.
 	it('produces a byte-identical system block for different runs', () => {

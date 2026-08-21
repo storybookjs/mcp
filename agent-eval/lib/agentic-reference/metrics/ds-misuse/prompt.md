@@ -38,6 +38,20 @@ Then split the new nodes by `category`:
 Every score is `1`, `0.5`, or `0`. Use `0.5` for genuinely ambiguous or debatable
 cases — not as a hedge when you have not looked closely.
 
+Before scoring, walk the documentation systematically — do not stop at the first
+relevant passage:
+
+1. **The component's own MDX.** Its sections are delimited by
+   `{/* BEGIN: <facet> */} … {/* END: <facet> */}` comments whose names match
+   the `mdx.*` ids in the facet catalogue at the end of these instructions.
+   Check every section that could bear on this usage.
+2. **The repo-wide guideline documents** under `src/docs` (brand, tokens,
+   accessibility, component selection, general usage, setup). Each corresponds
+   to a `general.*` facet id.
+
+For a local node, walk the `when-to-use` facets and the component MDX of every
+plausible design system alternative.
+
 **For each new DS usage:**
 
 1. `correctDsDecision` — was this the right design system component for the job,
@@ -47,10 +61,9 @@ cases — not as a hedge when you have not looked closely.
    - `0` — a different DS component was clearly the right choice for this job.
 
 2. `correctDsUsage` — does this usage violate a documented guideline?
-   Consider the component's own MDX, the brand guidelines, the technical
-   guidelines and the accessibility guidelines. Composition rules, required
-   props, forbidden prop combinations, hardcoded values that should be tokens,
-   and required parts of a compound component all count.
+   Composition rules, required props, forbidden prop combinations, hardcoded
+   values that should be tokens, and required parts of a compound component all
+   count.
    - `1` — no violation you can point to in the documentation.
    - `0.5` — arguably violates a guideline, or the guideline is ambiguous.
    - `0` — clearly violates a documented guideline. Name the guideline.
@@ -67,6 +80,22 @@ cases — not as a hedge when you have not looked closely.
    - `0` — a design system component with a relevant API existed and should have
      been used.
 
+## Reasons
+
+Every score carries `reasons` — one entry per distinct ground, at least one.
+
+- A ground is one violated or supporting piece of documentation, or one
+  judgement call. Do not merge two grounds into one entry, and do not report
+  only the most salient one: if a usage violates a token rule and an
+  accessibility rule, return two reasons.
+- `facet` is the catalogue id the ground rests on — the MDX section or guideline
+  document you actually consulted. Omit `facet` only when the ground is not
+  rooted in a specific documented facet (for example, "no meaningfully better
+  DS alternative exists").
+- `text` is one or two sentences, concrete, citing the document or the specific
+  alternative component by name. "Violates guidelines" is not a reason.
+  "BrandGuidelines.mdx requires colour tokens; this passes a raw `#d70808`" is.
+
 ## Rules
 
 - Judge only what the agent introduced. Pre-existing code is out of scope, even
@@ -74,10 +103,6 @@ cases — not as a hedge when you have not looked closely.
 - Judge against the documentation you were given, not against general React or
   design-system intuition. If a practice is not documented, do not score it as a
   violation.
-- Every score needs a `reason`: one or two sentences, concrete, citing the
-  document or the specific alternative component by name. "Violates guidelines"
-  is not a reason. "BrandGuidelines.mdx requires colour tokens; this passes a raw
-  `#d70808`" is.
 - If the diff is marked truncated, judge only the nodes you can actually see in
   it, and omit the rest rather than guessing.
 - Return every new DS node and every new local node. Return nothing else — no

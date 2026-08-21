@@ -8,6 +8,8 @@
 // every request and turn a ~$0.10 read back into a ~$1 write.
 import { readFileSync } from 'node:fs';
 
+import { MISUSE_FACETS } from '@storybook/agent-eval-utils';
+
 import { JUDGE_OUTPUT_SCHEMA } from './types.ts';
 
 import type { DsDoc } from './ds-docs.ts';
@@ -51,6 +53,19 @@ export interface JudgeRequestInput {
 	treatmentNodes: NodeRecord[];
 	patch: TreePatch;
 	fixtureRef: string;
+}
+
+/**
+ * The facet catalogue the prompt refers to, rendered from the taxonomy package
+ * so prompt and schema cannot cite different vocabularies. Deterministic:
+ * appended to the prompt inside the cached prefix.
+ */
+function facetCatalogue(): string {
+	return [
+		'## Documentation facet catalogue',
+		'',
+		...MISUSE_FACETS.map((facet) => `- \`${facet.id}\` — ${facet.description}`),
+	].join('\n');
 }
 
 function docsBlock(docs: DsDoc[]): string {
@@ -103,7 +118,7 @@ export function buildJudgeRequest(input: JudgeRequestInput) {
 		},
 		// Stable, and in this order: the breakpoint on the last block caches both.
 		system: [
-			{ type: 'text' as const, text: readFileSync(PROMPT_PATH, 'utf8') },
+			{ type: 'text' as const, text: readFileSync(PROMPT_PATH, 'utf8') + '\n\n' + facetCatalogue() },
 			{ type: 'text' as const, text: docsBlock(input.docs), cache_control: CACHE_CONTROL },
 		],
 		messages: [
