@@ -912,7 +912,9 @@ describe('DS misuse panel', () => {
 		const html = render({ misuse: misusePanel() });
 		expect(html).toContain('What the judge flagged');
 		expect(html).toContain('src/OrderStatus.tsx:12');
-		expect(html).toContain('Badge.mdx rules out Badge for a live status');
+		// The citation is linkified, so match around the anchor.
+		expect(html).toContain('rules out Badge for a live status');
+		expect(html).toContain('>Badge.mdx</a>');
 	});
 
 	it('celebrates a clean bundle instead of rendering an empty findings list', () => {
