@@ -138,13 +138,11 @@ export function analyzeDsCoverage(options: DsCoverageOptions): DsCoverageReport 
 			instances: element.weight * multiplierOf(owner),
 		})),
 		perFile: Object.fromEntries(census.perFile),
+		// Unweighted by design: the ds-misuse judge reads these records, and it
+		// must see each source element exactly once, in its static identity.
+		// Instance weighting stays confined to the `instances` aggregates above.
 		...(includeNodes
-			? {
-					nodeList: (census.nodeList ?? []).map(({ owner, ...record }) => ({
-						...record,
-						instances: record.weight * multiplierOf(owner),
-					})),
-				}
+			? { nodeList: (census.nodeList ?? []).map(({ owner: _owner, ...record }) => record) }
 			: {}),
 	};
 }

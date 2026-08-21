@@ -18,7 +18,6 @@ const NODE: NodeRecord = {
 	module: '@droppy/react',
 	name: 'Button',
 	weight: 1,
-	instances: 1,
 	props: ['variant'],
 };
 

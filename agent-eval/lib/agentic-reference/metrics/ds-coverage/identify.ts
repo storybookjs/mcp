@@ -60,6 +60,7 @@ function identityKey(resolution: Resolution): string | null {
 		case 'ds':
 		case 'external':
 		case 'local':
+		case 'wrapped-ds':
 			return `${resolution.category}#${resolution.module}#${resolution.name}`;
 		case 'namespace':
 		case 'object':
@@ -465,6 +466,14 @@ export function createResolver(
 				// (`React.memo`, `Lottie.Player`), not of a component named `default`.
 				const name = resolution.name === 'default' ? property : `${resolution.name}.${property}`;
 				return { category: resolution.category, module: resolution.module, name };
+			}
+			case 'wrapped-ds': {
+				// Member access on a subsetting wrapper (no compound-component
+				// assignment matched above) projects the same member off the DS
+				// identity it collapses to.
+				const name =
+					resolution.ds.name === 'default' ? property : `${resolution.ds.name}.${property}`;
+				return { category: 'ds', module: resolution.ds.module, name };
 			}
 			case 'object': {
 				for (const objectProperty of resolution.node.properties) {
