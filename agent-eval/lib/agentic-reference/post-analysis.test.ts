@@ -1141,9 +1141,9 @@ describe('misuse findings', () => {
 					kind: 'ds',
 					correctDsDecision: {
 						score: 0,
-						reason: 'Badge.mdx rules out Badge for a live status; use status text.',
+						reasons: [{ text: 'Badge.mdx rules out Badge for a live status; use status text.' }],
 					},
-					correctDsUsage: { score: 1, reason: 'No violation.' },
+					correctDsUsage: { score: 1, reasons: [{ text: 'No violation.' }] },
 				},
 			]),
 		]);
@@ -1165,7 +1165,7 @@ describe('misuse findings', () => {
 					line: 3,
 					tag: 'Card',
 					kind: 'ds',
-					correctDsDecision: { score: 1, reason: 'Right fit.' },
+					correctDsDecision: { score: 1, reasons: [{ text: 'Right fit.' }] },
 				},
 			]),
 		]);

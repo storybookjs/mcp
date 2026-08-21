@@ -324,7 +324,10 @@ function printMisuseFindings(rows: Array<Record<string, unknown>>): void {
 					`${score} ${bold(`<${node.tag}>`)} ${MISUSE_QUESTION_LABELS[question]} ` +
 						dim(`${node.file}:${node.line} · ${where}`),
 				);
-				console.log(dim(`    ${answer.reason}`));
+				for (const reason of answer.reasons) {
+					const facetTag = reason.facet === undefined ? '' : `[${reason.facet}] `;
+					console.log(dim(`    ${facetTag}${reason.text}`));
+				}
 			}
 		}
 	}

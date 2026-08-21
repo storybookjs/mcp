@@ -11,7 +11,7 @@ import { formatCompactCount } from '../utils.ts';
 
 import type {
 	MisuseCellSummary,
-	MisuseFinding,
+	MisuseDecision,
 	MisusePanel,
 	MisuseQuestion,
 	ScoreDistribution,
@@ -1697,7 +1697,7 @@ ${MISUSE_QUESTIONS.map(
 }
 
 function misuseFinding(
-	finding: MisuseFinding,
+	finding: MisuseDecision,
 	docsPin: { repo: string; ref: string } | null,
 ): string {
 	const score = finding.score === 0 ? '<b class="score zero">0</b>' : '<b class="score half">½</b>';
@@ -1718,7 +1718,14 @@ function misuseFinding(
 </div>
 <div class="finding-meta"><span class="mono where">${escapeHtml(finding.file)}:${finding.line}</span>
 <span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span></div>
-<p class="reason">${linkifyReason(finding.reason, docsPin)}</p>
+${finding.reasons
+	.map(
+		(reason) =>
+			`<p class="reason">${
+				reason.facet === undefined ? '' : `<span class="mono">[${escapeHtml(reason.facet)}]</span> `
+			}${linkifyReason(reason.text, docsPin)}</p>`,
+	)
+	.join('\n')}
 ${findingExcerpt(finding)}
 </article>`;
 }
@@ -1766,7 +1773,7 @@ function linkifyReason(reason: string, docsPin: { repo: string; ref: string } | 
 }
 
 /** The flagged source under the reason, the finding's line marked. */
-function findingExcerpt(finding: MisuseFinding): string {
+function findingExcerpt(finding: MisuseDecision): string {
 	if (finding.excerpt === undefined) return '';
 	const gutter = String(finding.excerpt.start + finding.excerpt.lines.length - 1).length;
 	const rows = finding.excerpt.lines
@@ -1786,14 +1793,24 @@ function docsPinOf(panel: MisusePanel): { repo: string; ref: string } | null {
 	return at === -1 ? null : { repo: ref.slice(0, at), ref: ref.slice(at + 1) };
 }
 
+/**
+ * The panel's decisions kept whole, perfect scores included, so charts get
+ * true denominators; this report's finding cards only ever show the rest —
+ * every renderer downstream of this filter sees exactly what it always saw.
+ */
+function belowPerfectDecisions(panel: MisusePanel): MisuseDecision[] {
+	return panel.decisions.filter((decision) => decision.score !== 1);
+}
+
 function misuseFindings(panel: MisusePanel, controlShortName: string): string {
 	const docsPin = docsPinOf(panel);
-	if (panel.findings.length === 0) {
+	const findings = belowPerfectDecisions(panel);
+	if (findings.length === 0) {
 		return `<h2>What the judge flagged</h2>
 <p class="lede">Nothing. Every judged node scored 1 on every question it received.</p>`;
 	}
-	const byCase = new Map<string, MisuseFinding[]>();
-	for (const finding of panel.findings) {
+	const byCase = new Map<string, MisuseDecision[]>();
+	for (const finding of findings) {
 		const list = byCase.get(finding.case) ?? [];
 		list.push(finding);
 		byCase.set(finding.case, list);
@@ -1877,7 +1894,7 @@ so a degraded arm is scored against the same bar as the rest.</p>`
 		.replace('/', '__')
 		.replace('@', '@')
 		.replace(/@(.+)$/, (_, ref: string) => `@${ref.replace(/\//g, '__')}`);
-	const example = panel.findings[0];
+	const example = belowPerfectDecisions(panel)[0];
 	const examplePath = example
 		? `${example.projectPath}/${example.file}`
 		: 'agent-eval/results/<experiment>/<batch>/<workflow>/run-N/project/src/File.tsx';

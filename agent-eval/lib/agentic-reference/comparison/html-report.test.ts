@@ -198,6 +198,7 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 					correctLocalDecision: null,
 				},
 				evaluated: { ds: 5, local: 0 },
+				facetTallies: {},
 			},
 			{
 				case: 'full',
@@ -210,9 +211,10 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 					correctLocalDecision: { ones: 2, halves: 0, zeros: 0 },
 				},
 				evaluated: { ds: 4, local: 2 },
+				facetTallies: {},
 			},
 		],
-		findings: [
+		decisions: [
 			{
 				case: 'control-none',
 				workflow: '701-new-ui-flow',
@@ -223,10 +225,13 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 				kind: 'ds',
 				question: 'correctDsDecision',
 				score: 0,
-				reason: 'Badge.mdx rules out Badge for a live status; status text was the fit.',
+				reasons: [
+					{ text: 'Badge.mdx rules out Badge for a live status; status text was the fit.' },
+				],
 				projectPath: 'agent-eval/results/x/b/701-new-ui-flow/run-1/project',
 			},
 		],
+		facets: [],
 		...overrides,
 	};
 }
@@ -952,7 +957,7 @@ describe('DS misuse panel', () => {
 	});
 
 	it('celebrates a clean bundle instead of rendering an empty findings list', () => {
-		const html = render({ misuse: misusePanel({ findings: [] }) });
+		const html = render({ misuse: misusePanel({ decisions: [] }) });
 		expect(html).toContain('Every judged node scored 1');
 	});
 
@@ -976,10 +981,10 @@ describe('DS misuse panel', () => {
 	it('links reason citations to the pinned docs and the DS repo issues', () => {
 		const html = render({
 			misuse: misusePanel({
-				findings: [
+				decisions: [
 					{
-						...misusePanel().findings[0]!,
-						reason: 'Badge.mdx and BrandGuidelines rule this out; see #268.',
+						...misusePanel().decisions[0]!,
+						reasons: [{ text: 'Badge.mdx and BrandGuidelines rule this out; see #268.' }],
 					},
 				],
 			}),
