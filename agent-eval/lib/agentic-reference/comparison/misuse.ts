@@ -3,9 +3,10 @@
 // The judge writes one ds-misuse.json per run (see ../metrics/ds-misuse), and
 // nothing in the comparison pipeline reads it: the tables carry the means and
 // the reasons stay on disk. This module inverts that — the reasons are the
-// data, so the panel carries every below-perfect verdict verbatim, and the
-// summary keeps whole distributions rather than collapsing to a mean a reader
-// cannot interrogate.
+// data, so the panel carries every judged answer verbatim, perfect scores
+// included, so charts get true denominators; below-perfect answers
+// additionally carry a source excerpt. The summary keeps whole distributions
+// rather than collapsing to a mean a reader cannot interrogate.
 //
 // Judging is a separate, paid step, so partial coverage is the normal state of
 // a bundle, not an error: the panel reports judged-vs-usable per cell and the
@@ -90,7 +91,7 @@ export interface MisuseDecision {
 const EXCERPT_CONTEXT = 3;
 
 /**
- * A few lines of the flagged source, so a finding can be read without opening
+ * A few lines of the flagged source, so a decision can be read without opening
  * the run's tree. Free and retroactive: this reads the collected project on
  * disk, never the model, so it works for every judgement ever cached.
  */
@@ -122,7 +123,7 @@ export interface MisusePanel {
 	/**
 	 * The repo root on the machine that built this bundle. A hint, not a fact:
 	 * the report offers it as the default and lets a reader on another machine
-	 * override it, since paths in findings are repo-relative on purpose.
+	 * override it, since paths in decisions are repo-relative on purpose.
 	 */
 	builtFrom: string;
 	judgedRuns: number;

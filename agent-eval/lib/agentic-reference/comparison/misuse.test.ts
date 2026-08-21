@@ -205,6 +205,25 @@ describe('collectMisusePanel', () => {
 		expect(perfect!.reasons[0]!.text).toContain('documented');
 	});
 
+	it('dedupes a facet cited by two reasons within the same answer', () => {
+		const report = misuseReport([
+			judgedNode({
+				correctDsUsage: {
+					score: 1,
+					reasons: [
+						{ facet: 'mdx.do-dont', text: 'Follows the "do" guidance.' },
+						{ facet: 'mdx.do-dont', text: 'Also follows the "dont" guidance.' },
+					],
+				},
+			}),
+		]);
+		const panel = collectMisusePanel([cell(TREATMENT, [usableRun(TREATMENT, 1, report)])], SPEC, {
+			repoRoot: results,
+		});
+		// Two reasons citing the same facet still count as one tally, not two.
+		expect(panel.cells[0]!.facetTallies['mdx.do-dont']).toEqual({ ones: 1, halves: 0, zeros: 0 });
+	});
+
 	it('counts unjudged runs into coverage without inventing scores for them', () => {
 		const judged = usableRun(CONTROL, 1, misuseReport([]));
 		const unjudged = usableRun(CONTROL, 2, null);
