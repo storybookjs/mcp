@@ -440,13 +440,12 @@ describe('renderHtmlReport structure', () => {
 		expect(render({ dataset: [datasetRow()] })).not.toContain('class="fsd');
 	});
 
-	it('offers mean, averaged median, and true median statistics', () => {
+	it('offers mean and median statistics', () => {
 		const html = render({});
-		expect(html).toContain('>averaged median<');
-		expect(html).toContain('>true median<');
-		expect(html).toContain('data-left-truemedian=');
-		expect(html).toContain('data-truemedian=');
-		expect(html).toContain('data-tip-control-truemedian=');
+		expect(html).toContain('>mean<');
+		expect(html).toContain('>median<');
+		expect(html).toContain('data-left-median=');
+		expect(html).toContain('data-tip-control-median=');
 	});
 
 	it('precomputes aggregated groups for proper workflow subsets', () => {

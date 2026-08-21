@@ -224,8 +224,9 @@ async function main() {
 	rmSync(outDir, { recursive: true, force: true });
 	renameSync(stagingDir, outDir);
 	console.log(`\nComparison written to ${outDir}`);
-	console.log(`Report: ${join(outDir, 'report.md')}`);
-	console.log(`HTML report: ${outStyle.bold(join(outDir, 'report.html'))}`);
+	// file:// spellings so a terminal renders them as clickable links.
+	console.log(`Report: file://${join(outDir, 'report.md')}`);
+	console.log(`HTML report: ${outStyle.bold(`file://${join(outDir, 'report.html')}`)}`);
 }
 
 /**

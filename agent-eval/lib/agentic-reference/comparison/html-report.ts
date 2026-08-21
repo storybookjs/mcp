@@ -689,21 +689,16 @@ function scopedWorkflows(scope: string, workflows: string[]): string[] {
 
 // The statistic the model actually references: for the mean, the average on
 // the transformed scale, back-transformed (geometric mean for log metrics).
-// Multi-workflow scopes combine per-workflow statistics with equal weight —
-// except 'truemedian', the median over every run merged across workflows.
+// Multi-workflow scopes combine per-workflow statistics with equal weight.
 function caseStat(
 	dataset: DatasetRow[],
 	caseName: string,
 	metric: ManifestMetric,
 	scope: string,
 	workflows: string[],
-	kind: 'mean' | 'median' | 'truemedian',
+	kind: 'mean' | 'median',
 ): number | null {
 	const scoped = scopedWorkflows(scope, workflows);
-	if (kind === 'truemedian') {
-		const merged = scoped.flatMap((workflow) => usableValues(dataset, caseName, workflow, metric));
-		return merged.length === 0 ? null : median(merged);
-	}
 	const perWorkflow: number[] = [];
 	for (const workflow of scoped) {
 		const values = usableValues(dataset, caseName, workflow, metric);
@@ -1166,8 +1161,6 @@ function tipAttributes(
 		treatment: string;
 		controlMedian: string;
 		treatmentMedian: string;
-		controlTrue: string;
-		treatmentTrue: string;
 	},
 ): string {
 	const sig = row.verdict === 'significant';
@@ -1189,10 +1182,8 @@ function tipAttributes(
 		`data-tip-qn="${escapeHtml(naiveCall)}" ` +
 		`data-tip-control="${escapeHtml(stats.control)}" ` +
 		`data-tip-control-median="${escapeHtml(stats.controlMedian)}" ` +
-		`data-tip-control-truemedian="${escapeHtml(stats.controlTrue)}" ` +
 		`data-tip-treatment="${escapeHtml(stats.treatment)}" ` +
-		`data-tip-treatment-median="${escapeHtml(stats.treatmentMedian)}" ` +
-		`data-tip-treatment-truemedian="${escapeHtml(stats.treatmentTrue)}"`
+		`data-tip-treatment-median="${escapeHtml(stats.treatmentMedian)}"`
 	);
 }
 
@@ -1220,7 +1211,6 @@ function buildEffects(
 			for (const { scope, context, rows } of scopes) {
 				const controlMean = caseStat(dataset, controlName, metric, scope, workflows, 'mean');
 				const controlMedian = caseStat(dataset, controlName, metric, scope, workflows, 'median');
-				const controlTrue = caseStat(dataset, controlName, metric, scope, workflows, 'truemedian');
 				const controlCiHw = caseMeanCiHalfWidth(dataset, controlName, metric, scope, workflows);
 				const ciExtents =
 					controlCiHw === null ? null : spreadExtents(controlCiHw, metric.transform);
@@ -1229,29 +1219,25 @@ function buildEffects(
 					.map((row) => {
 						const tMean = caseStat(dataset, row.treatment, metric, scope, workflows, 'mean');
 						const tMedian = caseStat(dataset, row.treatment, metric, scope, workflows, 'median');
-						const tTrue = caseStat(dataset, row.treatment, metric, scope, workflows, 'truemedian');
 						return {
 							row,
 							effect: effectOf(row),
 							tMean,
 							tMedian,
-							tTrue,
 							meanEff: descriptiveEffect(metric.transform, controlMean, tMean),
 							medianEff: descriptiveEffect(metric.transform, controlMedian, tMedian),
-							trueEff: descriptiveEffect(metric.transform, controlTrue, tTrue),
 						};
 					});
 				if (marks.length === 0) continue;
 				// The scale fits the effects; SD/CI bands are context and get clamped
 				// to the plot edges rather than allowed to squash the dots.
 				const span = Math.max(
-					...marks.flatMap(({ effect, meanEff, medianEff, trueEff }) => [
+					...marks.flatMap(({ effect, meanEff, medianEff }) => [
 						Math.abs(effect.value),
 						Math.abs(effect.lo),
 						Math.abs(effect.hi),
 						Math.abs(meanEff ?? 0),
 						Math.abs(medianEff ?? 0),
-						Math.abs(trueEff ?? 0),
 					]),
 					1e-9,
 				);
@@ -1265,9 +1251,6 @@ function buildEffects(
 							)}" ` +
 							`data-median="${escapeHtml(
 								formatMetricValue(metric.key, controlMedian ?? controlMean),
-							)}" ` +
-							`data-truemedian="${escapeHtml(
-								formatMetricValue(metric.key, controlTrue ?? controlMean),
 							)}">` +
 							`${escapeHtml(formatMetricValue(metric.key, controlMean))}</span>`;
 				// Marks are percent-positioned HTML, not SVG: an SVG stretched to the
@@ -1296,7 +1279,7 @@ function buildEffects(
 					// legend names the range.
 					labelParts.push('<span class="flab fsdlab">&nbsp;</span>');
 				}
-				marks.forEach(({ row, effect, tMean, tMedian, tTrue, meanEff, medianEff, trueEff }, i) => {
+				marks.forEach(({ row, effect, tMean, tMedian, meanEff, medianEff }, i) => {
 					const t = byShortName.get(row.treatment)!;
 					const lane = 18 + (i + laneOffset + 0.5) * 16;
 					const sig = row.verdict === 'significant';
@@ -1305,10 +1288,8 @@ function buildEffects(
 						control: controlMean === null ? '' : formatMetricValue(metric.key, controlMean),
 						controlMedian:
 							controlMedian === null ? '' : formatMetricValue(metric.key, controlMedian),
-						controlTrue: controlTrue === null ? '' : formatMetricValue(metric.key, controlTrue),
 						treatment: tMean === null ? '' : formatMetricValue(metric.key, tMean),
 						treatmentMedian: tMedian === null ? '' : formatMetricValue(metric.key, tMedian),
-						treatmentTrue: tTrue === null ? '' : formatMetricValue(metric.key, tTrue),
 					};
 					const tip = tipAttributes(row, effect, stats);
 					const lo = x(effect.lo);
@@ -1321,14 +1302,13 @@ function buildEffects(
 					// model's and stays put, so the mean dot can sit off its center.
 					const xMean = x(meanEff ?? effect.value).toFixed(1);
 					const xMedian = x(medianEff ?? effect.value).toFixed(1);
-					const xTrue = x(trueEff ?? effect.value).toFixed(1);
 					plotParts.push(
 						`<span class="fmark" data-t="${t.slug}"${sigAttrs} style="--tc:var(--c-${t.slug})">` +
 							`<span class="fci" style="left:${lo.toFixed(1)}%;width:${(x(effect.hi) - lo).toFixed(
 								1,
 							)}%;top:${lane}px"></span>` +
 							`<span class="fdot tipsrc" tabindex="0" ${tip} data-left-mean="${xMean}%" ` +
-							`data-left-median="${xMedian}%" data-left-truemedian="${xTrue}%" ` +
+							`data-left-median="${xMedian}%" ` +
 							`style="left:${xMean}%;top:${lane}px"></span>` +
 							'</span>',
 					);
@@ -1358,7 +1338,9 @@ function buildEffects(
 			}
 			if (groups.length === 0) continue;
 			const desc = metricDescription(metric.key);
-			const descLabel = desc ? `${escapeHtml(desc)} · ` : '';
+			// The direction gets its own line: run into the description it reads as
+			// part of the sentence rather than as the metric's polarity.
+			const descLabel = desc ? `${escapeHtml(desc)}<br>` : '';
 			const extraAttr = EXTRA_METRICS.has(metric.key) ? ' data-extra="1"' : '';
 			metricRows.push(
 				`<div class="frow"${extraAttr}>` +
@@ -1396,7 +1378,7 @@ function buildEffects(
 <div class="effects-tools">
 <span class="select">Statistic
 <span class="seg stat-toggle">
-<button type="button" data-stat="mean" aria-pressed="true">mean</button><button type="button" data-stat="median" aria-pressed="false">averaged median</button><button type="button" data-stat="truemedian" aria-pressed="false" title="Median over all runs merged across workflows">true median</button>
+<button type="button" data-stat="mean" aria-pressed="true">mean</button><button type="button" data-stat="median" aria-pressed="false">median</button>
 </span></span>
 ${badge}
 </div>
@@ -2347,13 +2329,6 @@ function refresh() {
   // unless the raw-p test is selected.
   var sigDisabled = contextView && !sigNaive();
   sigButtons.forEach(function (b) { b.disabled = sigDisabled; });
-  // The true median merges runs across the full workflow set; it makes no
-  // sense over a partial one, or with only one workflow to merge.
-  var trueOk = mode === 'aggregate' && !contextView;
-  statButtons.forEach(function (b) {
-    if (b.getAttribute('data-stat') === 'truemedian') b.disabled = !trueOk;
-  });
-  if (!trueOk && statKind === 'truemedian') setStat('median');
   $('.wfBadge').forEach(function (el) { el.hidden = !contextView; });
   document.body.setAttribute(
     'data-wfview',
@@ -2710,7 +2685,7 @@ function applyUrlState() {
     }
   }
   var stat = p.get('stat');
-  setStat(stat === 'median' || stat === 'truemedian' ? stat : 'mean');
+  setStat(stat === 'median' ? 'median' : 'mean');
   setMetricsMode(p.get('metrics') === 'all' ? 'all' : 'core');
   setSigMode(p.get('test') === 'raw' ? 'naive' : 'fdr');
 }
@@ -2719,8 +2694,7 @@ var tip = byId('tip');
 var tipParts = $('#tip div');
 function showTip(el) {
   var suffix = statKind === 'mean' ? '' : '-' + statKind;
-  var statLabel =
-    statKind === 'truemedian' ? 'true median' : statKind === 'median' ? 'avg median' : 'mean';
+  var statLabel = statKind === 'median' ? 'median' : 'mean';
   var control = el.getAttribute('data-tip-control' + suffix) || '';
   var treatment = el.getAttribute('data-tip-treatment' + suffix) || '';
   tipParts[0].textContent = el.getAttribute('data-tip-title') || '';
