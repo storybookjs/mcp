@@ -3,18 +3,24 @@
 // The schema is handed to the Messages API as output_config.format, so the model
 // cannot return a shape this file does not describe. That is why there is no
 // defensive parsing anywhere downstream.
+import { MISUSE_FACET_IDS, type FacetId } from '@storybook/agent-eval-utils';
 import type { NodeRecord } from '../ds-coverage/types.ts';
-
-/** Bump when the artifact's shape changes in a way a reader must notice. */
-export const DS_MISUSE_SCHEMA_VERSION = 1;
 
 /** 1 right, 0.5 ambiguous or debatable, 0 wrong. */
 export type JudgeScore = 0 | 0.5 | 1;
 
+/** One ground for a score: a cited documentation facet, or an uncategorised judgement call. */
+export interface JudgeReason {
+	/** Qualified facet id from the misuse catalogue; absent = uncategorised. */
+	facet?: FacetId;
+	/** Why. A bare number is not reviewable, and this is the first thing anyone asks. */
+	text: string;
+}
+
 export interface ScoredAnswer {
 	score: JudgeScore;
-	/** Why. A bare number is not reviewable, and this is the first thing anyone asks. */
-	reason: string;
+	/** Every distinct ground, not just the most salient one. At least one. */
+	reasons: JudgeReason[];
 }
 
 export interface JudgedNode {
@@ -46,15 +52,15 @@ export interface DsMisuseSummary {
 }
 
 export interface DsMisuseReport {
-	schemaVersion: number;
+	/**
+	 * DS_MISUSE_JUDGE_VERSION at judging time (see ./context.ts). Drives
+	 * staleness alongside dsGuidelinesRef and model. v1 artifacts carried a
+	 * separate schemaVersion and a single reason string per answer; they fail
+	 * the shape guard and read as unjudged.
+	 */
+	judgeVersion: number;
 	/** The metricsVersion the node census was built under. Provenance only: it plays no part in staleness. */
 	metricsVersion: number | undefined;
-	/**
-	 * DS_MISUSE_JUDGE_VERSION at judging time. Drives staleness alongside
-	 * dsGuidelinesRef and model. Absent on artifacts written before the field
-	 * existed; those were produced by judge version 1 and read as such.
-	 */
-	judgeVersion?: number;
 	judgedAt: string;
 	model: string;
 	/** `repo@sha` of the guidelines. A moved pin invalidates this artifact. */
@@ -71,13 +77,23 @@ export interface NodeCensus {
 	nodes: NodeRecord[];
 }
 
+const REASON = {
+	type: 'object',
+	properties: {
+		facet: { type: 'string', enum: MISUSE_FACET_IDS as readonly string[] },
+		text: { type: 'string' },
+	},
+	required: ['text'],
+	additionalProperties: false,
+} as const;
+
 const SCORED_ANSWER = {
 	type: 'object',
 	properties: {
 		score: { type: 'number', enum: [0, 0.5, 1] },
-		reason: { type: 'string' },
+		reasons: { type: 'array', items: REASON },
 	},
-	required: ['score', 'reason'],
+	required: ['score', 'reasons'],
 	additionalProperties: false,
 } as const;
 
