@@ -298,22 +298,43 @@ async function judgeOne(
 	return 'judged';
 }
 
-/** Print what a real pass would do, and spend nothing doing it. */
+/**
+ * Print what a real pass would do, and spend nothing doing it.
+ *
+ * A cell tells the whole story in one line — a paid command's plan is read to
+ * answer "how many calls, where", and a run-per-line listing buries that under
+ * its own labels. Every judged run still prints individually in the real pass.
+ */
 function dryRun(runs: Run[], options: Options): void {
+	const cells = new Map<string, { judge: number; reused: number; skipped: number }>();
 	const counts = { judge: 0, reused: 0, skipped: 0 };
 	for (const run of runs) {
 		const plan = planRun(run, options);
-		if (plan.action === 'judge') {
-			console.log(`Would judge ${labelOf(run)} against ${dsDocsRefLabel()}`);
-		}
 		counts[plan.action] += 1;
+		const key = `${shortExperiment(run.experiment)} · ${run.evalName}`;
+		const cell = cells.get(key) ?? { judge: 0, reused: 0, skipped: 0 };
+		cell[plan.action === 'judge' ? 'judge' : plan.action] += 1;
+		cells.set(key, cell);
+	}
+
+	console.log(`Dry run against ${bold(dsDocsRefLabel())} — nothing spent.\n`);
+	const width = Math.max(...[...cells.keys()].map((key) => key.length));
+	for (const [key, cell] of cells) {
+		const notes = [
+			cell.judge > 0 ? `${bold(String(cell.judge))} to judge` : '',
+			cell.reused > 0 ? dim(`${cell.reused} cached`) : '',
+			cell.skipped > 0 ? yellow(`${cell.skipped} skipped`) : '',
+		].filter(Boolean);
+		console.log(`  ${key.padEnd(width)}   ${notes.join(dim(' · '))}`);
 	}
 
 	console.log(
-		`\nWould judge ${counts.judge} (one model call each), ` +
-			`reuse ${counts.reused}, skip ${counts.skipped}. Nothing spent.`,
+		`\nWould judge ${bold(String(counts.judge))} run(s), one model call each` +
+			(counts.reused > 0 ? `; ${counts.reused} cached judgement(s) reused free` : '') +
+			(counts.skipped > 0 ? `; ${counts.skipped} skipped` : '') +
+			'.',
 	);
-	if (counts.reused > 0) console.log('Pass --recompute to re-judge cached runs.');
+	if (counts.reused > 0) console.log(dim('Pass --recompute to re-judge cached runs.'));
 }
 
 async function main() {
