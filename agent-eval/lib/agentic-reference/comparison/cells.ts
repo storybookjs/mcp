@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { facetMetricKey, UNCATEGORISED } from '@storybook/agent-eval-utils';
+
 import { isCurrentRun } from '../comparability.ts';
 import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
 import { isStale, readMisuseReport } from '../metrics/ds-misuse/index.ts';
@@ -98,11 +100,20 @@ function classify(run: Run, metricsVersion: number | undefined, cell: Cell) {
 function misuseValues(report: DsMisuseReport) {
 	let sum = 0;
 	let answers = 0;
+	const facetAcc = new Map<string, { sum: number; n: number }>();
 	for (const node of report.nodes) {
 		for (const answer of [node.correctDsDecision, node.correctDsUsage, node.correctLocalDecision]) {
 			if (answer === undefined) continue;
 			sum += answer.score;
 			answers += 1;
+			const cited = new Set<string>();
+			for (const reason of answer.reasons) cited.add(reason.facet ?? UNCATEGORISED);
+			for (const facet of cited) {
+				const acc = facetAcc.get(facet) ?? { sum: 0, n: 0 };
+				acc.sum += answer.score;
+				acc.n += 1;
+				facetAcc.set(facet, acc);
+			}
 		}
 	}
 	return {
@@ -115,6 +126,12 @@ function misuseValues(report: DsMisuseReport) {
 		// normalised over.
 		evaluated: report.summary.evaluated,
 		answers,
+		// Mean score per cited facet, keyed by the sanitized id the metric
+		// registry paths use. Absent (not 0) when no answer cited the facet, so
+		// an unjudged facet never drags a mean.
+		facets: Object.fromEntries(
+			[...facetAcc].map(([facet, acc]) => [facetMetricKey(facet), acc.sum / acc.n]),
+		),
 	};
 }
 

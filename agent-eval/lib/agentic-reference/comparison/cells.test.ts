@@ -229,7 +229,6 @@ describe('misuse graft', () => {
 		writeFileSync(
 			join(dir, 'ds-misuse.json'),
 			JSON.stringify({
-				schemaVersion: 1,
 				metricsVersion: 6,
 				judgeVersion: DS_MISUSE_JUDGE_VERSION,
 				judgedAt: 'x',
@@ -266,8 +265,8 @@ describe('misuse graft', () => {
 					line: 1,
 					tag: 'A',
 					kind: 'ds',
-					correctDsDecision: { score: 1, reason: 'r' },
-					correctDsUsage: { score: 0, reason: 'r' },
+					correctDsDecision: { score: 1, reasons: [{ text: 'r' }] },
+					correctDsUsage: { score: 0, reasons: [{ text: 'r' }] },
 				},
 				{
 					path: 'App/B[0]',
@@ -275,7 +274,7 @@ describe('misuse graft', () => {
 					line: 2,
 					tag: 'B',
 					kind: 'local',
-					correctLocalDecision: { score: 0.5, reason: 'r' },
+					correctLocalDecision: { score: 0.5, reasons: [{ text: 'r' }] },
 				},
 			],
 			{
@@ -297,7 +296,61 @@ describe('misuse graft', () => {
 			correctLocalDecision: 0.5,
 			evaluated: { ds: 1, local: 1 },
 			answers: 3,
+			// None of the three reasons cites a facet, so they all pool into
+			// 'uncategorised': (1 + 0 + 0.5) / 3.
+			facets: { uncategorised: 0.5 },
 		});
+	});
+
+	it('keys per-facet means by the sanitized facet id, absent when uncited', () => {
+		mkRun(CONTROL.experiment, TS1, 1, 'usable');
+		writeMisuse(
+			CONTROL.experiment,
+			1,
+			[
+				{
+					path: 'App/A[0]',
+					file: 'a.tsx',
+					line: 1,
+					tag: 'A',
+					kind: 'ds',
+					correctDsDecision: {
+						score: 1,
+						reasons: [{ facet: 'general.general-tokens', text: 'r' }],
+					},
+					correctDsUsage: {
+						score: 0.5,
+						reasons: [{ facet: 'mdx.do-dont', text: 'r' }],
+					},
+				},
+				{
+					path: 'App/B[0]',
+					file: 'b.tsx',
+					line: 2,
+					tag: 'B',
+					kind: 'local',
+					correctLocalDecision: { score: 1, reasons: [{ text: 'r' }] },
+				},
+			],
+			{
+				summary: {
+					correctDsDecision: 1,
+					correctDsUsage: 0.5,
+					correctLocalDecision: 1,
+					evaluated: { ds: 1, local: 1 },
+				},
+			},
+		);
+		const { cells } = build({ minRuns: 1, cases: [CONTROL], workflows: [WF] });
+		const usable = cells.find((c) => c.runs.length > 0)!.runs[0]!;
+		const misuse = (usable.analysis as { dsMisuse: { facets: Record<string, number> } }).dsMisuse;
+		// One answer at 0.5 citing mdx.do-dont, one answer at 1 citing general.general-tokens:
+		expect(misuse.facets.mdx_do_dont).toBe(0.5);
+		expect(misuse.facets.general_general_tokens).toBe(1);
+		// An answer with a facet-less reason feeds 'uncategorised'.
+		expect(misuse.facets.uncategorised).toBe(1);
+		// A facet nobody cited is absent, not 0.
+		expect(misuse.facets.mdx_history).toBeUndefined();
 	});
 
 	it('leaves a stale judgement off rather than mixing standards', () => {
