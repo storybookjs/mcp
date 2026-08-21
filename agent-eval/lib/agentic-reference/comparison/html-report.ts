@@ -2007,7 +2007,9 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
 .warn { border-color:var(--half); }
 .fineprint { font-size:.8rem; color:var(--ink-3); max-width:70ch; }
 .finding-group { border-top:1px solid var(--line); padding:10px 0 4px; }
-.finding-group summary { cursor:pointer; font-size:.92rem; color:var(--ink-2); padding:4px 0; }
+.finding-group summary { cursor:pointer; font-size:.92rem; color:var(--ink-2); padding:6px 0;
+  position:sticky; top:calc(var(--fbh, 164px) - 14px); z-index:25; background:var(--surface);
+  border-bottom:1px solid var(--line); }
 .finding { padding:10px 0 6px 14px; border-left:2px solid var(--line); margin:10px 0; }
 .finding-head { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:baseline; }
 .finding .score { font-family:"IBM Plex Mono",monospace; font-size:.82rem; border-radius:6px;
@@ -2022,8 +2024,8 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
 .mjump { font:inherit; font-weight:700; background:none; border:none; padding:0; cursor:pointer;
   text-decoration:underline dotted; text-underline-offset:3px; }
 .mjump.s05 { color:var(--half); } .mjump.s0 { color:var(--bad); }
-.finding.flash { animation:misuse-flash 2s ease-out; }
-@keyframes misuse-flash { 0%, 55% { background:color-mix(in srgb, var(--half) 22%, transparent); }
+.finding.flash { animation:misuse-flash 15s ease-out; }
+@keyframes misuse-flash { 0%, 70% { background:color-mix(in srgb, var(--half) 22%, transparent); }
   100% { background:transparent; } }
 .untested { font-size:.85rem; color:var(--ink-2); margin:6px 0; padding-left:18px; }
 .untested li { margin:3px 0; }
