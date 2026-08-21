@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { COMPARISON_METRICS, metricValueAt } from './comparison-metrics.ts';
 
 describe('COMPARISON_METRICS', () => {
-	it('has 28 unique keys and unique paths', () => {
-		expect(COMPARISON_METRICS).toHaveLength(28);
-		expect(new Set(COMPARISON_METRICS.map((m) => m.key)).size).toBe(28);
-		expect(new Set(COMPARISON_METRICS.map((m) => m.path)).size).toBe(28);
+	it('has 47 unique keys and unique paths', () => {
+		expect(COMPARISON_METRICS).toHaveLength(47);
+		expect(new Set(COMPARISON_METRICS.map((m) => m.key)).size).toBe(47);
+		expect(new Set(COMPARISON_METRICS.map((m) => m.path)).size).toBe(47);
 	});
 
 	it('reads the 2026-08-20 additions from fields the analyzers always wrote', () => {
@@ -31,6 +31,23 @@ describe('COMPARISON_METRICS', () => {
 		]);
 		const log0Keys = COMPARISON_METRICS.filter((m) => m.transform === 'log0').map((m) => m.key);
 		expect(log0Keys).toEqual([]);
+	});
+
+	it('splits correction groups conservatively', () => {
+		const confirmatory = COMPARISON_METRICS.filter((m) => m.correctionGroup === 'confirmatory');
+		const facets = COMPARISON_METRICS.filter(
+			(m) => m.correctionGroup === 'exploratory-misuse-facets',
+		);
+		// The pre-facet family, byte-for-byte: adding facet metrics must not
+		// move existing q-values, so nothing may leave or join this group.
+		expect(confirmatory).toHaveLength(28);
+		expect(facets).toHaveLength(19);
+		expect(facets.every((m) => m.family === 'dsMisuseFacets')).toBe(true);
+		expect(facets.every((m) => m.transform === 'none')).toBe(true);
+		const keys = facets.map((m) => m.key);
+		expect(keys).toContain('dsMisuseFacet_mdx_do_dont');
+		expect(keys).toContain('dsMisuseFacet_general_general_tokens');
+		expect(keys).toContain('dsMisuseFacet_uncategorised');
 	});
 });
 

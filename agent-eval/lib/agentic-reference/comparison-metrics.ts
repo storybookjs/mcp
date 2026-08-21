@@ -1,6 +1,23 @@
+import {
+	describeFacet,
+	facetMetricKey,
+	MISUSE_FACET_IDS,
+	UNCATEGORISED,
+	type FacetId,
+} from '@storybook/agent-eval-utils';
+
 // The curated metric registry for results:compare.
 export type MetricTransform = 'log' | 'log0' | 'none';
 export type MetricDirection = 'lower-better' | 'higher-better' | 'neutral';
+
+/**
+ * BH correction group. 'confirmatory' is the pre-facet family, frozen: moving
+ * a metric in or out changes every existing q-value in that group, so the
+ * partition is edited deliberately, never as a side effect of adding metrics.
+ * Facet metrics are exploratory drill-downs of the misuse composite and are
+ * corrected among themselves.
+ */
+export type CorrectionGroup = 'confirmatory' | 'exploratory-misuse-facets';
 
 export interface ComparisonMetric {
 	/** Unique id; doubles as the dataset.csv column name. */
@@ -15,14 +32,16 @@ export interface ComparisonMetric {
 		| 'churn'
 		| 'dsCoverage'
 		| 'dsMisuse'
+		| 'dsMisuseFacets'
 		| 'complexity'
 		| 'diff';
 	/** log requires y > 0 (violations become reported missing values); log0 maps log(0) to 0. */
 	transform: MetricTransform;
 	direction: MetricDirection;
+	correctionGroup: CorrectionGroup;
 }
 
-export const COMPARISON_METRICS: ComparisonMetric[] = [
+const CONFIRMATORY_METRICS: Omit<ComparisonMetric, 'correctionGroup'>[] = [
 	{
 		key: 'durationSeconds',
 		label: 'Duration (s)',
@@ -251,6 +270,26 @@ export const COMPARISON_METRICS: ComparisonMetric[] = [
 		transform: 'none',
 		direction: 'neutral',
 	},
+];
+
+const FACET_METRIC_IDS: readonly string[] = [...MISUSE_FACET_IDS, UNCATEGORISED];
+
+const FACET_METRICS: ComparisonMetric[] = FACET_METRIC_IDS.map((id) => ({
+	key: `dsMisuseFacet_${facetMetricKey(id)}`,
+	label: id === UNCATEGORISED ? 'Misuse: uncategorised' : `Misuse: ${describeFacet(id as FacetId)}`,
+	path: `dsMisuse.facets.${facetMetricKey(id)}`,
+	family: 'dsMisuseFacets',
+	transform: 'none',
+	direction: 'higher-better',
+	correctionGroup: 'exploratory-misuse-facets',
+}));
+
+export const COMPARISON_METRICS: ComparisonMetric[] = [
+	...CONFIRMATORY_METRICS.map((metric) => ({
+		...metric,
+		correctionGroup: 'confirmatory' as const,
+	})),
+	...FACET_METRICS,
 ];
 
 /** Numeric leaf at a dot-path, or null when absent, non-numeric, or non-finite. */
