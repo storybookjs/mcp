@@ -133,6 +133,13 @@ export interface UnresolvedElement {
  * Host elements are absent: the metric is about component choices. Unresolved
  * elements are absent too — they are already reported in `unresolvedElements`,
  * and a node whose identity is unknown cannot be judged.
+ *
+ * Records are the UNWEIGHTED census: `category` and identity are the static
+ * resolution (a subsetting wrapper's call site reads as the DS component it
+ * subsets), and `weight` is the conditional-render fraction of the one source
+ * element — never an instantiation count. Instance weighting lives only in the
+ * report's `instances` aggregates; the ds-misuse judge consumes these records
+ * and must see each source element exactly once.
  */
 export interface NodeRecord {
 	path: string;
@@ -144,8 +151,6 @@ export interface NodeRecord {
 	module: string;
 	name: string;
 	weight: number;
-	/** weight × the owner's instantiation multiplier: estimated rendered copies. */
-	instances: number;
 	/** Prop names only, never values: enough to check a guideline, small enough to ship. */
 	props: string[];
 }
@@ -161,7 +166,7 @@ export interface CensusResult {
 	/** Whole-graph usage edges — counted files or not. */
 	edges: UsageEdge[];
 	/** Populated only when the census was asked for nodes. */
-	nodeList?: Array<Omit<NodeRecord, 'instances'> & { owner: string }>;
+	nodeList?: Array<NodeRecord & { owner: string }>;
 }
 
 /** Whether a file's own JSX counts toward the census. */
@@ -238,6 +243,6 @@ export interface DsCoverageReport {
 	unresolvedElements: UnresolvedElement[];
 	/** Per-file totals for files containing JSX, for spot validation. */
 	perFile: Record<string, NodeTotals>;
-	/** Present only when `includeNodes` was set. */
+	/** Present only when `includeNodes` was set. Unweighted — see NodeRecord. */
 	nodeList?: NodeRecord[];
 }

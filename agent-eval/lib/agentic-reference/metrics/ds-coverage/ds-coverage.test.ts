@@ -1507,7 +1507,6 @@ describe('includeNodes', () => {
 				module: '@ds/react',
 				name: 'Button',
 				weight: 1,
-				instances: 1,
 				props: [],
 			},
 		]);
@@ -1988,7 +1987,7 @@ describe('instance weighting', () => {
 		expect(report.instances.nodes.unresolved).toBe(0);
 	});
 
-	it('weights node records and the component share by the owner multiplier', () => {
+	it('weights the component share but keeps node records unweighted', () => {
 		vol.fromJSON(
 			{
 				'src/Button.tsx': [
@@ -2009,8 +2008,12 @@ describe('instance weighting', () => {
 		});
 		// ds instances = 3 of 6 component instances.
 		expect(report.instances.dsShareOfComponentNodes).toBe(0.5);
+		// The record stays one-per-source-element with no instance figure: the
+		// ds-misuse judge reads records, and weighting belongs to the aggregates.
 		const dsRecord = report.nodeList?.find((record) => record.name === 'DSButton');
-		expect(dsRecord).toMatchObject({ weight: 1, instances: 3 });
+		expect(dsRecord).toMatchObject({ weight: 1 });
+		expect(dsRecord).not.toHaveProperty('instances');
+		expect(report.nodeList).toHaveLength(4);
 	});
 
 	it('weights unresolved elements by the owner multiplier', () => {
@@ -2023,5 +2026,111 @@ describe('instance weighting', () => {
 		});
 		const unresolved = report.unresolvedElements.find((element) => element.tag === 'As');
 		expect(unresolved).toMatchObject({ weight: 1, instances: 2 });
+	});
+});
+
+// One app, both metrics, side by side — the scenario that motivates instance
+// weighting. A DS-built card is reused across a listing page while a one-off
+// settings page is mostly hand-rolled markup; a subsetting wrapper sits in
+// between. The static census sees one copy of everything; the weighted census
+// multiplies each component's body by how often it is instantiated, so the
+// reused DS-heavy card pulls the weighted share up — and the wrapper's call
+// site, `ds` statically, counts as `local` weighted because the DS node inside
+// the wrapper's body already carries its multiplier.
+describe('weighted vs unweighted coverage (integration)', () => {
+	const APP = {
+		// DS-heavy and reused: 3 DS nodes, instantiated 4×.
+		'src/ProductCard.tsx': [
+			"import { Card, Badge, Button } from '@ds/core'",
+			'export const ProductCard = () => (',
+			'	<Card>',
+			'		<Badge />',
+			'		<Button />',
+			'	</Card>',
+			')',
+		].join('\n'),
+		// A subsetting wrapper: statically it IS the DS Button; weighted, its
+		// call sites are its own local nodes.
+		'src/SaveButton.tsx': [
+			"import { Button } from '@ds/core'",
+			'export const SaveButton = (props: object) => <Button tone="primary" {...props} />',
+		].join('\n'),
+		'src/Catalog.tsx': [
+			"import { ProductCard } from './ProductCard'",
+			'export const Catalog = () => (',
+			'	<main>',
+			'		<ProductCard />',
+			'		<ProductCard />',
+			'		<ProductCard />',
+			'		<ProductCard />',
+			'	</main>',
+			')',
+		].join('\n'),
+		// One-off and host-heavy: rendered once, so weighting cannot inflate it.
+		'src/Settings.tsx': [
+			"import { SaveButton } from './SaveButton'",
+			'export const Settings = () => (',
+			'	<form>',
+			'		<fieldset>',
+			'			<legend />',
+			'			<input />',
+			'			<input />',
+			'		</fieldset>',
+			'		<SaveButton />',
+			'	</form>',
+			')',
+		].join('\n'),
+	};
+
+	it('the same tree reads 5/9 DS statically and 13/18 weighted', () => {
+		const report = analyze(APP);
+
+		// Static: every source element once. ds 5 = ProductCard's body (3)
+		// + SaveButton's body (1) + SaveButton's call site (wrapped-ds → ds).
+		// local 4 = the <ProductCard /> call sites.
+		expect(report.nodes).toEqual({
+			all: 15,
+			host: 6,
+			component: 9,
+			ds: 5,
+			external: 0,
+			local: 4,
+			unresolved: 0,
+		});
+		expect(report.dsShareOfComponentNodes).toBe(0.5556); // 5/9, rounded
+
+		// Weighted: ProductCard's body counts once per instantiation (×4),
+		// so ds 13 = 3×4 + SaveButton's body (1); local 5 = the four
+		// <ProductCard /> call sites + the <SaveButton /> call site, which
+		// flipped from ds to local.
+		expect(report.instances.multipliers).toEqual({ 'src/ProductCard.tsx#ProductCard': 4 });
+		expect(report.instances.nodes).toEqual({
+			all: 24,
+			host: 6,
+			component: 18,
+			ds: 13,
+			external: 0,
+			local: 5,
+			unresolved: 0,
+		});
+		expect(report.instances.dsShareOfComponentNodes).toBe(0.7222); // 13/18, rounded
+
+		// The divergence is the point: reuse concentrated in DS-built
+		// components means true adoption is higher than the file-by-file read.
+		expect(report.instances.dsShareOfComponentNodes).toBeGreaterThan(
+			report.dsShareOfComponentNodes ?? 0,
+		);
+
+		// Per-identity view of the same split: Card appears once in source but
+		// renders 4×. Button is written 3× (ProductCard's body, SaveButton's
+		// body, the wrapper call site); weighted, the reused body carries ×4,
+		// the wrapper body ×1, and the call site moved to SaveButton's own
+		// local identity — 5, not 3 and not 8.
+		expect(report.components['@ds/core#Card']).toEqual({ category: 'ds', count: 1, instances: 4 });
+		expect(report.components['@ds/core#Button']).toEqual({
+			category: 'ds',
+			count: 3,
+			instances: 5,
+		});
 	});
 });

@@ -31,7 +31,7 @@ export interface JudgeRunInput {
 	projectDir: string;
 	/** The materialized pinned tree the run started from. */
 	baselineDir: string;
-	/** Whole-tree node census of the pinned tree, from the sidecar. */
+	/** Whole-tree node census of the pinned tree, from the census file. */
 	baselineNodes: NodeRecord[];
 	/** DS package patterns for this pin. */
 	dsPackages: string[];
@@ -76,6 +76,8 @@ export async function judgeRun(input: JudgeRunInput): Promise<DsMisuseReport> {
 
 	// Targeted: the graph is still whole so imports resolve, but only the files
 	// the run touched are counted — a new JSX node can appear nowhere else.
+	// The judge works on the unweighted node census: one record per source
+	// element, in its static identity. Instance weighting never reaches it.
 	const treatment = analyzeDsCoverage({
 		projectDir: input.projectDir,
 		dsPackages: input.dsPackages,

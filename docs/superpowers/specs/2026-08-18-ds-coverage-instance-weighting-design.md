@@ -218,11 +218,16 @@ unresolvedElements: Array<{ …; instances: number }>;
 `perFile` stays static-only (it describes syntactic content; YAGNI on a
 weighted variant).
 
-`NodeRecord` (from #398) gains `instances: number` next to `weight`. `weight`
-keeps its exact stored meaning (static, conditional-branch fraction);
-`instances` is `weight × mult(owner)`. No owner key on records: the path's
-first segment covers human reading, and `instances.multipliers` in the report
-gives the identity-keyed view.
+`NodeRecord` (from #398) stays UNWEIGHTED: `weight` keeps its exact stored
+meaning (static, conditional-branch fraction) and no instance figure is added.
+The node list is the ds-misuse judge's input, and the judge must see each
+source element exactly once in its static identity — mixing a weighted field
+into the same records invites consumers to sum them by category, which can
+never reconcile with the `instances` aggregates (a wrapper call site is `ds`
+statically but `local` weighted). Instance weighting is available only in the
+report's `instances` block. No owner key on records: the path's first segment
+covers human reading, and `instances.multipliers` in the report gives the
+identity-keyed view.
 
 ## Post-analysis and consumers
 
@@ -232,7 +237,7 @@ gives the identity-keyed view.
   instance shares; grouped μ tables show instance-based only.
 - Committed baselines invalidate through the existing `metricsVersion`
   mechanism (`agentic-reference/post-analysis.ts`): one bump, and baselines —
-  including the `ds-nodes` sidecars from #398 — regenerate. Frozen run
+  including the `ds-nodes` census files from #398 — regenerate. Frozen run
   artifacts cannot regenerate, so post-analysis still null-tolerates missing
   `instances` fields on old runs.
 - A `metricsVersion` bump also invalidates every cached ds-misuse judgement
@@ -276,13 +281,13 @@ into [#398](https://github.com/storybookjs/mcp/pull/398) (DS misuse metric,
 open, based on `agentic-reference-eval`). #398 already reshapes the same
 census walk: `count()` takes the element node, an opt-in `nodeList` of
 `NodeRecord`s is emitted for the LLM judge, node paths root at a
-nearest-declaration name, and node lists are stored as `ds-nodes` sidecar
+nearest-declaration name, and node lists are stored as `ds-nodes` census file
 baselines under `metricsVersion` 7.
 
 Changes folded into this plan as a result: owner detection co-located with
 `node-path.ts` under an explicit display-name vs identity-key distinction;
 the walk restructure bound by the path builder's call-once/stable-order
-contract; `NodeRecord.instances`; `metricsVersion` as the invalidation
+contract; node records kept unweighted; `metricsVersion` as the invalidation
 mechanism.
 
 Resolved: this branch (`ds-coverage-weighted`) stacks on the misuse branch,
@@ -291,7 +296,8 @@ regenerates baselines and invalidates cached judgements; mass judging is
 best deferred until this lands.
 
 Deferred follow-up (misuse metric, not this task): judgement records store
-only `{path, file, line, tag}` + scores. Storing the node's `weight`/
-`instances` when zipping the model response back to input nodes would make
-future instance-weighted misuse summaries self-contained instead of
-requiring a re-join against the run's node-list sidecar.
+only `{path, file, line, tag}` + scores. Storing the node's `weight` (and an
+instance figure computed from the owner multiplier) when zipping the model
+response back to input nodes would make future instance-weighted misuse
+summaries self-contained instead of requiring a re-join against the run's
+node census file.
