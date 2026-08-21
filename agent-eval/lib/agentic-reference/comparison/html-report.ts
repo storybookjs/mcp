@@ -1702,8 +1702,6 @@ function misuseFinding(
 <div class="finding-head">${score}
 <span class="mono tag">&lt;${escapeHtml(finding.tag)}&gt;</span>
 <span class="q">${escapeHtml(MISUSE_QUESTION_META[finding.question].label)}</span>
-<span class="mono where">${escapeHtml(finding.file)}:${finding.line}</span>
-<span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span>
 <button type="button" class="mopen" data-path="${escapeHtml(finding.projectPath)}/${escapeHtml(
 		finding.file,
 	)}" data-line="${finding.line}" title="Open in your editor (set the repo root via the ? button)">open</button>
@@ -1711,6 +1709,8 @@ function misuseFinding(
 		finding.projectPath,
 	)}" data-file="${escapeHtml(finding.file)}" data-line="${finding.line}" title="Commands for digging into this finding">cmds</button>
 </div>
+<div class="finding-meta"><span class="mono where">${escapeHtml(finding.file)}:${finding.line}</span>
+<span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span></div>
 <p class="reason">${linkifyReason(finding.reason, docsPin)}</p>
 ${findingExcerpt(finding)}
 </article>`;
@@ -1743,7 +1743,10 @@ function linkifyReason(reason: string, docsPin: { repo: string; ref: string } | 
 			? `${base}/blob/${docsPin.ref}/src/docs/${name}.mdx`
 			: `${base}/blob/${docsPin.ref}/src/components/${name}/${name}.mdx`;
 	return escaped
-		.replace(/#(\d+)\b/g, `<a href="${base}/issues/$1" target="_blank" rel="noopener">#$1</a>`)
+		.replace(
+			/(?<!&)#(\d+)\b/g,
+			`<a href="${base}/issues/$1" target="_blank" rel="noopener">#$1</a>`,
+		)
 		.replace(
 			/\b([A-Z][A-Za-z]+)\.mdx\b/g,
 			(_, name: string) =>
@@ -1889,8 +1892,9 @@ relative to the repo root; the <i>open</i> buttons resolve them against
 		baselineDir,
 	)}/src $ROOT/${escapeHtml(exampleProject)}/src"></p>
 <p class="fineprint">Comparing the src trees keeps the harness's __agent_eval__ directory and the
-lockfiles out of the diff. The baseline cache appears after any analyze/judge pass; the pin is
-${escapeHtml(fixture)}.</p>
+lockfiles out of the diff. The pin is ${escapeHtml(fixture)}. On a machine that has never analyzed
+or judged, materialize the baseline cache once:</p>
+<p class="mono mcmd" data-cmd="pnpm --dir $ROOT/agent-eval results:analyze --recompute"></p>
 <h3>Read the agent's reasoning</h3>
 <p class="mono mcmd" data-cmd="less $ROOT/${escapeHtml(exampleProject)}/__agent_eval__/transcript.txt"></p>
 <p class="fineprint">The transcript shows why the agent chose the flagged component — often the real answer.</p>
@@ -2145,6 +2149,12 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
   border-bottom:1px solid var(--line); box-shadow:0 -3px 0 var(--surface); }
 .finding { padding:10px 0 6px 14px; border-left:2px solid var(--line); margin:10px 0; }
 .finding-head { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:baseline; }
+.finding-head .mopen { margin-left:0; }
+.finding-head .mopen:first-of-type { margin-left:auto; }
+.finding-meta { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:2px; }
+.finding .reason a { color:inherit; font-weight:600; text-decoration:underline;
+  text-decoration-color:var(--ink-3); text-underline-offset:3px; }
+.finding .reason a:hover { text-decoration-color:var(--ink); }
 .finding .score { font-family:"IBM Plex Mono",monospace; font-size:.82rem; border-radius:6px;
   padding:1px 7px; color:#fff; }
 .finding .score.zero { background:var(--bad); }
@@ -2446,26 +2456,40 @@ document.addEventListener('click', function (e) {
     var project = cmds.getAttribute('data-project');
     var file = cmds.getAttribute('data-file');
     var lineNo = cmds.getAttribute('data-line');
+    var refsBase = root2 + '/agent-eval/.eval-cache/refs/' + baseDir;
     var entries = [
-      ['Open at the flagged line', 'code -g ' + root2 + '/' + project + '/' + file + ':' + lineNo],
+      ['Open at the flagged line', 'code -g ' + root2 + '/' + project + '/' + file + ':' + lineNo, ''],
       ['Diff this file against the baseline',
-        'git diff --no-index ' + root2 + '/agent-eval/.eval-cache/refs/' + baseDir + '/' + file +
-        ' ' + root2 + '/' + project + '/' + file],
+        'git diff --no-index ' + refsBase + '/' + file + ' ' + root2 + '/' + project + '/' + file,
+        'Fails when the run created the file — no baseline side exists. The whole-run diff below shows it.'],
+      ['Diff the whole run against the baseline',
+        'git diff --no-index ' + refsBase + '/src ' + root2 + '/' + project + '/src', ''],
       ['Search the run transcript for this component',
-        'less ' + root2 + '/' + project + '/__agent_eval__/transcript.txt'],
-      ['Go to the run', 'cd ' + root2 + '/' + project],
+        'less ' + root2 + '/' + project + '/__agent_eval__/transcript.txt', ''],
+      ['Go to the run', 'cd ' + root2 + '/' + project, ''],
     ];
     var body2 = byId('misuseCmdBody');
     body2.textContent = '';
     entries.forEach(function (entry) {
       var h = document.createElement('h3');
       h.textContent = entry[0];
+      body2.appendChild(h);
       var pre = document.createElement('p');
       pre.className = 'mono mcmd';
       pre.textContent = entry[1];
-      body2.appendChild(h);
       body2.appendChild(pre);
+      if (entry[2]) {
+        var note = document.createElement('p');
+        note.className = 'fineprint';
+        note.textContent = entry[2];
+        body2.appendChild(note);
+      }
     });
+    var prime = document.createElement('p');
+    prime.className = 'fineprint';
+    prime.textContent = 'Baseline missing entirely? Materialize the cache once: ' +
+      'pnpm --dir ' + root2 + '/agent-eval results:analyze --recompute';
+    body2.appendChild(prime);
     byId('misuseCmdModal').showModal();
     return;
   }
