@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { collectMisusePanel, collectMisuseStatuses, formatMisuseStatusTable } from './misuse.ts';
 import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
 import { DS_MISUSE_JUDGE_VERSION, JUDGE_MODEL } from '../metrics/ds-misuse/context.ts';
-import { DS_MISUSE_SCHEMA_VERSION } from '../metrics/ds-misuse/types.ts';
 import { PLAIN_STYLE } from '../style.ts';
 import type { OutputStyle } from '../style.ts';
 
@@ -77,11 +76,10 @@ function misuseReport(
 	const meanOf = (scores: number[]) =>
 		scores.length === 0 ? null : scores.reduce((a, b) => a + b, 0) / scores.length;
 	return {
-		schemaVersion: 1,
 		metricsVersion: 1,
 		judgeVersion: DS_MISUSE_JUDGE_VERSION,
 		judgedAt: '2026-08-01T00:00:00.000Z',
-		model: 'test-model',
+		model: JUDGE_MODEL,
 		dsGuidelinesRef,
 		fixtureRef: 'org/app@ref',
 		diffTruncated: false,
@@ -136,18 +134,30 @@ function cell(resolved: ResolvedCase, runs: Cell['runs']): Cell {
 }
 
 describe('collectMisusePanel', () => {
-	it('pools distributions per cell and keeps every below-perfect verdict as a finding', () => {
+	it('pools distributions per cell, carries every decision, and tallies facets', () => {
 		const report = misuseReport([
 			judgedNode({
-				correctDsDecision: { score: 1, reason: 'Card is the right fit.' },
-				correctDsUsage: { score: 0, reason: 'BrandGuidelines.mdx requires tokens; raw hex used.' },
+				correctDsDecision: {
+					score: 1,
+					reasons: [{ text: 'This choice is fully documented in BrandGuidelines.mdx.' }],
+				},
+				correctDsUsage: {
+					score: 0.5,
+					reasons: [
+						{ facet: 'mdx.do-dont', text: "Doesn't quite follow the do/don't guidance." },
+						{ facet: 'general.general-tokens', text: 'Should reference tokens, not raw hex.' },
+					],
+				},
 			}),
 			judgedNode({
 				path: 'App/StatusText[0]',
 				tag: 'StatusText',
 				kind: 'local',
 				line: 20,
-				correctLocalDecision: { score: 0.5, reason: 'Badge exists but its API is debatable here.' },
+				correctLocalDecision: {
+					score: 0,
+					reasons: [{ facet: 'general.general-a11y', text: 'Missing an accessible label.' }],
+				},
 			}),
 		]);
 		const panel = collectMisusePanel([cell(TREATMENT, [usableRun(TREATMENT, 1, report)])], SPEC, {
@@ -161,17 +171,38 @@ describe('collectMisusePanel', () => {
 		const summary = panel.cells[0]!;
 		expect(summary.case).toBe('docs-full');
 		expect(summary.questions.correctDsDecision).toEqual({ ones: 1, halves: 0, zeros: 0 });
-		expect(summary.questions.correctDsUsage).toEqual({ ones: 0, halves: 0, zeros: 1 });
-		expect(summary.questions.correctLocalDecision).toEqual({ ones: 0, halves: 1, zeros: 0 });
+		expect(summary.questions.correctDsUsage).toEqual({ ones: 0, halves: 1, zeros: 0 });
+		expect(summary.questions.correctLocalDecision).toEqual({ ones: 0, halves: 0, zeros: 1 });
 		expect(summary.evaluated).toEqual({ ds: 1, local: 1 });
 
-		// Findings carry the reason and sort worst-first.
-		expect(panel.findings.map((f) => [f.score, f.tag])).toEqual([
-			[0, 'Card'],
-			[0.5, 'StatusText'],
+		// Facet tallies: an answer citing two facets counts once in each; a
+		// facet-less reason lands in 'uncategorised'.
+		expect(summary.facetTallies['mdx.do-dont']).toEqual({ ones: 0, halves: 1, zeros: 0 });
+		expect(summary.facetTallies['general.general-tokens']).toEqual({
+			ones: 0,
+			halves: 1,
+			zeros: 0,
+		});
+		expect(summary.facetTallies['uncategorised']).toEqual({ ones: 1, halves: 0, zeros: 0 });
+
+		// The catalogue is embedded.
+		expect(panel.facets.find((f) => f.id === 'mdx.a11y')?.description).toBe('A11y rules to follow');
+
+		// Every answer is carried — including the perfect one — worst-first.
+		expect(panel.decisions.map((d) => [d.score, d.tag])).toEqual([
+			[0, 'StatusText'],
+			[0.5, 'Card'],
+			[1, 'Card'],
 		]);
-		expect(panel.findings[0]!.reason).toContain('BrandGuidelines.mdx');
-		expect(panel.findings[0]!.runLabel).toBe(`${TS}/run-1`);
+		expect(panel.decisions.at(0)!.score).toBeLessThan(1);
+		expect(panel.decisions[0]!.reasons[0]!.text).toContain('accessible');
+		expect(panel.decisions[0]!.runLabel).toBe(`${TS}/run-1`);
+
+		// A perfect answer is carried as a decision, without an excerpt.
+		const perfect = panel.decisions.find((d) => d.score === 1);
+		expect(perfect).toBeDefined();
+		expect(perfect!.excerpt).toBeUndefined();
+		expect(perfect!.reasons[0]!.text).toContain('documented');
 	});
 
 	it('counts unjudged runs into coverage without inventing scores for them', () => {
@@ -199,7 +230,7 @@ describe('collectMisusePanel', () => {
 				judgedNode({
 					file: 'src/App.tsx',
 					line: 3,
-					correctDsUsage: { score: 0, reason: 'r' },
+					correctDsUsage: { score: 0, reasons: [{ text: 'r' }] },
 				}),
 			]),
 		);
@@ -209,7 +240,7 @@ describe('collectMisusePanel', () => {
 			['a', 'b', 'the flagged line', 'd', 'e'].join('\n'),
 		);
 		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC, { repoRoot: results });
-		expect(panel.findings[0]!.excerpt).toEqual({
+		expect(panel.decisions[0]!.excerpt).toEqual({
 			start: 1,
 			lines: ['a', 'b', 'the flagged line', 'd', 'e'],
 		});
@@ -219,10 +250,10 @@ describe('collectMisusePanel', () => {
 		const run = usableRun(
 			TREATMENT,
 			1,
-			misuseReport([judgedNode({ correctDsUsage: { score: 0, reason: 'r' } })]),
+			misuseReport([judgedNode({ correctDsUsage: { score: 0, reasons: [{ text: 'r' }] } })]),
 		);
 		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC, { repoRoot: results });
-		expect(panel.findings[0]!.excerpt).toBeUndefined();
+		expect(panel.decisions[0]!.excerpt).toBeUndefined();
 	});
 
 	it('surfaces every distinct guideline pin so mixed-standard bundles are visible', () => {
@@ -237,11 +268,7 @@ describe('collectMisusePanel', () => {
 
 /** A report that passes isStale's check against the current guideline pin, judge version, and model. */
 function currentReport(nodes: JudgedNode[] = []): DsMisuseReport {
-	return misuseReport(nodes, dsDocsRefLabel(), {
-		schemaVersion: DS_MISUSE_SCHEMA_VERSION,
-		judgeVersion: DS_MISUSE_JUDGE_VERSION,
-		model: JUDGE_MODEL,
-	});
+	return misuseReport(nodes, dsDocsRefLabel());
 }
 
 describe('collectMisuseStatuses', () => {

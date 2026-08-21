@@ -13,6 +13,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { MISUSE_FACETS, UNCATEGORISED } from '@storybook/agent-eval-utils';
+
 import { formatStatusTable } from './commands.ts';
 import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
 import { isStale, readMisuseReport } from '../metrics/ds-misuse/index.ts';
@@ -20,7 +22,12 @@ import { PLAIN_STYLE } from '../style.ts';
 
 import type { Cell } from './cells.ts';
 import type { ComparisonSpec } from './emit.ts';
-import type { JudgedNode } from '../metrics/ds-misuse/types.ts';
+import type {
+	JudgedNode,
+	JudgeReason,
+	JudgeScore,
+	ScoredAnswer,
+} from '../metrics/ds-misuse/types.ts';
 import type { OutputStyle, Tone } from '../style.ts';
 
 export const MISUSE_QUESTIONS = [
@@ -47,10 +54,16 @@ export interface MisuseCellSummary {
 	/** Pooled over every judged run's nodes; null when no node got the question. */
 	questions: Record<MisuseQuestion, ScoreDistribution | null>;
 	evaluated: { ds: number; local: number };
+	/**
+	 * Per-facet score distributions, keyed by qualified facet id plus
+	 * 'uncategorised'. An answer citing two facets counts once in each; an
+	 * answer with any facet-less reason also counts in 'uncategorised'.
+	 */
+	facetTallies: Record<string, ScoreDistribution>;
 }
 
-/** One below-perfect verdict, kept whole so the report can show the reason. */
-export interface MisuseFinding {
+/** One scored answer, kept whole — perfect scores included, so charts get true denominators. */
+export interface MisuseDecision {
 	case: string;
 	workflow: string;
 	/** `<batch>/run-<n>`, matching how the CLI names runs. */
@@ -60,8 +73,8 @@ export interface MisuseFinding {
 	tag: string;
 	kind: 'ds' | 'local';
 	question: MisuseQuestion;
-	score: 0 | 0.5;
-	reason: string;
+	score: JudgeScore;
+	reasons: JudgeReason[];
 	/** The run's collected tree, relative to the repo root, posix-separated. */
 	projectPath: string;
 	/**
@@ -70,7 +83,7 @@ export interface MisuseFinding {
 	 * as "the run created this file".
 	 */
 	inBaseline?: boolean;
-	/** The flagged source, read from the run's collected tree at build time. */
+	/** Only read for below-perfect scores; a clean usage needs no source context. */
 	excerpt?: { start: number; lines: string[] };
 }
 
@@ -86,7 +99,7 @@ function excerptOf(
 	file: string,
 	line: number,
 	cache: Map<string, string[] | null>,
-): MisuseFinding['excerpt'] {
+): MisuseDecision['excerpt'] {
 	let lines = cache.get(file);
 	if (lines === undefined) {
 		try {
@@ -115,7 +128,9 @@ export interface MisusePanel {
 	judgedRuns: number;
 	usableRuns: number;
 	cells: MisuseCellSummary[];
-	findings: MisuseFinding[];
+	decisions: MisuseDecision[];
+	/** The facet catalogue this panel's judgements were categorised against. */
+	facets: readonly { id: string; description: string }[];
 }
 
 /** A cell's case as the report shows it: the spec's shortName, not the raw case registry one. */
@@ -136,17 +151,28 @@ function tally(distribution: ScoreDistribution, score: number): void {
 	else distribution.zeros += 1;
 }
 
+/** Every distinct facet an answer's reasons cite; a facet-less reason counts as uncategorised. */
+function facetsOf(reasons: JudgeReason[]): string[] {
+	const cited = new Set<string>();
+	for (const reason of reasons) cited.add(reason.facet ?? UNCATEGORISED);
+	return [...cited];
+}
+
 function poolNode(
 	node: JudgedNode,
-	questions: Record<MisuseQuestion, ScoreDistribution | null>,
-	push: (question: MisuseQuestion, score: 0 | 0.5, reason: string) => void,
+	summary: MisuseCellSummary,
+	push: (question: MisuseQuestion, answer: ScoredAnswer) => void,
 ): void {
 	for (const question of MISUSE_QUESTIONS) {
 		const answer = node[question];
 		if (answer === undefined) continue;
-		questions[question] ??= emptyDistribution();
-		tally(questions[question], answer.score);
-		if (answer.score !== 1) push(question, answer.score, answer.reason);
+		summary.questions[question] ??= emptyDistribution();
+		tally(summary.questions[question], answer.score);
+		for (const facet of facetsOf(answer.reasons)) {
+			summary.facetTallies[facet] ??= emptyDistribution();
+			tally(summary.facetTallies[facet], answer.score);
+		}
+		push(question, answer);
 	}
 }
 
@@ -155,7 +181,7 @@ function poolNode(
  *
  * Reads artifacts only — never the API — so it is free to run on every
  * comparison, judged or not. Cells keep the spec's own ordering upstream;
- * findings sort worst-first within a cell so the report needs no re-sort.
+ * decisions sort worst-first within a cell so the report needs no re-sort.
  */
 export function collectMisusePanel(
 	cells: Cell[],
@@ -173,7 +199,7 @@ export function collectMisusePanel(
 		return `${repo}@${fixtureRef.slice(at + 1).replace(/\//g, '__')}`;
 	};
 	const summaries: MisuseCellSummary[] = [];
-	const findings: MisuseFinding[] = [];
+	const decisions: MisuseDecision[] = [];
 	let judgedRuns = 0;
 	let usableRuns = 0;
 
@@ -191,10 +217,11 @@ export function collectMisusePanel(
 				correctLocalDecision: null,
 			},
 			evaluated: { ds: 0, local: 0 },
+			facetTallies: {},
 		};
 		usableRuns += cell.runs.length;
 
-		const cellFindings: MisuseFinding[] = [];
+		const cellDecisions: MisuseDecision[] = [];
 		for (const usable of cell.runs) {
 			const report = readMisuseReport(usable.run.runDir);
 			if (report === null) continue;
@@ -213,8 +240,8 @@ export function collectMisusePanel(
 					? join(refsRoot, baselineName)
 					: null;
 			for (const node of report.nodes) {
-				poolNode(node, summary.questions, (question, score, reason) => {
-					cellFindings.push({
+				poolNode(node, summary, (question, answer) => {
+					cellDecisions.push({
 						case: shortName,
 						workflow: cell.workflow,
 						runLabel,
@@ -223,20 +250,22 @@ export function collectMisusePanel(
 						tag: node.tag,
 						kind: node.kind,
 						question,
-						score,
-						reason,
+						score: answer.score,
+						reasons: answer.reasons,
 						projectPath: toPosix(relative(options.repoRoot, usable.run.projectDir)),
 						...(baselineRoot === null
 							? {}
 							: { inBaseline: existsSync(join(baselineRoot, node.file)) }),
-						excerpt: excerptOf(usable.run.projectDir, node.file, node.line, excerpts),
+						...(answer.score === 1
+							? {}
+							: { excerpt: excerptOf(usable.run.projectDir, node.file, node.line, excerpts) }),
 					});
 				});
 			}
 		}
 
-		cellFindings.sort((a, b) => a.score - b.score || a.file.localeCompare(b.file));
-		findings.push(...cellFindings);
+		cellDecisions.sort((a, b) => a.score - b.score || a.file.localeCompare(b.file));
+		decisions.push(...cellDecisions);
 		summaries.push(summary);
 	}
 
@@ -247,7 +276,8 @@ export function collectMisusePanel(
 		judgedRuns,
 		usableRuns,
 		cells: summaries,
-		findings,
+		decisions,
+		facets: MISUSE_FACETS.map(({ id, description }) => ({ id, description })),
 	};
 }
 
