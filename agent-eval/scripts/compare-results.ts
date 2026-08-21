@@ -4,7 +4,7 @@
 // lib/agentic-reference/comparison/, statistics in scripts/compare_stats.py.
 // --plan scopes the comparison to one collection plan's cases and workflows.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -152,6 +152,11 @@ async function main() {
 		minRuns,
 		...(plan === null ? {} : { plan: plan.path }),
 	};
+	console.log(
+		`\nComparing ${outStyle.caseName(control.shortName)} vs ${treatments
+			.map((t) => outStyle.caseName(t.shortName))
+			.join(' + ')} — ${workflows.join(', ')} (${spec.mode}, ${minRuns}+ runs/cell)`,
+	);
 	const outDir = resolve(
 		options.out ?? join(ROOT, 'comparisons', comparisonSlug(control, treatments, workflows)),
 	);
@@ -167,10 +172,16 @@ async function main() {
 	}
 	writeFileSync(join(stagingDir, 'dataset.csv'), datasetCsv(cells, COMPARISON_METRICS, spec));
 	// Cached judge artifacts only — free, and simply sparse when judging hasn't run.
-	writeFileSync(
-		join(stagingDir, 'misuse.json'),
-		JSON.stringify(collectMisusePanel(cells, spec), null, 2) + '\n',
+	const misusePanel = collectMisusePanel(cells, spec);
+	writeFileSync(join(stagingDir, 'misuse.json'), JSON.stringify(misusePanel, null, 2) + '\n');
+	console.log(
+		misusePanel.judgedRuns === misusePanel.usableRuns
+			? `DS misuse: all ${misusePanel.usableRuns} usable runs judged.`
+			: `DS misuse: ${misusePanel.judgedRuns}/${misusePanel.usableRuns} usable runs judged` +
+					(misusePanel.judgedRuns === 0 ? ' — the misuse metrics will be empty' : '') +
+					`; judge the rest: pnpm judge:ds-misuse${plan === null ? '' : ` --plan ${plan.path}`}`,
 	);
+	console.log('');
 	writeFileSync(
 		join(stagingDir, 'manifest.json'),
 		manifestJson({
@@ -206,12 +217,70 @@ async function main() {
 	}
 
 	writeHtmlReport(stagingDir);
+	printVerdictDigest(stagingDir);
 
 	rmSync(outDir, { recursive: true, force: true });
 	renameSync(stagingDir, outDir);
-	console.log(`\nComparison written to ${outDir}`);
-	console.log(`Report: ${join(outDir, 'report.md')}`);
-	console.log(`HTML report: ${join(outDir, 'report.html')}`);
+	const bundle = relative(process.cwd(), outDir);
+	console.log(`\nBundle: ${outStyle.bold(bundle)}`);
+	console.log(
+		`Open:   ${join(bundle, 'report.html')} ${outStyle.dim('(report.md and estimates.csv sit beside it)')}`,
+	);
+}
+
+/**
+ * The one-screen answer after the stats stage: which arms moved, which way.
+ *
+ * The counts mirror the HTML summary's better/worse tally — direction-aware,
+ * FDR-significant rows only — so the terminal says whether the report is worth
+ * opening before anyone opens it.
+ */
+function printVerdictDigest(stagingDir: string): void {
+	let rows: Array<{
+		treatment: string;
+		metric: string;
+		beta: number;
+		context: boolean;
+		verdict: string | null;
+		direction: string;
+	}>;
+	try {
+		rows = JSON.parse(readFileSync(join(stagingDir, 'estimates.json'), 'utf8'));
+	} catch {
+		return;
+	}
+	const metricLabel = new Map(COMPARISON_METRICS.map((m) => [m.key, m.label]));
+	for (const treatment of new Set(rows.map((row) => row.treatment))) {
+		const significant = rows.filter(
+			(row) => row.treatment === treatment && !row.context && row.verdict === 'significant',
+		);
+		const better = significant.filter(
+			(row) =>
+				(row.direction === 'lower-better' && row.beta < 0) ||
+				(row.direction === 'higher-better' && row.beta > 0),
+		);
+		const worse = significant.filter(
+			(row) =>
+				(row.direction === 'lower-better' && row.beta > 0) ||
+				(row.direction === 'higher-better' && row.beta < 0),
+		);
+		const name = (row: { metric: string }) => metricLabel.get(row.metric) ?? row.metric;
+		const parts = [
+			better.length > 0
+				? outStyle.tone('good', `${better.length} better`) +
+					outStyle.dim(` (${better.map(name).join(', ')})`)
+				: '',
+			worse.length > 0
+				? outStyle.tone('action', `${worse.length} worse`) +
+					outStyle.dim(` (${worse.map(name).join(', ')})`)
+				: '',
+		].filter(Boolean);
+		console.log(
+			`  ${outStyle.caseName(treatment.padEnd(16))} ${
+				parts.length > 0 ? parts.join(' · ') : outStyle.dim('no significant movement')
+			}`,
+		);
+	}
 }
 
 main().catch((error) => {
