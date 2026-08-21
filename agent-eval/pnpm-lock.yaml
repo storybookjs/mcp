@@ -32,6 +32,9 @@ importers:
 
   .:
     dependencies:
+      '@storybook/agent-eval-utils':
+        specifier: workspace:*
+        version: link:../packages/agent-eval-utils
       vercel:
         specifier: ^54.18.5
         version: 54.18.5(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(rollup@4.62.2)
