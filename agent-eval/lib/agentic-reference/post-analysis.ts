@@ -317,7 +317,8 @@ function printMisuseFindings(rows: Array<Record<string, unknown>>): void {
 				if (answer === undefined) continue;
 				if (printed === 0) console.log(bold('\nJudged nodes (every verdict, with reason):'));
 				printed += 1;
-				const score = answer.score === 1 ? green('1  ') : answer.score === 0 ? red('0  ') : yellow('0.5');
+				const score =
+					answer.score === 1 ? green('1  ') : answer.score === 0 ? red('0  ') : yellow('0.5');
 				const where = `${shortExperiment(row.experiment)}/run-${row.run as number}`;
 				console.log(
 					`${score} ${bold(`<${node.tag}>`)} ${MISUSE_QUESTION_LABELS[question]} ` +
@@ -542,7 +543,9 @@ export function summarize(
 	const totalRuns = analyses.length;
 	const misuseHintPrinted = judgedRuns < totalRuns;
 	if (misuseHintPrinted) {
-		console.log(dim(`DS misuse: ${judgedRuns}/${totalRuns} runs judged — run: pnpm judge:ds-misuse`));
+		console.log(
+			dim(`DS misuse: ${judgedRuns}/${totalRuns} runs judged — run: pnpm judge:ds-misuse`),
+		);
 	}
 
 	if (options.general) {

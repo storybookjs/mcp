@@ -79,7 +79,7 @@ function misuseReport(
 	return {
 		schemaVersion: 1,
 		metricsVersion: 1,
-		judgeVersion: 1,
+		judgeVersion: DS_MISUSE_JUDGE_VERSION,
 		judgedAt: '2026-08-01T00:00:00.000Z',
 		model: 'test-model',
 		dsGuidelinesRef,
@@ -309,9 +309,10 @@ describe('formatMisuseStatusTable', () => {
 	});
 
 	it('defaults to PLAIN_STYLE, so an unstyled call matches an explicit one', () => {
-		const statuses = collectMisuseStatuses([cell(TREATMENT, [usableRun(TREATMENT, 1, null)])], SPEC);
-		expect(formatMisuseStatusTable(statuses)).toBe(
-			formatMisuseStatusTable(statuses, PLAIN_STYLE),
+		const statuses = collectMisuseStatuses(
+			[cell(TREATMENT, [usableRun(TREATMENT, 1, null)])],
+			SPEC,
 		);
+		expect(formatMisuseStatusTable(statuses)).toBe(formatMisuseStatusTable(statuses, PLAIN_STYLE));
 	});
 });

@@ -29,8 +29,18 @@ describe('usdOf', () => {
 
 describe('addUsage', () => {
 	it('accumulates a usage record into a running total in place', () => {
-		const total = usage({ inputTokens: 1, cacheReadTokens: 2, cacheWriteTokens: 3, outputTokens: 4 });
-		addUsage(total, usage({ inputTokens: 10, cacheReadTokens: 20, cacheWriteTokens: 30, outputTokens: 40 }));
-		expect(total).toEqual(usage({ inputTokens: 11, cacheReadTokens: 22, cacheWriteTokens: 33, outputTokens: 44 }));
+		const total = usage({
+			inputTokens: 1,
+			cacheReadTokens: 2,
+			cacheWriteTokens: 3,
+			outputTokens: 4,
+		});
+		addUsage(
+			total,
+			usage({ inputTokens: 10, cacheReadTokens: 20, cacheWriteTokens: 30, outputTokens: 40 }),
+		);
+		expect(total).toEqual(
+			usage({ inputTokens: 11, cacheReadTokens: 22, cacheWriteTokens: 33, outputTokens: 44 }),
+		);
 	});
 });

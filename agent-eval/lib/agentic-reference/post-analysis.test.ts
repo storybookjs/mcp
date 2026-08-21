@@ -1143,13 +1143,17 @@ describe('misuse findings', () => {
 				},
 			},
 		]);
-		expect(output).toContain('No per-node verdicts: these runs carry summary scores but no judged node detail.');
+		expect(output).toContain(
+			'No per-node verdicts: these runs carry summary scores but no judged node detail.',
+		);
 		expect(output).not.toContain('No findings: every judged node scored 1');
 	});
 
 	it('reports the same distinct message for a row with an empty nodes array', () => {
 		const output = loggedLines([misuseRow([])]);
-		expect(output).toContain('No per-node verdicts: these runs carry summary scores but no judged node detail.');
+		expect(output).toContain(
+			'No per-node verdicts: these runs carry summary scores but no judged node detail.',
+		);
 	});
 });
 
@@ -1169,7 +1173,14 @@ describe('DS misuse judged hint', () => {
 	}
 
 	const judgedRow = plainRow({
-		dsMisuse: { summary: { correctDsDecision: 1, correctDsUsage: 1, correctLocalDecision: null, evaluated: { ds: 1, local: 0 } } },
+		dsMisuse: {
+			summary: {
+				correctDsDecision: 1,
+				correctDsUsage: 1,
+				correctLocalDecision: null,
+				evaluated: { ds: 1, local: 0 },
+			},
+		},
 	});
 
 	function loggedLines(rows: Array<Record<string, unknown>>, options?: SummarizeOptions): string {

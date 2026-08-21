@@ -15,7 +15,7 @@ function report(overrides: Partial<DsMisuseReport> = {}): DsMisuseReport {
 	return {
 		schemaVersion: 1,
 		metricsVersion: 7,
-		judgeVersion: 1,
+		judgeVersion: DS_MISUSE_JUDGE_VERSION,
 		judgedAt: '2026-08-14T00:00:00.000Z',
 		model: 'claude-opus-4-8',
 		dsGuidelinesRef: 'yannbf/droppy-ds@abc',
@@ -108,25 +108,26 @@ describe('isStale', () => {
 	// The deterministic metricsVersion only records which census rules built
 	// the node paths; it must not invalidate a paid judge artifact.
 	it('is NOT stale when only metricsVersion differs', () => {
-		expect(isStale(report({ metricsVersion: 99 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(
-			false,
-		);
+		expect(
+			isStale(report({ metricsVersion: 99 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
+		).toBe(false);
 	});
 
 	it('is true when the judge version moved', () => {
-		expect(
-			isStale(report({ judgeVersion: 0 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
-		).toBe(true);
+		expect(isStale(report({ judgeVersion: 0 }), { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(
+			true,
+		);
 	});
 
-	// An older artifact predates the judgeVersion field but was produced by
-	// judge version 1, so an absent field reads as 1 — a paid judgement must
-	// not be re-spent because the version stamp arrived after it did.
+	// An artifact predating the judgeVersion field was produced by judge
+	// version 1 and reads as such — never as automatically stale, so a paid
+	// judgement is not re-spent just because the stamp arrived after it did.
 	it('reads a report lacking judgeVersion as version 1', () => {
 		const { judgeVersion: _judgeVersion, ...legacy } = report();
-		expect(isStale(legacy as DsMisuseReport, { dsGuidelinesRef: 'yannbf/droppy-ds@abc' })).toBe(
-			DS_MISUSE_JUDGE_VERSION !== 1,
-		);
+		const stampless = legacy as DsMisuseReport;
+		expect(
+			isStale({ ...stampless, judgeVersion: 1 }, { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }),
+		).toBe(isStale(stampless, { dsGuidelinesRef: 'yannbf/droppy-ds@abc' }));
 	});
 
 	it('is true for a report from an older schema', () => {

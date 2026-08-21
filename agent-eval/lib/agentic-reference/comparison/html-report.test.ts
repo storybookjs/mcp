@@ -972,5 +972,4 @@ describe('DS misuse panel', () => {
 		const html = render({ misuse: misusePanel({ judgedRuns: 1, usableRuns: 2 }) });
 		expect(html).toContain('1 of 2');
 	});
-
 });
