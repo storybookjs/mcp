@@ -249,11 +249,11 @@ describe('renderHtmlReport structure', () => {
 		expect(html).toContain('q &le; 0.05');
 	});
 
-	it('renders the statistics explainer below Sample, expanded by default', () => {
+	it('renders the statistics explainer as a plain section below Sample', () => {
 		const html = render({});
-		expect(html).toContain('<details class="statsbox" open>');
-		expect(html).toContain('<summary>How the statistics work</summary>');
-		expect(html.indexOf('>Sample</h2>')).toBeLessThan(html.indexOf('<details class="statsbox"'));
+		expect(html).toContain('<h2>How the statistics work</h2>');
+		expect(html).not.toContain('<details class="statsbox"');
+		expect(html.indexOf('>Sample</h2>')).toBeLessThan(html.indexOf('How the statistics work'));
 	});
 
 	it('renders one merged Cases definition list with verdicts and definitions', () => {
@@ -369,7 +369,7 @@ describe('renderHtmlReport structure', () => {
 		expect(html).toMatch(/class="fdot tipsrc"[^>]*style="left:9\.3%/);
 	});
 
-	it('draws the control band in both range flavors, CI first', () => {
+	it('draws the control band as a 95% CI of its mean, with an empty label cell', () => {
 		const html = render({
 			dataset: [
 				datasetRow({ values: { durationSeconds: 900 } }),
@@ -377,29 +377,53 @@ describe('renderHtmlReport structure', () => {
 			],
 		});
 		expect(html).toMatch(
-			/class="fsd r-ci tipsrc"[^>]*data-tip-title="control-none: 95% CI of the mean"/,
+			/class="fsd tipsrc"[^>]*data-tip-title="control-none: 95% CI of the mean"/,
 		);
-		expect(html).toMatch(/class="fsd r-sd tipsrc"[^>]*data-tip-title="control-none: ±1 SD"/);
-		expect(html).toContain('>95% CI</span>');
-		expect(html).toContain('>±1 SD</span>');
-		// A single usable control value can produce neither band.
+		expect(html).toContain('<span class="flab fsdlab">&nbsp;</span>');
+		// A single usable control value cannot produce the band.
 		expect(render({ dataset: [datasetRow()] })).not.toContain('class="fsd');
 	});
 
-	it('offers a Range toggle and gives treatments their own spread bars', () => {
+	it('offers mean, averaged median, and true median statistics', () => {
+		const html = render({});
+		expect(html).toContain('>averaged median<');
+		expect(html).toContain('>true median<');
+		expect(html).toContain('data-left-truemedian=');
+		expect(html).toContain('data-truemedian=');
+		expect(html).toContain('data-tip-control-truemedian=');
+	});
+
+	it('precomputes aggregated groups for proper workflow subsets', () => {
+		const base = manifest();
 		const html = render({
-			dataset: [
-				datasetRow({ values: { durationSeconds: 900 } }),
-				datasetRow({ values: { durationSeconds: 1600 } }),
-				datasetRow({ case: 'full', values: { durationSeconds: 800 } }),
-				datasetRow({ case: 'full', values: { durationSeconds: 1000 } }),
+			manifest: {
+				...base,
+				spec: {
+					...base.spec,
+					workflows: ['701-a', '703-b', '706-c'],
+					mode: 'aggregate' as const,
+				},
+			},
+			estimates: [
+				row({ scope: 'pooled' }),
+				row({ scope: '701-a', context: true, q: null, verdict: null }),
+				row({ scope: '703-b', context: true, q: null, verdict: null, beta: -0.1 }),
+				row({ scope: '706-c', context: true, q: null, verdict: null, beta: -0.3 }),
 			],
 		});
-		expect(html).toContain('class="seg range-toggle"');
-		expect(html).toMatch(/<body[^>]*data-range="ci"/);
-		// The model CI bar and the treatment's ±1 SD run-spread bar coexist.
-		expect(html).toContain('class="fci r-ci"');
-		expect(html).toContain('class="fci r-sd"');
+		for (const id of ['701-a+703-b', '701-a+706-c', '703-b+706-c']) {
+			expect(html).toContain(`data-scope="${id}"`);
+		}
+		// Equal-weight aggregate of the −0.2 and −0.1 betas: exp(−0.15)−1 = −13.9%.
+		expect(html).toContain('−13.9%');
+		expect(html).toContain('aggregated over the enabled workflows');
+	});
+
+	it('carries no Range toggle: the CI is the only interval shown', () => {
+		const html = render({});
+		expect(html).not.toContain('range-toggle');
+		expect(html).not.toContain('r-sd');
+		expect(html).toContain('class="fci"');
 	});
 
 	it('falls back to the model estimate when a statistic is missing', () => {
@@ -424,7 +448,7 @@ describe('renderHtmlReport structure', () => {
 		expect(html).toContain('id="resetFilters"');
 	});
 
-	it('renders a workflow select only in aggregate mode', () => {
+	it('renders workflow pills only in aggregate mode', () => {
 		expect(render({})).not.toContain('id="wfFilter"');
 		const html = render({
 			manifest: aggregateManifest(),
@@ -439,7 +463,18 @@ describe('renderHtmlReport structure', () => {
 			],
 		});
 		expect(html).toContain('id="wfFilter"');
+		expect(html).not.toContain('<select id="wfFilter">');
+		expect(html).toMatch(
+			/class="chip-toggle wf-toggle" data-wf="701-new-ui-flow" aria-pressed="true"/,
+		);
+		expect(html).toMatch(
+			/class="chip-toggle wf-toggle" data-wf="703-fix-bug-flow" aria-pressed="true"/,
+		);
 		expect(html).toContain('not FDR-tested');
+		// Per-workflow groups and rows carry the workflow tag shown when several
+		// workflows stack.
+		expect(html).toContain('<span class="fgw">701-new-ui-flow</span>');
+		expect(html).toContain('<span class="rowwf">· 701-new-ui-flow</span>');
 	});
 
 	it('renders context rows hidden, scoped to their workflow, in aggregate mode', () => {

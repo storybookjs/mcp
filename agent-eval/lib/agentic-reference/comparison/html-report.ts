@@ -632,18 +632,28 @@ function usableValues(
 		.filter((v) => (metric.transform === 'log0' ? v >= 0 : true));
 }
 
+/** The workflows a scope names: pooled = all of them, a '+' id = its parts. */
+function scopedWorkflows(scope: string, workflows: string[]): string[] {
+	return scope === 'pooled' ? workflows : scope.split('+');
+}
+
 // The statistic the model actually references: for the mean, the average on
 // the transformed scale, back-transformed (geometric mean for log metrics).
-// Pooled scope combines per-workflow statistics with equal weight.
+// Multi-workflow scopes combine per-workflow statistics with equal weight —
+// except 'truemedian', the median over every run merged across workflows.
 function caseStat(
 	dataset: DatasetRow[],
 	caseName: string,
 	metric: ManifestMetric,
 	scope: string,
 	workflows: string[],
-	kind: 'mean' | 'median',
+	kind: 'mean' | 'median' | 'truemedian',
 ): number | null {
-	const scoped = scope === 'pooled' ? workflows : [scope];
+	const scoped = scopedWorkflows(scope, workflows);
+	if (kind === 'truemedian') {
+		const merged = scoped.flatMap((workflow) => usableValues(dataset, caseName, workflow, metric));
+		return merged.length === 0 ? null : median(merged);
+	}
 	const perWorkflow: number[] = [];
 	for (const workflow of scoped) {
 		const values = usableValues(dataset, caseName, workflow, metric);
@@ -660,35 +670,8 @@ function caseStat(
 }
 
 /**
- * Sample standard deviation of a case's values on the transformed scale,
- * per-workflow SDs combined with equal weight (matching caseStat). Null when
- * no workflow has two usable values.
- */
-function caseSpread(
-	dataset: DatasetRow[],
-	caseName: string,
-	metric: ManifestMetric,
-	scope: string,
-	workflows: string[],
-): number | null {
-	const scoped = scope === 'pooled' ? workflows : [scope];
-	const perWorkflow: number[] = [];
-	for (const workflow of scoped) {
-		const values = usableValues(dataset, caseName, workflow, metric).map((v) =>
-			transformValue(v, metric.transform),
-		);
-		if (values.length < 2) continue;
-		const m = mean(values);
-		perWorkflow.push(
-			Math.sqrt(values.reduce((sum, v) => sum + (v - m) ** 2, 0) / (values.length - 1)),
-		);
-	}
-	return perWorkflow.length === 0 ? null : mean(perWorkflow);
-}
-
-/**
- * A symmetric transformed-scale half-width (±1 SD, or a CI's t·se) around the
- * control, on the effect display scale.
+ * A symmetric transformed-scale half-width (a CI's t·se) around the control,
+ * on the effect display scale.
  */
 function spreadExtents(half: number, transform: EstimateTransform): { lo: number; hi: number } {
 	if (transform === 'log' || transform === 'log0') {
@@ -719,7 +702,7 @@ function caseMeanCiHalfWidth(
 	scope: string,
 	workflows: string[],
 ): number | null {
-	const scoped = scope === 'pooled' ? workflows : [scope];
+	const scoped = scopedWorkflows(scope, workflows);
 	let seSquares = 0;
 	let df = 0;
 	let count = 0;
@@ -736,25 +719,6 @@ function caseMeanCiHalfWidth(
 	}
 	if (count === 0) return null;
 	return t95(df) * (Math.sqrt(seSquares) / count);
-}
-
-/**
- * A treatment's own ±half band around its mean shift, on the effect display
- * scale. Null when a statistic is missing or a ratio is undefined.
- */
-function shiftBand(
-	transform: EstimateTransform,
-	control: number | null,
-	treatment: number | null,
-	half: number | null,
-): { lo: number; hi: number } | null {
-	if (control === null || treatment === null || half === null) return null;
-	if (transform === 'log' || transform === 'log0') {
-		if (control <= 0 || treatment <= 0) return null;
-		const m = Math.log(treatment / control);
-		return { lo: Math.exp(m - half) - 1, hi: Math.exp(m + half) - 1 };
-	}
-	return { lo: treatment - control - half, hi: treatment - control + half };
 }
 
 // The shift of a case statistic against the control's, on the effect display
@@ -813,16 +777,23 @@ function buildFilterBar(manifest: ManifestJson, styles: TreatmentStyle[]): strin
 			);
 		})
 		.join('\n');
+	// Workflow pills: all on shows the pooled headline; disabling any switches
+	// to the per-workflow view of whatever stays enabled, because pooled
+	// estimates only exist for the full workflow set.
 	const workflowSelect =
 		manifest.spec.mode === 'aggregate'
 			? `
-<label class="select">Workflow
-<select id="wfFilter">
-<option value="pooled" selected>All workflows</option>
+<span class="select">Workflows
+<span class="wfpills" id="wfFilter" role="group" aria-label="Workflows">
 ${manifest.spec.workflows
-	.map((w) => `<option value="${escapeHtml(w)}">${escapeHtml(w)}</option>`)
+	.map(
+		(w) =>
+			`<button type="button" class="chip-toggle wf-toggle" data-wf="${escapeHtml(
+				w,
+			)}" aria-pressed="true">${escapeHtml(w)}</button>`,
+	)
 	.join('\n')}
-</select></label>`
+</span></span>`
 			: '';
 	return `
 <div class="filterbar">
@@ -972,7 +943,9 @@ function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string
 	if (aggregate) {
 		lines.push(
 			'<li><b>Aggregation.</b> Multi-workflow effects weight every workflow equally, ' +
-				'regardless of run counts.</li>',
+				'regardless of run counts. Disabling workflows shows an equal-weight aggregate of ' +
+				'the per-workflow estimates with normal-approximation CIs — outside the FDR ' +
+				'grid, so treat those views as exploratory.</li>',
 		);
 	}
 	lines.push(
@@ -981,12 +954,12 @@ function buildStatsBox(estimates: EstimateRow[], manifest: ManifestJson): string
 		)} OLS (Python); full provenance in manifest.json.</li>`,
 	);
 	return `
-<details class="statsbox" open>
-<summary>How the statistics work</summary>
+<h2>How the statistics work</h2>
+<div class="statsbox">
 <ul>
 ${lines.join('\n')}
 </ul>
-</details>`;
+</div>`;
 }
 
 // Rows grouped by workflow, the workflow cell spanning its group. Every row
@@ -1036,19 +1009,96 @@ interface Scoped {
 	rows: EstimateRow[];
 }
 
-// Rows for one metric, split into the headline scope and (in aggregate mode)
-// one context scope per workflow. Single-workflow mode has no context scopes.
+// Two-sided normal-approximation p for z (Abramowitz–Stegun 7.1.26 erf).
+function normalP(z: number): number {
+	const a = Math.abs(z) / Math.SQRT2;
+	const t = 1 / (1 + 0.3275911 * a);
+	const erf =
+		1 -
+		((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) *
+			t *
+			Math.exp(-a * a);
+	return Math.max(0, Math.min(1, 1 - erf));
+}
+
+/** Every proper subset of 2+ workflows, sorted, for precomputed aggregates. */
+function workflowSubsets(workflows: string[]): string[][] {
+	const sorted = [...workflows].sort();
+	const subsets: string[][] = [];
+	for (let bits = 1; bits < (1 << sorted.length) - 1; bits++) {
+		const subset = sorted.filter((_, i) => (bits >> i) & 1);
+		if (subset.length >= 2) subsets.push(subset);
+	}
+	return subsets;
+}
+
+/**
+ * Equal-weight aggregate of per-workflow context estimates over a workflow
+ * subset: betas averaged (the same weighting the pooled model uses), standard
+ * errors combined as sqrt(Σse²)/W, a normal-approximation CI and p. These are
+ * approximate companions to the statsmodels estimates — never FDR-tested —
+ * so a view with a workflow disabled still shows one aggregate row per metric.
+ */
+function aggregateRows(
+	contextRows: EstimateRow[],
+	subset: string[],
+	scopeId: string,
+): EstimateRow[] {
+	const byTreatment = new Map<string, EstimateRow[]>();
+	for (const row of contextRows) {
+		if (!subset.includes(row.scope)) continue;
+		const rows = byTreatment.get(row.treatment) ?? [];
+		rows.push(row);
+		byTreatment.set(row.treatment, rows);
+	}
+	const out: EstimateRow[] = [];
+	for (const rows of byTreatment.values()) {
+		const parts = rows.filter((r) => Number.isFinite(r.se) && r.se > 0);
+		if (parts.length === 0) continue;
+		const beta = mean(parts.map((r) => r.beta));
+		const se = Math.sqrt(parts.reduce((sum, r) => sum + r.se * r.se, 0)) / parts.length;
+		const first = parts[0]!;
+		out.push({
+			metric: first.metric,
+			treatment: first.treatment,
+			scope: scopeId,
+			context: true,
+			nControl: parts.reduce((sum, r) => sum + r.nControl, 0),
+			nTreatment: parts.reduce((sum, r) => sum + r.nTreatment, 0),
+			beta,
+			se,
+			ciLow: beta - 1.96 * se,
+			ciHigh: beta + 1.96 * se,
+			p: normalP(beta / se),
+			pctChange: first.transform === 'none' ? null : Math.exp(beta) - 1,
+			q: null,
+			verdict: null,
+			direction: first.direction,
+			transform: first.transform,
+			anomalies: null,
+		});
+	}
+	return out.sort((a, b) => a.treatment.localeCompare(b.treatment));
+}
+
+// Rows for one metric: the headline scope, one context scope per workflow,
+// and (in aggregate mode) one precomputed aggregate per proper workflow
+// subset, so disabling workflows still shows a single combined row.
 function scopesFor(metricKey: string, estimates: EstimateRow[], manifest: ManifestJson): Scoped[] {
 	const headline = headlineRows(estimates).filter((row) => row.metric === metricKey);
 	const defaultScope = defaultScopeOf(manifest);
 	const scopes: Scoped[] = [];
 	if (headline.length > 0) scopes.push({ scope: defaultScope, context: false, rows: headline });
 	if (manifest.spec.mode === 'aggregate') {
+		const contextRows = estimates.filter((row) => row.context && row.metric === metricKey);
 		for (const workflow of manifest.spec.workflows) {
-			const rows = estimates.filter(
-				(row) => row.context && row.metric === metricKey && row.scope === workflow,
-			);
+			const rows = contextRows.filter((row) => row.scope === workflow);
 			if (rows.length > 0) scopes.push({ scope: workflow, context: true, rows });
+		}
+		for (const subset of workflowSubsets(manifest.spec.workflows)) {
+			const scopeId = subset.join('+');
+			const rows = aggregateRows(contextRows, subset, scopeId);
+			if (rows.length > 0) scopes.push({ scope: scopeId, context: true, rows });
 		}
 	}
 	return scopes;
@@ -1058,13 +1108,13 @@ function defaultScopeOf(manifest: ManifestJson): string {
 	return manifest.spec.mode === 'aggregate' ? 'pooled' : (manifest.spec.workflows[0] ?? 'pooled');
 }
 
-// Shown while a single workflow of an aggregate comparison is selected; the
-// naive variant reminds that raw p works there but stays uncorrected.
+// Shown while workflows are disabled: a single-workflow context view, or an
+// equal-weight aggregate over the enabled subset. Neither is FDR-tested.
 function wfBadge(manifest: ManifestJson): string {
 	if (manifest.spec.mode !== 'aggregate') return '';
 	return (
-		'<span class="wfBadge" hidden><span class="m-fdr">per-workflow view — not FDR-tested</span>' +
-		'<span class="m-naive">per-workflow view — raw p, uncorrected</span></span>'
+		'<span class="wfBadge" hidden><span class="v-single">per-workflow view — not FDR-tested</span>' +
+		'<span class="v-subset">aggregated over the enabled workflows — approximate CIs, not FDR-tested</span></span>'
 	);
 }
 
@@ -1076,6 +1126,8 @@ function tipAttributes(
 		treatment: string;
 		controlMedian: string;
 		treatmentMedian: string;
+		controlTrue: string;
+		treatmentTrue: string;
 	},
 ): string {
 	const sig = row.verdict === 'significant';
@@ -1097,8 +1149,10 @@ function tipAttributes(
 		`data-tip-qn="${escapeHtml(naiveCall)}" ` +
 		`data-tip-control="${escapeHtml(stats.control)}" ` +
 		`data-tip-control-median="${escapeHtml(stats.controlMedian)}" ` +
+		`data-tip-control-truemedian="${escapeHtml(stats.controlTrue)}" ` +
 		`data-tip-treatment="${escapeHtml(stats.treatment)}" ` +
-		`data-tip-treatment-median="${escapeHtml(stats.treatmentMedian)}"`
+		`data-tip-treatment-median="${escapeHtml(stats.treatmentMedian)}" ` +
+		`data-tip-treatment-truemedian="${escapeHtml(stats.treatmentTrue)}"`
 	);
 }
 
@@ -1126,8 +1180,7 @@ function buildEffects(
 			for (const { scope, context, rows } of scopes) {
 				const controlMean = caseStat(dataset, controlName, metric, scope, workflows, 'mean');
 				const controlMedian = caseStat(dataset, controlName, metric, scope, workflows, 'median');
-				const controlSd = caseSpread(dataset, controlName, metric, scope, workflows);
-				const sdExtents = controlSd === null ? null : spreadExtents(controlSd, metric.transform);
+				const controlTrue = caseStat(dataset, controlName, metric, scope, workflows, 'truemedian');
 				const controlCiHw = caseMeanCiHalfWidth(dataset, controlName, metric, scope, workflows);
 				const ciExtents =
 					controlCiHw === null ? null : spreadExtents(controlCiHw, metric.transform);
@@ -1136,31 +1189,29 @@ function buildEffects(
 					.map((row) => {
 						const tMean = caseStat(dataset, row.treatment, metric, scope, workflows, 'mean');
 						const tMedian = caseStat(dataset, row.treatment, metric, scope, workflows, 'median');
+						const tTrue = caseStat(dataset, row.treatment, metric, scope, workflows, 'truemedian');
 						return {
 							row,
 							effect: effectOf(row),
 							tMean,
 							tMedian,
+							tTrue,
 							meanEff: descriptiveEffect(metric.transform, controlMean, tMean),
 							medianEff: descriptiveEffect(metric.transform, controlMedian, tMedian),
-							sdBand: shiftBand(
-								metric.transform,
-								controlMean,
-								tMean,
-								caseSpread(dataset, row.treatment, metric, scope, workflows),
-							),
+							trueEff: descriptiveEffect(metric.transform, controlTrue, tTrue),
 						};
 					});
 				if (marks.length === 0) continue;
 				// The scale fits the effects; SD/CI bands are context and get clamped
 				// to the plot edges rather than allowed to squash the dots.
 				const span = Math.max(
-					...marks.flatMap(({ effect, meanEff, medianEff }) => [
+					...marks.flatMap(({ effect, meanEff, medianEff, trueEff }) => [
 						Math.abs(effect.value),
 						Math.abs(effect.lo),
 						Math.abs(effect.hi),
 						Math.abs(meanEff ?? 0),
 						Math.abs(medianEff ?? 0),
+						Math.abs(trueEff ?? 0),
 					]),
 					1e-9,
 				);
@@ -1174,42 +1225,38 @@ function buildEffects(
 							)}" ` +
 							`data-median="${escapeHtml(
 								formatMetricValue(metric.key, controlMedian ?? controlMean),
+							)}" ` +
+							`data-truemedian="${escapeHtml(
+								formatMetricValue(metric.key, controlTrue ?? controlMean),
 							)}">` +
 							`${escapeHtml(formatMetricValue(metric.key, controlMean))}</span>`;
 				// Marks are percent-positioned HTML, not SVG: an SVG stretched to the
 				// column width (preserveAspectRatio="none") scales circles into ovals.
 				const plotParts = ['<span class="fzero"></span>', controlLabel];
 				const labelParts: string[] = [];
-				// The control's own uncertainty leads the group as a grey band — a 95%
-				// CI of its mean to match the treatments' CI bars, or its ±1 SD run
-				// spread when the Range toggle asks for spreads.
-				const laneOffset = sdExtents === null && ciExtents === null ? 0 : 1;
-				const fmtBand = (v: number) =>
-					metric.transform === 'none' ? formatDelta(metric.key, v) : fmtPct(v);
-				const controlBand = (
-					extents: { lo: number; hi: number },
-					mode: string,
-					title: string,
-					label: string,
-				) => {
+				// The control's own uncertainty leads the group as a grey band: a 95%
+				// CI of its mean, the same kind of interval as the treatments' bars.
+				const laneOffset = ciExtents === null ? 0 : 1;
+				if (ciExtents !== null) {
+					const fmtBand = (v: number) =>
+						metric.transform === 'none' ? formatDelta(metric.key, v) : fmtPct(v);
 					const tip =
-						`data-tip-title="${escapeHtml(`${controlName}: ${title}`)}" ` +
+						`data-tip-title="${escapeHtml(`${controlName}: 95% CI of the mean`)}" ` +
 						`data-tip-effect="${escapeHtml(
-							`${fmtBand(extents.lo)} to ${fmtBand(extents.hi)} around the control value`,
+							`${fmtBand(ciExtents.lo)} to ${fmtBand(ciExtents.hi)} around the control value`,
 						)}"`;
-					const lo = bx(extents.lo);
+					const lo = bx(ciExtents.lo);
 					plotParts.push(
-						`<span class="fsd ${mode} tipsrc" tabindex="0" ${tip} style="left:${lo.toFixed(
-							1,
-						)}%;width:${(bx(extents.hi) - lo).toFixed(1)}%;top:${18 + 0.5 * 16}px"></span>`,
+						`<span class="fsd tipsrc" tabindex="0" ${tip} style="left:${lo.toFixed(1)}%;width:${(
+							bx(ciExtents.hi) - lo
+						).toFixed(1)}%;top:${18 + 0.5 * 16}px"></span>`,
 					);
-					labelParts.push(
-						`<span class="flab fsdlab tipsrc ${mode}" tabindex="0" ${tip}>${label}</span>`,
-					);
-				};
-				if (ciExtents !== null) controlBand(ciExtents, 'r-ci', '95% CI of the mean', '95% CI');
-				if (sdExtents !== null) controlBand(sdExtents, 'r-sd', '±1 SD', '±1 SD');
-				marks.forEach(({ row, effect, tMean, tMedian, meanEff, medianEff, sdBand }, i) => {
+					// An empty label still occupies the control's slot in the value
+					// column, so treatment values keep lining up with their lanes; the
+					// legend names the range.
+					labelParts.push('<span class="flab fsdlab">&nbsp;</span>');
+				}
+				marks.forEach(({ row, effect, tMean, tMedian, tTrue, meanEff, medianEff, trueEff }, i) => {
 					const t = byShortName.get(row.treatment)!;
 					const lane = 18 + (i + laneOffset + 0.5) * 16;
 					const sig = row.verdict === 'significant';
@@ -1218,8 +1265,10 @@ function buildEffects(
 						control: controlMean === null ? '' : formatMetricValue(metric.key, controlMean),
 						controlMedian:
 							controlMedian === null ? '' : formatMetricValue(metric.key, controlMedian),
+						controlTrue: controlTrue === null ? '' : formatMetricValue(metric.key, controlTrue),
 						treatment: tMean === null ? '' : formatMetricValue(metric.key, tMean),
 						treatmentMedian: tMedian === null ? '' : formatMetricValue(metric.key, tMedian),
+						treatmentTrue: tTrue === null ? '' : formatMetricValue(metric.key, tTrue),
 					};
 					const tip = tipAttributes(row, effect, stats);
 					const lo = x(effect.lo);
@@ -1232,22 +1281,15 @@ function buildEffects(
 					// model's and stays put, so the mean dot can sit off its center.
 					const xMean = x(meanEff ?? effect.value).toFixed(1);
 					const xMedian = x(medianEff ?? effect.value).toFixed(1);
-					// One bar per range mode: the model CI, and the treatment's own ±1 SD
-					// run spread when it can be computed.
-					const sdBar =
-						sdBand === null
-							? ''
-							: `<span class="fci r-sd" style="left:${bx(sdBand.lo).toFixed(1)}%;width:${(
-									bx(sdBand.hi) - bx(sdBand.lo)
-								).toFixed(1)}%;top:${lane}px"></span>`;
+					const xTrue = x(trueEff ?? effect.value).toFixed(1);
 					plotParts.push(
 						`<span class="fmark" data-t="${t.slug}"${sigAttrs} style="--tc:var(--c-${t.slug})">` +
-							`<span class="fci r-ci" style="left:${lo.toFixed(1)}%;width:${(
-								x(effect.hi) - lo
-							).toFixed(1)}%;top:${lane}px"></span>` +
-							sdBar +
+							`<span class="fci" style="left:${lo.toFixed(1)}%;width:${(x(effect.hi) - lo).toFixed(
+								1,
+							)}%;top:${lane}px"></span>` +
 							`<span class="fdot tipsrc" tabindex="0" ${tip} data-left-mean="${xMean}%" ` +
-							`data-left-median="${xMedian}%" style="left:${xMean}%;top:${lane}px"></span>` +
+							`data-left-median="${xMedian}%" data-left-truemedian="${xTrue}%" ` +
+							`style="left:${xMean}%;top:${lane}px"></span>` +
 							'</span>',
 					);
 					labelParts.push(
@@ -1258,10 +1300,15 @@ function buildEffects(
 				});
 				const height = 18 + (marks.length + laneOffset) * 16 + 6;
 				const hidden = scope === defaultScope ? '' : ' hidden';
+				// The tag names the workflow (or workflow subset) behind a context view.
+				const groupTag =
+					scope === 'pooled'
+						? ''
+						: `<span class="fgw">${escapeHtml(scope.split('+').join(' + '))}</span>`;
 				groups.push(
 					`<div class="fgroup" data-scope="${escapeHtml(
 						scope,
-					)}"${hidden} style="height:${height}px">${plotParts.join('')}</div>`,
+					)}"${hidden} style="height:${height}px">${groupTag}${plotParts.join('')}</div>`,
 				);
 				valueGroups.push(
 					`<div class="fvgroup" data-scope="${escapeHtml(scope)}"${hidden}>${labelParts.join(
@@ -1300,7 +1347,7 @@ function buildEffects(
 <div class="glyphs">
 <span class="glyph"><span class="g-dot solid"></span>significant (<span class="m-fdr">q &le; 0.05</span><span class="m-naive">p &lt; 0.05, raw</span>)</span>
 <span class="glyph"><span class="g-dot hollow"></span>not significant</span>
-<span class="glyph"><span class="g-ci"></span><span class="r-ci">95% CI</span><span class="r-sd">±1 SD spread</span></span>
+<span class="glyph"><span class="g-ci"></span>95% CI</span>
 <span class="glyph"><span class="g-line"></span>center line = control value</span>
 <span class="glyph">dot = shift of the selected statistic; CI from the model</span>
 <span class="glyph">% for log-scaled metrics, absolute &Delta; otherwise</span>
@@ -1309,11 +1356,7 @@ function buildEffects(
 <div class="effects-tools">
 <span class="select">Statistic
 <span class="seg stat-toggle">
-<button type="button" data-stat="mean" aria-pressed="true">mean</button><button type="button" data-stat="median" aria-pressed="false">median</button>
-</span></span>
-<span class="select">Range
-<span class="seg range-toggle">
-<button type="button" data-range="ci" aria-pressed="true">95% CI</button><button type="button" data-range="sd" aria-pressed="false">±1 SD</button>
+<button type="button" data-stat="mean" aria-pressed="true">mean</button><button type="button" data-stat="median" aria-pressed="false">averaged median</button><button type="button" data-stat="truemedian" aria-pressed="false" title="Median over all runs merged across workflows">true median</button>
 </span></span>
 ${badge}
 </div>
@@ -1420,7 +1463,7 @@ function buildFullReport(
 				`<td>${metricNameHtml(row.metric, '')}${anomalyMarker}${nMarker}</td>` +
 				`<td><span class="dot" style="background:var(--c-${t.slug})"></span>${escapeHtml(
 					row.treatment,
-				)}</td>` +
+				)}${row.context ? ` <span class="rowwf">· ${escapeHtml(row.scope)}</span>` : ''}</td>` +
 				`<td class="num">${escapeHtml(effect.label)} ${verdictIcons(row, effect)}</td>` +
 				`<td class="num">${escapeHtml(effect.ciLabel)}</td>` +
 				`<td class="num">${escapeHtml(formatBeta(row.beta))}</td>` +
@@ -1598,8 +1641,8 @@ h3 { font-size:1.05rem; font-weight:600; margin:32px 0 6px; }
 .legend { display:flex; gap:8px; flex-wrap:wrap; font-size:.85rem; margin-right:auto; }
 body[data-sigmode="fdr"] .m-naive { display:none; }
 body[data-sigmode="naive"] .m-fdr { display:none; }
-body[data-range="ci"] .r-sd { display:none; }
-body[data-range="sd"] .r-ci { display:none; }
+body[data-wfview="single"] .v-subset { display:none; }
+body[data-wfview="subset"] .v-single { display:none; }
 .chip-toggle { display:inline-flex; align-items:center; gap:7px; font:inherit; font-weight:600;
   color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:99px;
   padding:4px 12px; cursor:pointer; }
@@ -1607,9 +1650,13 @@ body[data-range="sd"] .r-ci { display:none; }
 .chip-toggle .dot { background:var(--tc); margin:0; }
 .select { display:inline-flex; align-items:center; gap:7px; font-size:.72rem; font-weight:600;
   letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); }
-.select select { font:600 .85rem/1.4 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink);
-  background:var(--card); border:1px solid var(--line); border-radius:8px; padding:5px 8px; }
-.select select:disabled { opacity:.45; }
+.wfpills { display:inline-flex; gap:6px; flex-wrap:wrap; }
+.wf-toggle { padding:4px 10px; font-size:.8rem; }
+.fgw { position:absolute; left:0; top:0; font:500 .68rem/1.3 "IBM Plex Mono",monospace;
+  color:var(--ink-3); display:none; }
+body[data-multiwf="1"] .fgw { display:block; }
+.rowwf { color:var(--ink-3); font-size:.8em; display:none; }
+body[data-multiwf="1"] .rowwf { display:inline; }
 #resetFilters { font:600 .8rem/1.4 "IBM Plex Sans",system-ui,sans-serif; color:var(--ink-2);
   background:none; border:1px solid var(--line); border-radius:8px; padding:5px 10px; cursor:pointer; }
 #resetFilters:hover { background:var(--card); }
@@ -1636,10 +1683,8 @@ td.wfcell { vertical-align:top; color:var(--ink-2); }
 .mname.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-offset:3px;
   text-decoration-color:var(--ink-3); }
 .statsbox { background:var(--wash); border:1px solid var(--line); border-radius:12px;
-  padding:12px 18px; margin:28px 0; font-size:.84rem; color:var(--ink-2); }
-.statsbox summary { cursor:pointer; font-weight:600; color:var(--ink);
-  font-family:Spectral,Georgia,serif; font-size:1.05rem; }
-.statsbox ul { margin:10px 0 4px; padding-left:18px; }
+  padding:6px 18px; margin:12px 0 28px; font-size:.84rem; color:var(--ink-2); }
+.statsbox ul { margin:10px 0 10px; padding-left:18px; }
 .statsbox li { margin:7px 0; }
 .statsbox b { color:var(--ink); }
 .effects-head { margin:14px 0 6px; }
@@ -1787,15 +1832,28 @@ function setSigFilter(mode) {
 sigButtons.forEach(function (b) {
   b.addEventListener('click', function () { setSigFilter(b.getAttribute('data-sig')); });
 });
-var wfFilter = byId('wfFilter');
-var chips = $('.chip-toggle');
+var wfButtons = $('#wfFilter button');
+var chips = $('.legend .chip-toggle');
 var mode = document.body.getAttribute('data-mode');
 var defaultScope = document.body.getAttribute('data-default-scope');
 
-function currentScope() {
-  return wfFilter && wfFilter.value !== 'pooled' ? wfFilter.value : defaultScope;
+function enabledWorkflows() {
+  return wfButtons
+    .filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; })
+    .map(function (b) { return b.getAttribute('data-wf'); });
 }
-function isContextView() { return mode === 'aggregate' && currentScope() !== defaultScope; }
+function allWorkflowsOn() {
+  return wfButtons.length === 0 || enabledWorkflows().length === wfButtons.length;
+}
+// Disabling workflows switches the plot to a context scope: one workflow's
+// own estimates, or the precomputed equal-weight aggregate of the enabled
+// subset. Neither carries FDR verdicts.
+function isContextView() { return mode === 'aggregate' && !allWorkflowsOn(); }
+function plotScope() {
+  if (!isContextView()) return defaultScope;
+  var enabled = enabledWorkflows();
+  return enabled.length === 1 ? enabled[0] : enabled.slice().sort().join('+');
+}
 function sigNaive() { return document.body.getAttribute('data-sigmode') === 'naive'; }
 function offTreatments() {
   var off = {};
@@ -1817,8 +1875,9 @@ function anyVisible(els) {
 }
 function isExtra(el) { return el.getAttribute('data-extra') === '1'; }
 function refresh() {
-  var scope = currentScope();
   var contextView = isContextView();
+  var enabled = enabledWorkflows();
+  var scope = plotScope();
   var sigMode = sigFilterMode;
   var off = offTreatments();
   var extrasOff = metricsMode === 'core';
@@ -1826,7 +1885,20 @@ function refresh() {
   // unless the raw-p test is selected.
   var sigDisabled = contextView && !sigNaive();
   sigButtons.forEach(function (b) { b.disabled = sigDisabled; });
+  // The true median merges runs across the full workflow set; it makes no
+  // sense over a partial one, or with only one workflow to merge.
+  var trueOk = mode === 'aggregate' && !contextView;
+  statButtons.forEach(function (b) {
+    if (b.getAttribute('data-stat') === 'truemedian') b.disabled = !trueOk;
+  });
+  if (!trueOk && statKind === 'truemedian') setStat('median');
   $('.wfBadge').forEach(function (el) { el.hidden = !contextView; });
+  document.body.setAttribute(
+    'data-wfview',
+    !contextView ? 'all' : enabled.length === 1 ? 'single' : 'subset',
+  );
+  // Workflow annotations on table rows when several workflows' rows mix.
+  document.body.setAttribute('data-multiwf', contextView && enabled.length > 1 ? '1' : '0');
   $('.fgroup, .fvgroup').forEach(function (group) {
     group.hidden = group.getAttribute('data-scope') !== scope;
   });
@@ -1843,10 +1915,14 @@ function refresh() {
   });
   var effectsEmpty = byId('effectsEmpty');
   if (effectsEmpty) effectsEmpty.hidden = anyVisible($('.family'));
+  // The table stays per-workflow in context views: it lists the enabled
+  // workflows' own rows while the plot shows their aggregate.
   $('#verdictTable tbody tr').forEach(function (tr) {
+    var trScope = tr.getAttribute('data-scope');
+    var scopeOk = contextView ? enabled.indexOf(trScope) >= 0 : trScope === defaultScope;
     tr.hidden =
       (extrasOff && isExtra(tr)) ||
-      tr.getAttribute('data-scope') !== scope ||
+      !scopeOk ||
       off[tr.getAttribute('data-t')] === true ||
       !sigMatch(tr, sigMode, contextView);
   });
@@ -1854,7 +1930,7 @@ function refresh() {
   if (fullEmpty) fullEmpty.hidden = anyVisible($('#verdictTable tbody tr'));
   var sampleRows = $('#sampleTable tbody tr');
   sampleRows.forEach(function (tr) {
-    var wfOk = !contextView || tr.getAttribute('data-workflow') === scope;
+    var wfOk = !contextView || enabled.indexOf(tr.getAttribute('data-workflow')) >= 0;
     var t = tr.getAttribute('data-t');
     tr.hidden = !wfOk || (t !== null && off[t] === true);
   });
@@ -1877,28 +1953,32 @@ function refresh() {
   $('.curve').forEach(function (curve) {
     curve.hidden =
       (extrasOff && isExtra(curve)) ||
-      (contextView && curve.getAttribute('data-workflow') !== scope);
+      (contextView && enabled.indexOf(curve.getAttribute('data-workflow')) < 0);
   });
   syncUrl();
 }
-chips.forEach(function (chip) {
-  chip.addEventListener('click', function (event) {
-    if (event.ctrlKey || event.metaKey) {
-      // Ctrl-click solos the chip; ctrl-click on the only active chip restores all.
-      var alreadySolo = chips.every(function (c) {
-        return (c.getAttribute('aria-pressed') === 'true') === (c === chip);
-      });
-      chips.forEach(function (c) {
-        c.setAttribute('aria-pressed', String(alreadySolo || c === chip));
-      });
-    } else {
-      var on = chip.getAttribute('aria-pressed') === 'true';
-      chip.setAttribute('aria-pressed', String(!on));
-    }
-    refresh();
+// Case chips and workflow pills share toggling: plain click flips one,
+// ctrl-click solos it, ctrl-click on the only active one restores all.
+function wireToggleGroup(buttons) {
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function (event) {
+      if (event.ctrlKey || event.metaKey) {
+        var alreadySolo = buttons.every(function (b) {
+          return (b.getAttribute('aria-pressed') === 'true') === (b === btn);
+        });
+        buttons.forEach(function (b) {
+          b.setAttribute('aria-pressed', String(alreadySolo || b === btn));
+        });
+      } else {
+        var on = btn.getAttribute('aria-pressed') === 'true';
+        btn.setAttribute('aria-pressed', String(!on));
+      }
+      refresh();
+    });
   });
-});
-if (wfFilter) wfFilter.addEventListener('change', refresh);
+}
+wireToggleGroup(chips);
+wireToggleGroup(wfButtons);
 
 var sigModeButtons = $('#sigMode button');
 function setSigMode(sigmode) {
@@ -1944,18 +2024,6 @@ document.addEventListener('click', function (e) {
   sections[index].scrollIntoView({ block: 'start' });
 });
 
-var rangeButtons = $('.range-toggle button');
-function setRange(kind) {
-  document.body.setAttribute('data-range', kind);
-  rangeButtons.forEach(function (b) {
-    b.setAttribute('aria-pressed', String(b.getAttribute('data-range') === kind));
-  });
-  syncUrl();
-}
-rangeButtons.forEach(function (b) {
-  b.addEventListener('click', function () { setRange(b.getAttribute('data-range')); });
-});
-
 var statButtons = $('.stat-toggle button');
 var statKind = 'mean';
 function setStat(kind) {
@@ -1979,10 +2047,9 @@ statButtons.forEach(function (b) {
 var reset = byId('resetFilters');
 if (reset) reset.addEventListener('click', function () {
   chips.forEach(function (chip) { chip.setAttribute('aria-pressed', 'true'); });
+  wfButtons.forEach(function (b) { b.setAttribute('aria-pressed', 'true'); });
   setSigFilter('all');
-  if (wfFilter) wfFilter.value = 'pooled';
   setStat('mean');
-  setRange('ci');
   setMetricsMode('core');
   setSigMode('fdr');
 });
@@ -2000,9 +2067,8 @@ function syncUrl() {
   if (off.length > 0) p.set('hide', off.join(','));
   if (sigFilterMode !== 'all') p.set('sig', sigFilterMode);
   if (sigNaive()) p.set('test', 'raw');
-  if (wfFilter && wfFilter.value !== 'pooled') p.set('wf', wfFilter.value);
+  if (!allWorkflowsOn()) p.set('wf', enabledWorkflows().join(','));
   if (statKind !== 'mean') p.set('stat', statKind);
-  if (document.body.getAttribute('data-range') === 'sd') p.set('range', 'sd');
   if (metricsMode !== 'core') p.set('metrics', metricsMode);
   var qs = p.toString();
   try {
@@ -2023,14 +2089,19 @@ function applyUrlState() {
     chip.setAttribute('aria-pressed', String(hide.indexOf(chip.getAttribute('data-t')) < 0));
   });
   if (p.get('sig') === 'sig' || p.get('sig') === 'nonsig') setSigFilter(p.get('sig'));
-  if (wfFilter && p.get('wf')) {
-    var wf = p.get('wf');
-    if ([].slice.call(wfFilter.options).some(function (o) { return o.value === wf; })) {
-      wfFilter.value = wf;
+  // A comma list of enabled workflows; old single-workflow links still work.
+  var wfParam = p.get('wf');
+  if (wfParam !== null && wfButtons.length > 0) {
+    var wanted = wfParam.split(',');
+    var known = wfButtons.map(function (b) { return b.getAttribute('data-wf'); });
+    if (wanted.some(function (w) { return known.indexOf(w) >= 0; })) {
+      wfButtons.forEach(function (b) {
+        b.setAttribute('aria-pressed', String(wanted.indexOf(b.getAttribute('data-wf')) >= 0));
+      });
     }
   }
-  setStat(p.get('stat') === 'median' ? 'median' : 'mean');
-  setRange(p.get('range') === 'sd' ? 'sd' : 'ci');
+  var stat = p.get('stat');
+  setStat(stat === 'median' || stat === 'truemedian' ? stat : 'mean');
   setMetricsMode(p.get('metrics') === 'all' ? 'all' : 'core');
   setSigMode(p.get('test') === 'raw' ? 'naive' : 'fdr');
 }
@@ -2038,9 +2109,11 @@ function applyUrlState() {
 var tip = byId('tip');
 var tipParts = $('#tip div');
 function showTip(el) {
-  var median = statKind === 'median';
-  var control = el.getAttribute('data-tip-control' + (median ? '-median' : '')) || '';
-  var treatment = el.getAttribute('data-tip-treatment' + (median ? '-median' : '')) || '';
+  var suffix = statKind === 'mean' ? '' : '-' + statKind;
+  var statLabel =
+    statKind === 'truemedian' ? 'true median' : statKind === 'median' ? 'avg median' : 'mean';
+  var control = el.getAttribute('data-tip-control' + suffix) || '';
+  var treatment = el.getAttribute('data-tip-treatment' + suffix) || '';
   tipParts[0].textContent = el.getAttribute('data-tip-title') || '';
   tipParts[1].textContent = el.getAttribute('data-tip-effect') || '';
   // Marks carry a per-test-mode call line in data-tip-qn/-q; metric and case
@@ -2048,7 +2121,7 @@ function showTip(el) {
   tipParts[2].textContent =
     (sigNaive() && el.getAttribute('data-tip-qn')) || el.getAttribute('data-tip-q') || '';
   tipParts[3].textContent =
-    control && treatment ? statKind + ': control ' + control + ' \\u2192 ' + treatment : '';
+    control && treatment ? statLabel + ': control ' + control + ' \\u2192 ' + treatment : '';
   tip.hidden = false;
   var r = el.getBoundingClientRect();
   var box = tip.getBoundingClientRect();
@@ -2118,7 +2191,7 @@ export function renderHtmlReport(input: HtmlReportInput): string {
 <style>${buildStyle(styles)}</style>
 <body data-mode="${escapeHtml(manifest.spec.mode)}" data-default-scope="${escapeHtml(
 		defaultScopeOf(manifest),
-	)}" data-sigmode="fdr" data-range="ci">
+	)}" data-sigmode="fdr" data-multiwf="0" data-wfview="all">
 <main>
 ${buildHeader(manifest)}
 ${buildFilterBar(manifest, styles)}
