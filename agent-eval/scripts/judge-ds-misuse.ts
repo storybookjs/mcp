@@ -41,7 +41,7 @@ import {
 } from '#lib/agentic-reference/metrics/ds-misuse/index';
 import { assertApiKey } from '#lib/agentic-reference/metrics/ds-misuse/judge';
 import { postAnalysis } from '#lib/agentic-reference/post-analysis';
-import { readNodeSidecar } from '#lib/post-analysis/baseline';
+import { readNodeCensus } from '#lib/post-analysis/baseline';
 import { findRuns, selectRuns, type Run, type RunSelection } from '#lib/post-analysis/discovery';
 import { selectionFlags } from '#lib/agentic-reference/selection';
 import { readJson } from '#lib/utils/files';
@@ -163,7 +163,7 @@ function planRun(run: Run, options: Options): Plan {
 		return { action: 'reused' };
 	}
 
-	const baselineNodes = readNodeSidecar(BASELINES_DIR, pin, postAnalysis.metricsVersion);
+	const baselineNodes = readNodeCensus(BASELINES_DIR, pin, postAnalysis.metricsVersion);
 	if (baselineNodes === null) {
 		console.error(
 			`${label}: no node census for ${fixtureRef} at metricsVersion ` +

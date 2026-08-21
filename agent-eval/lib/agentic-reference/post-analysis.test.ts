@@ -230,7 +230,7 @@ describe('analyzeRun in baseline mode', () => {
 	// The judge compares a run's nodes against the pinned tree's, so the baseline
 	// half has to exist. baseline.ts splits this into baselines/ds-nodes/ rather
 	// than committing it inside the baseline file.
-	it('censuses the pinned tree’s nodes for the sidecar to carry', () => {
+	it('censuses the pinned tree’s nodes for the census file to carry', () => {
 		const baseline = analyzeRun({
 			mode: 'baseline',
 			projectDir: writeTree('ref-nodes', DS_TREE),

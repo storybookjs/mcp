@@ -76,7 +76,7 @@ export function analyzeRun(context: PostAnalysisContext): Analysis {
 		return {
 			...complexityForTree(context.projectDir),
 			dsCoverage: dsPackages === null ? null : measureDsCoverage(context.projectDir, dsPackages),
-			// Whole tree, once per pin: baseline.ts moves this into the sidecar.
+			// Whole tree, once per pin: baseline.ts moves this into the census file.
 			nodeList:
 				dsPackages === null
 					? undefined
@@ -705,7 +705,7 @@ export function summarize(
  * - 5 moved the DS package patterns from the eval fixture to the external-repo pin,
  *     so a baseline whose fixture was missing no longer stores a null coverage
  * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
- * - 7 re-keyed baselines on the pin alone and added the ds-misuse node sidecar
+ * - 7 re-keyed baselines on the pin alone and added the ds-misuse node census file
  * - 8 weighted the census by estimated instantiations (instances), headline shares included
  */
 export const postAnalysis: PostAnalysis = {

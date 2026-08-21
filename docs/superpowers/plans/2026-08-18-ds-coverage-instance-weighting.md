@@ -1292,11 +1292,11 @@ counted at their syntactic site.
 - [ ] **Step 2: Regenerate the committed baselines**
 
 Run: `pnpm results:analyze --recompute`
-This rebuilds every committed baseline and `ds-nodes` sidecar at metricsVersion 8 (records gain `instances`). It needs the pinned mealdrop trees; if the environment cannot fetch them (network-restricted sandbox), STOP, leave this step unchecked, and report to the user that regeneration must run on their machine — do not hand-edit baseline JSON.
+This rebuilds every committed baseline and `ds-nodes` census file at metricsVersion 8 (records gain `instances`). It needs the pinned mealdrop trees; if the environment cannot fetch them (network-restricted sandbox), STOP, leave this step unchecked, and report to the user that regeneration must run on their machine — do not hand-edit baseline JSON.
 
 - [ ] **Step 3: Inspect and commit**
 
-Check `git diff --stat baselines` — every touched baseline should show `metricsVersion: 8` and sidecar records the new field; static numbers inside must be unchanged (spot-check one file).
+Check `git diff --stat baselines` — every touched baseline should show `metricsVersion: 8` and census-file records the new field; static numbers inside must be unchanged (spot-check one file).
 
 ```bash
 git add README.md baselines

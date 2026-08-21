@@ -2,7 +2,7 @@
 	"repo": "yannbf/mealdrop",
 	"ref": "refs/tags/agentic-reference/droppy-v2",
 	"metricsVersion": 8,
-	"nodeSidecar": true,
+	"nodeCensus": true,
 	"analysis": {
 		"files": {
 			"functions/restaurants.ts": {
