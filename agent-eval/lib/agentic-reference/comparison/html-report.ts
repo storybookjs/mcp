@@ -7,6 +7,7 @@ import { join } from 'node:path';
 
 import { MISUSE_QUESTIONS } from './misuse.ts';
 import { isBetter, tallyVerdicts } from './verdict-tally.ts';
+import { COMPARISON_METRICS } from '../comparison-metrics.ts';
 import { formatCompactCount } from '../utils.ts';
 
 import type {
@@ -413,6 +414,12 @@ const FAMILIES: Record<string, { name: string; intro: string }> = {
 			'documentation and averaged per run — 1 is clean, 0 is misuse. Judged runs only; the ' +
 			'DS misuse tab holds the per-node reasons.',
 	},
+	dsMisuseFacets: {
+		name: 'DS misuse by documentation facet',
+		intro:
+			'Exploratory per-facet drill-downs of the misuse composite: mean score of judged answers ' +
+			'citing each facet. Corrected in their own BH group, separate from the confirmatory metrics.',
+	},
 	complexity: {
 		name: 'Complexity',
 		intro: 'Code complexity the change adds over the baseline.',
@@ -458,6 +465,12 @@ const EXTRA_METRICS = new Set([
 	'totalToolCalls',
 	'dsShareOfAllNodesDelta',
 	'dsShareOfComponentNodesDelta',
+	// The facet drill-downs are exploratory (their own BH group), so they park
+	// behind the Metrics toggle same as the rest of this set — derived from the
+	// registry rather than listed by hand, so a facet added there stays parked.
+	...COMPARISON_METRICS.filter(
+		(metric) => metric.correctionGroup === 'exploratory-misuse-facets',
+	).map((metric) => metric.key),
 ]);
 
 // Line counts: whole numbers with thousands separators.
