@@ -10,6 +10,9 @@
 // Judging is a separate, paid step, so partial coverage is the normal state of
 // a bundle, not an error: the panel reports judged-vs-usable per cell and the
 // report renders what exists.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { readMisuseReport } from '../metrics/ds-misuse/index.ts';
 
 import type { Cell } from './cells.ts';
@@ -55,6 +58,35 @@ export interface MisuseFinding {
 	question: MisuseQuestion;
 	score: 0 | 0.5;
 	reason: string;
+	/** The flagged source, read from the run's collected tree at build time. */
+	excerpt?: { start: number; lines: string[] };
+}
+
+const EXCERPT_CONTEXT = 3;
+
+/**
+ * A few lines of the flagged source, so a finding can be read without opening
+ * the run's tree. Free and retroactive: this reads the collected project on
+ * disk, never the model, so it works for every judgement ever cached.
+ */
+function excerptOf(
+	projectDir: string,
+	file: string,
+	line: number,
+	cache: Map<string, string[] | null>,
+): MisuseFinding['excerpt'] {
+	let lines = cache.get(file);
+	if (lines === undefined) {
+		try {
+			lines = readFileSync(join(projectDir, file), 'utf8').split('\n');
+		} catch {
+			lines = null;
+		}
+		cache.set(file, lines);
+	}
+	if (lines === null || line < 1 || line > lines.length) return undefined;
+	const start = Math.max(1, line - EXCERPT_CONTEXT);
+	return { start, lines: lines.slice(start - 1, Math.min(lines.length, line + EXCERPT_CONTEXT)) };
 }
 
 export interface MisusePanel {
@@ -136,6 +168,7 @@ export function collectMisusePanel(cells: Cell[], spec: ComparisonSpec): MisuseP
 			summary.evaluated.local += report.summary.evaluated.local;
 
 			const runLabel = `${usable.run.timestamp}/run-${usable.run.run}`;
+			const excerpts = new Map<string, string[] | null>();
 			for (const node of report.nodes) {
 				poolNode(node, summary.questions, (question, score, reason) => {
 					cellFindings.push({
@@ -149,6 +182,7 @@ export function collectMisusePanel(cells: Cell[], spec: ComparisonSpec): MisuseP
 						question,
 						score,
 						reason,
+						excerpt: excerptOf(usable.run.projectDir, node.file, node.line, excerpts),
 					});
 				});
 			}

@@ -167,6 +167,40 @@ describe('collectMisusePanel', () => {
 		expect(summary.questions.correctLocalDecision).toBeNull();
 	});
 
+	it('attaches the flagged source as an excerpt when the tree holds the file', () => {
+		const run = usableRun(
+			TREATMENT,
+			1,
+			misuseReport([
+				judgedNode({
+					file: 'src/App.tsx',
+					line: 3,
+					correctDsUsage: { score: 0, reason: 'r' },
+				}),
+			]),
+		);
+		mkdirSync(join(run.run.projectDir, 'src'), { recursive: true });
+		writeFileSync(
+			join(run.run.projectDir, 'src/App.tsx'),
+			['a', 'b', 'the flagged line', 'd', 'e'].join('\n'),
+		);
+		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC);
+		expect(panel.findings[0]!.excerpt).toEqual({
+			start: 1,
+			lines: ['a', 'b', 'the flagged line', 'd', 'e'],
+		});
+	});
+
+	it('omits the excerpt rather than failing when the file is gone', () => {
+		const run = usableRun(
+			TREATMENT,
+			1,
+			misuseReport([judgedNode({ correctDsUsage: { score: 0, reason: 'r' } })]),
+		);
+		const panel = collectMisusePanel([cell(TREATMENT, [run])], SPEC);
+		expect(panel.findings[0]!.excerpt).toBeUndefined();
+	});
+
 	it('surfaces every distinct guideline pin so mixed-standard bundles are visible', () => {
 		const a = usableRun(CONTROL, 1, misuseReport([], 'org/ds@old'));
 		const b = usableRun(TREATMENT, 1, misuseReport([], 'org/ds@new'));

@@ -1703,7 +1703,22 @@ function misuseFinding(finding: MisuseFinding): string {
 <span class="mono run">${escapeHtml(finding.workflow)} · ${escapeHtml(finding.runLabel)}</span>
 </div>
 <p class="reason">${escapeHtml(finding.reason)}</p>
+${findingExcerpt(finding)}
 </article>`;
+}
+
+/** The flagged source under the reason, the finding's line marked. */
+function findingExcerpt(finding: MisuseFinding): string {
+	if (finding.excerpt === undefined) return '';
+	const gutter = String(finding.excerpt.start + finding.excerpt.lines.length - 1).length;
+	const rows = finding.excerpt.lines
+		.map((text, index) => {
+			const lineNo = finding.excerpt!.start + index;
+			const row = `${String(lineNo).padStart(gutter)}  ${escapeHtml(text)}`;
+			return lineNo === finding.line ? `<mark>${row}</mark>` : row;
+		})
+		.join('\n');
+	return `<pre class="excerpt"><code>${rows}</code></pre>`;
 }
 
 function misuseFindings(panel: MisusePanel, controlShortName: string): string {
@@ -2044,6 +2059,12 @@ thead th.tipsrc { cursor:help; text-decoration:underline dotted; text-underline-
   color:var(--ink-2); background:none; border:1px solid var(--line); border-radius:8px;
   padding:5px 10px; cursor:pointer; }
 .misuse-modal .modal-body { padding:6px 18px 16px; overflow:auto; max-height:calc(82vh - 58px); }
+body:has(.misuse-modal[open]) { overflow:hidden; }
+.finding .excerpt { margin:8px 0 2px; padding:8px 12px; background:var(--wash);
+  border:1px solid var(--line); border-radius:8px; font-size:.78rem; line-height:1.55;
+  overflow-x:auto; }
+.finding .excerpt mark { display:inline-block; width:100%; color:inherit;
+  background:color-mix(in srgb, var(--half) 18%, transparent); }
 .untested { font-size:.85rem; color:var(--ink-2); margin:6px 0; padding-left:18px; }
 .untested li { margin:3px 0; }
 .empty-note { font-size:.85rem; color:var(--ink-3); font-style:italic; margin:18px 0; }
