@@ -937,6 +937,28 @@ describe('DS misuse panel', () => {
 		expect(html).toContain('<dialog class="misuse-modal" id="misuseModal">');
 	});
 
+	it('links reason citations to the pinned docs and the DS repo issues', () => {
+		const html = render({
+			misuse: misusePanel({
+				findings: [
+					{
+						...misusePanel().findings[0]!,
+						reason: 'Badge.mdx and BrandGuidelines rule this out; see #268.',
+					},
+				],
+			}),
+		});
+		expect(html).toContain('https://github.com/org/ds/issues/268');
+		expect(html).toContain('https://github.com/org/ds/blob/abc/src/components/Badge/Badge.mdx');
+		expect(html).toContain('https://github.com/org/ds/blob/abc/src/docs/BrandGuidelines.mdx');
+	});
+
+	it('gives each finding a commands button and ships the commands dialog', () => {
+		const html = render({ misuse: misusePanel() });
+		expect(html).toContain('class="mopen mcmds" data-project=');
+		expect(html).toContain('id="misuseCmdModal"');
+	});
+
 	it('warns when artifacts were judged against different guideline pins', () => {
 		const html = render({
 			misuse: misusePanel({ guidelinesRefs: ['org/ds@new', 'org/ds@old'] }),

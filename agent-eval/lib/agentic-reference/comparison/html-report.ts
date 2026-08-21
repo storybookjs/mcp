@@ -1691,7 +1691,10 @@ ${MISUSE_QUESTIONS.map(
 </table></div></div>`;
 }
 
-function misuseFinding(finding: MisuseFinding): string {
+function misuseFinding(
+	finding: MisuseFinding,
+	docsPin: { repo: string; ref: string } | null,
+): string {
 	const score = finding.score === 0 ? '<b class="score zero">0</b>' : '<b class="score half">½</b>';
 	return `<article class="finding m-wf" data-workflow="${escapeHtml(finding.workflow)}" data-case="${slug(
 		finding.case,
@@ -1704,10 +1707,52 @@ function misuseFinding(finding: MisuseFinding): string {
 <button type="button" class="mopen" data-path="${escapeHtml(finding.projectPath)}/${escapeHtml(
 		finding.file,
 	)}" data-line="${finding.line}" title="Open in your editor (set the repo root via the ? button)">open</button>
+<button type="button" class="mopen mcmds" data-project="${escapeHtml(
+		finding.projectPath,
+	)}" data-file="${escapeHtml(finding.file)}" data-line="${finding.line}" title="Commands for digging into this finding">cmds</button>
 </div>
-<p class="reason">${escapeHtml(finding.reason)}</p>
+<p class="reason">${linkifyReason(finding.reason, docsPin)}</p>
 ${findingExcerpt(finding)}
 </article>`;
+}
+
+// Guideline documents that live under src/docs rather than beside a component.
+const DS_DOC_PAGES = new Set([
+	'AccessibilityGuidelines',
+	'BrandGuidelines',
+	'ChoosingComponents',
+	'DesignTokensColor',
+	'DesignTokensMotion',
+	'DesignTokensSpacing',
+	'DesignTokensTypography',
+	'GettingStarted',
+	'TechnicalGuidelines',
+]);
+
+/**
+ * Judge reasons cite their sources by name — "Badge.mdx", "BrandGuidelines",
+ * "#268". Those become links into the pinned docs and the DS repo's issues, so
+ * checking a citation costs one click on any machine, no local setup.
+ */
+function linkifyReason(reason: string, docsPin: { repo: string; ref: string } | null): string {
+	const escaped = escapeHtml(reason);
+	if (docsPin === null) return escaped;
+	const base = `https://github.com/${docsPin.repo}`;
+	const docHref = (name: string) =>
+		DS_DOC_PAGES.has(name)
+			? `${base}/blob/${docsPin.ref}/src/docs/${name}.mdx`
+			: `${base}/blob/${docsPin.ref}/src/components/${name}/${name}.mdx`;
+	return escaped
+		.replace(/#(\d+)\b/g, `<a href="${base}/issues/$1" target="_blank" rel="noopener">#$1</a>`)
+		.replace(
+			/\b([A-Z][A-Za-z]+)\.mdx\b/g,
+			(_, name: string) =>
+				`<a href="${docHref(name)}" target="_blank" rel="noopener">${name}.mdx</a>`,
+		)
+		.replace(
+			/\b(AccessibilityGuidelines|BrandGuidelines|ChoosingComponents|DesignTokensColor|DesignTokensMotion|DesignTokensSpacing|DesignTokensTypography|TechnicalGuidelines)\b(?![^<]*<\/a>)/g,
+			(_, name: string) => `<a href="${docHref(name)}" target="_blank" rel="noopener">${name}</a>`,
+		);
 }
 
 /** The flagged source under the reason, the finding's line marked. */
@@ -1724,7 +1769,15 @@ function findingExcerpt(finding: MisuseFinding): string {
 	return `<pre class="excerpt"><code>${rows}</code></pre>`;
 }
 
+function docsPinOf(panel: MisusePanel): { repo: string; ref: string } | null {
+	const ref = (panel.guidelinesRefs ?? [])[0];
+	if (ref === undefined) return null;
+	const at = ref.lastIndexOf('@');
+	return at === -1 ? null : { repo: ref.slice(0, at), ref: ref.slice(at + 1) };
+}
+
 function misuseFindings(panel: MisusePanel, controlShortName: string): string {
+	const docsPin = docsPinOf(panel);
 	if (panel.findings.length === 0) {
 		return `<h2>What the judge flagged</h2>
 <p class="lede">Nothing. Every judged node scored 1 on every question it received.</p>`;
@@ -1741,7 +1794,7 @@ function misuseFindings(panel: MisusePanel, controlShortName: string): string {
 			const caseAttr = caseName === controlShortName ? '' : ` data-t="${slug(caseName)}"`;
 			return `<details class="finding-group m-case"${caseAttr} open>
 <summary><b>${escapeHtml(caseName)}</b> — ${findings.length} finding(s), ${zeros} scored 0</summary>
-${findings.map(misuseFinding).join('\n')}
+${findings.map((finding) => misuseFinding(finding, docsPin)).join('\n')}
 </details>`;
 		})
 		.join('\n');
@@ -1853,7 +1906,14 @@ bundle's first finding — swap in any finding's run directory.</p>
 </div>
 </dialog>`;
 	return `<h2>DS misuse <button type="button" class="mhelp" id="misuseHelpBtn" title="How to dig into a finding">?</button></h2>
-<div data-built-from="${escapeHtml(panel.builtFrom ?? '')}" id="misuseRootHint" hidden></div>
+<div data-built-from="${escapeHtml(panel.builtFrom ?? '')}" data-baseline-dir="${escapeHtml(
+		baselineDir,
+	)}" id="misuseRootHint" hidden></div>
+<dialog class="misuse-modal" id="misuseCmdModal">
+<div class="modal-head"><b>Dig into this finding</b>
+<button type="button" class="modal-close" data-close="misuseCmdModal">Close</button></div>
+<div class="modal-body" id="misuseCmdBody"></div>
+</dialog>
 ${help}${intro}${coverage}${pinWarning}
 <h3 class="sr-only">Scores</h3>
 ${tables}
@@ -2363,7 +2423,7 @@ function showMisuseRoot() {
 showMisuseRoot();
 document.addEventListener('click', function (e) {
   var open = e.target && e.target.closest ? e.target.closest('.mopen') : null;
-  if (open) {
+  if (open && !open.classList.contains('mcmds')) {
     window.location.href = 'vscode://file/' + misuseRoot() + '/' +
       open.getAttribute('data-path') + ':' + open.getAttribute('data-line');
     return;
@@ -2378,6 +2438,39 @@ document.addEventListener('click', function (e) {
     }
     return;
   }
+  var cmds = e.target && e.target.closest ? e.target.closest('.mcmds') : null;
+  if (cmds) {
+    var root2 = misuseRoot() || '<repo-root>';
+    var hint2 = byId('misuseRootHint');
+    var baseDir = hint2 ? hint2.getAttribute('data-baseline-dir') : '';
+    var project = cmds.getAttribute('data-project');
+    var file = cmds.getAttribute('data-file');
+    var lineNo = cmds.getAttribute('data-line');
+    var entries = [
+      ['Open at the flagged line', 'code -g ' + root2 + '/' + project + '/' + file + ':' + lineNo],
+      ['Diff this file against the baseline',
+        'git diff --no-index ' + root2 + '/agent-eval/.eval-cache/refs/' + baseDir + '/' + file +
+        ' ' + root2 + '/' + project + '/' + file],
+      ['Search the run transcript for this component',
+        'less ' + root2 + '/' + project + '/__agent_eval__/transcript.txt'],
+      ['Go to the run', 'cd ' + root2 + '/' + project],
+    ];
+    var body2 = byId('misuseCmdBody');
+    body2.textContent = '';
+    entries.forEach(function (entry) {
+      var h = document.createElement('h3');
+      h.textContent = entry[0];
+      var pre = document.createElement('p');
+      pre.className = 'mono mcmd';
+      pre.textContent = entry[1];
+      body2.appendChild(h);
+      body2.appendChild(pre);
+    });
+    byId('misuseCmdModal').showModal();
+    return;
+  }
+  var cmdModal = byId('misuseCmdModal');
+  if (cmdModal && e.target === cmdModal) { cmdModal.close(); return; }
   var anyClose = e.target && e.target.closest ? e.target.closest('[data-close]') : null;
   if (anyClose) { byId(anyClose.getAttribute('data-close')).close(); return; }
   var helpModal = byId('misuseHelpModal');
