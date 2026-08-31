@@ -9,11 +9,13 @@
 // - exploration: the agent is reading code or other files, e.g. file_read, glob, grep.
 // - edit: the agent is writing to files, e.g. file_edit, file_write.
 // - verification: the agent is running tests or linters, e.g. run-story-tests, tsc.
+// - environment: the agent is provisioning its sandbox, e.g. apt-get, playwright install.
 // - other: the agent is doing something else, e.g. preview-stories, display-review.
 import { isRecord } from '../../utils/type.ts';
 import { splitCommandSegments } from '../../utils/shell-segments.ts';
+import { inlineScriptWritesBySegment } from './inline-script-writes.ts';
 
-export type Bucket = 'docs' | 'exploration' | 'edit' | 'verification' | 'other';
+export type Bucket = 'docs' | 'exploration' | 'edit' | 'verification' | 'environment' | 'other';
 
 export interface ToolUseMetrics {
 	buckets: Record<Bucket, number>;
@@ -60,6 +62,27 @@ const VERIFICATION_BINARIES = new Set([
 
 const EDIT_BINARIES = new Set(['cp', 'mv', 'rm', 'mkdir', 'touch', 'tee', 'chmod', 'ln']);
 
+/**
+ * Sandbox provisioning: installing packages, extracting system libraries,
+ * probing the loader. Sandbox-capability work, not work on the task — counted
+ * apart so a browser-bootstrap detour cannot inflate exploration or
+ * verification.
+ */
+const ENVIRONMENT_BINARIES = new Set([
+	'apt',
+	'apt-cache',
+	'apt-get',
+	'dpkg',
+	'dpkg-deb',
+	'fc-cache',
+	'fc-list',
+	'ldconfig',
+	'ldd',
+]);
+
+/** Package-runner subcommands that install dependencies rather than run a binary. */
+const RUNNER_INSTALL_SUBCOMMANDS = new Set(['install', 'ci', 'add']);
+
 const NOISE_BINARIES = new Set([
 	'echo',
 	'true',
@@ -71,18 +94,25 @@ const NOISE_BINARIES = new Set([
 	'wait',
 	'export',
 	'cd',
-	'timeout',
 	'wait-on',
 	'curl',
 	'which',
 	'id',
-	'apt-get',
 	'run',
 ]);
 
 /** Wrappers to step past to reach the binary that actually runs. */
 const PACKAGE_RUNNERS = new Set(['npx', 'npm', 'pnpm', 'yarn', 'bun', 'bunx']);
-const COMMAND_PREFIXES = new Set(['sudo', 'env', 'time', 'nohup', 'command', 'exec', 'xargs']);
+const COMMAND_PREFIXES = new Set([
+	'sudo',
+	'env',
+	'time',
+	'nohup',
+	'command',
+	'exec',
+	'xargs',
+	'timeout',
+]);
 
 /**
  * Short flags that consume the next token, per wrapper. Skipping anything that
@@ -98,6 +128,7 @@ const COMMAND_PREFIXES = new Set(['sudo', 'env', 'time', 'nohup', 'command', 'ex
  */
 const VALUED_FLAGS: Record<string, Set<string>> = {
 	xargs: new Set(['-a', '-d', '-E', '-I', '-J', '-L', '-n', '-P', '-R', '-S', '-s']),
+	timeout: new Set(['-k', '-s']),
 };
 
 /**
@@ -131,9 +162,15 @@ function stripGrouping(token: string): string {
 	return token.replace(/^[({]+/, '').replace(/[)}]+$/, '');
 }
 
-function resolveHead(tokens: string[]): { head: string; rest: string[]; viaXargs: boolean } {
+function resolveHead(tokens: string[]): {
+	head: string;
+	rest: string[];
+	viaXargs: boolean;
+	viaRunner: boolean;
+} {
 	let index = 0;
 	let viaXargs = false;
+	let viaRunner = false;
 	const at = (position: number) => stripGrouping(tokens[position] ?? '');
 
 	// Step past `ENV=value` prefixes and command wrappers such as `sudo` or
@@ -148,6 +185,9 @@ function resolveHead(tokens: string[]): { head: string; rest: string[]; viaXargs
 		if (COMMAND_PREFIXES.has(prefix)) {
 			if (prefix === 'xargs') viaXargs = true;
 			index = skipFlags(tokens, index + 1, prefix);
+			// `timeout [flags] DURATION command`: the duration is a positional
+			// argument, not a flag, so it needs its own step.
+			if (prefix === 'timeout') index += 1;
 			continue;
 		}
 		break;
@@ -155,6 +195,7 @@ function resolveHead(tokens: string[]): { head: string; rest: string[]; viaXargs
 
 	let head = at(index);
 	if (PACKAGE_RUNNERS.has(head)) {
+		viaRunner = true;
 		index = skipFlags(tokens, index + 1, head);
 		// `pnpm run typecheck` names a script, not a binary; the script's contents
 		// are not visible here, so it stays unclassified rather than guessed at.
@@ -162,7 +203,7 @@ function resolveHead(tokens: string[]): { head: string; rest: string[]; viaXargs
 		head = at(index);
 	}
 
-	return { head: head.replace(/^.*\//, ''), rest: tokens.slice(index + 1), viaXargs };
+	return { head: head.replace(/^.*\//, ''), rest: tokens.slice(index + 1), viaXargs, viaRunner };
 }
 
 function classifySegmentTokens(tokens: string[]): {
@@ -170,7 +211,7 @@ function classifySegmentTokens(tokens: string[]): {
 	head: string;
 	viaXargs: boolean;
 } {
-	const { head, rest, viaXargs } = resolveHead(tokens);
+	const { head, rest, viaXargs, viaRunner } = resolveHead(tokens);
 	const at = (bucket: Bucket | null) => ({ bucket, head, viaXargs });
 	if (head === '') return at(null);
 	if (NOISE_BINARIES.has(head)) return at(null);
@@ -181,6 +222,16 @@ function classifySegmentTokens(tokens: string[]): {
 		return at(inPlace ? 'edit' : 'exploration');
 	}
 
+	// `playwright install` downloads a browser; `playwright test` runs tests.
+	if (head === 'playwright' && (rest[0] === 'install' || rest[0] === 'install-deps')) {
+		return at('environment');
+	}
+
+	// `npm install` / `yarn add`: the runner is provisioning, not running a
+	// binary. Bare `install` outside a runner names nothing this taxonomy knows.
+	if (viaRunner && RUNNER_INSTALL_SUBCOMMANDS.has(head)) return at('environment');
+
+	if (ENVIRONMENT_BINARIES.has(head)) return at('environment');
 	if (EDIT_BINARIES.has(head)) return at('edit');
 	if (VERIFICATION_BINARIES.has(head)) return at('verification');
 	if (EXPLORATION_BINARIES.has(head)) return at('exploration');
@@ -188,7 +239,14 @@ function classifySegmentTokens(tokens: string[]): {
 }
 
 function collectShellBuckets(command: string, buckets: Set<Bucket>, unclassified: string[]): void {
-	for (const segment of splitCommandSegments(command)) {
+	// A `node -e` / `python3 -` script that writes files is an act of editing.
+	// The write is invisible at segment level — heredoc bodies are stripped and
+	// inline scripts are opaque tokens — so it is detected on the raw command,
+	// per segment, and overrides only the writing segment's classification: a
+	// read-only interpreter call chained after it keeps its own bucket.
+	const inlineWrites = inlineScriptWritesBySegment(command);
+
+	for (const [index, segment] of splitCommandSegments(command).entries()) {
 		const { bucket, head, viaXargs } = classifySegmentTokens(segment.tokens);
 
 		// Downstream of a pipe: a filter on the previous command's output, not an
@@ -200,6 +258,11 @@ function collectShellBuckets(command: string, buckets: Set<Bucket>, unclassified
 		if (segment.piped && !viaXargs) continue;
 
 		if (segment.redirectTarget !== null) {
+			buckets.add('edit');
+			continue;
+		}
+
+		if (inlineWrites[index]?.hasWrite) {
 			buckets.add('edit');
 			continue;
 		}
@@ -271,6 +334,7 @@ export function classifyToolUse(events: unknown[]): ToolUseMetrics {
 		exploration: 0,
 		edit: 0,
 		verification: 0,
+		environment: 0,
 		other: 0,
 	};
 	const unclassified: string[] = [];

@@ -28,6 +28,8 @@ export interface TreeDiff {
 	/** Workspace-relative paths, sorted. */
 	files: string[];
 	sloc: SlocDiff;
+	/** The same counts per changed file, so consumers can weigh a subset. */
+	slocByFile: Record<string, SlocDiff>;
 }
 
 function isExcluded(path: string): boolean {
@@ -75,6 +77,7 @@ export function diffTrees(refDir: string, projectDir: string): TreeDiff {
 	const candidates = new Set([...collectSourceFiles(refDir), ...collectSourceFiles(projectDir)]);
 
 	const files: string[] = [];
+	const slocByFile: Record<string, SlocDiff> = {};
 	let added = 0;
 	let removed = 0;
 
@@ -97,10 +100,16 @@ export function diffTrees(refDir: string, projectDir: string): TreeDiff {
 
 		if (fileAdded === 0 && fileRemoved === 0) continue;
 		files.push(path);
+		slocByFile[path] = { added: fileAdded, removed: fileRemoved, net: fileAdded - fileRemoved };
 		added += fileAdded;
 		removed += fileRemoved;
 	}
 
 	files.sort();
-	return { filesChanged: files.length, files, sloc: { added, removed, net: added - removed } };
+	return {
+		filesChanged: files.length,
+		files,
+		sloc: { added, removed, net: added - removed },
+		slocByFile,
+	};
 }

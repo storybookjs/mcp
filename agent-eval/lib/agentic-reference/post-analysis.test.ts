@@ -274,6 +274,69 @@ describe('deltaToBaseline', () => {
 		expect((delta.diff as { files: string[] }).files).toEqual(['src/a.ts']);
 	});
 
+	it('excludes test files from the complexity delta while the sloc diff keeps them', () => {
+		// The agent added a branchy regression test but touched no production
+		// code: complexity must not move, or every unprompted test file reads as
+		// the agent making the codebase worse.
+		const delta = deltaToBaseline(
+			deltaContext(
+				{ 'src/a.ts': 'function a(){ return 0; }\n' },
+				{
+					'src/a.ts': 'function a(){ return 0; }\n',
+					'src/a.test.ts': 'function t(x){ if (x) return 1; return 0; }\n',
+				},
+			),
+		);
+
+		expect(delta.complexity).toMatchObject({
+			cyclomatic: { delta: 0 },
+			cognitive: { delta: 0 },
+			densityPerSloc: null,
+		});
+		expect((delta.diff as { files: string[] }).files).toEqual(['src/a.test.ts']);
+		expect((delta.diff as { sloc: { added: number } }).sloc.added).toBe(1);
+	});
+
+	it('keeps baseline test complexity out of the before and after totals', () => {
+		// The baseline tree ships its own test files; leaving their scores in
+		// `before` and `after` inflates both totals (and skews the jsxDepth
+		// ratio) even though the delta cancels.
+		const delta = deltaToBaseline(
+			deltaContext(
+				{
+					'src/a.ts': 'function a(){ return 0; }\n',
+					'src/a.test.ts': 'function t(x){ if (x) return 1; return 0; }\n',
+				},
+				{
+					'src/a.ts': 'function a(x){ if (x) return 1; return 0; }\n',
+					'src/a.test.ts': 'function t(x){ if (x) return 1; return 0; }\n',
+				},
+			),
+		);
+
+		expect(delta.complexity).toMatchObject({
+			cyclomatic: { before: 1, after: 2, delta: 1 },
+		});
+	});
+
+	it('divides density by production sloc only, not test sloc', () => {
+		const delta = deltaToBaseline(
+			deltaContext(
+				{ 'src/a.ts': 'function a(){ return 0; }\n' },
+				{
+					// +1 cognitive over three net production lines.
+					'src/a.ts': 'function a(x){\nif (x) return 1;\nreturn 0;\n}\n',
+					// Two test lines that must not dilute the ratio.
+					'src/a.test.ts': 'const t = 1\nconst u = 2\n',
+				},
+			),
+		);
+
+		const complexity = delta.complexity as { cognitive: { delta: number }; densityPerSloc: number };
+		expect(complexity.cognitive.delta).toBe(1);
+		expect(complexity.densityPerSloc).toBeCloseTo(1 / 3);
+	});
+
 	it('prices grown markup through the jsx family where the classic metrics barely move', () => {
 		const delta = deltaToBaseline(
 			deltaContext(

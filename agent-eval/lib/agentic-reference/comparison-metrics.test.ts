@@ -3,10 +3,23 @@ import { describe, expect, it } from 'vitest';
 import { COMPARISON_METRICS, metricValueAt } from './comparison-metrics.ts';
 
 describe('COMPARISON_METRICS', () => {
-	it('has 47 unique keys and unique paths', () => {
-		expect(COMPARISON_METRICS).toHaveLength(47);
-		expect(new Set(COMPARISON_METRICS.map((m) => m.key)).size).toBe(47);
-		expect(new Set(COMPARISON_METRICS.map((m) => m.path)).size).toBe(47);
+	it('has 48 unique keys and unique paths', () => {
+		expect(COMPARISON_METRICS).toHaveLength(48);
+		expect(new Set(COMPARISON_METRICS.map((m) => m.key)).size).toBe(48);
+		expect(new Set(COMPARISON_METRICS.map((m) => m.path)).size).toBe(48);
+	});
+
+	it('corrects environment-setup calls alongside its sibling tool-use metrics', () => {
+		// Not a side family: the taxonomy change that introduced this bucket also
+		// moved counts out of editCalls and verificationCalls, so the old
+		// q-values were stale either way and the family is edited deliberately.
+		const metric = COMPARISON_METRICS.find((m) => m.key === 'environmentCalls');
+		expect(metric).toMatchObject({
+			path: 'toolUse.buckets.environment',
+			family: 'toolUse',
+			direction: 'neutral',
+			correctionGroup: 'confirmatory',
+		});
 	});
 
 	it('reads the 2026-08-20 additions from fields the analyzers always wrote', () => {
@@ -38,9 +51,11 @@ describe('COMPARISON_METRICS', () => {
 		const facets = COMPARISON_METRICS.filter(
 			(m) => m.correctionGroup === 'exploratory-misuse-facets',
 		);
-		// The pre-facet family, byte-for-byte: adding facet metrics must not
-		// move existing q-values, so nothing may leave or join this group.
-		expect(confirmatory).toHaveLength(28);
+		// 28 pre-facet metrics plus environmentCalls, admitted deliberately on
+		// 2026-08-31: the metricsVersion 9 taxonomy change already re-valued its
+		// sibling tool-use metrics, so this was a family edit, not a side effect.
+		expect(confirmatory).toHaveLength(29);
+		expect(confirmatory.some((m) => m.key === 'environmentCalls')).toBe(true);
 		expect(facets).toHaveLength(19);
 		expect(facets.every((m) => m.family === 'dsMisuseFacets')).toBe(true);
 		expect(facets.every((m) => m.transform === 'none')).toBe(true);

@@ -33,6 +33,7 @@ import { readCost, readSpeed } from './metrics/run-signals.ts';
 import { classifyToolUse } from './metrics/tool-taxonomy.ts';
 import { parseResultTimestamp } from './comparability.ts';
 import { shortCase, shortExperiment } from './utils.ts';
+import { isTestPath } from './tree/paths.ts';
 import { diffTrees } from './tree/tree-diff.ts';
 
 import type { FileComplexity } from './metrics/complexity.ts';
@@ -187,10 +188,21 @@ export function deltaToBaseline(context: DeltaToBaselineContext): Analysis {
 	const { baselineAnalysis, baselineDir, projectDir } = context;
 	const diff = diffTrees(baselineDir, projectDir);
 
+	// Test files stay in the SLoC diff — they are real work — but out of the
+	// complexity family: an agent that volunteers a branchy regression test
+	// beside a two-line fix has not made the codebase harder to maintain, and
+	// counting the test file dominated every complexity mean it appeared in.
+	const measuredFiles = diff.files.filter((path) => !isTestPath(path));
+
 	// No extension filter: complexityForFiles already skips anything without an
 	// AST, so .css participates in the SLoC diff and drops out here on its own.
-	const baseline = baselineFiles(baselineAnalysis);
-	const afterFiles = complexityForFiles(projectDir, diff.files);
+	// The baseline map is filtered the same way as the diff: the pinned tree
+	// ships its own test files, and leaving their scores in `before`/`after`
+	// inflates both totals and skews the jsxDepth ratio.
+	const baseline = Object.fromEntries(
+		Object.entries(baselineFiles(baselineAnalysis)).filter(([path]) => !isTestPath(path)),
+	);
+	const afterFiles = complexityForFiles(projectDir, measuredFiles);
 
 	// Whole-project totals, not just the touched subset — otherwise `before` and
 	// `after` are sums over an arbitrary file set and only their difference means
@@ -200,7 +212,7 @@ export function deltaToBaseline(context: DeltaToBaselineContext): Analysis {
 	const before = sumComplexities(baseline);
 	const removed = combineComplexity(
 		before,
-		sumComplexities(scoresFor(baseline, diff.files)),
+		sumComplexities(scoresFor(baseline, measuredFiles)),
 		(left, right) => left - right,
 	);
 	const after = combineComplexity(
@@ -209,6 +221,10 @@ export function deltaToBaseline(context: DeltaToBaselineContext): Analysis {
 		(left, right) => left + right,
 	);
 	const cognitiveDelta = after.cognitive - before.cognitive;
+
+	// Density pairs the production-only numerator with a production-only
+	// denominator; dividing by the full net would dilute it with test lines.
+	const measuredSlocNet = sum(measuredFiles.map((path) => diff.slocByFile[path]?.net ?? 0)) ?? 0;
 
 	const span = (measure: keyof FileComplexity) => ({
 		before: before[measure],
@@ -242,7 +258,7 @@ export function deltaToBaseline(context: DeltaToBaselineContext): Analysis {
 			// Complexity correlates ~0.9 with lines of code, so a bare delta partly
 			// re-measures verbosity. null rather than Infinity when nothing changed:
 			// a stored Infinity would poison every later mean.
-			densityPerSloc: diff.sloc.net === 0 ? null : cognitiveDelta / diff.sloc.net,
+			densityPerSloc: measuredSlocNet === 0 ? null : cognitiveDelta / measuredSlocNet,
 			parseFailures: afterFiles.parseFailures,
 		},
 		// Whole-tree on both sides, so — unlike the complexity family — nothing is
@@ -786,10 +802,15 @@ export function summarize(
  * - 6 taught the census subpath DS patterns, `styled('div')`, and context providers
  * - 7 re-keyed baselines on the pin alone and added the ds-misuse node census file
  * - 8 weighted the census by estimated instantiations (instances), headline shares included
+ * - 9 fixed churn's workspace root (real runs mount /home/sandbox/workspace/, so every
+ *     structured edit was dropped), taught churn and the taxonomy to see inline
+ *     node/python script writes, split environment setup (apt-get, playwright install)
+ *     into its own tool bucket, and excluded test files from the complexity family —
+ *     density now divides by production sloc only
  */
 export const postAnalysis: PostAnalysis = {
 	analyzeRun,
 	deltaToBaseline,
 	summarize,
-	metricsVersion: 8,
+	metricsVersion: 9,
 };

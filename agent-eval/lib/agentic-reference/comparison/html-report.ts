@@ -223,6 +223,17 @@ const METRICS: Record<string, MetricCopy> = {
 			'Some checking is healthy; how much of it an agent needs tracks how confident it is ' +
 			'in its changes.',
 	},
+	environmentCalls: {
+		name: 'Environment-setup calls',
+		description: 'Sandbox provisioning',
+		computes:
+			'Tool calls that provision the sandbox rather than work on the task: package ' +
+			'installation (apt-get, npm install, playwright install), library extraction, and ' +
+			'loader probing.',
+		relevance:
+			'The browser-bootstrap detour behind most duration outliers lives here; counted ' +
+			'apart so it cannot inflate exploration or verification.',
+	},
 	filesEdited: {
 		name: 'Files touched',
 		description: 'Distinct files the agent edited',
@@ -445,6 +456,7 @@ const COUNT_METRICS = new Set([
 	'explorationCalls',
 	'editCalls',
 	'verificationCalls',
+	'environmentCalls',
 	'filesEdited',
 	'meanEditsPerFile',
 	'maxEditsPerFile',
@@ -460,17 +472,18 @@ const COUNT_METRICS = new Set([
 // statistical depends on this set.
 const EXTRA_METRICS = new Set([
 	'cyclomaticDelta',
+	'environmentCalls',
 	'inputTokens',
 	'slocAdded',
 	'totalToolCalls',
 	'dsShareOfAllNodesDelta',
 	'dsShareOfComponentNodesDelta',
-	// The facet drill-downs are exploratory (their own BH group), so they park
-	// behind the Metrics toggle same as the rest of this set — derived from the
-	// registry rather than listed by hand, so a facet added there stays parked.
-	...COMPARISON_METRICS.filter(
-		(metric) => metric.correctionGroup === 'exploratory-misuse-facets',
-	).map((metric) => metric.key),
+	// Exploratory metrics (their own BH groups) park behind the Metrics toggle
+	// same as the rest of this set — derived from the registry rather than
+	// listed by hand, so a metric added there stays parked.
+	...COMPARISON_METRICS.filter((metric) => metric.correctionGroup !== 'confirmatory').map(
+		(metric) => metric.key,
+	),
 ]);
 
 // Line counts: whole numbers with thousands separators.

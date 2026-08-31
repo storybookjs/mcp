@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isExcludedPath, SKIP_DIRS } from './paths.ts';
+import { isExcludedPath, isTestPath, SKIP_DIRS } from './paths.ts';
 
 describe('isExcludedPath', () => {
 	it('keeps application source', () => {
@@ -34,5 +34,27 @@ describe('isExcludedPath', () => {
 	// one, and the walkers would still hand it over.
 	it('keeps a file whose own name matches a skipped directory', () => {
 		expect(isExcludedPath('src/build.ts')).toBe(false);
+	});
+});
+
+describe('isTestPath', () => {
+	it('recognises test and spec files by their name', () => {
+		expect(isTestPath('src/components/Header/Header.test.tsx')).toBe(true);
+		expect(isTestPath('src/a.spec.ts')).toBe(true);
+	});
+
+	it('recognises files under a __tests__ directory', () => {
+		expect(isTestPath('src/__tests__/Header.tsx')).toBe(true);
+	});
+
+	it('keeps production files, even ones with test in their name', () => {
+		expect(isTestPath('src/components/Header/Header.tsx')).toBe(false);
+		expect(isTestPath('src/latest.ts')).toBe(false);
+		expect(isTestPath('src/testimonials/Card.tsx')).toBe(false);
+	});
+
+	// Stories are demo markup, not test code: they stay measured.
+	it('keeps story files', () => {
+		expect(isTestPath('src/components/Header/Header.stories.tsx')).toBe(false);
 	});
 });

@@ -120,6 +120,25 @@ function usableRun(
 	return { run: runRecord, analysis: {} };
 }
 
+/**
+ * A judge artifact from before versioning existed: no judgeVersion stamp,
+ * older model, per-node `reason` strings. readMisuseReport rejects this shape.
+ */
+function writeV1Artifact(run: Cell['runs'][number]): void {
+	writeFileSync(
+		join(run.run.runDir, 'ds-misuse.json'),
+		JSON.stringify({
+			metricsVersion: 7,
+			judgedAt: '2026-08-20T18:33:10.461Z',
+			model: 'claude-opus-4-8',
+			dsGuidelinesRef: 'org/ds@abc',
+			fixtureRef: 'org/app@ref',
+			summary: { correctDsDecision: 1, evaluated: { ds: 1, local: 0 } },
+			nodes: [{ ...judgedNode({}), correctDsDecision: { score: 1, reason: 'fine' } }],
+		}),
+	);
+}
+
 function cell(resolved: ResolvedCase, runs: Cell['runs']): Cell {
 	return {
 		case: resolved,
@@ -241,6 +260,28 @@ describe('collectMisusePanel', () => {
 		expect(summary.questions.correctLocalDecision).toBeNull();
 	});
 
+	it('counts an unusable artifact as stale, apart from runs the judge never saw', () => {
+		const judged = usableRun(CONTROL, 1, misuseReport([]));
+		const outdated = usableRun(CONTROL, 2, null);
+		writeV1Artifact(outdated);
+		const neverJudged = usableRun(CONTROL, 3, null);
+		const panel = collectMisusePanel([cell(CONTROL, [judged, outdated, neverJudged])], SPEC, {
+			repoRoot: results,
+		});
+
+		expect(panel.judgedRuns).toBe(1);
+		expect(panel.staleRuns).toBe(1);
+		expect(panel.usableRuns).toBe(3);
+		expect(panel.cells[0]).toMatchObject({ judged: 1, stale: 1, usable: 3 });
+	});
+
+	it('reports zero stale runs when every artifact is readable', () => {
+		const judged = usableRun(CONTROL, 1, misuseReport([]));
+		const panel = collectMisusePanel([cell(CONTROL, [judged])], SPEC, { repoRoot: results });
+		expect(panel.staleRuns).toBe(0);
+		expect(panel.cells[0]!.stale).toBe(0);
+	});
+
 	it('attaches the flagged source as an excerpt when the tree holds the file', () => {
 		const run = usableRun(
 			TREATMENT,
@@ -327,6 +368,22 @@ describe('collectMisuseStatuses', () => {
 	it('reports stale when a ds-misuse.json is present but disqualified by isStale', () => {
 		// Judged against a guideline pin other than the current one.
 		const run = usableRun(TREATMENT, 1, misuseReport([], 'org/ds@old'));
+		const [status] = collectMisuseStatuses([cell(TREATMENT, [run])], SPEC);
+		expect(status).toMatchObject({
+			usable: 1,
+			judged: 0,
+			stale: 1,
+			status: 'stale',
+			label: 'stale (1 stale)',
+		});
+	});
+
+	it('reports a pre-versioning artifact as stale, not unjudged', () => {
+		// 80 real runs carried v1 artifacts (no judgeVersion stamp, judged by an
+		// older model); readMisuseReport rejects them, and they read as
+		// never-judged — silently identical to runs the judge never saw.
+		const run = usableRun(TREATMENT, 1, null);
+		writeV1Artifact(run);
 		const [status] = collectMisuseStatuses([cell(TREATMENT, [run])], SPEC);
 		expect(status).toMatchObject({
 			usable: 1,

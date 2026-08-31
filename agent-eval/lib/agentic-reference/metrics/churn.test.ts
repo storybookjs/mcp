@@ -34,6 +34,41 @@ describe('computeChurn', () => {
 		expect(churn.meanEditsPerFile).toBe(1.5);
 	});
 
+	it('strips the Docker sandbox workspace prefix — the root real runs use', () => {
+		const churn = computeChurn([
+			edit('/home/sandbox/workspace/src/components/Header/Header.tsx'),
+			edit('/home/sandbox/workspace/src/components/Header/Header.tsx'),
+		]);
+		expect(churn.perFile).toEqual({ 'src/components/Header/Header.tsx': 2 });
+		expect(churn.filesEdited).toBe(1);
+	});
+
+	it('counts a write made through an inline node script', () => {
+		const churn = computeChurn([
+			shell(`node -e "const fs=require('fs');const p='src/a.tsx';fs.writeFileSync(p, s)"`),
+		]);
+		expect(churn.perFile).toEqual({ 'src/a.tsx': 1 });
+	});
+
+	it('counts two inline writes to the same file as two edits', () => {
+		const churn = computeChurn([
+			shell(`node -e "fs.writeFileSync('src/a.ts', a); fs.appendFileSync('src/a.ts', b)"`),
+		]);
+		expect(churn.perFile).toEqual({ 'src/a.ts': 2 });
+	});
+
+	it('counts a write made through a python heredoc', () => {
+		const churn = computeChurn([
+			shell(`python3 - <<'EOF'\np='src/b.tsx'\ns=open(p).read()\nopen(p,'w').write(s)\nEOF`),
+		]);
+		expect(churn.perFile).toEqual({ 'src/b.tsx': 1 });
+	});
+
+	it('does not count a read-only inline script as churn', () => {
+		const churn = computeChurn([shell(`python3 - <<'EOF'\nprint(open('src/a.ts').read())\nEOF`)]);
+		expect(churn.perFile).toEqual({});
+	});
+
 	it('counts shell writes, which o11y.filesModified misses entirely', () => {
 		const churn = computeChurn([shell("sed -i 's#a#b#' src/a.tsx")]);
 		expect(churn.perFile).toEqual({ 'src/a.tsx': 1 });

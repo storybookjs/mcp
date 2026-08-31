@@ -6,8 +6,14 @@
 // are accounted for. Files are keyed under their final path. Temporary files
 // count too, deliberately. If an agent generates temporary test probes, those
 // are acts of editing that were required.
+//
+// Inline interpreter scripts (`node -e`, `python3 -` heredocs) are covered by
+// a best-effort scan: only writes to a literal path — direct or one variable
+// hop away — are seen. A script that computes its target dynamically still
+// churns invisibly.
 import { isRecord } from '../../utils/type.ts';
 import { splitCommandSegments } from '../../utils/shell-segments.ts';
+import { detectInlineScriptWrites } from './inline-script-writes.ts';
 
 export interface Rename {
 	from: string;
@@ -40,6 +46,13 @@ const WRITES_EVERY_ARGUMENT = new Set(['rm', 'mkdir', 'chmod']);
 
 const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
+/**
+ * Absolute prefixes a run's workspace has been mounted at. The Docker sandbox
+ * used by real runs mounts it at /home/sandbox/workspace/; /workspace/ is kept
+ * for older transcripts. Passing computeChurn a single string still works.
+ */
+export const WORKSPACE_ROOTS = ['/home/sandbox/workspace/', '/workspace/'] as const;
+
 function isPathLike(token: string): boolean {
 	return token !== '' && !token.startsWith('-');
 }
@@ -49,9 +62,11 @@ function isPathLike(token: string): boolean {
  * Absolute paths elsewhere (/tmp) are scratch space, not the codebase under
  * evaluation.
  */
-function normalize(rawPath: string, workspaceRoot: string): string | null {
+function normalize(rawPath: string, workspaceRoots: readonly string[]): string | null {
 	const path = rawPath.replace(/^['"]|['"]$/g, '');
-	if (path.startsWith(workspaceRoot)) return path.slice(workspaceRoot.length);
+	for (const root of workspaceRoots) {
+		if (path.startsWith(root)) return path.slice(root.length);
+	}
 	if (path.startsWith('/')) return null;
 	return path.replace(/^\.\//, '');
 }
@@ -76,12 +91,22 @@ function basename(path: string): string {
 	return path.slice(path.lastIndexOf('/') + 1);
 }
 
-function collectShellOperations(command: string, workspaceRoot: string, into: Operation[]): void {
+function collectShellOperations(
+	command: string,
+	workspaceRoots: readonly string[],
+	into: Operation[],
+): void {
 	const write = (rawPath: string | undefined): void => {
 		if (rawPath === undefined) return;
-		const normalized = normalize(rawPath, workspaceRoot);
+		const normalized = normalize(rawPath, workspaceRoots);
 		if (normalized !== null) into.push({ kind: 'write', path: normalized });
 	};
+
+	// Writes made from inside `node -e` / `python3 -` scripts, which the
+	// segment walk below cannot see.
+	for (const path of detectInlineScriptWrites(command).paths) {
+		write(path);
+	}
 
 	for (const segment of splitCommandSegments(command)) {
 		if (segment.piped) continue;
@@ -117,11 +142,11 @@ function collectShellOperations(command: string, workspaceRoot: string, into: Op
 
 			const sources = paths.slice(0, -1);
 			for (const source of sources) {
-				const from = normalize(source, workspaceRoot);
+				const from = normalize(source, workspaceRoots);
 				const rawTo = movesIntoDirectory(paths)
 					? `${destination.replace(/\/$/, '')}/${basename(source)}`
 					: destination;
-				const to = normalize(rawTo, workspaceRoot);
+				const to = normalize(rawTo, workspaceRoots);
 
 				// A move out of the workspace is not a rename we can follow; the
 				// source's history stays where it is rather than vanishing.
@@ -142,7 +167,11 @@ function collectShellOperations(command: string, workspaceRoot: string, into: Op
 	}
 }
 
-export function computeChurn(events: unknown[], workspaceRoot = '/workspace/'): ChurnMetrics {
+export function computeChurn(
+	events: unknown[],
+	workspaceRoots: string | readonly string[] = WORKSPACE_ROOTS,
+): ChurnMetrics {
+	const roots = typeof workspaceRoots === 'string' ? [workspaceRoots] : workspaceRoots;
 	const operations: Operation[] = [];
 
 	for (const event of events) {
@@ -152,14 +181,14 @@ export function computeChurn(events: unknown[], workspaceRoot = '/workspace/'): 
 		if ((name === 'file_edit' || name === 'file_write') && isRecord(args)) {
 			const filePath = args.file_path;
 			if (typeof filePath === 'string') {
-				const normalized = normalize(filePath, workspaceRoot);
+				const normalized = normalize(filePath, roots);
 				if (normalized !== null) operations.push({ kind: 'write', path: normalized });
 			}
 			continue;
 		}
 
 		if (name === 'shell' && isRecord(args) && typeof args.command === 'string') {
-			collectShellOperations(args.command, workspaceRoot, operations);
+			collectShellOperations(args.command, roots, operations);
 		}
 	}
 

@@ -59,6 +59,35 @@ describe('classifyShellCommand', () => {
 		['(sudo pkill -f node)', []],
 		['sudo rm -rf src/tmp', ['edit']],
 		['time npx vitest run', ['verification']],
+		// Environment setup: package and system-library installation is neither
+		// exploration nor verification — it is the agent provisioning its sandbox.
+		['apt-get install -y libnss3', ['environment']],
+		['apt-get download libglib2.0-0 libnss3', ['environment']],
+		['dpkg-deb -x /tmp/libnss3.deb /tmp/pwdeps/root', ['environment']],
+		['ldd node_modules/.cache/ms-playwright/chromium/headless_shell', ['environment']],
+		['npm install', ['environment']],
+		['yarn add left-pad', ['environment']],
+		// playwright splits: installing its browser is environment setup, running
+		// its tests is verification.
+		['npx playwright install chromium', ['environment']],
+		['npx playwright install-deps chromium', ['environment']],
+		['npx playwright test', ['verification']],
+		// timeout is a wrapper around the real command, not noise: dropping it
+		// hid every `timeout 180 npx playwright install` behind the prefix.
+		['timeout 180 npx playwright install chromium', ['environment']],
+		['timeout 60 npx vitest run', ['verification']],
+		// Inline interpreter scripts that write files are edits, not verification.
+		[`node -e "const fs=require('fs');fs.writeFileSync('src/a.ts', s)"`, ['edit']],
+		[`python3 - <<'EOF'\np='src/a.ts'\nopen(p,'w').write('x')\nEOF`, ['edit']],
+		[`node -e "console.log(1)"`, ['verification']],
+		// The write belongs to its own segment: a chained read-only interpreter
+		// call keeps its verification bucket.
+		[
+			`node -e "fs.writeFileSync('src/a.ts', s)" && node -e "console.log(1)"`,
+			['edit', 'verification'],
+		],
+		// A heredoc feeding data into a script file is not inline code.
+		[`python3 script.py <<'EOF'\nopen('src/x.ts','w')\nEOF`, ['other']],
 		// A wrapper's own flags belong to the wrapper: `sudo -n apt-get` must not
 		// resolve to `-n`.
 		// ['sudo -n apt-get install -y libnss3', ['other']], // FIXME: FLAKY
@@ -84,6 +113,7 @@ describe('classifyToolUse', () => {
 			exploration: 2,
 			edit: 1,
 			verification: 0,
+			environment: 0,
 			other: 0,
 		});
 	});
@@ -148,6 +178,7 @@ describe('classifyToolUse', () => {
 			exploration: 0,
 			edit: 0,
 			verification: 0,
+			environment: 0,
 			other: 0,
 		});
 	});
@@ -177,6 +208,7 @@ describe('classifyToolUse', () => {
 			exploration: 14,
 			edit: 8,
 			verification: 7,
+			environment: 0,
 			other: 0,
 		});
 	});
