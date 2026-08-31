@@ -103,7 +103,16 @@ const NOISE_BINARIES = new Set([
 
 /** Wrappers to step past to reach the binary that actually runs. */
 const PACKAGE_RUNNERS = new Set(['npx', 'npm', 'pnpm', 'yarn', 'bun', 'bunx']);
-const COMMAND_PREFIXES = new Set(['sudo', 'env', 'time', 'nohup', 'command', 'exec', 'xargs', 'timeout']);
+const COMMAND_PREFIXES = new Set([
+	'sudo',
+	'env',
+	'time',
+	'nohup',
+	'command',
+	'exec',
+	'xargs',
+	'timeout',
+]);
 
 /**
  * Short flags that consume the next token, per wrapper. Skipping anything that
