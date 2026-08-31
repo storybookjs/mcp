@@ -27,6 +27,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { AGENTIC_REF_EVAL_REGISTRY, knownExperimentNames } from '#lib/agentic-reference/cases';
+import { isCurrentRun } from '#lib/agentic-reference/comparability';
 import {
 	type ExternalRepoPin,
 	prepareRef,
@@ -315,10 +316,21 @@ async function main() {
 	// per experiment, which is exactly where an interrupted sweep leaves its
 	// uncollected runs, and a paid command should say "nothing to judge" before
 	// it says it per run.
-	const runs = selected.filter((run) => run.collected);
-	const uncollected = selected.length - runs.length;
+	const collected = selected.filter((run) => run.collected);
+	const uncollected = selected.length - collected.length;
 	if (uncollected > 0) {
 		console.log(`Skipping ${uncollected} run(s) that left no project tree behind.`);
+	}
+	// A superseded run measures something its (experiment, eval) pair no longer
+	// measures, and results:compare keeps such runs out of its cells (see
+	// lib/agentic-reference/comparison/cells.ts) — so a judgement bought for one
+	// would never reach a comparison table. Dropped here for the same reason the
+	// plan scoping above exists: the runs this command judges must be the runs
+	// the plan's tables stand on.
+	const runs = collected.filter((run) => isCurrentRun(run.runDir, run));
+	const superseded = collected.length - runs.length;
+	if (superseded > 0) {
+		console.log(`Skipping ${superseded} superseded run(s) whose measurement was since replaced.`);
 	}
 	if (runs.length === 0) {
 		console.log('No runs matched.');
