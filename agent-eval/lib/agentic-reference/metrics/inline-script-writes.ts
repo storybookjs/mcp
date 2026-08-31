@@ -33,9 +33,10 @@ function basename(token: string): string {
 
 /**
  * Same shape as the segment splitter's heredoc rule, but capturing the
- * invoking line and the body instead of discarding them.
+ * invoking line's prefix and the body instead of discarding them.
  */
-const HEREDOC_WITH_BODY = /^([^\n]*?<<-?\s*['"]?(\w+)['"]?[^\n]*)\n([\s\S]*?)^\t*\2$/gm;
+const HEREDOC_WITH_BODY =
+	/^(?<prefix>[^\n]*?)<<-?\s*['"]?(?<term>\w+)['"]?[^\n]*\n(?<body>[\s\S]*?)^\t*\k<term>$/gm;
 
 /**
  * Write idioms in write position. Each entry either captures a literal path
@@ -49,6 +50,9 @@ const WRITE_PATTERNS = [
 	/\bopen\s*\(\s*(?:['"](?<path>[^'"]+)['"]|(?<ident>[A-Za-z_]\w*))\s*,\s*['"][wax]\+?b?['"]/g,
 	// Path('src/a.ts').write_text(...) / p.write_text(...)
 	/(?:['"](?<path>[^'"]+)['"]\s*\)|\b(?<ident>[A-Za-z_]\w*))\s*\.write_text\s*\(/g,
+	// Path(p).write_text(...) — the identifier sits inside the constructor, so
+	// the pattern above (which needs it directly before `.write_text`) misses it.
+	/\bPath\s*\(\s*(?<ident>[A-Za-z_]\w*)\s*\)\s*\.write_text\s*\(/g,
 ];
 
 /** The string literal a script assigns to `ident`, or null. */
@@ -82,39 +86,78 @@ function collectScriptWrites(script: string, into: InlineScriptWrites): void {
 	}
 }
 
-/** Interpreter heredoc bodies: `python3 - <<'EOF' ... EOF`. */
-function collectHeredocScripts(command: string, into: InlineScriptWrites): void {
-	for (const match of command.matchAll(HEREDOC_WITH_BODY)) {
-		const [, invocation = '', , body = ''] = match;
-		const head = invocation
-			.trim()
-			.split(/\s+/)
-			.filter((token) => !ENV_ASSIGNMENT.test(token))
-			.at(0);
-		if (head !== undefined && INTERPRETERS.has(basename(head))) {
-			collectScriptWrites(body, into);
-		}
-	}
+/**
+ * Whether a heredoc's body is executed as code rather than read as data.
+ *
+ * `python3 - <<EOF` and bare `python3 <<EOF` both run the body from stdin;
+ * `python3 script.py <<EOF` runs the script file and the body is mere input,
+ * so write-looking text inside it must not count as an edit.
+ */
+function executesHeredocAsScript(prefix: string): boolean {
+	// The heredoc attaches to the last command on the line: `cd x && python3 -`.
+	const lastCommand = prefix.split(/&&|\|\||;|\|/).at(-1) ?? '';
+	const tokens = lastCommand
+		.trim()
+		.split(/\s+/)
+		.filter((token) => token !== '' && !ENV_ASSIGNMENT.test(token));
+	const head = tokens[0];
+	if (head === undefined || !INTERPRETERS.has(basename(head))) return false;
+	// Only flags and the lone stdin marker may follow: any positional argument
+	// names a script file.
+	return tokens
+		.slice(1)
+		.every((token) => token === '-' || (token.startsWith('-') && token.length > 1));
 }
 
-/** Inline flag scripts: `node -e '...'`, `python3 -c '...'`. */
-function collectFlagScripts(command: string, into: InlineScriptWrites): void {
-	for (const segment of splitCommandSegments(command)) {
+/**
+ * Inline-script writes per shell segment, index-aligned with
+ * splitCommandSegments(command) so a classifier walking segments can tell the
+ * writing interpreter call from a read-only one chained after it.
+ */
+export function inlineScriptWritesBySegment(command: string): InlineScriptWrites[] {
+	const segments = splitCommandSegments(command);
+	const results = segments.map((): InlineScriptWrites => ({ hasWrite: false, paths: [] }));
+
+	// Heredoc bodies in string order; segments consume them in the same order,
+	// one per `<<HEREDOC` marker the stripper left behind.
+	const heredocs = [...command.matchAll(HEREDOC_WITH_BODY)];
+	let heredocIndex = 0;
+
+	for (const [index, segment] of segments.entries()) {
+		const into = results[index]!;
 		const { tokens } = segment;
+
+		// Flag scripts: `node -e '...'`, `python3 -c '...'`.
 		const interpreterAt = tokens.findIndex((token) => INTERPRETERS.has(basename(token)));
-		if (interpreterAt === -1) continue;
-		const flagAt = tokens.findIndex(
-			(token, index) => index > interpreterAt && SCRIPT_FLAGS.has(token),
-		);
-		const script = flagAt === -1 ? undefined : tokens[flagAt + 1];
-		if (script !== undefined) collectScriptWrites(script, into);
+		if (interpreterAt !== -1) {
+			const flagAt = tokens.findIndex(
+				(token, position) => position > interpreterAt && SCRIPT_FLAGS.has(token),
+			);
+			const script = flagAt === -1 ? undefined : tokens[flagAt + 1];
+			if (script !== undefined) collectScriptWrites(script, into);
+		}
+
+		// Heredoc scripts: `python3 - <<'EOF' ... EOF`.
+		for (const token of tokens) {
+			if (token !== '<<HEREDOC') continue;
+			const heredoc = heredocs[heredocIndex];
+			heredocIndex += 1;
+			if (heredoc === undefined) continue;
+			const { prefix = '', body = '' } = heredoc.groups ?? {};
+			if (executesHeredocAsScript(prefix)) collectScriptWrites(body, into);
+		}
 	}
+
+	return results;
 }
 
 export function detectInlineScriptWrites(command: string): InlineScriptWrites {
 	const found: InlineScriptWrites = { hasWrite: false, paths: [] };
-	collectHeredocScripts(command, found);
-	collectFlagScripts(command, found);
-	found.paths = [...new Set(found.paths)];
+	for (const segment of inlineScriptWritesBySegment(command)) {
+		found.hasWrite ||= segment.hasWrite;
+		// Duplicates stay: churn counts write operations, and two writes to one
+		// file are two acts of editing.
+		found.paths.push(...segment.paths);
+	}
 	return found;
 }

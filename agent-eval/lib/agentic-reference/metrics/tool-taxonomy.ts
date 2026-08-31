@@ -13,7 +13,7 @@
 // - other: the agent is doing something else, e.g. preview-stories, display-review.
 import { isRecord } from '../../utils/type.ts';
 import { splitCommandSegments } from '../../utils/shell-segments.ts';
-import { detectInlineScriptWrites } from './inline-script-writes.ts';
+import { inlineScriptWritesBySegment } from './inline-script-writes.ts';
 
 export type Bucket = 'docs' | 'exploration' | 'edit' | 'verification' | 'environment' | 'other';
 
@@ -82,9 +82,6 @@ const ENVIRONMENT_BINARIES = new Set([
 
 /** Package-runner subcommands that install dependencies rather than run a binary. */
 const RUNNER_INSTALL_SUBCOMMANDS = new Set(['install', 'ci', 'add']);
-
-/** Interpreters whose inline scripts may write files (see inline-script-writes.ts). */
-const INTERPRETER_BINARIES = new Set(['node', 'python', 'python3']);
 
 const NOISE_BINARIES = new Set([
 	'echo',
@@ -235,11 +232,12 @@ function classifySegmentTokens(tokens: string[]): {
 function collectShellBuckets(command: string, buckets: Set<Bucket>, unclassified: string[]): void {
 	// A `node -e` / `python3 -` script that writes files is an act of editing.
 	// The write is invisible at segment level — heredoc bodies are stripped and
-	// inline scripts are opaque tokens — so it is detected on the raw command
-	// and overrides the interpreter segment's own classification.
-	const inlineWrite = detectInlineScriptWrites(command).hasWrite;
+	// inline scripts are opaque tokens — so it is detected on the raw command,
+	// per segment, and overrides only the writing segment's classification: a
+	// read-only interpreter call chained after it keeps its own bucket.
+	const inlineWrites = inlineScriptWritesBySegment(command);
 
-	for (const segment of splitCommandSegments(command)) {
+	for (const [index, segment] of splitCommandSegments(command).entries()) {
 		const { bucket, head, viaXargs } = classifySegmentTokens(segment.tokens);
 
 		// Downstream of a pipe: a filter on the previous command's output, not an
@@ -255,7 +253,7 @@ function collectShellBuckets(command: string, buckets: Set<Bucket>, unclassified
 			continue;
 		}
 
-		if (inlineWrite && INTERPRETER_BINARIES.has(head)) {
+		if (inlineWrites[index]?.hasWrite) {
 			buckets.add('edit');
 			continue;
 		}

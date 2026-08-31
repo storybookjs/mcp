@@ -297,6 +297,28 @@ describe('deltaToBaseline', () => {
 		expect((delta.diff as { sloc: { added: number } }).sloc.added).toBe(1);
 	});
 
+	it('keeps baseline test complexity out of the before and after totals', () => {
+		// The baseline tree ships its own test files; leaving their scores in
+		// `before` and `after` inflates both totals (and skews the jsxDepth
+		// ratio) even though the delta cancels.
+		const delta = deltaToBaseline(
+			deltaContext(
+				{
+					'src/a.ts': 'function a(){ return 0; }\n',
+					'src/a.test.ts': 'function t(x){ if (x) return 1; return 0; }\n',
+				},
+				{
+					'src/a.ts': 'function a(x){ if (x) return 1; return 0; }\n',
+					'src/a.test.ts': 'function t(x){ if (x) return 1; return 0; }\n',
+				},
+			),
+		);
+
+		expect(delta.complexity).toMatchObject({
+			cyclomatic: { before: 1, after: 2, delta: 1 },
+		});
+	});
+
 	it('divides density by production sloc only, not test sloc', () => {
 		const delta = deltaToBaseline(
 			deltaContext(

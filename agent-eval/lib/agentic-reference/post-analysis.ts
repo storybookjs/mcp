@@ -196,7 +196,12 @@ export function deltaToBaseline(context: DeltaToBaselineContext): Analysis {
 
 	// No extension filter: complexityForFiles already skips anything without an
 	// AST, so .css participates in the SLoC diff and drops out here on its own.
-	const baseline = baselineFiles(baselineAnalysis);
+	// The baseline map is filtered the same way as the diff: the pinned tree
+	// ships its own test files, and leaving their scores in `before`/`after`
+	// inflates both totals and skews the jsxDepth ratio.
+	const baseline = Object.fromEntries(
+		Object.entries(baselineFiles(baselineAnalysis)).filter(([path]) => !isTestPath(path)),
+	);
 	const afterFiles = complexityForFiles(projectDir, measuredFiles);
 
 	// Whole-project totals, not just the touched subset — otherwise `before` and

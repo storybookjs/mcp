@@ -52,13 +52,7 @@ export interface MisuseCellSummary {
 	usable: number;
 	/** Of those, runs carrying a current ds-misuse.json. */
 	judged: number;
-	/**
-	 * Runs carrying a ds-misuse.json the panel could not read — pre-versioning
-	 * or malformed artifacts. The paid judge did run on these once; they need
-	 * re-judging, unlike runs it never saw. Readable reports from a moved
-	 * standard are still pooled (see collectMisusePanel) and surface through
-	 * guidelinesRefs instead.
-	 */
+	/** Runs with a missing or outdated version, or unreadable artifacts. */
 	stale: number;
 	/** Pooled over every judged run's nodes; null when no node got the question. */
 	questions: Record<MisuseQuestion, ScoreDistribution | null>;
@@ -309,12 +303,7 @@ export interface MisuseCellStatus {
 	workflow: string;
 	usable: number;
 	judged: number;
-	/**
-	 * Runs carrying a ds-misuse.json the current standard cannot use: either
-	 * disqualified by isStale (moved guideline pin, judge version, or model) or
-	 * unreadable outright (pre-versioning or malformed artifacts). Both need
-	 * `pnpm judge:ds-misuse` again, unlike runs the judge never saw.
-	 */
+	/** Runs with a ds-misuse.json file but that are stale or unreadable. */
 	stale: number;
 	status: MisuseJudgeStatus;
 	label: string;

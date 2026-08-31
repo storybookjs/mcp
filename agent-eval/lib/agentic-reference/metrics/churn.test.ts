@@ -50,6 +50,13 @@ describe('computeChurn', () => {
 		expect(churn.perFile).toEqual({ 'src/a.tsx': 1 });
 	});
 
+	it('counts two inline writes to the same file as two edits', () => {
+		const churn = computeChurn([
+			shell(`node -e "fs.writeFileSync('src/a.ts', a); fs.appendFileSync('src/a.ts', b)"`),
+		]);
+		expect(churn.perFile).toEqual({ 'src/a.ts': 2 });
+	});
+
 	it('counts a write made through a python heredoc', () => {
 		const churn = computeChurn([
 			shell(`python3 - <<'EOF'\np='src/b.tsx'\ns=open(p).read()\nopen(p,'w').write(s)\nEOF`),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectInlineScriptWrites } from './inline-script-writes.ts';
+import { detectInlineScriptWrites, inlineScriptWritesBySegment } from './inline-script-writes.ts';
 
 describe('detectInlineScriptWrites', () => {
 	describe('node -e', () => {
@@ -56,12 +56,40 @@ describe('detectInlineScriptWrites', () => {
 			expect(detectInlineScriptWrites(command)).toEqual({ hasWrite: false, paths: [] });
 		});
 
+		it('ignores a heredoc that feeds data into a script file', () => {
+			// `python3 script.py <<'EOF'` runs script.py; the body is stdin data,
+			// and write-looking text inside it must not count as an edit.
+			const command = `python3 script.py <<'EOF'\nopen('src/a.ts','w')\nEOF`;
+			expect(detectInlineScriptWrites(command)).toEqual({ hasWrite: false, paths: [] });
+		});
+
+		it('scans a bare-interpreter heredoc — stdin is executed without a dash too', () => {
+			const command = `python3 <<'EOF'\nopen('src/a.ts','w').write('x')\nEOF`;
+			const result = detectInlineScriptWrites(command);
+			expect(result.hasWrite).toBe(true);
+			expect(result.paths).toEqual(['src/a.ts']);
+		});
+
 		it('recognises pathlib write_text on a literal', () => {
 			const command = `python3 -c "from pathlib import Path; Path('src/a.ts').write_text('x')"`;
 			const result = detectInlineScriptWrites(command);
 			expect(result.hasWrite).toBe(true);
 			expect(result.paths).toEqual(['src/a.ts']);
 		});
+
+		it('recognises pathlib write_text on a variable inside Path()', () => {
+			const command = `python3 -c "from pathlib import Path; p = 'src/a.ts'; Path(p).write_text('x')"`;
+			const result = detectInlineScriptWrites(command);
+			expect(result.hasWrite).toBe(true);
+			expect(result.paths).toEqual(['src/a.ts']);
+		});
+	});
+
+	it('keeps repeated writes to the same path — churn counts operations, not files', () => {
+		const result = detectInlineScriptWrites(
+			`node -e "fs.writeFileSync('src/a.ts', a); fs.appendFileSync('src/a.ts', b)"`,
+		);
+		expect(result.paths).toEqual(['src/a.ts', 'src/a.ts']);
 	});
 
 	describe('non-interpreter commands', () => {
@@ -84,5 +112,27 @@ describe('detectInlineScriptWrites', () => {
 		);
 		expect(result.hasWrite).toBe(true);
 		expect(result.paths).toEqual([]);
+	});
+
+	describe('inlineScriptWritesBySegment', () => {
+		it('attributes a write to its own segment, not to sibling interpreter calls', () => {
+			const perSegment = inlineScriptWritesBySegment(
+				`node -e "fs.writeFileSync('src/a.ts', s)" && node -e "console.log(1)"`,
+			);
+			expect(perSegment).toEqual([
+				{ hasWrite: true, paths: ['src/a.ts'] },
+				{ hasWrite: false, paths: [] },
+			]);
+		});
+
+		it('aligns heredoc bodies with the segments that consume them', () => {
+			const perSegment = inlineScriptWritesBySegment(
+				`python3 - <<'EOF'\np='src/b.tsx'\nopen(p,'w').write(s)\nEOF\nnpx vitest run`,
+			);
+			expect(perSegment).toEqual([
+				{ hasWrite: true, paths: ['src/b.tsx'] },
+				{ hasWrite: false, paths: [] },
+			]);
+		});
 	});
 });

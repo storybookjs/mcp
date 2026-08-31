@@ -80,6 +80,14 @@ describe('classifyShellCommand', () => {
 		[`node -e "const fs=require('fs');fs.writeFileSync('src/a.ts', s)"`, ['edit']],
 		[`python3 - <<'EOF'\np='src/a.ts'\nopen(p,'w').write('x')\nEOF`, ['edit']],
 		[`node -e "console.log(1)"`, ['verification']],
+		// The write belongs to its own segment: a chained read-only interpreter
+		// call keeps its verification bucket.
+		[
+			`node -e "fs.writeFileSync('src/a.ts', s)" && node -e "console.log(1)"`,
+			['edit', 'verification'],
+		],
+		// A heredoc feeding data into a script file is not inline code.
+		[`python3 script.py <<'EOF'\nopen('src/x.ts','w')\nEOF`, ['other']],
 		// A wrapper's own flags belong to the wrapper: `sudo -n apt-get` must not
 		// resolve to `-n`.
 		// ['sudo -n apt-get install -y libnss3', ['other']], // FIXME: FLAKY
