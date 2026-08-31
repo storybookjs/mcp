@@ -18,7 +18,7 @@ import { MISUSE_FACETS, UNCATEGORISED } from '@storybook/agent-eval-utils';
 
 import { formatStatusTable } from './commands.ts';
 import { dsDocsRefLabel } from '../metrics/ds-misuse/ds-docs.ts';
-import { isStale, readMisuseReport } from '../metrics/ds-misuse/index.ts';
+import { hasMisuseArtifact, isStale, readMisuseReport } from '../metrics/ds-misuse/index.ts';
 import { PLAIN_STYLE } from '../style.ts';
 
 import type { Cell } from './cells.ts';
@@ -52,6 +52,14 @@ export interface MisuseCellSummary {
 	usable: number;
 	/** Of those, runs carrying a current ds-misuse.json. */
 	judged: number;
+	/**
+	 * Runs carrying a ds-misuse.json the panel could not read — pre-versioning
+	 * or malformed artifacts. The paid judge did run on these once; they need
+	 * re-judging, unlike runs it never saw. Readable reports from a moved
+	 * standard are still pooled (see collectMisusePanel) and surface through
+	 * guidelinesRefs instead.
+	 */
+	stale: number;
 	/** Pooled over every judged run's nodes; null when no node got the question. */
 	questions: Record<MisuseQuestion, ScoreDistribution | null>;
 	evaluated: { ds: number; local: number };
@@ -127,6 +135,8 @@ export interface MisusePanel {
 	 */
 	builtFrom: string;
 	judgedRuns: number;
+	/** Runs whose judge artifact exists but could not be read; see MisuseCellSummary.stale. */
+	staleRuns: number;
 	usableRuns: number;
 	cells: MisuseCellSummary[];
 	decisions: MisuseDecision[];
@@ -202,6 +212,7 @@ export function collectMisusePanel(
 	const summaries: MisuseCellSummary[] = [];
 	const decisions: MisuseDecision[] = [];
 	let judgedRuns = 0;
+	let staleRuns = 0;
 	let usableRuns = 0;
 
 	for (const cell of cells) {
@@ -212,6 +223,7 @@ export function collectMisusePanel(
 			workflow: cell.workflow,
 			usable: cell.runs.length,
 			judged: 0,
+			stale: 0,
 			questions: {
 				correctDsDecision: null,
 				correctDsUsage: null,
@@ -225,7 +237,13 @@ export function collectMisusePanel(
 		const cellDecisions: MisuseDecision[] = [];
 		for (const usable of cell.runs) {
 			const report = readMisuseReport(usable.run.runDir);
-			if (report === null) continue;
+			if (report === null) {
+				if (hasMisuseArtifact(usable.run.runDir)) {
+					summary.stale += 1;
+					staleRuns += 1;
+				}
+				continue;
+			}
 			summary.judged += 1;
 			judgedRuns += 1;
 			refs.add(report.dsGuidelinesRef);
@@ -275,6 +293,7 @@ export function collectMisusePanel(
 		fixtureRefs: [...fixtures].sort(),
 		builtFrom: toPosix(options.repoRoot),
 		judgedRuns,
+		staleRuns,
 		usableRuns,
 		cells: summaries,
 		decisions,
@@ -291,8 +310,10 @@ export interface MisuseCellStatus {
 	usable: number;
 	judged: number;
 	/**
-	 * Runs carrying a ds-misuse.json disqualified by isStale (moved guideline
-	 * pin, judge version, or model).
+	 * Runs carrying a ds-misuse.json the current standard cannot use: either
+	 * disqualified by isStale (moved guideline pin, judge version, or model) or
+	 * unreadable outright (pre-versioning or malformed artifacts). Both need
+	 * `pnpm judge:ds-misuse` again, unlike runs the judge never saw.
 	 */
 	stale: number;
 	status: MisuseJudgeStatus;
@@ -332,7 +353,13 @@ export function collectMisuseStatuses(cells: Cell[], spec: ComparisonSpec): Misu
 		let stale = 0;
 		for (const usable of cell.runs) {
 			const report = readMisuseReport(usable.run.runDir);
-			if (report === null) continue;
+			if (report === null) {
+				// An artifact that exists but cannot be read was judged once, under
+				// a standard readMisuseReport no longer accepts. Filed under stale,
+				// or it reads as never-judged — which hid 80 paid judgements.
+				if (hasMisuseArtifact(usable.run.runDir)) stale += 1;
+				continue;
+			}
 			if (isStale(report, current)) stale += 1;
 			else judged += 1;
 		}

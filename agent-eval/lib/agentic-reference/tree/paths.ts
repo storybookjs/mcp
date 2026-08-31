@@ -55,6 +55,22 @@ export function isGenerated(path: string): boolean {
 	return GENERATED_FILE.test(path);
 }
 
+/** Test files by naming convention: `*.test.*`, `*.spec.*`, or under `__tests__/`. */
+const TEST_FILE = /\.(?:test|spec)\.[^/]+$/;
+
+/**
+ * Whether a path is test code rather than production code.
+ *
+ * Complexity metrics exclude these: an agent that volunteers a branchy
+ * regression test alongside a two-line fix has not made the codebase harder to
+ * maintain, and counting the test file said it had. Story files are demo
+ * markup, not tests, and stay measured.
+ */
+export function isTestPath(path: string): boolean {
+	if (TEST_FILE.test(path)) return true;
+	return path.split('/').slice(0, -1).includes('__tests__');
+}
+
 /**
  * Whether a path lies inside a directory no walker descends into.
  *

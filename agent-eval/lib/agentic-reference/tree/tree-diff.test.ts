@@ -35,6 +35,7 @@ describe('diffTrees', () => {
 			filesChanged: 0,
 			files: [],
 			sloc: { added: 0, removed: 0, net: 0 },
+			slocByFile: {},
 		});
 	});
 
@@ -44,6 +45,7 @@ describe('diffTrees', () => {
 		const result = diffTrees(before, after);
 		expect(result.files).toEqual(['src/a.ts']);
 		expect(result.sloc).toEqual({ added: 2, removed: 1, net: 1 });
+		expect(result.slocByFile).toEqual({ 'src/a.ts': { added: 2, removed: 1, net: 1 } });
 	});
 
 	it('counts a new file as all-added', () => {
@@ -68,6 +70,7 @@ describe('diffTrees', () => {
 			filesChanged: 0,
 			files: [],
 			sloc: { added: 0, removed: 0, net: 0 },
+			slocByFile: {},
 		});
 	});
 
@@ -92,6 +95,7 @@ describe('diffTrees', () => {
 			filesChanged: 0,
 			files: [],
 			sloc: { added: 0, removed: 0, net: 0 },
+			slocByFile: {},
 		});
 	});
 
@@ -108,6 +112,7 @@ describe('diffTrees', () => {
 			filesChanged: 0,
 			files: [],
 			sloc: { added: 0, removed: 0, net: 0 },
+			slocByFile: {},
 		});
 	});
 

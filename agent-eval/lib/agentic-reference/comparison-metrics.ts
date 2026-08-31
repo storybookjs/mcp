@@ -11,9 +11,11 @@ export type MetricTransform = 'log' | 'log0' | 'none';
 export type MetricDirection = 'lower-better' | 'higher-better' | 'neutral';
 
 /**
- * BH correction group. 'confirmatory' is the pre-facet family, frozen: moving
- * a metric in or out changes every existing q-value in that group, so the
- * partition is edited deliberately, never as a side effect of adding metrics.
+ * BH correction group. 'confirmatory' is the headline family: moving a metric
+ * in or out changes every existing q-value in that group, so the partition is
+ * edited deliberately, never as a side effect of adding metrics. (Last edit:
+ * 2026-08-31, environmentCalls — the taxonomy change behind it re-valued its
+ * sibling tool-use metrics anyway, so the family was re-based, not perturbed.)
  * Facet metrics are exploratory drill-downs of the misuse composite and are
  * corrected among themselves.
  */
@@ -126,6 +128,17 @@ const CONFIRMATORY_METRICS: Omit<ComparisonMetric, 'correctionGroup'>[] = [
 		key: 'verificationCalls',
 		label: 'Verification tool calls',
 		path: 'toolUse.buckets.verification',
+		family: 'toolUse',
+		transform: 'none',
+		direction: 'neutral',
+	},
+	{
+		// Sandbox provisioning (apt-get, playwright install, …): the browser
+		// bootstrap detour behind most duration outliers, measured apart so it
+		// can be seen instead of leaking into exploration and verification.
+		key: 'environmentCalls',
+		label: 'Environment-setup tool calls',
+		path: 'toolUse.buckets.environment',
 		family: 'toolUse',
 		transform: 'none',
 		direction: 'neutral',

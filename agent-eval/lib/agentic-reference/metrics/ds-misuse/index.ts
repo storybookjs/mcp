@@ -7,7 +7,7 @@
 // It is the one metric in this tree that is not a pure function of stored
 // artifacts: it calls a model, so it lives behind its own CLI rather than in
 // post-analysis, and its result is cached on disk as ds-misuse.json.
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { readJson } from '../../../utils/files.ts';
@@ -77,6 +77,16 @@ function isWellFormedReport(value: unknown): value is DsMisuseReport {
 export function readMisuseReport(runDir: string): DsMisuseReport | null {
 	const parsed = readJson<unknown>(join(runDir, DS_MISUSE_FILENAME));
 	return isWellFormedReport(parsed) ? parsed : null;
+}
+
+/**
+ * Whether a judge artifact exists at all, readable or not. Callers pairing
+ * this with readMisuseReport can tell a pre-versioning or malformed artifact
+ * (present, unusable — the paid judge did run once) from a run the judge
+ * never saw, which read identically as null for months.
+ */
+export function hasMisuseArtifact(runDir: string): boolean {
+	return existsSync(join(runDir, DS_MISUSE_FILENAME));
 }
 
 export function writeMisuseReport(runDir: string, report: DsMisuseReport): void {
