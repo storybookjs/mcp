@@ -14,8 +14,10 @@ export type MetricDirection = 'lower-better' | 'higher-better' | 'neutral';
  * BH correction group. 'confirmatory' is the headline family: moving a metric
  * in or out changes every existing q-value in that group, so the partition is
  * edited deliberately, never as a side effect of adding metrics. (Last edit:
- * 2026-08-31, environmentCalls — the taxonomy change behind it re-valued its
- * sibling tool-use metrics anyway, so the family was re-based, not perturbed.)
+ * 2026-08-31, environmentCalls and the four instance-weighted coverage shares —
+ * the taxonomy change behind the former re-valued its sibling tool-use metrics
+ * anyway, so the family was re-based, not perturbed; the latter are the
+ * headline shares of metricsVersion 8+, which this registry had lagged behind.)
  * Facet metrics are exploratory drill-downs of the misuse composite and are
  * corrected among themselves.
  */
@@ -168,6 +170,27 @@ const CONFIRMATORY_METRICS: Omit<ComparisonMetric, 'correctionGroup'>[] = [
 		direction: 'lower-better',
 	},
 	{
+		// Instance-weighted shares (metricsVersion 8+): each element counts once
+		// per estimated render of its owner, so markup inside a component used in
+		// ten places weighs ten times its single source appearance. These are the
+		// headline coverage numbers; the node shares below keep the source-level
+		// view where every element counts once.
+		key: 'dsShareOfAllInstances',
+		label: 'DS share of all instances',
+		path: 'dsCoverage.instances.dsShareOfAllNodes',
+		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsShareOfComponentInstances',
+		label: 'DS share of component instances',
+		path: 'dsCoverage.instances.dsShareOfComponentNodes',
+		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
 		key: 'dsShareOfAllNodes',
 		label: 'DS share of all nodes',
 		path: 'dsCoverage.dsShareOfAllNodes',
@@ -179,6 +202,22 @@ const CONFIRMATORY_METRICS: Omit<ComparisonMetric, 'correctionGroup'>[] = [
 		key: 'dsShareOfComponentNodes',
 		label: 'DS share of component nodes',
 		path: 'dsCoverage.dsShareOfComponentNodes',
+		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsShareOfAllInstancesDelta',
+		label: 'DS share of all instances Δ',
+		path: 'deltaToBaseline.coverageDelta.instances.dsShareOfAllNodes.delta',
+		family: 'dsCoverage',
+		transform: 'none',
+		direction: 'higher-better',
+	},
+	{
+		key: 'dsShareOfComponentInstancesDelta',
+		label: 'DS share of component instances Δ',
+		path: 'deltaToBaseline.coverageDelta.instances.dsShareOfComponentNodes.delta',
 		family: 'dsCoverage',
 		transform: 'none',
 		direction: 'higher-better',

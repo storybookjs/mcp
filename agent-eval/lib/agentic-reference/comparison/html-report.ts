@@ -287,6 +287,27 @@ const METRICS: Record<string, MetricCopy> = {
 			'How much the codebase grew. A small net with many added lines means the run mostly ' +
 			'replaced code rather than piling it on.',
 	},
+	dsShareOfAllInstances: {
+		name: 'DS share of rendered UI',
+		description: 'Instance-weighted DS share of UI',
+		computes:
+			'Of all UI elements in the finished app — plain HTML tags included — the share that ' +
+			'comes from the design system, with each element counted once per estimated render ' +
+			'of the component it lives in, and conditional branches counted fractionally.',
+		relevance:
+			'The headline adoption number, weighted toward what actually reaches the screen: ' +
+			'markup in a component used everywhere counts for more than a one-off.',
+	},
+	dsShareOfComponentInstances: {
+		name: 'DS share of rendered components',
+		description: 'Instance-weighted share among components',
+		computes:
+			'The same instance weighting counting only components, with plain HTML tags like ' +
+			'div and span left out.',
+		relevance:
+			'When a component reaches the rendered tree, how often is it the design ' +
+			"system's — weighted by how often it gets there.",
+	},
 	dsShareOfAllNodes: {
 		name: 'DS share of UI',
 		description: 'Design-system share of UI elements',
@@ -294,8 +315,8 @@ const METRICS: Record<string, MetricCopy> = {
 			'Of all UI elements in the finished app — plain HTML tags included — the share that ' +
 			'comes from the design system.',
 		relevance:
-			'The headline adoption number: how much of the interface is built from the system ' +
-			'rather than raw markup.',
+			'The source-level adoption number: every element counts once, however often it ' +
+			'renders. Compare with the rendered share to see where adoption lives.',
 	},
 	dsShareOfComponentNodes: {
 		name: 'DS share of components',
@@ -306,6 +327,25 @@ const METRICS: Record<string, MetricCopy> = {
 		relevance:
 			'A narrower question: when the agent reached for a component, did it pick the design ' +
 			"system's?",
+	},
+	dsShareOfAllInstancesDelta: {
+		name: 'DS share of rendered UI Δ',
+		description: 'How the rendered DS share moved',
+		computes:
+			"The change in the instance-weighted share of all UI elements: the finished app's " +
+			"share minus the untouched app's.",
+		relevance:
+			'Whether the run moved what users actually see toward or away from the design system.',
+	},
+	dsShareOfComponentInstancesDelta: {
+		name: 'DS share of rendered components Δ',
+		description: 'How the rendered component share moved',
+		computes:
+			'The change in the instance-weighted share of components (plain HTML tags left ' +
+			"out): the finished app's share minus the untouched app's.",
+		relevance:
+			'Did the components this run put on screen come from the design system, net of ' +
+			'what it removed?',
 	},
 	dsShareOfAllNodesDelta: {
 		name: 'DS share of UI Δ',
@@ -416,7 +456,10 @@ const FAMILIES: Record<string, { name: string; intro: string }> = {
 	},
 	dsCoverage: {
 		name: 'DS coverage',
-		intro: 'How much of the produced UI uses the design system, and how far the run moved it.',
+		intro:
+			'How much of the produced UI uses the design system, and how far the run moved it. ' +
+			'Rendered shares weight each element by its estimated instantiations; node shares ' +
+			'count source elements once.',
 	},
 	dsMisuse: {
 		name: 'DS misuse',
@@ -441,6 +484,10 @@ const FAMILIES: Record<string, { name: string; intro: string }> = {
 // Metrics measured as a 0-1 share; values and absolute-delta effects display
 // as percentages (value * 100), never as a relative percent change.
 const SHARE_METRICS = new Set([
+	'dsShareOfAllInstances',
+	'dsShareOfComponentInstances',
+	'dsShareOfAllInstancesDelta',
+	'dsShareOfComponentInstancesDelta',
 	'dsShareOfAllNodes',
 	'dsShareOfComponentNodes',
 	'dsShareOfAllNodesDelta',
@@ -476,6 +523,12 @@ const EXTRA_METRICS = new Set([
 	'inputTokens',
 	'slocAdded',
 	'totalToolCalls',
+	// The static node shares park now that the instance-weighted shares are the
+	// headline (metricsVersion 8 made the same move in the analyze tables).
+	'dsShareOfAllNodes',
+	'dsShareOfComponentNodes',
+	'dsShareOfAllInstancesDelta',
+	'dsShareOfComponentInstancesDelta',
 	'dsShareOfAllNodesDelta',
 	'dsShareOfComponentNodesDelta',
 	// Exploratory metrics (their own BH groups) park behind the Metrics toggle

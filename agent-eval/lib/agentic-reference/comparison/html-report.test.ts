@@ -185,6 +185,7 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 		fixtureRefs: ['org/app@ref'],
 		builtFrom: '/builder/mcp',
 		judgedRuns: 2,
+		staleRuns: 0,
 		usableRuns: 2,
 		cells: [
 			{
@@ -197,6 +198,7 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 					correctDsUsage: { ones: 5, halves: 0, zeros: 0 },
 					correctLocalDecision: null,
 				},
+				stale: 0,
 				evaluated: { ds: 5, local: 0 },
 				facetTallies: {},
 			},
@@ -210,6 +212,7 @@ function misusePanel(overrides: Partial<MisusePanel> = {}): MisusePanel {
 					correctDsUsage: { ones: 4, halves: 0, zeros: 0 },
 					correctLocalDecision: { ones: 2, halves: 0, zeros: 0 },
 				},
+				stale: 0,
 				evaluated: { ds: 4, local: 2 },
 				facetTallies: {},
 			},
@@ -602,6 +605,13 @@ describe('renderHtmlReport parked metrics, section nav, and URL state', () => {
 	it('formats the new churn and coverage-delta metrics', () => {
 		expect(formatMetricValue('meanEditsPerFile', 2.512)).toBe('2.5');
 		expect(formatMetricValue('dsShareOfAllNodesDelta', 0.0053)).toBe('0.5%');
+	});
+
+	it('formats the instance-weighted coverage shares as percentages', () => {
+		expect(formatMetricValue('dsShareOfAllInstances', 0.465)).toBe('46.5%');
+		expect(formatMetricValue('dsShareOfComponentInstances', 0.62)).toBe('62.0%');
+		expect(formatMetricValue('dsShareOfAllInstancesDelta', 0.0053)).toBe('0.5%');
+		expect(formatMetricValue('dsShareOfComponentInstancesDelta', -0.021)).toBe('-2.1%');
 	});
 
 	it('tags parked metrics for the Metrics toggle to hide', () => {
