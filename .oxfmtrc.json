@@ -3,5 +3,11 @@
 	"useTabs": true,
 	"singleQuote": true,
 	"trailingComma": "all",
-	"ignorePatterns": ["**/CHANGELOG.md", ".changeset/*.md"]
+	"ignorePatterns": [
+		"**/CHANGELOG.md",
+		".changeset/*.md",
+		"agent-eval/baselines/**",
+		"agent-eval/.eval-cache/**",
+		"agent-eval/results/**"
+	]
 }

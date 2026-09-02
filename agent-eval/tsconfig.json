@@ -4,8 +4,10 @@
 		"jsx": "react-jsx",
 		"moduleResolution": "bundler",
 		"paths": {
+			"#lib/*": ["./lib/*.ts"],
 			"#test-utils": ["./lib/test-utils.ts"],
-			"@storybook/mcp": ["../packages/mcp/src/index.ts"]
+			"@storybook/mcp": ["../packages/mcp/src/index.ts"],
+			"@storybook/agent-eval-utils": ["../packages/agent-eval-utils/src/index.ts"]
 		}
 	},
 	"include": [
@@ -14,7 +16,11 @@
 		"experiments/**/*.ts",
 		"evals/**/EVAL.ts",
 		"evals/**/EVAL.tsx",
+		"evals/**/post-analysis.ts",
+		"evals/**/__analysis__/**/*.ts",
 		"lib/**/*.ts",
+		"plans/**/*.ts",
+		"scripts/**/*.ts",
 		"vitest.config.ts"
 	],
 	"exclude": ["results/**", "templates/**"]
